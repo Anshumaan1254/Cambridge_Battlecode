@@ -56,6 +56,7 @@ def main():
     if p.returncode != 0 and not args.quiet:
         sys.stderr.write(p.stderr[-2000:])
     wins = losses = draws = 0
+    win_rounds = []
     tot = {'our_gems': 0, 'their_gems': 0, 'our_deaths': 0, 'their_deaths': 0, 'our_kills': 0, 'our_gold': 0, 'their_gold': 0, 'faults': 0}
     lines = []
     for name, side, st in rows:
@@ -66,6 +67,8 @@ def main():
         won = s['outcome'] == us
         lost = s['outcome'] == them
         wins += won; losses += lost; draws += (not won and not lost)
+        if won:
+            win_rounds.append(s['rounds'])
         tot['our_gems'] += s['gems'][us]; tot['their_gems'] += s['gems'][them]
         tot['our_deaths'] += s['per'][us]['deaths']; tot['their_deaths'] += s['per'][them]['deaths']
         tot['our_kills'] += s['per'][us]['kills']; tot['our_gold'] += s['per'][us]['gold']; tot['their_gold'] += s['per'][them]['gold']
@@ -78,7 +81,7 @@ def main():
     n = len(rows)
     print(f'== {args.a} vs {args.b}: {wins}W {losses}L {draws}D of {n}  winrate={wins / max(1, n):.3f}  '
           f"gems {tot['our_gems']}-{tot['their_gems']}  deaths {tot['our_deaths']}-{tot['their_deaths']}  kills {tot['our_kills']}  "
-          f"gold {tot['our_gold']}-{tot['their_gold']}  faults {tot['faults']}  ({time.time() - t0:.0f}s)")
+          f"gold {tot['our_gold']}-{tot['their_gold']}  faults {tot['faults']}  avg_win_round {sum(win_rounds) / max(1, len(win_rounds)):.0f}  ({time.time() - t0:.0f}s)")
 
 if __name__ == '__main__':
     main()

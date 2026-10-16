@@ -89,6 +89,7 @@ private:
 	std::array<int, 2> cd{};
 	bc::bitboard danger;	  // tiles enemies can hit next turn
 	bc::bitboard camp_danger; // tiles in range of awake camps
+	bc::bitboard alert_zone;  // area an ally reported as dangerous (shared memory)
 	bool enemy_near = false;
 
 	// memory

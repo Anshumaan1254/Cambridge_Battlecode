@@ -289,6 +289,10 @@ void Brain::build_danger()
 	for (const auto& g : W.groups)
 		if (g.st == ST_ALIVE && g.awake && g.hp_total > 0 && !g.harmless && cheb(g.center, pos) <= 10)
 			camp_danger |= g.near;
+	alert_zone.clear();
+	const auto& C = comms();
+	if (P.alert_radius > 0 && C.alert_kind == AL_DANGER && C.fresh(round, P.alert_age))
+		alert_zone.draw_chebyshev(C.alert_pos, static_cast<float>(P.alert_radius));
 }
 
 bool Brain::in_awake_camp_range() const { return camp_danger.is_set(pos); }
@@ -360,7 +364,7 @@ bool Brain::step(const bc::bitboard& goals, bool avoid_danger, bool allow_dash)
 		}
 		return false;
 	}
-	bc::bitboard avoid = danger | camp_danger;
+	bc::bitboard avoid = danger | camp_danger | alert_zone;
 	return after_move(Nav::step_to(pos, goals, avoid_danger ? &avoid : nullptr, allow_dash ? kit.dash : -1, can_move));
 }
 
@@ -372,7 +376,7 @@ bool Brain::go_group(Group& g, int stop_at, bool avoid)
 		fallback.draw_chebyshev(t, static_cast<float>(stop_at));
 	if (stop_at > 0)
 		fallback &= ~g.mask;
-	const bc::bitboard av = danger | (camp_danger & ~g.near);
+	const bc::bitboard av = danger | (camp_danger & ~g.near) | alert_zone;
 	if (N.ensure_group(g.id))
 		return after_move(Nav::step_field(pos, N.group_fields[static_cast<std::size_t>(g.id)], stop_at, avoid ? &av : nullptr, kit.dash, can_move, fallback));
 	return after_move(Nav::step_to(pos, fallback, avoid ? &av : nullptr, kit.dash, can_move));
@@ -385,7 +389,7 @@ bool Brain::go_altar(int id)
 	bc::bitboard fallback;
 	for (auto t : W.altar_approach[static_cast<std::size_t>(id)])
 		fallback.set(t);
-	const bc::bitboard av = danger | camp_danger;
+	const bc::bitboard av = danger | camp_danger | alert_zone;
 	if (N.ensure_altar(id))
 		return after_move(Nav::step_field(pos, N.altar_fields[static_cast<std::size_t>(id)], 0, &av, kit.dash, can_move, fallback));
 	return after_move(Nav::step_to(pos, fallback, &av, kit.dash, can_move));
@@ -394,7 +398,7 @@ bool Brain::go_altar(int id)
 bool Brain::go_home_step(bool avoid)
 {
 	auto& W = world();
-	const bc::bitboard av = danger | camp_danger;
+	const bc::bitboard av = danger | camp_danger | alert_zone;
 	return after_move(Nav::step_field(pos, W.home, 0, avoid ? &av : nullptr, kit.dash, can_move, W.ally_spawn));
 }
 
@@ -718,6 +722,9 @@ bool Brain::combat()
 	if (W.enemy_spawn.is_set(tgt->pos) || cheb(tgt->pos, W.enemy_spawn_c) <= 3)
 		fight = fight && killable;
 
+	// Early warning: an outnumbering group is visible; allies keep away from it.
+	if (!fight && E.size() >= 3 && adv < 1.f)
+		comms().post(AL_DANGER, tgt->pos, round);
 	if (fight)
 	{
 		comms().post(AL_RALLY, tgt->pos, round);
@@ -818,7 +825,15 @@ bool Brain::go_home()
 
 bool Brain::safety()
 {
-	if (hp >= P.retreat_hp * max_hp)
+	// Incoming camp damage per round from awake camps that can reach us.
+	float camp_in = 0;
+	for (const auto& g : world().groups)
+		if (g.st == ST_ALIVE && g.awake && !g.harmless && g.near.is_set(pos))
+			for (std::size_t i = 0; i < g.camps.size(); ++i)
+				if (g.hp[i] > 0 && cheb(g.camps[i].pos, pos) <= 3)
+					camp_in += g.camps[i].str;
+	const float threshold = std::max(P.retreat_hp * max_hp, camp_in * 4.f);
+	if (hp >= threshold)
 	{
 		if (task == T_HOME && world().ally_spawn.is_set(pos) && hp < max_hp)
 			return true; // finish healing on spawn
@@ -950,19 +965,22 @@ float Brain::group_score(const Group& g, int& eta) const
 		time = static_cast<float>(d_adj + wait) + kill + 6.f;
 		if (!g.harmless)
 		{
+			// Camps never heal, so a group too strong for one health bar is still farmable over several trips:
+			// fight until the reserve, heal at spawn, come back. Charge each extra trip as a round trip home.
 			const float jungle = build_idx >= 5 && (build.front() == I::jungle_shard_of_strength || build.front() == I::jungle_shard_of_health) ? 0.7f : 1.f;
 			const float spread = g.camps.size() > 1 ? 0.75f : 1.f;
-			float taken = g.dps * jungle * spread * kill / (claimers ? 2.f : 1.f);
-			const float budget = hp - P.camp_hp_reserve * max_hp;
-			if (taken > budget)
-			{
-				const float full_budget = max_hp * (1.f - P.camp_hp_reserve);
-				if (taken > full_budget)
-					return -1; // not soloable even at full health
-				time += static_cast<float>(std::min(W.dist_home(pos), 12)) + 8.f; // heal first
-				taken = 0;
-			}
-			time += taken / max_hp * static_cast<float>(std::min(W.dist_home(g.center), 15) + 8);
+			const float taken = g.dps * jungle * spread * kill / (claimers ? 2.f : 1.f);
+			const float reserve = std::max(P.camp_hp_reserve * max_hp, g.dps * 4.f);
+			const float budget_now = std::max(0.f, hp - reserve);
+			const float budget_full = std::max(1.f, max_hp - reserve);
+			const float extra = taken - budget_now;
+			if (budget_full < g.dps * 6.f)
+				return -1; // cannot even survive a few rounds next to it
+			const int trips = extra > 0 ? static_cast<int>(std::ceil(extra / budget_full)) : 0;
+			if (trips > P.max_trips)
+				return -1;
+			const int home_d = std::min(W.dist_home(g.center), 24);
+			time += static_cast<float>(trips) * (2.f * static_cast<float>(std::min(home_d, 6)) + 6.f + static_cast<float>(std::max(0, home_d - 6)));
 		}
 		if (claimers && !g.elk && !g.monolith)
 			return -1;
@@ -984,6 +1002,8 @@ float Brain::group_score(const Group& g, int& eta) const
 	}
 	if (round - g.enemy_round < 12)
 		time += 12.f;
+	if (alert_zone.is_set(g.center))
+		time += 25.f;
 	if (g.enemy_on_tile)
 		value *= 0.5f;
 	return value / std::max(1.f, time);
@@ -1056,6 +1076,17 @@ void Brain::farm()
 		}
 		return;
 	}
+#ifdef LEGEND_TRACE
+	debug_block({
+		if (round % 50 == 0 && W.my_index == 0)
+			for (auto& g : W.groups)
+			{
+				int eta = 0;
+				const float sc = group_score(g, eta);
+				std::printf("S r=%d g=%d ours=%d st=%d gems=%d elk=%d hp=%.0f d=%d ready=%d score=%.3f\n", round, g.id, (int)g.ours, (int)g.st, g.gems, (int)g.elk, g.hp_total, eta, g.ready_round - round, sc);
+			}
+	});
+#endif
 	if (best != task_group)
 	{
 		task_group = best;

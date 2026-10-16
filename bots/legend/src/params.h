@@ -11,15 +11,18 @@ struct Params
 	float hysteresis = 1.15f;		 // keep current task unless a new one beats it by this factor
 	float join_bonus = 1.25f;		 // bonus for joining an ally on a camp that needs two bodies
 	int max_wait = 18;				 // rounds we are willing to wait for a respawn on arrival
+	int max_trips = 3;				 // heal trips we accept to finish one camp group (camps never heal)
 
 	// Safety
-	float retreat_hp = 0.32f;		 // retreat below this health fraction
+	float retreat_hp = 0.25f;		 // retreat below this health fraction (or 4 rounds of incoming camp damage)
 	float camp_hp_reserve = 0.18f;	 // keep this fraction of max health after a camp fight
 	float fight_margin = 1.30f;		 // engage proactively when our kill time beats theirs by this factor
 	float fight_back_margin = 0.75f; // when they can already hit us, fight back unless this outmatched
 	float cornered_margin = 0.45f;	 // melee chasers we cannot outrun: hit back unless hopeless
 	int bag_caution = 40;			 // carrying this many gems, avoid even fights we can escape
 	int threat_memory = 4;			 // rounds an unseen enemy is still assumed nearby
+	int alert_radius = 0;			 // allies avoid this radius around a reported danger
+	int alert_age = 12;				 // rounds a danger report stays valid
 
 	// Tribute
 	int tribute_min = 34;	   // carry at least this many gems before a dedicated altar trip

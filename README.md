@@ -18,11 +18,15 @@ sides = 438 games per row unless noted. `_oppR` is a replica of the ladder oppon
 
 | Opponent | Win rate |
 |---|---|
-| round-1 `legend` (what lost on the ladder) | 73% (75% on official-style maps) |
-| `_oppR`, ladder-opponent replica | 60% (round-1 `legend` only manages 37% against it) |
-| `_opp2`, our logic with the opponent's draft | 68% |
-| teleport-island maps vs round-1 `legend` (6 games) | 5 / 6 |
-| unopposed, official-style maps | 1,000 gems in ~345 rounds (round 1: ~452) |
+| round-1 `legend` (what lost on the ladder) | **82%** |
+| `_oppR`, ladder-opponent replica | **65%** (round-1 `legend` only manages 37% against it) |
+| `_opp2`, our logic with the opponent's draft | 67% |
+| aggressive / early-rush archetypes | 92% / 93% |
+| starter bot | 100% |
+| unopposed | 1,000 gems in ~356 rounds (round 1: ~452 on official-style maps) |
+
+Win rates hold across map sizes (vs `_oppR`: 61% small, 70% medium, 62% large). `tools/stall_audit.py` finds
+no stalled games (low score or clock run out) against the starter bot or an idle opponent.
 
 Round 1 (67 maps × both sides): 100% vs the starter bot and the deathball archetype, 85–88% vs rush,
 aggressive and passive archetypes.

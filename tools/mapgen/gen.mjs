@@ -1,10 +1,10 @@
 // Generate a diverse, symmetric, connectivity-checked map pool for local testing.
-// Usage: node gen.mjs <outDir> <count> [seed]
+// Usage: node gen.mjs <outDir> <count> [seed] [namePrefix]
 import fs from 'node:fs';
 import path from 'node:path';
 import { loadEngine, Builder, SYM, CAMP } from './engine.mjs';
 
-const [outDir = 'maps', countArg = '24', seedArg = '1'] = process.argv.slice(2);
+const [outDir = 'maps', countArg = '24', seedArg = '1', prefix = ''] = process.argv.slice(2);
 let seed = Number(seedArg) >>> 0 || 1;
 const rnd = () => { seed ^= seed << 13; seed >>>= 0; seed ^= seed >>> 17; seed ^= seed << 5; seed >>>= 0; return seed / 4294967296; };
 const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
@@ -161,7 +161,7 @@ function makeMap(E, idx, opts = {}) {
     for (const [t, x, y] of camps) b.camp(t, x, y);
     const bytes = b.encode();
     const counts = camps.reduce((m, [t]) => (m[t] = (m[t] || 0) + 1, m), {});
-    const name = `gen${String(idx).padStart(2, '0')}_${w}x${h}_${['H', 'V', 'R'][sym]}_c${champs}`;
+    const name = `${prefix}gen${String(idx).padStart(2, '0')}_${w}x${h}_${['H', 'V', 'R'][sym]}_c${champs}`;
     return { name, bytes, info: { w, h, sym, champs, altars: altars.length, camps: counts, walls: wallFrac.toFixed(3), holes: holeFrac.toFixed(3) } };
   } catch (e) {
     return null;
@@ -185,6 +185,6 @@ while (made < want && attempts < want * 200) {
   index.push({ name: m.name, ...m.info });
   made++;
 }
-fs.writeFileSync(path.join(outDir, 'index.json'), JSON.stringify(index, null, 1));
+fs.writeFileSync(path.join(outDir, `${prefix}index.json`), JSON.stringify(index, null, 1));
 console.log(`made ${made} maps in ${attempts} attempts`);
 for (const m of index) console.log(m.name, JSON.stringify(m.camps), 'altars', m.altars);

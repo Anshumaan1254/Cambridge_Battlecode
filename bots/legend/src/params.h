@@ -15,7 +15,10 @@ struct Params
 	// Safety
 	float retreat_hp = 0.32f;		 // retreat below this health fraction
 	float camp_hp_reserve = 0.18f;	 // keep this fraction of max health after a camp fight
-	float fight_margin = 1.30f;		 // engage when our kill time beats theirs by this factor
+	float fight_margin = 1.30f;		 // engage proactively when our kill time beats theirs by this factor
+	float fight_back_margin = 0.75f; // when they can already hit us, fight back unless this outmatched
+	float cornered_margin = 0.45f;	 // melee chasers we cannot outrun: hit back unless hopeless
+	int bag_caution = 40;			 // carrying this many gems, avoid even fights we can escape
 	int threat_memory = 4;			 // rounds an unseen enemy is still assumed nearby
 
 	// Tribute
@@ -27,6 +30,9 @@ struct Params
 	// Shopping
 	int shop_gold = 150;	   // go home to shop at this much gold when home is close
 	int shop_trip_max = 9;	   // max steps from spawn for a shopping trip
+
+	// Team style: 0 = spread farming with claims, 1 = deathball (all follow the lowest-index living ally)
+	int style = 0;
 
 	// Aggression
 	float steal_hp_frac = 0.55f; // need this health fraction to farm on the enemy half

@@ -181,9 +181,8 @@ void Brain::turn()
 	prebuild_fields();
 #ifdef LEGEND_TRACE
 	debug_block({
-		if (round < 400)
-			std::printf("T r=%d %d task=%d g=%d pos=(%d,%d) hp=%.0f gems=%u gold=%u fuel=%llu\n", round, static_cast<int>(type), task, task_group, pos.x, pos.y, hp, gems, gold,
-				static_cast<unsigned long long>(bc::fuel_remaining()));
+		std::printf("T r=%d %d task=%d g=%d pos=(%d,%d) hp=%.0f gems=%u gold=%u fuel=%llu\n", round, static_cast<int>(type), task, task_group, pos.x, pos.y, hp, gems, gold,
+			static_cast<unsigned long long>(bc::fuel_remaining()));
 	});
 #endif
 	const bool help = task == T_FIGHT && hp < 0.6f * max_hp;
@@ -671,25 +670,49 @@ bool Brain::combat()
 	const float t_kill_us = our_hp / std::max(1.f, their_dps);
 	const float adv = t_kill_us / std::max(0.1f, t_kill_them);
 
+	// Team-consistent focus target: allies seeing the same fight pick the same enemy (no distance term).
+	const int my_reach = kit.attack_range + (kit.ranged ? 0 : 1) + (ready(kit.dash) ? 2 : 0);
 	Enemy* tgt = nullptr;
 	float best = -1;
 	for (auto* e : E)
 	{
-		const float b = burst_vs(*e);
-		const float v = (60.f + static_cast<float>(e->gems) + (e->channeling ? 60.f : 0.f)) * std::min(1.5f, b / std::max(1.f, e->hp)) /
-			(1.f + 0.25f * static_cast<float>(cheb(pos, e->pos)));
+		if (cheb(pos, e->pos) > std::max(my_reach, 4) + 2)
+			continue;
+		const float v = (60.f + static_cast<float>(e->gems) + (e->channeling ? 60.f : 0.f)) / std::max(50.f, e->hp);
 		if (v > best)
 			best = v, tgt = e;
 	}
-	const int reach = kit.attack_range + (kit.ranged ? 0 : 1) + (ready(kit.dash) ? 2 : 0);
+	if (!tgt)
+	{
+		tgt = E.front();
+		for (auto* e : E)
+			if (cheb(pos, e->pos) < cheb(pos, tgt->pos))
+				tgt = e;
+	}
 	const int d = cheb(pos, tgt->pos);
-	const bool killable = d <= std::max(reach, (ready(kit.dmg) || ready(kit.cc)) ? 4 : 0) &&
+	const bool killable = d <= std::max(my_reach, (ready(kit.dmg) || ready(kit.cc)) ? 4 : 0) &&
 		tgt->hp <= burst_vs(*tgt) + 45.f * static_cast<float>(allies_near);
-	const bool attacked = round - last_hit_round <= 1;
+	const bool in_reach = danger.is_set(pos);
 
-	bool fight = adv >= P.fight_margin || (killable && adv >= 0.6f) || (tgt->channeling && adv >= 0.9f) ||
-		(attacked && adv >= 0.85f && danger.is_set(pos));
-	if (hp < 0.25f * max_hp && !killable)
+	// Can we actually get away? Melee enemies move and hit in one turn; ranged ones must stop to shoot.
+	bool chased_by_melee = false;
+	for (auto* e : E)
+		if (!e->kit.ranged && cheb(pos, e->pos) <= 3 + (e->kit.dash >= 0 ? 2 : 0))
+			chased_by_melee = true;
+	const bool can_escape = !chased_by_melee || ready(kit.dash);
+
+	bool fight = false;
+	if (killable && adv >= 0.5f)
+		fight = true;
+	else if (adv >= P.fight_margin)
+		fight = true;
+	else if (in_reach && adv >= P.fight_back_margin)
+		fight = true;
+	else if (in_reach && !can_escape && adv >= P.cornered_margin)
+		fight = true;
+	else if (tgt->channeling && adv >= 0.9f)
+		fight = true;
+	if (fight && !killable && can_escape && (hp < 0.25f * max_hp || (static_cast<int>(gems) >= P.bag_caution && adv < 1.5f)))
 		fight = false;
 	// Do not dive their spawn: it heals them and they block us.
 	if (W.enemy_spawn.is_set(tgt->pos) || cheb(tgt->pos, W.enemy_spawn_c) <= 3)
@@ -701,7 +724,7 @@ bool Brain::combat()
 		task = T_FIGHT;
 		return engage(*tgt);
 	}
-	if (danger.is_set(pos) && adv < 1.0f)
+	if (in_reach)
 	{
 		comms().post(AL_DANGER, tgt->pos, round);
 		task = T_FLEE;
@@ -969,6 +992,40 @@ float Brain::group_score(const Group& g, int& eta) const
 void Brain::farm()
 {
 	auto& W = world();
+	if (P.style == 1)
+	{
+		int leader = -1;
+		for (int i = 0; i < static_cast<int>(W.allies.size()); ++i)
+			if (W.allies[static_cast<std::size_t>(i)].alive)
+			{
+				leader = i;
+				break;
+			}
+		auto& C = comms();
+		if (leader == W.my_index)
+			C.post(AL_RALLY, pos, round);
+		else if (leader >= 0)
+		{
+			const int lg = C.claim[static_cast<std::size_t>(leader)];
+			const bool leader_far = C.alert_kind == AL_RALLY && cheb(C.alert_pos, pos) > 4;
+			if (leader_far || lg < 0)
+			{
+				task = T_WAIT;
+				bc::bitboard goal;
+				goal.draw_chebyshev(C.alert_pos, 2.f);
+				step(goal, true, true);
+				return;
+			}
+			Group& g = W.groups[static_cast<std::size_t>(lg)];
+			task_group = lg;
+			task = g.st == ST_REWARD ? T_WAIT : T_FARM;
+			if (g.st == ST_REWARD)
+				wait_group(g); // one body captures
+			else
+				farm_group(g);
+			return;
+		}
+	}
 	int best = -1, best_eta = BIG;
 	float best_s = 0;
 	for (auto& g : W.groups)

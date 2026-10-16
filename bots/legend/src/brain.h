@@ -35,18 +35,43 @@ private:
 	bool tribute(bool force);
 	bool on_the_way(int altar) const;
 	bool shop_trip();
+	bool home_trip();
+	void update_priority();
+	bool escort_wait();
+	int deficit = 0, respawn_round = -1000;
+	bool was_alive = true;
+	int cur_prio = -1;
+	int capture_group_id = -1, capture_since = -1, last_bank_round = -100;
+	bool W_dist_home_ok() const;
+	bool engaged = false;
+	bool safe_to_recall() const;
+	bool altar_unsafe(int i) const;
 	bool respond_to_alert();
 	void farm();
 	bool farm_group(Group& g);
 	bool capture_group(Group& g);
 	bool wait_group(Group& g);
-	float group_score(const Group& g, int& eta) const;
+	float group_score(const Group& g, int& eta, bool* need_pair = nullptr, int d_override = -1) const;
+	bool hop_task(int gid);
+	bool has_crystal() const;
+	int tp_hop = -1, tp_hop_since = 0;
+	int pair_group = -1, pair_since = 0;
 	bool go_home();
 	// Teleport-crystal islands
 	float island_score(int i) const;
 	bool island_task(int i);
 	bool inside_island() const;
 	int tp_island = -1;
+
+	// farming model
+	float dps_on(const Group& g) const;			  // our damage per round against g (splash, area, retaliation)
+	float incoming_on(const Group& g) const;	  // damage per round g deals to the champion it targets (after passives)
+	float ally_dps_on(int ally, const Group& g) const; // estimated contribution of an ally farming g
+	bool ally_melee(int ally) const;
+	int trip_cost(const Group& g) const;		  // rounds to heal at spawn and come back to g
+	bool jungle_done() const;
+	bool durability_done() const;
+	bool has_home = false; // Home emblem (faster recall); we never buy it, kept for the capture-recall timing
 
 	// combat helpers
 	float camp_dps() const;
@@ -100,6 +125,8 @@ private:
 
 	// game-state modulated thresholds (recomputed each turn from P and the scoreboard)
 	float fight_margin = 1.3f, fight_back_margin = 0.75f, deny_bonus = 0.55f, enemy_half_penalty = 10.f;
+	float isolated_fight_adv = 1.6f;
+	int stance = 0;
 	int tribute_min = 34;
 	void update_mode();
 

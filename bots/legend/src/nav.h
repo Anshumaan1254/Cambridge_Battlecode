@@ -15,6 +15,20 @@ struct Nav
 	// Build the field if it is missing and the turn budget allows; returns true when available.
 	bool ensure_group(int id);
 	bool ensure_altar(int id);
+	// Crystal shortcuts: a resumable scan of the map (local copies of the home field and terrain) collects
+	// launch -> land pairs within crystal range that save many walking steps from our spawn; each group then
+	// takes the best pair by its own walking field. Spread over turns with spare fuel.
+	struct HopEdge
+	{
+		vec2 l, t;
+		int save;
+	};
+	std::vector<HopEdge> hop_edges;
+	int hop_scan = -1; // next row to scan; -1 not started, -2 done
+	std::vector<std::uint16_t> home_lin;
+	std::vector<std::uint8_t> holes_lin, blocked_lin;
+	void hop_scan_step(long long fuel_floor);
+	bool ensure_hop(int id);
 	// Steps to stand on a group tile (BIG if unknown/unreachable); estimate from Chebyshev when the field is missing.
 	int group_dist(const Group& g, vec2 from, bool allow_estimate = true);
 	int altar_dist(int id, vec2 from, bool allow_estimate = true);

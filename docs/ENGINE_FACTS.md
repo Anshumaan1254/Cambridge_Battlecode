@@ -94,3 +94,58 @@ cambc run probe-rules probe-rules --map zz_test --rounds 140
 | `printf` in the draft | expensive: a verbose draft dump ran out of the 1M first-draft-turn budget and the engine **auto-picked randomly** |
 
 First draft turn has 1M fuel, each champion's first turn 200k. Release and debug builds produced identical results in our tests; the platform always runs release.
+
+## Added October 16: probes, local runs and 24 decoded ladder replays
+
+### Champion designs (read from `champion_designs[*]` with `bots/_dump`)
+
+| Champion | Health (+growth) | Strength | Focus | Range | Slot 0 | Slot 1 |
+|---|---|---|---|---|---|---|
+| Ryth | 1200 (+100) | 50 | 100 | 1 | area stun 1.0x focus, radius 1, range 4 | attack reset |
+| Vesper Vale | 900 (+100) | 45 | 100 | 3 | attack reset | dash 2 |
+| Vendetta | 800 (+100) | 70 | 100 | 1 | attack reset | dash 2 |
+| Cassi | 700 (+71) | 30 | 70 (+15) | 3 | damage 2.0x, range 4 | stun (no damage), range 4, usable while moving |
+| Issac | 900 (+95) | 40 | 100 | 1 | attack reset | dash 2 |
+| Stellar | 750 (+75) | 35 | 100 | 3 | damage 2.0x, range 4 | area 1.4x, radius 1, range 4 |
+| Prism | 700 (+75) | 35 | 80 | 3 | stun 1.5x, range 4 | area 1.0x, radius 1 |
+| Marcella | 1200 (+100) | 45 | 50 | 1 | enhanced attack reset | damage 2.0x, range 4 |
+| Willow | 700 (+50) | 45 | 105 | 3 | heal 3.0x, range 4 | attack reset |
+| Ren | 900 (+100) | 40 | 100 | 1 | stun 1.25x, range 4 | dash 2 |
+| Varg | 1000 (+100) | 50 | 100 | 1 | attack reset | self-shield 2.5x focus for 5 rounds |
+| Tavi | 750 (+75) | 35 | 100 | 3 | attack reset | stun 2.2x, range 4 |
+
+Every spell has an 8-round cooldown; all damage spells except Cassi's stun are exclusive with walking.
+Passives: Varg splash radius 1, Ren retaliation 0.2 x focus per damage instance (also hits our champions
+that attack him: three of our ladder deaths were self-kills on Ren), Ryth +0.01 strength per bonus
+health, Prism +0.2 focus per carried gem, Vesper +20% gold. The engine also knows a 13th champion,
+`HeartOfRuin`, that is not in this SDK yet.
+
+### Items
+
+Shards cost 30 gold, emblems are five shards (150). Emblem passives: Monster +10% (camp damage),
+Durability -10% damage taken, Treasure +20% gold, Jungle -30% camp damage, Home 50% faster recall.
+Power emblems count as six shards; Bruiser emblems as five shards plus one of each other stat.
+
+### Turn order and priority (decoded ladder replays)
+
+Teams alternate turns inside a round; team A goes first in odd rounds, team B in even rounds. Within a
+team, higher `set_priority` acts first (default 0, ties by body index) from the next round on. The
+strongest ladder team re-prioritises every round so its engaged champion acts first; their killing
+blow landed before our victim could act in 51 of 64 deaths.
+
+### Recall while capturing
+
+Step onto a dead camp's tile in round T, start a recall in round T+1 or later: the capture completes at
+the start of round T+6 and the teleport lands the same round, so the champion arrives home with the
+reward, healed, and can shop at once (verified locally: recall r30, +22 gems r34, shop r35). A recall
+started in round T itself lands before the capture completes and loses it. With a Home emblem (faster
+recall) the recall must start later.
+
+### Other facts
+
+- Teleport crystal range is Chebyshev 3 (all 14 opponent hops in the replays). It works over holes and
+  walls, so it is also a shortcut through hole mazes, not only an island entry.
+- `spawn_region` bounds have an exclusive maximum corner. Some maps put the two spawns next to each other;
+  both teams heal 100% per round on spawn, so trading hits across the border never kills anyone.
+- Map files (and the map inside a replay) store one half of the camps; the engine mirrors them when a
+  game starts. `tools/replay/extract_map.mjs` relies on this to rebuild ladder maps exactly.

@@ -47,10 +47,24 @@ void World::init_static()
 	home.f.compute(walls, ally_spawn, visited);
 	home.ready = true;
 	home_reach = visited;
+	spawn_altar_d = BIG;
+	for (const auto& app : altar_approach)
+		for (auto t : app)
+			spawn_altar_d = std::min(spawn_altar_d, home.get(t));
 	const bc::bitboard enemy_walls = terrain | bc::map::altars() | ally_spawn;
 	away.f.compute(enemy_walls, enemy_spawn, visited);
 	away.ready = true;
+	altar_contested.assign(altars.size(), false);
+	altar_enemy_round.assign(altars.size(), -1000);
+	for (std::size_t i = 0; i < altars.size(); ++i)
+	{
+		int dh = BIG, da = BIG;
+		for (auto t : altar_approach[i])
+			dh = std::min(dh, home.get(t)), da = std::min(da, away.get(t));
+		altar_contested[i] = dh < BIG && da < BIG && std::abs(dh - da) <= 6;
+	}
 
+	walls_no_holes = bc::map::walls() | bc::map::altars() | enemy_spawn;
 	groups.clear();
 	int id = 0;
 	for (const auto& g : bc::map::camp_groups())
@@ -78,7 +92,7 @@ void World::init_static()
 			if (c.kind() == bc::camp_type::elk)
 				G.elk = true;
 			if (s.base_strength > 0)
-				G.harmless = false;
+				G.harmless = false, ++G.attackers;
 			sx += r.pos.x, sy += r.pos.y;
 			const int da = dist_home(r.pos), de = dist_away(r.pos);
 			G.d_ally = std::min(G.d_ally, da);
@@ -92,8 +106,10 @@ void World::init_static()
 				G.center = t;
 		G.hp_total = G.max_hp;
 		G.ours = G.d_ally <= G.d_enemy;
+		G.update_cluster();
 		groups.push_back(std::move(G));
 	}
+	hops.assign(groups.size(), Hop{});
 }
 
 void World::find_islands()
@@ -178,6 +194,24 @@ void World::init_units()
 		enemies.push_back(Enemy{ std::nullopt, handles[i], bc::champion_type::ryth, Kit{} });
 }
 
+void Group::update_cluster()
+{
+	int best = 0, live = 0;
+	for (std::size_t i = 0; i < camps.size(); ++i)
+	{
+		if (hp[i] <= 0)
+			continue;
+		++live;
+		int n = 0;
+		for (std::size_t j = 0; j < camps.size(); ++j)
+			n += hp[j] > 0 && cheb(camps[i].pos, camps[j].pos) <= 1;
+		best = std::max(best, n);
+	}
+	// Splash on the best target hits `best` camps while all live; as they die it falls to 1.
+	cluster = best <= 1 ? 1.f : (static_cast<float>(best) + 1.f) * 0.5f + (best >= 3 ? 0.2f : 0.f);
+	(void)live;
+}
+
 int World::group_at(vec2 p) const
 {
 	for (const auto& g : groups)
@@ -253,7 +287,11 @@ void World::perceive(vec2 me)
 	{
 		std::int32_t alive = 1;
 		if (bc::detail::sdk_champion_is_alive(a.handle, &alive) == 0)
+		{
+			if (a.alive && !alive)
+				a.died_round = round;
 			a.alive = alive != 0;
+		}
 		bc::detail::champion_info info{};
 		a.visible = a.alive && read_champion(a.handle, info);
 		if (a.visible)
@@ -263,6 +301,12 @@ void World::perceive(vec2 me)
 			a.hp = info.health;
 			a.max_hp = info.max_health;
 			a.str = info.strength;
+			a.focus = info.focus;
+			if (!a.kit_ready)
+			{
+				a.kit = kit_of(bc::champion_designs[static_cast<std::size_t>(a.type)]);
+				a.kit_ready = true;
+			}
 		}
 	}
 
@@ -328,8 +372,15 @@ void World::perceive(vec2 me)
 			}
 		}
 		g.enemy_on_tile = false;
+		g.update_cluster();
 	}
 
+	// Enemy proximity to altars (contested-altar discipline).
+	for (const auto& e : enemies)
+		if (e.visible)
+			for (std::size_t i = 0; i < altars.size(); ++i)
+				if (cheb(altars[i], e.pos) <= 6)
+					altar_enemy_round[i] = round;
 	// Enemy proximity to groups.
 	for (const auto& e : enemies)
 		if (e.visible)

@@ -1,5 +1,6 @@
 // Team talk over the 8-byte shared memory.
-// Bytes 0-5: one per body: bit 7 = needs help, bits 0-6 = claimed group id + 1 (0 = none).
+// Bytes 0-5: one per body: bits 0-6 = claimed group id + 1 (0 = none); bit 7 of bytes 0-1 = team stance
+//            (written only by the stance leader, body 0; see learn.h).
 // Bytes 6-7: team alert: bits 0-13 tile index (y * W + x), bits 14-15 kind.
 #pragma once
 #include "common.h"
@@ -16,14 +17,15 @@ struct Comms
 {
 	int bodies = 0;
 	std::array<int, 6> claim{};		// group id or -1
-	std::array<bool, 6> help{};
+	int stance = 0;					// team stance broadcast by the leader
 	int alert_kind = AL_NONE;
 	vec2 alert_pos{ -1, -1 };
 	int alert_round = -1000;		// round we first saw the current alert value
 	std::uint16_t last_raw = 0;
 
 	void read(int round);
-	void write_self(int index, int group, bool needs_help);
+	void write_self(int index, int group);
+	void write_stance(int s);
 	void post(int kind, vec2 tile, int round);
 	bool fresh(int round, int max_age) const { return alert_kind != AL_NONE && round - alert_round <= max_age; }
 };

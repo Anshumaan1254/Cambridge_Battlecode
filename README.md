@@ -25,6 +25,12 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 
 Matches are deterministic; a full 128-game evaluation takes ~40 s on 4 cores.
 
+## Ready-to-submit ZIP
+
+[`submissions/legend.zip`](submissions/legend.zip) is `cambc bundle legend` output (the bot's `src/` only).
+Upload it on the platform's Submissions page, or submit from the CLI with `cambc login && cambc submit legend`.
+Rebuild it after changing the bot: `cambc bundle legend --output submissions/legend.zip` (delete the old file first).
+
 ## Quick start
 
 ```bash

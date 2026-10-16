@@ -83,6 +83,7 @@ tools/variant.sh    build a parameter/define variant of legend
 tools/snapshot.sh   freeze a past commit of legend as an opponent
 tools/analyze_match.py  report from a match statistics JSON (local or ladder)
 tools/raw_summary.py    convert a website-downloaded summary (numeric ids) into the named JSON
+tools/stall_audit.py    list bench games where we stalled (low score, clock run out, no gold)
 tools/mapgen/replica.mjs  approximate rebuilds of ladder maps from summary coordinates
 tools/trace_stats.py    task-time breakdown from LEGEND_TRACE builds
 tools/mapgen/       symmetric map generator using the engine's MapBuilder

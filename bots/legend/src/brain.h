@@ -117,6 +117,10 @@ private:
 	int task = T_NONE, task_group = -1, task_since = 0;
 	bool task_kite = false; // farming the task group from range 4 with spells only
 	float task_hp = 0;		// task group's health when last checked (progress detection)
+	GroupState task_st = ST_ALIVE;
+	std::array<int, 8> switch_log{ -1000, -1000, -1000, -1000, -1000, -1000, -1000, -1000 };
+	std::size_t switch_pos = 0;
+	int sticky_until = -1;
 	// calibration sample taken this turn, scored at the start of the next one
 	int cal_round = -1, cal_group = -1;
 	float cal_ghp = 0, cal_pred_out = 0, cal_pred_in = 0;

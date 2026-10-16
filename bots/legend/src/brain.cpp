@@ -1238,11 +1238,17 @@ float Brain::group_score(const Group& g, int& eta, bool relaxed, bool* kite) con
 		return -1;
 	const int d_adj = std::max(0, d_tile - 1);
 
-	// Claims by living allies.
+	// Claims by living allies. Conflicts resolve by body index: a group we already hold stays ours against
+	// higher-index claimers (they yield to us), so every body's choice depends only on lower-index ones and
+	// claims cannot oscillate between allies whose memories disagree.
 	int claimers = 0;
 	for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 6; ++i)
 		if (i != W.my_index && C.claim[static_cast<std::size_t>(i)] == g.id && W.allies[static_cast<std::size_t>(i)].alive)
+		{
+			if (i > W.my_index && g.id == task_group)
+				continue;
 			++claimers;
+		}
 	const bool heavy = g.max_hp >= P.heavy_hp || g.dps >= P.heavy_dps;
 
 	float hp_left = 0;
@@ -1495,7 +1501,7 @@ void Brain::farm()
 		if (s <= 0)
 			continue;
 		if (g.id == task_group)
-			s *= P.hysteresis;
+			s *= round < sticky_until ? 1000.f : P.hysteresis;
 		if (s > best_s)
 			best_s = s, best = g.id, best_eta = eta, best_kite = k;
 	}
@@ -1575,15 +1581,25 @@ void Brain::farm()
 #endif
 	if (best != task_group)
 	{
+		// Flip-flop guard: many target switches in a short window → commit to the current target for a while.
+		switch_log[switch_pos++ % switch_log.size()] = round;
+		int recent = 0;
+		for (int r : switch_log)
+			recent += round - r < 20;
+		if (recent >= 6)
+			sticky_until = round + 25;
 		task_group = best;
 		task_since = round;
 		task_hp = W.groups[static_cast<std::size_t>(best)].hp_total;
+		task_st = W.groups[static_cast<std::size_t>(best)].st;
 	}
 	{
 		// Progress resets the give-up clock: big groups take several heal trips and are worth finishing.
 		const Group& tg = W.groups[static_cast<std::size_t>(best)];
-		if (tg.hp_total < task_hp - 1.f || tg.st != ST_ALIVE || nav().group_dist(tg, pos) <= 4)
+		// Only damage dealt or a state change is progress: standing near a group we cannot hit is not.
+		if (tg.hp_total < task_hp - 1.f || tg.st != task_st)
 			task_since = round;
+		task_st = tg.st;
 		task_hp = tg.hp_total;
 	}
 	// Give up on targets we cannot reach in reasonable time.
@@ -1769,6 +1785,8 @@ bool Brain::farm_group(Group& g)
 			goal &= ~g.mask;
 			if (!goal.is_empty())
 				step(goal, false, true);
+			else
+				go_group(g, 1, true); // in range by the field but no camp in sight (walls block vision): close in
 		}
 		else
 			go_group(g, kit.attack_range, true);

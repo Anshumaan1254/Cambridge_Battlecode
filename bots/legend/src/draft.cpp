@@ -3,6 +3,7 @@
 #include "draft.h"
 
 #include "common.h"
+#include "params.h"
 
 namespace
 {
@@ -69,19 +70,21 @@ double score(D c)
 	const double per_body = F.groups / std::max(1.0, static_cast<double>(F.team));
 	const double multi = F.groups ? static_cast<double>(F.multi) / F.groups : 0;
 	const bool big = F.area >= 3600 || F.mean_dist >= 22;
+	// Base values come from composition tournaments (tools/bench.py, 128 games each): the durable
+	// Varg/Tavi/Stellar/Ren/Ryth core beat a Vendetta-first draft ~60% because 800-health Vendetta dies too often.
 	switch (c)
 	{
-	case D::vendetta: return 10.0;
-	case D::varg: return 8.6 + 3.0 * multi + (F.elk ? 0.5 : 0);
-	case D::tavi: return 8.4 + (big ? 1.2 : 0);
-	case D::stellar: return 7.8 + 1.5 * multi;
-	case D::cassi_and_issac: return 6.8 + (per_body >= 2.5 ? 1.8 : 0) + (F.harmless >= F.team ? 0.8 : 0);
-	case D::ren: return 7.2 + 1.5 * multi;
-	case D::ryth: return 6.6 + (F.elk ? 1.2 : 0) + (F.mono ? 0.5 : 0);
-	case D::marcella: return 6.2 + (F.elk ? 0.6 : 0);
-	case D::vesper_vale: return 6.6 + (F.gold >= 2 ? 0.6 : 0);
-	case D::prism: return 5.8;
-	case D::willow: return 4.6 + (F.elk >= 2 ? 0.8 : 0);
+	case D::varg: return 10.0 + 2.0 * multi;
+	case D::tavi: return 9.6 + (big ? 0.6 : 0);
+	case D::stellar: return 9.3 + 1.0 * multi;
+	case D::ren: return 9.2 + 1.0 * multi;
+	case D::ryth: return 8.6 + (F.elk >= 2 ? 0.3 : 0) + (F.mono ? 0.2 : 0);
+	case D::cassi_and_issac: return 8.2 + (per_body >= 3.5 ? 0.4 : 0) + (F.harmless >= F.team ? 0.2 : 0);
+	case D::vendetta: return 8.0;
+	case D::prism: return 7.0;
+	case D::marcella: return 6.5 + (F.elk ? 0.3 : 0);
+	case D::vesper_vale: return 6.2 + (F.gold >= 2 ? 0.4 : 0);
+	case D::willow: return 5.0 + (F.elk >= 2 ? 0.5 : 0);
 	}
 	return 0;
 }
@@ -117,6 +120,21 @@ D choose(const std::vector<D>& mine)
 void play_draft()
 {
 	const auto mine = bc::draft::current_draft(team::ally);
+#ifdef LEGEND_DRAFT
+	// Forced composition for experiments: picks in this order (champion_draft values).
+	{
+		static const int forced[] = { LEGEND_DRAFT };
+		for (int f : forced)
+		{
+			const auto c = static_cast<D>(f);
+			if (std::find(mine.begin(), mine.end(), c) == mine.end())
+			{
+				bc::draft::pick(c);
+				return;
+			}
+		}
+	}
+#endif
 	try
 	{
 		if (!F.ready)

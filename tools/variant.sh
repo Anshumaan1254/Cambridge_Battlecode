@@ -13,5 +13,5 @@ while [ $# -gt 0 ]; do
   sed -i -E "s/^(\s*[a-z]+ $key = )[^;]*;/\1$val;/" bots/$name/src/params.h
   shift
 done
-if [ -n "$defs" ]; then printf "$defs" | cat - bots/$name/src/params.h > bots/$name/src/params.tmp && mv bots/$name/src/params.tmp bots/$name/src/params.h; fi
+if [ -n "$defs" ]; then printf "%b" "$defs" | cat - bots/$name/src/params.h > bots/$name/src/params.tmp && mv bots/$name/src/params.tmp bots/$name/src/params.h; fi
 echo "bots/$name ready"

@@ -1,10 +1,12 @@
 // Generate a diverse, symmetric, connectivity-checked map pool for local testing.
-// Usage: node gen.mjs <outDir> <count> [seed] [namePrefix]
+// Usage: node gen.mjs <outDir> <count> [seed] [namePrefix] [style: mixed|official]
+// 'official' mimics the published 2026a maps seen in ladder summaries: lines of 3 wolves (66 gems),
+// rows of 3-6 gem clusters (72-144), elk packs, gold rows, mixed packs and a shared central altar.
 import fs from 'node:fs';
 import path from 'node:path';
 import { loadEngine, Builder, SYM, CAMP } from './engine.mjs';
 
-const [outDir = 'maps', countArg = '24', seedArg = '1', prefix = ''] = process.argv.slice(2);
+const [outDir = 'maps', countArg = '24', seedArg = '1', prefix = '', style = 'mixed'] = process.argv.slice(2);
 let seed = Number(seedArg) >>> 0 || 1;
 const rnd = () => { seed ^= seed << 13; seed >>>= 0; seed ^= seed >>> 17; seed ^= seed << 5; seed >>>= 0; return seed / 4294967296; };
 const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
@@ -76,16 +78,41 @@ function makeMap(E, idx, opts = {}) {
     for (const [x, y] of cells) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (inb(x + dx, y + dy) && at(x + dx, y + dy) === 0) setBoth(x + dx, y + dy, 7);
     return true;
   };
+  // Straight cardinal line of camps (types cycle through `types`), as on the official maps.
+  const placeLine = (types, n, minR = 2) => {
+    for (let t = 0; t < 400; t++) {
+      const [dx, dy] = pick([[1, 0], [0, 1]]);
+      const p = randHalfTile(50, (x, y) => clearAround(x, y, minR));
+      if (!p) continue;
+      const cells = [];
+      for (let k = 0; k < n; k++) cells.push([p[0] + dx * k, p[1] + dy * k]);
+      if (!cells.every(([x, y]) => inb(x, y) && x > 0 && y > 0 && x < w - 1 && y < h - 1 && at(x, y) === 0 && inHalfA(sym, w, h, x, y) && clearAround(x, y, 1))) continue;
+      cells.forEach(([x, y], k) => { setBoth(x, y, 5); camps.push([types[k % types.length], x, y]); });
+      for (const [x, y] of cells) for (let ey = -1; ey <= 1; ey++) for (let ex = -1; ex <= 1; ex++) if (inb(x + ex, y + ey) && at(x + ex, y + ey) === 0) setBoth(x + ex, y + ey, 7);
+      return true;
+    }
+    return false;
+  };
   const scale = Math.sqrt(area / 2500);
-  const nGem = Math.max(1, Math.round(ri(2, 4) * scale));
-  const nGold = Math.round(ri(0, 2) * scale);
-  const nWolf = Math.max(1, Math.round(ri(2, 5) * scale));
-  const nElk = Math.round(ri(0, 3) * scale);
+  if (style === 'official') {
+    const k = Math.max(1, Math.round(scale * 1.2));
+    for (let i = 0; i < k; i++) placeLine([CAMP.wolf], 3);                       // 66 gems, 60 dps
+    for (let i = 0; i < Math.max(1, Math.round(k * 0.7)); i++) placeLine([CAMP.gem], ri(3, 6)); // 72-144 gems
+    for (let i = 0; i < Math.round(k * 0.6); i++) placeLine([CAMP.elk], ri(2, 3)); // 72-108 gems
+    for (let i = 0; i < Math.round(k * 0.6); i++) placeLine([CAMP.gold], ri(2, 3)); // gold only
+    for (let i = 0; i < Math.round(k * 0.5); i++) placeLine([CAMP.gem, CAMP.wolf], 4); // mixed 92
+    for (let i = 0; i < Math.round(k * 1.5); i++) placeGroup(CAMP.wolf, 1);          // singles 22
+    for (let i = 0; i < Math.round(k * 0.8); i++) placeGroup(CAMP.elk, 1);           // singles 36
+  }
+  const nGem = style === 'official' ? 0 : Math.max(1, Math.round(ri(2, 4) * scale));
+  const nGold = style === 'official' ? 0 : Math.round(ri(0, 2) * scale);
+  const nWolf = style === 'official' ? 0 : Math.max(1, Math.round(ri(2, 5) * scale));
+  const nElk = style === 'official' ? 0 : Math.round(ri(0, 3) * scale);
   for (let i = 0; i < nGem; i++) placeGroup(CAMP.gem, rnd() < 0.3 ? 2 : 1);
   for (let i = 0; i < nGold; i++) placeGroup(CAMP.gold, 1);
   for (let i = 0; i < nWolf; i++) placeGroup(CAMP.wolf, pick([1, 1, 2, 2, 3]));
   for (let i = 0; i < nElk; i++) placeGroup(CAMP.elk, pick([1, 1, 2]));
-  if (opts.monolith ?? rnd() < 0.6) {
+  if (opts.monolith ?? (style !== 'official' && rnd() < 0.6)) {
     // near the centre, on our half
     placeGroup(CAMP.monolith, 1, 2, (x, y) => {
       const [mx, my] = mirror(sym, w, h, x, y); return Math.max(Math.abs(mx - x), Math.abs(my - y)) <= Math.max(8, Math.min(w, h) / 4);

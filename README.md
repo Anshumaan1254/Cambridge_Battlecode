@@ -9,21 +9,25 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/ENGINE_FACTS.md](docs/ENGINE_FACTS.md) | every rule we verified on the real engine (with evidence) and fuel costs |
 | [docs/HLD.md](docs/HLD.md) | architecture: modules, turn pipeline, data model, navigation, comms, fuel budget |
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams and paste results back so the bot can be re-tuned |
+| [docs/LADDER_LOSSES.md](docs/LADDER_LOSSES.md) | round 1 of that loop: why we lost five ladder matches, the opponent's playbook, every fix and its measured effect |
 
-## Results (local, 67 maps × both sides = 134 games per row)
+## Results (local)
 
-| Opponent | `legend` win rate |
+Round 2 (after the ladder-loss analysis, [docs/LADDER_LOSSES.md](docs/LADDER_LOSSES.md)); 219 maps × both
+sides = 438 games per row unless noted. `_oppR` is a replica of the ladder opponent that beat us.
+
+| Opponent | Win rate |
 |---|---|
-| starter bot (`bots/starter-cpp`) | 100% |
-| deathball archetype (all five together) | 100% |
-| early-rush archetype (deathball invade for 160 rounds) | 88% |
-| aggressive archetype | 86% |
-| passive farmer archetype | 85% |
-| first version of this bot (v1) | 63% |
-| previous commit (v4) | 56% |
-| unopposed | 1,000 gems in ~466 rounds on average |
+| round-1 `legend` (what lost on the ladder) | 73% (75% on official-style maps) |
+| `_oppR`, ladder-opponent replica | 60% (round-1 `legend` only manages 37% against it) |
+| `_opp2`, our logic with the opponent's draft | 68% |
+| teleport-island maps vs round-1 `legend` (6 games) | 5 / 6 |
+| unopposed, official-style maps | 1,000 gems in ~345 rounds (round 1: ~452) |
 
-Matches are deterministic; a full 128-game evaluation takes ~40 s on 4 cores.
+Round 1 (67 maps × both sides): 100% vs the starter bot and the deathball archetype, 85–88% vs rush,
+aggressive and passive archetypes.
+
+Matches are deterministic; release and debug builds give identical games.
 
 ## Ready-to-submit ZIP
 
@@ -55,6 +59,9 @@ tools/snapshot.sh _v4 25b39d0                      # previous release, for A/B
 ```
 
 The second map pool (40 maps) is reproducible: `node tools/mapgen/gen.mjs maps 40 991 s2_`.
+Official-style pools (3-wolf lines, elk groups with gem/gold clusters, gold columns; shaped by the ladder
+maps): `node tools/mapgen/gen.mjs maps 30 4242 o_ official` and `node tools/mapgen/gen.mjs maps 120 7777 o2_ official`.
+Ladder-opponent replica: `tools/variant.sh _oppR tribute_min=66 kite_min_ratio=0.f kite_max_kill=300.f --define "LEGEND_DRAFT 9,3,10,4,2"`.
 Island maps (camps behind walls, teleport-crystal test): `node tools/mapgen/island.mjs maps`.
 Real competition maps: `cambc maps pull` (needs network access to the platform).
 
@@ -66,6 +73,8 @@ bots/starter-cpp/   official starter bot (baseline)
 bots/idle/          does nothing: measures unopposed farming pace
 bots/probe-rules/   scripted rule probe for maps/zz_test (capture/tribute/recall timing, stuns, sleep, dash)
 bots/probe-fuel/    fuel cost of SDK helpers
+bots/probe-designs/ dumps every champion's stats, growth and abilities (range, modifier, cooldown)
+matches/ladder1/    the five lost ladder summaries (raw + converted)
 maps/               generated test maps (gen*), zz_test probe map
 tools/bench.py      parallel A-vs-B benchmark with summary
 tools/suite.sh      bench against the sparring panel
@@ -73,6 +82,8 @@ tools/tune.py       self-play parameter tuner
 tools/variant.sh    build a parameter/define variant of legend
 tools/snapshot.sh   freeze a past commit of legend as an opponent
 tools/analyze_match.py  report from a match statistics JSON (local or ladder)
+tools/raw_summary.py    convert a website-downloaded summary (numeric ids) into the named JSON
+tools/mapgen/replica.mjs  approximate rebuilds of ladder maps from summary coordinates
 tools/trace_stats.py    task-time breakdown from LEGEND_TRACE builds
 tools/mapgen/       symmetric map generator using the engine's MapBuilder
 ```

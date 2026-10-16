@@ -74,6 +74,22 @@ cambc run probe-rules probe-rules --map zz_test --rounds 140
 | The raw camp-group state call reports "unknown" for unseen groups (no leak) | Keep your own memory of timers |
 | Matches are deterministic for fixed bots and map | A/B tests need many maps, not repeats |
 
+## Champion designs (dumped with `bots/probe-designs`)
+
+| Fact | Consequence |
+|---|---|
+| **Every ability has an 8-round cooldown and every spell has range 4** (one cast per turn across both slots) | Spell damage per round = focus × modifier / 8 per spell; a caster at range 4 is out of every camp's range 3 |
+| Spell modifiers: Stellar 2.0 single + 1.4 area (radius 1); Tavi 2.2 stun-nuke; Cassi 2.0 + a 0-damage stun; Marcella 2.0; Ren 1.25 stun; Ryth 1.0 area stun; Willow 3.0 heal; Varg 2.5 shield for 5 rounds | At base focus (100) a kiting Stellar deals ~25 + 17.5 per camp hit per round: too slow for big groups until focus items stack |
+| Growth per item point: health 50–100, strength 3–5, focus 5–15 depending on champion | One Durability Emblem of Health (5 points) = +500 HP for Varg, +375 for Stellar, plus 10% less incoming damage |
+
+## Fuel exhaustion
+
+| Fact | Evidence |
+|---|---|
+| Running out of fuel **pauses** the bot; it resumes where it stopped at the start of its next turn (state is kept) | a fuel counter read inside init rose mid-function on a 100×97 map; the champion acted normally from round 2 |
+| Each exhaustion is logged as a `fuelExhausted` event in the match summary | ladder summaries showed one per champion on round 1 on 50×65, 71×71 and 80×80 maps |
+| First-turn init on a 100×97 map with 22 groups / 48 camps costs ~171k (two fields 44k, `camp_groups()` 19k, per-camp setup ~1.8k each) | instrumented `_tr3` build |
+
 ## Teleport crystal
 
 | Fact | Evidence |

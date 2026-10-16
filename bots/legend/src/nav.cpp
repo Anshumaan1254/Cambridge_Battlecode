@@ -1,4 +1,5 @@
 #include "nav.h"
+#include "params.h"
 
 Nav& nav()
 {
@@ -172,6 +173,39 @@ bool Nav::step_field(vec2& pos, const Field& field, int stop_at, const bc::bitbo
 		cand[static_cast<std::size_t>(n++)] = { key, d };
 	}
 	std::sort(cand.begin(), cand.begin() + n, [](const auto& a, const auto& b) { return a.first < b.first; });
+	// Every improving step is in danger: look for a detour that stays out of it before walking in.
+	if (P.avoid_detour && n > 0 && (cand[0].first & 3) == 3 && avoid && !avoid->is_set(pos) && !fallback_goals.is_empty() &&
+		bc::fuel_remaining() > 45000)
+	{
+		vec2 p2 = pos;
+		bc::bitboard dest;
+		dest.set(pos);
+		bc::bitboard walls2 = blocked | *avoid, visited;
+		walls2.set(pos, false);
+		const bc::bitboard g = fallback_goals & ~walls2;
+		if (!g.is_empty())
+		{
+			bc::distance_field f;
+			f.compute_to(walls2, g, dest, visited);
+			const auto dd = f.get(pos);
+			// Take the detour only if it is not much longer than the direct route.
+			if (dd != UNREACH && static_cast<int>(dd) <= here - stop_at + P.detour_extra)
+				for (auto d : f.next_moves_from(pos))
+				{
+					try
+					{
+						if (me.move(d))
+						{
+							pos = p2 + d;
+							return true;
+						}
+					}
+					catch (...)
+					{
+					}
+				}
+		}
+	}
 	for (int i = 0; i < n; ++i)
 	{
 		try

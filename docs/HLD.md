@@ -13,6 +13,7 @@ bots/legend/src/
   world.*      static map model + per-turn perception + memory (camp groups, enemies, allies)
   nav.*        lazy target-rooted distance fields, field stepping, dash, dynamic fallback search
   comms.*      8-byte shared-memory protocol (claims, help bit, one team alert)
+  learn.*      in-match online learning: fight posterior, race model, camp-model calibration, burst memory
   brain.*      decision pipeline and action execution for one champion
 ```
 
@@ -24,15 +25,19 @@ flowchart TD
   B -- yes --> I[init: static map, camp groups, home/away fields, ally handles, kit]
   B -- no --> C
   I --> C[read self: one sdk_champion record + cooldowns + gems + gold]
-  C --> D{dead?}
+  C --> LU[learner team update: deaths both sides, banking rates]
+  LU --> D{dead?}
   D -- yes --> S0[shop while dead] --> Z
   D -- no --> P[perceive: vision masks, enemies/allies, raw group states, camp HP]
-  P --> Q[build danger masks: enemy reach, awake camp range]
-  Q --> R{channelling?}
+  P --> Q[build danger masks: enemy reach, awake camp range, camp damage on our tile]
+  Q --> LO[learner observe: score last turn's calibration sample, attribute enemy burst]
+  LO --> R{channelling?}
   R -- yes --> RC[maybe cancel tribute vs lethal stunner] --> Z
   R -- no --> SH[shop on spawn / Tavi anywhere]
   SH --> SP[support spells: heal ally, self-shield] --> LK[altar locks]
-  LK --> F{combat?}
+  LK --> BF{bag at risk or bag wins?}
+  BF -- yes --> W
+  BF -- no --> F{combat?}
   F -- fight / flee --> W
   F -- no --> SF{safety: low HP?}
   SF -- retreat --> W
@@ -41,12 +46,34 @@ flowchart TD
   T -- no --> ST{shop trip?} -- yes --> W
   ST -- no --> AL{answer rally?} -- yes --> W
   AL -- no --> FM[farm: score groups, claim best, farm / capture / wait]
-  FM --> W[ward, prebuild 1-2 fields with spare fuel]
+  FM --> W[chip camps with idle spells, ward, prebuild 1-2 fields with spare fuel]
   W --> Z[write claim + help bit; end turn]
 ```
 
 Every decision step either uses the turn (returns true) or falls through, so the order is the priority:
-**fight/flee > survive > bank > shop > help allies > farm**.
+**bank a threatened or winning bag > fight/flee > survive > bank > shop > help allies > farm**.
+
+## Farm model (per group, per champion, every turn)
+
+```
+damage/round  = (basic × [Varg: live camps within 1] + spells/8 × [area: cluster] + Ren retaliation) × k_out
+incoming/round= camp damage × decay(camps die) − shield/8 − stun uptime, shared with an ally, × k_in
+plan A walk   = travel + wait + hp_left / team damage + 6 + heal trips × home round trip   (≤ 5 trips)
+plan B kite   = travel to range 4 + hp_left / spell damage + 9          (only when spells ≥ 80% of damage)
+score         = (gems × (1 + deny on enemy half) + 0.22 × gold) / (best plan + risk)
+```
+
+`k_out`, `k_in` are learned in the match (below). Heavy groups (≥ 2,500 HP or ≥ 40 damage per round) take
+two bodies. A task is abandoned only after `2 × eta + 60` rounds **without progress**.
+
+## In-match learning (`learn.*`)
+
+| Estimate | Input | Used for |
+|---|---|---|
+| fight posterior P(win exchange), Beta(3,3) | global alive flags of all champions (identical on every instance) | fight margin, enemy-half cost, deny bonus |
+| banking pace, both teams (EMA, ~150 rounds) | `global_submitted_gems` | projected finish: change gear when one team finishes 25% sooner |
+| `k_out`, `k_in` (decayed observed/predicted sums, pseudo-counts) | solo farming turns: group HP drop and our HP drop vs the model | farm kill time and heal-trip count |
+| burst per enemy (max one-round damage taken) | our HP drop minus camp damage, attributed to the strongest visible enemy within 5 | fight estimate and a veto on fights it can win in one round |
 
 ## Data model
 
@@ -58,7 +85,8 @@ Every decision step either uses the turn (returns true) or falls through, so the
 | `Ally` | per turn | alive, visible position/HP |
 | `Nav` | lazy cache | one `Field` per camp group (roots = its tiles) and per altar (roots = free neighbours) |
 | `Island` | static | groups unreachable on foot, launch/landing tiles for a crystal, field to the launch tile |
-| `Brain` | per champion | identity, kit, abilities, build order, current task/target, blacklist, last HP |
+| `Brain` | per champion | identity, kit, abilities, build order, current task/target, progress clock, blacklist, last HP, calibration sample |
+| `Learner` | per instance | team deaths, banking rates, calibration sums, per-enemy burst |
 
 ## Navigation
 
@@ -68,8 +96,10 @@ Every decision step either uses the turn (returns true) or falls through, so the
 - **Lazy, budgeted building.** At most 3 fields per turn and only while > 45k fuel remains; spare fuel
   at the end of a turn pre-builds fields for the nearest unmapped groups. Unbuilt targets use a
   Chebyshev × 1.25 estimate.
-- **Soft avoidance.** Enemy reach and awake-camp range are avoid masks: a step through them is taken only
-  if no other improving step exists.
+- **Avoidance with detours.** Enemy reach and awake-camp range are avoid masks. When every shortest
+  step enters one, a search treating it as walls looks for a detour at most 6 steps longer; only
+  without one do we step in. Enemy spells with one round of cooldown left count as ready, and spells
+  usable after a step reach 5.
 - **Dash** when it saves ≥ 2 steps (walls cannot be crossed, holes can).
 - **Fallback.** When visible units block every improving step, a dynamic `compute_to` search from the
   goal set routes around them (only with > 30k fuel left).
@@ -95,7 +125,7 @@ Currently a 4-byte header (`0xB7`, version, team size, flags). Champions recompu
 
 | Phase | Typical | Notes |
 |---|---|---|
-| first turn init | ~170k of 200k | two full fields, camp groups, ally handles |
+| first turn init | ~170k of 200k | two full fields, camp groups, ally handles; on maps with 20+ groups it overruns and the engine resumes it next round (one round lost) |
 | perception | 3–4k | masks + raw group states + nearby camp HP |
 | danger masks | ~1.5k | |
 | decision + movement | 10–45k | field builds dominate; capped |

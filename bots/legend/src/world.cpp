@@ -53,7 +53,9 @@ void World::init_static()
 
 	groups.clear();
 	int id = 0;
-	for (const auto& g : bc::map::camp_groups())
+	const auto all_groups = bc::map::camp_groups();
+	groups.reserve(all_groups.size()); // groups hold large bitboards: avoid reallocation copies on turn one
+	for (const auto& g : all_groups)
 	{
 		Group G;
 		G.handle = static_cast<std::uint32_t>(static_cast<bc::handle_camp_group_t>(g));

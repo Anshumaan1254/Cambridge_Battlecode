@@ -47,6 +47,16 @@ python3 tools/analyze_match.py matches/<MATCH_ID>.json --us teamA     # or teamB
 python3 tools/analyze_match.py matches/*.json --brief                 # many matches at once
 ```
 
+Summaries downloaded from the website use numeric ids (metrics, event kinds, champion types). Convert
+them first; the analyser reads the named form:
+
+```bash
+python3 tools/raw_summary.py matches/<MATCH>.json -o matches/<MATCH>.named.json
+python3 tools/analyze_match.py matches/<MATCH>.named.json
+```
+
+You can also just upload the raw JSON files in the chat, as for round 1 (docs/LADDER_LOSSES.md).
+
 The report gives: result and pace, both drafts, the gem timeline at fixed rounds, per-champion
 kills/deaths/gems/gold/damage/items, every death (round, place, killer, bag lost) and a diagnosis
 line that maps to tunables in `bots/legend/src/params.h`.
@@ -79,6 +89,10 @@ Losses are what matter most; one full loss report beats five win summaries.
 | deaths to camps | raise `camp_hp_reserve` / `retreat_hp` |
 | their draft keeps beating ours | add their composition as a forced-draft sparring bot and re-run the composition tournament |
 | a specific trick (locks, monolith, spawn-tile denial, invade timing) | code a counter, add the trick to a sparring archetype so it stays tested |
+
+Round 1's opponent is kept as a sparring bot: `_oppR` = our bot with their draft, health emblem,
+always-kite casters and 66-gem banking (`SRC=bots/legend tools/variant.sh _oppR tribute_min=66
+kite_min_ratio=0.f kite_max_kill=300.f --define "LEGEND_DRAFT 9,3,10,4,2"`).
 
 To reproduce an opponent's style locally, build an archetype from the closest parameters, e.g.:
 

@@ -1,6 +1,7 @@
 // Per-champion decision making: perceive, score tasks, then plan and execute one legal turn.
 #pragma once
 #include "comms.h"
+#include "learn.h"
 #include "nav.h"
 #include "params.h"
 #include "world.h"
@@ -40,7 +41,15 @@ private:
 	bool farm_group(Group& g);
 	bool capture_group(Group& g);
 	bool wait_group(Group& g);
-	float group_score(const Group& g, int& eta) const;
+	float group_score(const Group& g, int& eta, bool relaxed = false, bool* kite = nullptr) const;
+	float dps_vs_group(const Group& g) const; // calibrated by learner().k_out()
+	float dps_vs_group_raw(const Group& g) const;
+	float mitigated(float raw, int live) const;
+	void learn_observe();
+	float kite_dps(const Group& g) const;
+	bool kite_group(Group& g);
+	void chip_passing();
+	float incoming_per_round(const Group& g, int helpers) const;
 	bool go_home();
 	// Teleport-crystal islands
 	float island_score(int i) const;
@@ -97,6 +106,7 @@ private:
 	bc::bitboard camp_danger; // tiles in range of awake camps
 	bc::bitboard alert_zone;  // area an ally reported as dangerous (shared memory)
 	bool enemy_near = false;
+	float camp_in = 0;		  // damage per round awake camps can deal to our tile
 
 	// game-state modulated thresholds (recomputed each turn from P and the scoreboard)
 	float fight_margin = 1.3f, fight_back_margin = 0.75f, deny_bonus = 0.55f, enemy_half_penalty = 10.f;
@@ -105,6 +115,14 @@ private:
 
 	// memory
 	int task = T_NONE, task_group = -1, task_since = 0;
+	bool task_kite = false; // farming the task group from range 4 with spells only
+	float task_hp = 0;		// task group's health when last checked (progress detection)
+	// calibration sample taken this turn, scored at the start of the next one
+	int cal_round = -1, cal_group = -1;
+	float cal_ghp = 0, cal_pred_out = 0, cal_pred_in = 0;
+	float camp_in_prev = 0;
+	int last_turn_round = -10;
+	void calibration_sample(const Group& g);
 	int ward_round = -100;
 	float last_hp = 0;
 	int last_hit_round = -100;

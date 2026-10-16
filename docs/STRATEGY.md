@@ -105,11 +105,21 @@ never missed.
 Score every camp group and run the best one (claims in shared memory stop duplicates):
 
 ```
-score = (gems + 0.22·gold) × (1 + 0.55 if enemy half) / (travel + wait + kill + 6 + trips·homeTrip + risk)
+score = (gems·(1 + 0.55 if enemy half) + 0.22·gold) / (travel + wait + kill + 6 + trips·homeTrip + risk)
 ```
 
-- *kill* = remaining HP (remembered — camps don't heal) / our damage per round.
-- *trips* = extra heal trips needed when the camps' damage over the kill time exceeds our health budget.
+- *kill* = remaining HP (remembered — camps don't heal) / our damage per round, where our damage counts
+  Varg's splash on every adjacent live camp, area spells on the whole cluster, Ren's retaliation, and an
+  ally on the same group; it is then corrected by what this champion actually dealt earlier in the match.
+- *trips* = extra heal trips (up to 5) needed when the camps' damage over the kill time exceeds our
+  health budget. Incoming damage decays as camps die, minus our shield and stun uptime, is shared with
+  an ally in front, and is corrected by what we actually took.
+- Heavy groups (3-wolf lines, elk groups) take two bodies; a champion with no positive target relaxes the
+  limits rather than idle. The ladder showed these groups hold most of the gems on official maps.
+- A target is dropped only when no damage has landed on it for `2·eta + 60` rounds (the old fixed timer
+  abandoned big groups at 95%).
+- Spells that would idle chip any live camp within range 4; kiting a whole group from range 4 is chosen
+  only once spells are ≥ 80% of our damage (focus items), because at base focus it is too slow.
 - *risk* adds rounds for the enemy half (scaled by how many enemies are alive), for recent enemy
   sightings, and halves the value if an enemy stands on the tile.
 - Respawning groups are worth going to if they come back within ~18 rounds of arrival; we wait next to
@@ -118,7 +128,10 @@ score = (gems + 0.22·gold) × (1 + 0.55 if enemy half) / (travel + wait + kill 
 
 ### Tribute
 Bank when carrying ≥34, when an altar is ≤5 steps away, before fights while carrying ≥10, when the
-team would reach 1,000, and in the endgame (round + distance + ticks + margin ≥ 2,000). Ten gems or fewer
+team would reach 1,000, and in the endgame (round + distance + ticks + margin ≥ 2,000). Within 200 gems of
+the goal (either team) the bag threshold shrinks linearly to 1, so the team's bags get banked even when
+no single bag would win (we lost 962–1000 holding 152 gems). With ≥20 gems and an enemy near but not
+yet in reach, banking comes before fighting. Ten gems or fewer
 are free; moving and starting a tribute happen in the same turn.
 
 ### Combat
@@ -137,6 +150,9 @@ advantage = (our HP / their DPS) / (their HP / our DPS)      (allies within 5, e
 - **Focus target** is team-consistent (gems + channelling bonus over HP, no distance term), so allies
   who see the same fight hit the same enemy. Stun first on channellers and melee divers.
 - Don't fight near their spawn unless the kill is certain; don't take even fights while carrying ≥40 gems.
+- Awake camps hitting our tile count on the enemy's side of the estimate.
+- An enemy that has already landed a one-round burst ≥ our health (remembered per enemy) is not fought
+  while its spells are up unless we kill it first.
 
 ### Scoreboard modes
 `global_submitted_gems()` shows both scores. Ahead by ≥150: tribute at ¾ of the normal bag and require
@@ -147,7 +163,8 @@ the value of their camps and drop the enemy-half risk, because a slow loss is st
 At start, find camp groups no walking path reaches, and a launch tile within range 3 of a free tile
 inside. Buy a crystal (10 gold) first when such islands exist; a champion near spawn compares the trip
 (walk + 4-turn channel + kills + captures) with its best walking target, teleports in, farms every group
-inside, then recalls out once nothing there is worth waiting for.
+inside, then recalls out once nothing there is worth waiting for, or as soon as its bag reaches 60
+gems (islands have no altar; the recall keeps the bag).
 
 ### Safety
 Retreat when health falls below 25% or below four rounds of the camp damage hitting us. Step out of
@@ -155,8 +172,10 @@ camp range first, recall only when nothing can hit us and spawn is > 5 steps awa
 
 ### Items
 Complete one emblem at a time: melee farmers **Jungle (strength)** first (30% less camp damage =
-fewer heal trips), then Monster, then Power. Tavi buys Monster/Power strength anywhere. Casters build
-Focus. Carry one 10-gold altar lock after the first emblem.
+fewer heal trips), then a **Durability Emblem of Health** (+5 health points, 10% less damage: it is what
+makes elk groups affordable, and every ladder opponent farmer buys one), then Monster, then Power. Tavi
+and the casters take the health emblem right after their first emblem. Carry one 10-gold altar lock
+after the first emblem. With ≥300 gold and nothing able to interrupt, recall to spend it.
 
 ### Team talk (8 bytes)
 Bytes 0–5: one per body, claimed group + "need help" bit. Bytes 6–7: one alert (tile + kind:
@@ -175,8 +194,16 @@ danger / rally / opportunity). Allies within ~9 tiles answer rally calls when he
 - **Empirical game theory for the draft.** Composition tournaments (round robins of forced drafts)
   form a payoff matrix; we pick the composition with the best worst-case and average, which is the
   robust answer to a simultaneous, duplicate-allowed draft.
-- **Next steps** (see FEEDBACK_LOOP): behaviour cloning targets from top-team replays (their tribute
-  thresholds, fight timing, routes) and CMA-ES over the full parameter vector once ladder data exists.
+- **In-match online learning** (`learn.cpp`, see HLD): a Bayesian fight record (Beta posterior over
+  exchanges, from global death events) moves the fight margin and the enemy-half cost; a banking-pace
+  model projects both finish rounds and switches between protecting a lead and taking risks; each
+  champion calibrates its camp damage model (dealt and taken) against what happens; each enemy's real
+  burst is remembered. All deterministic and cheap, so it fits the fuel budget.
+- **Learning from ladder losses.** Five lost matches were dissected (docs/LADDER_LOSSES.md); the
+  opponent's behaviour became a sparring bot (`_oppR`) that reproduces the ladder result against the old
+  bot, and every fix was kept or dropped by A/B benchmarks against it.
+- **Python was considered and rejected** for the bot: measured, it has ~15× less usable compute per
+  turn than C++ (a bare 1,000-step loop costs 71% of a Python turn).
 
 ## 6. Measured results (current bot)
 
@@ -200,7 +227,8 @@ official map pool against ladder-derived opponents (FEEDBACK_LOOP.md).
 
 ## 7. Where this could be wrong
 
-- **Map pool.** Our generator is a guess at the official maps. Re-run the composition tournament
+- **Map pool.** Our generator is a guess at the official maps, now shaped by the five ladder maps
+  (3-wolf lines, elk groups with gem/gold clusters, gold columns near spawn: `gen.mjs ... official`). Re-run the composition tournament
   and the tuner on the real pool (`cambc maps pull`) as soon as you have it.
 - **Top teams may fight better than our archetypes.** If ladder reports show us losing fights we
   "should" win, raise `fight_margin`, and look at the death list in the match report.

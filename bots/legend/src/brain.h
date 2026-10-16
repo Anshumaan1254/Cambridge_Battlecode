@@ -33,6 +33,7 @@ private:
 	bool combat();
 	bool safety();
 	bool tribute(bool force);
+	bool on_the_way(int altar) const;
 	bool shop_trip();
 	bool respond_to_alert();
 	void farm();
@@ -41,6 +42,11 @@ private:
 	bool wait_group(Group& g);
 	float group_score(const Group& g, int& eta) const;
 	bool go_home();
+	// Teleport-crystal islands
+	float island_score(int i) const;
+	bool island_task(int i);
+	bool inside_island() const;
+	int tp_island = -1;
 
 	// combat helpers
 	float camp_dps() const;
@@ -91,6 +97,11 @@ private:
 	bc::bitboard camp_danger; // tiles in range of awake camps
 	bc::bitboard alert_zone;  // area an ally reported as dangerous (shared memory)
 	bool enemy_near = false;
+
+	// game-state modulated thresholds (recomputed each turn from P and the scoreboard)
+	float fight_margin = 1.3f, fight_back_margin = 0.75f, deny_bonus = 0.55f, enemy_half_penalty = 10.f;
+	int tribute_min = 34;
+	void update_mode();
 
 	// memory
 	int task = T_NONE, task_group = -1, task_since = 0;

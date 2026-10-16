@@ -36,6 +36,11 @@ struct Params
 
 	// Team style: 0 = spread farming with claims, 1 = deathball (all follow the lowest-index living ally)
 	int style = 0;
+	int deathball_until = 0; // archetype knob: play deathball until this round (early rush)
+
+	// Scoreboard-aware play: ahead by `lead` → safer; enemy close to winning and ahead → riskier
+	int lead = 150;
+	int desperate_at = 650;
 
 	// Aggression
 	float steal_hp_frac = 0.55f; // need this health fraction to farm on the enemy half

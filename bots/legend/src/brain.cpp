@@ -95,9 +95,20 @@ void Brain::init()
 	build = build_for(type);
 	auto& W = world();
 	W.init_static();
+	W.find_islands();
 	W.init_units();
 	blacklist.assign(W.groups.size(), -1);
 	nav().init();
+	// Stunners act first within our team so their stun lands before allies (and later enemies) act;
+	// healers act last so they see the damage of the round. Takes effect from the next round.
+	try
+	{
+		const int prio = (kit.cc >= 0 || kit.aoe_stuns) ? 30 : (kit.heal >= 0 ? 5 : 20);
+		bc::self().set_priority(prio);
+	}
+	catch (...)
+	{
+	}
 	comms().bodies = static_cast<int>(W.allies.size());
 	inited = true;
 }
@@ -161,6 +172,7 @@ void Brain::turn()
 
 	shop();
 	nav().new_turn();
+	update_mode();
 
 	support_spells();
 	use_locks();
@@ -222,6 +234,21 @@ void Brain::shop()
 	const bool remote = type == CT::tavi;
 	if (!on_spawn && alive && !remote)
 		return;
+	// A teleport crystal opens uncontested island camps; it is cheap, buy it first.
+	if ((on_spawn || !alive) && !W.islands.empty() && gold >= 10)
+	{
+		try
+		{
+			if (me.consumables()[bc::consumable_type::tp_crystal].count() == 0)
+			{
+				me.buy(bc::consumable_type::tp_crystal);
+				gold -= 10;
+			}
+		}
+		catch (...)
+		{
+		}
+	}
 	while (build_idx < build.size() && gold >= 30)
 	{
 		const I item = build[build_idx];
@@ -278,8 +305,13 @@ void Brain::build_danger()
 		const int age = round - e.seen_round;
 		if (age > P.threat_memory)
 			continue;
-		int reach = e.kit.attack_range + (e.kit.ranged ? 0 : 1) + (e.kit.dash >= 0 ? 2 : 0);
-		if (e.kit.dmg >= 0 || e.kit.cc >= 0 || e.kit.aoe >= 0)
+		// Cooldowns are known while visible; an unseen enemy is assumed to have everything ready.
+		const bool fresh = age == 0;
+		const bool dash_up = e.kit.dash >= 0 && (!fresh || e.ready(e.kit.dash));
+		const bool spell_up = (e.kit.dmg >= 0 && (!fresh || e.ready(e.kit.dmg))) || (e.kit.cc >= 0 && (!fresh || e.ready(e.kit.cc))) ||
+			(e.kit.aoe >= 0 && (!fresh || e.ready(e.kit.aoe)));
+		int reach = e.kit.attack_range + (e.kit.ranged ? 0 : 1) + (dash_up ? 2 : 0);
+		if (spell_up)
 			reach = std::max(reach, 4);
 		reach += age;
 		danger.draw_chebyshev(e.pos, static_cast<float>(reach));
@@ -659,9 +691,15 @@ bool Brain::combat()
 	for (auto* e : E)
 	{
 		their_hp += e->hp;
-		their_dps += e->str + e->focus * best_mod(e->kit) / 4.f;
+		// Sustained damage plus whatever burst is actually off cooldown right now.
+		their_dps += e->str + e->focus * best_mod(e->kit) / 8.f + e->burst() / 3.f;
 	}
-	float our_hp = hp, our_dps = str + focus * best_mod(kit) / 4.f;
+	float my_burst = 0;
+	if (ready(kit.dmg)) my_burst = std::max(my_burst, focus * kit.dmg_mod);
+	if (ready(kit.cc)) my_burst = std::max(my_burst, focus * kit.cc_mod);
+	if (ready(kit.aoe)) my_burst = std::max(my_burst, focus * kit.aoe_mod);
+	if (ready(kit.reset)) my_burst = std::max(my_burst, str);
+	float our_hp = hp, our_dps = str + focus * best_mod(kit) / 8.f + my_burst / 3.f;
 	int allies_near = 0;
 	for (const auto& a : W.allies)
 		if (a.handle != self && a.alive && a.visible && cheb(a.pos, pos) <= 5)
@@ -701,16 +739,16 @@ bool Brain::combat()
 	// Can we actually get away? Melee enemies move and hit in one turn; ranged ones must stop to shoot.
 	bool chased_by_melee = false;
 	for (auto* e : E)
-		if (!e->kit.ranged && cheb(pos, e->pos) <= 3 + (e->kit.dash >= 0 ? 2 : 0))
+		if (!e->kit.ranged && cheb(pos, e->pos) <= 3 + (e->ready(e->kit.dash) ? 2 : 0))
 			chased_by_melee = true;
 	const bool can_escape = !chased_by_melee || ready(kit.dash);
 
 	bool fight = false;
 	if (killable && adv >= 0.5f)
 		fight = true;
-	else if (adv >= P.fight_margin)
+	else if (adv >= fight_margin)
 		fight = true;
-	else if (in_reach && adv >= P.fight_back_margin)
+	else if (in_reach && adv >= fight_back_margin)
 		fight = true;
 	else if (in_reach && !can_escape && adv >= P.cornered_margin)
 		fight = true;
@@ -849,6 +887,50 @@ bool Brain::safety()
 	return go_home();
 }
 
+void Brain::update_mode()
+{
+	fight_margin = P.fight_margin;
+	fight_back_margin = P.fight_back_margin;
+	deny_bonus = P.deny_bonus;
+	enemy_half_penalty = P.enemy_half_penalty;
+	tribute_min = P.tribute_min;
+	const int ours = static_cast<int>(bc::global_submitted_gems(team::ally));
+	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
+	if (ours - theirs >= P.lead)
+	{
+		// Ahead: protect the lead. Bank smaller bags, take only clearly winning fights.
+		fight_margin += 0.3f;
+		tribute_min = std::max(16, tribute_min * 3 / 4);
+	}
+	else if (theirs >= P.desperate_at && theirs - ours >= P.lead / 2)
+	{
+		// They are close to winning: steal, hunt carriers, accept closer fights.
+		fight_margin = std::max(0.9f, fight_margin - 0.3f);
+		fight_back_margin = std::max(0.55f, fight_back_margin - 0.15f);
+		deny_bonus += 0.6f;
+		enemy_half_penalty *= 0.4f;
+	}
+}
+
+bool Brain::on_the_way(int altar) const
+{
+	// Bank when the altar costs at most two extra steps on the way to our current target.
+	if (task_group < 0)
+		return false;
+	auto& N = nav();
+	const auto& gf = N.group_fields[static_cast<std::size_t>(task_group)];
+	const auto& af = N.altar_fields[static_cast<std::size_t>(altar)];
+	if (!gf.ready || !af.ready)
+		return false;
+	const auto& g = world().groups[static_cast<std::size_t>(task_group)];
+	int altar_to_group = BIG;
+	for (auto t : g.tiles)
+		altar_to_group = std::min(altar_to_group, af.get(t));
+	const int direct = gf.get(pos);
+	const int via = af.get(pos) + altar_to_group;
+	return direct < BIG && via < BIG && via - direct <= 2;
+}
+
 bool Brain::tribute(bool force)
 {
 	if (gems == 0)
@@ -862,7 +944,8 @@ bool Brain::tribute(bool force)
 	const bool endgame = round + dist + ticks + P.endgame_margin >= static_cast<int>(bc::constants::max_rounds);
 	const bool winning = bc::global_submitted_gems(team::ally) + gems >= bc::constants::winning_gems;
 	const bool risky = enemy_near && static_cast<int>(gems) >= P.tribute_risky;
-	const bool want = force || endgame || winning || risky || static_cast<int>(gems) >= P.tribute_min || dist <= P.tribute_near;
+	const bool want = force || endgame || winning || risky || static_cast<int>(gems) >= tribute_min || dist <= P.tribute_near ||
+		(static_cast<int>(gems) >= 10 && on_the_way(a));
 	if (!want)
 		return false;
 	task = T_TRIBUTE;
@@ -995,8 +1078,8 @@ float Brain::group_score(const Group& g, int& eta) const
 		const float risk = static_cast<float>(alive_enemies) / std::max<std::size_t>(1, W.enemies.size());
 		if (hp < P.steal_hp_frac * max_hp && risk > 0)
 			return -1;
-		value *= 1.f + P.deny_bonus;
-		time += P.enemy_half_penalty * risk;
+		value *= 1.f + deny_bonus;
+		time += enemy_half_penalty * risk;
 		if (round - g.seen_round > 60)
 			value *= P.unknown_discount;
 	}
@@ -1009,10 +1092,78 @@ float Brain::group_score(const Group& g, int& eta) const
 	return value / std::max(1.f, time);
 }
 
+bool Brain::inside_island() const { return world().dist_home(pos) >= BIG; }
+
+float Brain::island_score(int i) const
+{
+	auto& W = world();
+	const Island& isl = W.islands[static_cast<std::size_t>(i)];
+	auto& C = comms();
+	for (int k = 0; k < static_cast<int>(W.allies.size()) && k < 6; ++k)
+		if (k != W.my_index && W.allies[static_cast<std::size_t>(k)].alive)
+			for (int gid : isl.groups)
+				if (C.claim[static_cast<std::size_t>(k)] == gid)
+					return -1; // an ally is on it
+	float value = 0, hp_total = 0;
+	for (int gid : isl.groups)
+	{
+		const Group& g = W.groups[static_cast<std::size_t>(gid)];
+		if (g.st == ST_RESPAWN && g.ready_round - round > 30)
+			continue;
+		value += static_cast<float>(g.gems) + P.gold_value * static_cast<float>(g.gold);
+		hp_total += g.st == ST_REWARD ? 0.f : g.hp_total;
+	}
+	if (value <= 0)
+		return -1;
+	const int to_launch = isl.to_launch.get(pos);
+	if (to_launch >= BIG)
+		return -1;
+	const float time = static_cast<float>(to_launch) + 4.f + hp_total / std::max(10.f, camp_dps()) +
+		6.f * static_cast<float>(isl.groups.size()) + 6.f;
+	return value / time;
+}
+
+bool Brain::island_task(int i)
+{
+	auto& W = world();
+	Island& isl = W.islands[static_cast<std::size_t>(i)];
+	auto& me = bc::self();
+	std::uint32_t crystals = 0;
+	try
+	{
+		crystals = me.consumables()[bc::consumable_type::tp_crystal].count();
+	}
+	catch (...)
+	{
+	}
+	if (crystals == 0)
+		return false;
+	tp_island = i;
+	task = T_FARM;
+	task_group = isl.groups.front();
+	if (pos != isl.launch)
+	{
+		bc::bitboard goal;
+		goal.set(isl.launch);
+		after_move(Nav::step_field(pos, isl.to_launch, 0, &danger, kit.dash, can_move, goal));
+		if (pos != isl.launch)
+			return true;
+	}
+	try
+	{
+		me.consumables()[bc::consumable_type::tp_crystal].use(isl.land);
+	}
+	catch (...)
+	{
+		tp_island = -1;
+	}
+	return true;
+}
+
 void Brain::farm()
 {
 	auto& W = world();
-	if (P.style == 1)
+	if (P.style == 1 || round < P.deathball_until)
 	{
 		int leader = -1;
 		for (int i = 0; i < static_cast<int>(W.allies.size()); ++i)
@@ -1060,6 +1211,43 @@ void Brain::farm()
 			s *= P.hysteresis;
 		if (s > best_s)
 			best_s = s, best = g.id, best_eta = eta;
+	}
+	// Islands: from near home, compare a crystal trip with the best walking target.
+	if (!W.islands.empty() && !inside_island() && W.dist_home(pos) <= 4)
+	{
+		int bi = -1;
+		float bs = best_s;
+		for (int i = 0; i < static_cast<int>(W.islands.size()); ++i)
+		{
+			const float s = island_score(i);
+			if (s > bs)
+				bs = s, bi = i;
+		}
+		if (bi >= 0 && island_task(bi))
+			return;
+	}
+	if (tp_island >= 0 && !inside_island() && W.dist_home(pos) > 4)
+	{
+		// Mid-way to the launch tile: keep going.
+		if (island_task(tp_island))
+			return;
+	}
+	if (inside_island() && best < 0)
+	{
+		// Island cleared or respawning: recall out (keeps the bag) once nothing can hit us.
+		tp_island = -1;
+		if (!in_awake_camp_range() && !danger.is_set(pos))
+		{
+			try
+			{
+				bc::self().recall();
+				task = T_HOME;
+				return;
+			}
+			catch (...)
+			{
+			}
+		}
 	}
 	if (best < 0)
 	{

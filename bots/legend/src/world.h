@@ -44,6 +44,16 @@ struct Group
 	bool enemy_on_tile = false;
 };
 
+// Camp groups that cannot be reached on foot from our spawn, with a teleport-crystal entry (range 3).
+struct Island
+{
+	std::vector<int> groups;
+	vec2 launch{ -1, -1 }, land{ -1, -1 };
+	int launch_home = BIG; // steps from our spawn to the launch tile
+	int gems = 0;
+	Field to_launch;	   // field rooted at the launch tile (built at init)
+};
+
 struct Enemy
 {
 	std::optional<bc::champion> ch; // built lazily on first sight (cheap only while visible)
@@ -58,6 +68,18 @@ struct Enemy
 	std::uint32_t gems = 0;
 	std::int32_t state = 0;
 	bool channeling = false, tributing = false, recalling = false;
+	std::array<int, 2> cd{ 0, 0 }; // ability cooldowns, readable while visible
+	bool ready(int slot) const { return slot >= 0 && cd[static_cast<std::size_t>(slot)] <= 0; }
+	// Damage it can add this turn on top of a basic attack (best ready spell or a reset swing).
+	float burst() const
+	{
+		float b = 0;
+		if (ready(kit.dmg)) b = std::max(b, focus * kit.dmg_mod);
+		if (ready(kit.cc)) b = std::max(b, focus * kit.cc_mod);
+		if (ready(kit.aoe)) b = std::max(b, focus * kit.aoe_mod);
+		if (ready(kit.reset)) b = std::max(b, str);
+		return b;
+	}
 };
 
 struct Ally
@@ -80,7 +102,10 @@ struct World
 	std::vector<vec2> altars;
 	std::vector<std::vector<vec2>> altar_approach;
 	std::vector<Group> groups;
+	std::vector<Island> islands;
+	std::vector<int> island_of; // per group: island index or -1
 	Field home; // steps from our spawn
+	bc::bitboard home_reach; // tiles reachable on foot from our spawn
 	Field away; // steps from enemy spawn
 
 	std::vector<Ally> allies;
@@ -92,6 +117,7 @@ struct World
 	bc::bitboard enemy_locks; // visible enemy altar locks
 
 	void init_static();
+	void find_islands();
 	void init_units();
 	void perceive(vec2 me);
 	int group_at(vec2 p) const;

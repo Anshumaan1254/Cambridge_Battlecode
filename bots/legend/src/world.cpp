@@ -46,6 +46,7 @@ void World::init_static()
 	bc::bitboard visited;
 	home.f.compute(walls, ally_spawn, visited);
 	home.ready = true;
+	home_reach = visited;
 	const bc::bitboard enemy_walls = terrain | bc::map::altars() | ally_spawn;
 	away.f.compute(enemy_walls, enemy_spawn, visited);
 	away.ready = true;
@@ -92,6 +93,63 @@ void World::init_static()
 		G.hp_total = G.max_hp;
 		G.ours = G.d_ally <= G.d_enemy;
 		groups.push_back(std::move(G));
+	}
+}
+
+void World::find_islands()
+{
+	islands.clear();
+	island_of.assign(groups.size(), -1);
+	const auto& camp_tiles_all = [&] {
+		bc::bitboard m;
+		for (const auto& g : groups)
+			m |= g.mask;
+		return m;
+	}();
+	for (auto& g : groups)
+	{
+		if (g.d_ally < BIG || island_of[static_cast<std::size_t>(g.id)] >= 0 || bc::fuel_remaining() < 60000)
+			continue;
+		// Region reachable from this group on foot (the island interior).
+		bc::distance_field f;
+		bc::bitboard visited;
+		f.compute(walls, g.mask, visited);
+		Island isl;
+		for (auto& h : groups)
+			if (h.d_ally >= BIG && visited.is_set(h.tiles.front()))
+			{
+				isl.groups.push_back(h.id);
+				isl.gems += h.gems;
+			}
+		if (isl.groups.empty())
+			continue;
+		// Landing tiles: free interior tiles. Launch tiles: walkable from home within Chebyshev 3 of one.
+		const bc::bitboard interior = visited & ~walls & ~camp_tiles_all;
+		const auto inner = interior.positions();
+		bc::bitboard near_inner;
+		for (auto t : inner)
+			near_inner.draw_chebyshev(t, 3.f);
+		const bc::bitboard launch_cand = near_inner & home_reach & ~walls & ~camp_tiles_all;
+		for (auto r : launch_cand.positions())
+		{
+			const int d = dist_home(r);
+			if (d < isl.launch_home)
+				isl.launch_home = d, isl.launch = r;
+		}
+		if (isl.launch_home < BIG)
+			for (auto t : inner)
+				if (cheb(t, isl.launch) <= 3 && (isl.land.x < 0 || cheb(t, isl.launch) < cheb(isl.land, isl.launch)))
+					isl.land = t; // nearest valid landing tile
+		if (isl.launch_home >= BIG)
+			continue;
+		bc::bitboard root;
+		root.set(isl.launch);
+		isl.to_launch.f.compute(walls, root, visited);
+		isl.to_launch.ready = true;
+		const int idx = static_cast<int>(islands.size());
+		for (int id : isl.groups)
+			island_of[static_cast<std::size_t>(id)] = idx;
+		islands.push_back(std::move(isl));
 	}
 }
 
@@ -184,6 +242,11 @@ void World::perceive(vec2 me)
 		std::uint32_t gems = 0;
 		if (bc::detail::sdk_champion_gems(e.handle, &gems) == 0)
 			e.gems = gems;
+		for (std::uint32_t slot = 0; slot < 2; ++slot)
+		{
+			std::int32_t c = 0;
+			e.cd[slot] = bc::detail::sdk_champion_cooldown(e.handle, slot, &c) == 0 ? c : 0;
+		}
 		e.seen_round = round;
 	}
 	for (auto& a : allies)

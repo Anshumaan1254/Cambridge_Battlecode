@@ -3,12 +3,36 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-17 17:15 UTC** (session 3). Start with **§00** below. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
+- Last updated: **2026-10-17 (session 4)**. Start with **§000**, then **§00** below. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
 - Competition: Cambridge Battlecode 2026a (CAMBC), 12 Oct to 18 Nov 2026. C++ bot compiled to wasm.
 - The submitted bot cannot be changed after submission and keeps nothing between matches. All "learning"
   is either offline (training parameters before submission) or in-match (adapting inside one game).
 
 ---
+
+## 000. SESSION 4 (from 2026-10-17 17:25 UTC, new container): read this first, then §00
+
+- Setup redone (§00 "How to resume"); full git history fetched (`git fetch --unshallow`: `make_sparring.sh` needs old commits).
+  Frozen baseline **`bots/_ST`** = current legend before session 4 (= shipped `legend_st` + 2 inert switches).
+- The user's audit is now in the repo: `docs/LADDER_AUDIT.md` (40 ladder games of `_L0`). Already done from it in session 3:
+  phantom support, win bank, cast before walking, objective plan, ES best-vector fix. Left: opening fuel, channel
+  bookkeeping, capture resets, danger detours, opening income on eight, pair risk, contest/monolith objective.
+- `bank_first=0` decision: held-out pool 49.0 head-to-head (100 games), official-map pace 578 vs 585 but mixed
+  (pilgrimage -122, rushbait -48; monolith +24, collision +19, ambush +16, elkring +14). **Not shipped**; agent `pace` makes it route-aware.
+- `tools/sum.py [--maps] DIR...` (committed): all-map / official-map win rates per bench dir (replaces `/tmp/ev/sum.py`).
+- Agents running: **`side`** (Opus): official-map opening/side losses (collision side B, eight, contest, interlock);
+  **`pace`** (Sonnet): unopposed pace on slow official maps + route-aware bank_first. Rules: `experiments/wip/AGENT_RULES.md` (session-4 block).
+- Coordinator (main session), in `bots/legend` (not shipped yet):
+  - **Opening fuel**: init used up to ~320k fuel against the 200k first turn; 84 lost turns in rounds 1-6 over the 17
+    official maps (team A vs idle). **Memory allocation is what costs fuel**: an unreserved vector doubled a loop
+    (altar approach 36k -> 17k with `reserve`), exporting a 100x100 distance field cost ~25k, the dash-hole scan over every
+    tile cost 87k on lanes. Fixed: hole scan over hole tiles only, reserves, altar approach from one packed walls export,
+    `altar_contested` lazy (`World::contested`), `find_islands` deferred to a later turn (`defer_islands`). 84 -> 28 lost turns.
+  - **But** the first A/B of the fuel fix alone (`_fu` vs `_ST`, 56 maps) was **40.2 (comp 35.3)**, contest 0-1000 both sides
+    (unopposed it plays normally). Hypothesis: bodies used to start together at round 3; now light-init bodies leave
+    earlier than heavy ones and the team arrives staggered. Testing `start_round=3` (hold until round 3) and `defer_islands=0`.
+  - New switches (on in legend, under test): `capture_reset` (enemy on the group restarts the capture-recall clock),
+    `tribute_elapsed` (channel bookkeeping), `danger_detour` (step_field routes around danger instead of stepping in).
 
 ## 00. CURRENT POSITION (written 2026-10-17 17:10 UTC, session 3): read this first
 

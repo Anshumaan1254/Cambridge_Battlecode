@@ -47,6 +47,83 @@ python3 tools/rl/apply_params.py tune_out/es/best_params.json   # bake the learn
 in the space too, so training can also decide how much the in-match learners should be trusted (for
 example `pain_w = 0` switches the pain map off).
 
+### Training on your own machine (tools/rl/train_local.sh)
+
+`tools/rl/train_local.sh` runs the loop above on your own computer with one command. It sets up
+everything it needs, trains, validates the result and packs it into one archive to send back. It runs on
+Linux and macOS (on Windows, use WSL).
+
+```bash
+git pull                                     # the latest pushed bot (use a full clone, not --depth 1)
+tools/rl/train_local.sh                      # defaults: 16 generations, 4 antithetic pairs, all CPUs
+tools/rl/train_local.sh --resume --gens 6    # after an interruption: 6 more generations
+```
+
+**Prerequisites.** git and python3. The script installs numpy and `cambc==2.2.5` with `pip --user` if
+they are missing. It needs network access for that, and for the first `cambc build`, which downloads the
+wasm toolchain once. The bot was last verified on cambc 2.2.5; the script warns about any other version.
+The sparring panel is built from three older commits, so the clone must have their history.
+
+**The seven steps.** Each step is logged to the console and to `tune_out/es/console.txt`.
+
+| Step | What it does |
+|---|---|
+| 1. Prerequisites | Checks git and python3; installs numpy and cambc 2.2.5 if they are missing. |
+| 2. SDK and maps | `cambc init .` (C++) if `sdk/cpp` is missing, then `cambc maps pull` for the current official maps. Offline, it trains on the committed maps. |
+| 3. Opponents | `tools/make_sparring.sh` rebuilds the sparring panel (`_base`, `_v6`, `_r2`, `_hunt`, `_hunt2`, `_devci`). It also freezes the bot being trained into `bots/_self`, a self-play opponent. |
+| 4. Build and smoke test | Builds `legend` and plays one 300-round game against `_v6`, so a broken toolchain fails here, not after an hour. |
+| 5. Training | `tools/rl/es_train.py` on `tools/rl/space.json` (27 parameters). Each finished generation is saved to `tune_out/es/`. |
+| 6. Validation | Copies the bot to `bots/_es_best`, writes `best_params.json` into its `params.h`, and plays it against every opponent on every map, both sides. One `==` line per opponent goes to `tune_out/es/validation.txt`. |
+| 7. Archive | Writes `rl_results_<date>_<commit>.tar.gz` in the repo root. |
+
+The archive holds:
+
+- `meta.txt`: commit, branch, cambc version, host, CPUs, options, start and end time, and how many files
+  in `bots/legend/src` were uncommitted. A non-zero count means local edits were trained, so the commit
+  alone does not identify the bot.
+- `console.txt`, `validation.txt`, `log.txt`, `history.json` and `best_params.json`.
+- Any official maps the repo does not have yet (untracked `.map26a` files), so the next round can test on them.
+
+**Options.**
+
+| Option | Default | Meaning |
+|---|---|---|
+| `--gens N` | 16 | generations to run. With `--resume`, they are added to the saved ones. |
+| `--pop N` | 4 | antithetic pairs per generation (2N perturbations plus the mean are played) |
+| `--maps-per-gen N` | 8 | maps sampled per generation; every candidate plays the same ones |
+| `--jobs N` | all CPUs | parallel games (`nproc`, else `sysctl -n hw.ncpu`, else 4) |
+| `--opponents LIST` | `_v6,_hunt,_hunt2,_devci,_r2,_self` | comma-separated opponents |
+| `--maps GLOBS` | `maps/*.map26a`, `maps/ladder/`, `maps/comp/`, `maps/gold/` | comma-separated map globs. `maps/gold/` (gem-scarce test maps) is optional: a glob with no matches is simply empty. |
+| `--resume` | off | continue from `tune_out/es/history.json` |
+| `--validate-only` | off | skip step 5 and re-run steps 6 and 7 from the existing `best_params.json`. Steps 1 to 4 still run unless `--skip-setup` is given. |
+| `--skip-setup` | off | skip steps 1 to 4, when the SDK, the panel and the build are already in place |
+
+**Cost.** One generation plays `(2 × pop + 1) × maps-per-gen × opponents × 2` games. With the defaults that
+is 9 × 8 × 6 × 2 = **864 games per generation**. A game takes about 1 to 3 s on one core, so a generation
+takes about 4 to 11 min on 4 cores, and the 16 default generations about 1 to 3 hours. Validation plays
+every opponent on every map, both sides: 6 × 45 × 2 = 540 games on the committed maps (the `zz_test` probe map is
+skipped), about 2 to 7 min on 4 cores.
+
+**Notes.**
+
+- Training starts from the current values in `bots/legend/src/params.h`, so a `git pull` that changes them
+  changes the starting point.
+- A run without `--resume` moves the previous `history.json`, `best_params.json` and `log.txt` into
+  `tune_out/es/previous_<timestamp>/`.
+- `--resume` adds `--gens` generations to the saved ones, so after an interruption pass the number still
+  missing. Ctrl-C is safe: every finished generation is saved.
+- Each generation's reward moves with the 8 maps it sampled. Judge a run on the validation table and the
+  fixed panel, not on the training log.
+
+**Results.** Send the `rl_results_*.tar.gz` file back. Nothing is applied to `bots/legend` automatically (step 6 only
+tests a copy). To validate on a copy: `cp -r bots/legend bots/_es_user && python3 tools/rl/apply_params.py best_params.json --bot _es_user`
+(without `--bot` it writes into `bots/legend/src/params.h`; `--dry-run` only prints the values). The learned values are
+kept only if the copy beats the current build on the fixed panel.
+
+**Portability.** `tools/variant.sh` and the variant builder in `es_train.py` do their parameter
+substitutions in Python instead of GNU `sed -i`, so they also work on macOS. The script puts both pip `--user` script directories on the PATH
+(`~/.local/bin` on Linux, `~/Library/Python/<version>/bin` on macOS), with or without `--skip-setup`.
+
 ## 2. In-match online learning (`learn.h`, `learn.cpp`)
 
 Three learners run inside every game. All are cheap (a few hundred fuel per turn; the pain map decays every 8 rounds).
@@ -72,7 +149,8 @@ Exploration was measured, not assumed. A UCB1 bonus (`ucb_c x sqrt(ln N / (1 + p
 unplayed stances back to their priors (`prior_pull`) cost about 2 points over 540 games (77.6% vs 80.0%
 mean win rate on the 45-map panel; the learner switched off scored 79.4%). A game has only ~25 windows
 against one fixed opponent, so deliberately trying a worse stance costs more than it teaches; optimistic
-priors give enough exploration. Both knobs stay in the code at 0 and in the trainer's search space.
+priors give enough exploration. Both knobs stay in the code at 0. They were removed from the trainer's search space (`space.json`):
+both measured harmful, and both sat at their lower bound.
 Epsilon-greedy would be worse still for the same reason (random bad windows). One body (index 0, which runs every round even while dead) decides; the stance travels to the
 others in two spare shared-memory bits, so all bodies play the same stance.
 

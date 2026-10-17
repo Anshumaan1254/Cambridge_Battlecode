@@ -69,6 +69,19 @@ The second map pool (40 maps) is reproducible: `node tools/mapgen/gen.mjs maps 4
 Island maps (camps behind walls, teleport-crystal test): `node tools/mapgen/island.mjs maps`.
 Real competition maps: `cambc maps pull` (needs network access to the platform).
 
+### Train the bot yourself
+
+`tools/rl/train_local.sh` trains the parameters on your own machine with one command. It sets up the SDK,
+the sparring panel and a frozen copy of the bot, runs the evolution-strategies training, validates the result
+on every map and packs it into `rl_results_<date>_<commit>.tar.gz` to send back. Linux and macOS (WSL on
+Windows). A default run plays 864 games per generation and takes about 1 to 3 hours on 4 cores (less with more cores).
+
+```bash
+tools/rl/train_local.sh          # 16 generations; --gens, --jobs, --resume and --validate-only are described in the link
+```
+
+Steps, options, cost and how the results are used: [docs/LEARNING.md](docs/LEARNING.md#training-on-your-own-machine-toolsrltrain_localsh).
+
 ## Layout
 
 ```
@@ -82,6 +95,7 @@ maps/ladder/        12 real ladder maps rebuilt from replays (tools/replay/extra
 maps/comp/          6 official competition maps (SDK 2.1.6 map pool; the ones not already in maps/ladder)
 tools/replay/       replay decoder, readable match report, map extractor, ASCII map view, map features
 tools/rl/           offline RL: evolution-strategies trainer (es_train.py), search space, apply_params.py
+tools/rl/train_local.sh  one-command training on your own machine (see docs/LEARNING.md, section 1)
 tools/draft_tournament.py  composition round robins (forced drafts, same code) -> draft table
 tools/draft_model.py       map-aware draft model from a tournament (nearest training maps) -> draft_table.h
 tools/panel.sh      one summary line per sparring opponent

@@ -46,6 +46,9 @@ while [ $# -gt 0 ]; do
 	esac
 done
 
+# pip --user installs scripts in ~/.local/bin (Linux) or ~/Library/Python/<version>/bin (macOS).
+export PATH="$HOME/.local/bin:$(python3 -m site --user-base 2>/dev/null)/bin:$PATH"
+
 if [ -z "$JOBS" ]; then
 	JOBS=$( (nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4) | head -1)
 fi
@@ -62,7 +65,6 @@ if [ "$SKIP_SETUP" = 0 ]; then
 	command -v git >/dev/null || { echo "git is required" >&2; exit 1; }
 	command -v python3 >/dev/null || { echo "python3 is required" >&2; exit 1; }
 	python3 -c "import numpy" 2>/dev/null || python3 -m pip install --user numpy
-	export PATH="$HOME/.local/bin:$PATH"
 	if ! command -v cambc >/dev/null; then
 		python3 -m pip install --user "cambc==$CAMBC_VERSION"
 	fi
@@ -120,7 +122,7 @@ DIRTY=$(git status --porcelain -- bots/legend/src | wc -l | tr -d ' ')
 # 5. Training
 # -------------------------------------------------------------------------------------------------------------
 if [ "$VALIDATE_ONLY" = 0 ]; then
-	n_maps=$(python3 -c "import glob,sys;print(len({m for p in sys.argv[1].split(',') for m in glob.glob(p)}))" "$MAPS")
+	n_maps=$(python3 -c "import glob,os,sys;print(len({m for p in sys.argv[1].split(',') for m in glob.glob(p) if not os.path.basename(m).startswith('zz_')}))" "$MAPS")
 	n_opp=$(echo "$OPPS" | tr ',' '\n' | grep -c .)
 	games=$(( (2 * POP + 1) * MPG * n_opp * 2 ))
 	say "step 5/7: ES training, $GENS generations x $games games ($n_maps maps in the pool, $n_opp opponents, $JOBS parallel games)"

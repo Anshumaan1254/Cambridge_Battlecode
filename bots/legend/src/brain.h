@@ -84,9 +84,10 @@ private:
 	int trip_cost(const Group& g) const;		  // rounds to heal at spawn and come back to g
 	bool jungle_done() const;
 	bool durability_done() const;
+	bool monster_done() const;
 	void refresh_item_flags() const;
 	mutable std::size_t item_flags_idx = static_cast<std::size_t>(-1);
-	mutable bool jungle_ok = false, durability_ok = false;
+	mutable bool jungle_ok = false, durability_ok = false, monster_ok = false;
 	bool has_home = false; // Home emblem (faster recall); we never buy it, kept for the capture-recall timing
 
 	// combat helpers

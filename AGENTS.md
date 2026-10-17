@@ -15,8 +15,8 @@ running or unfinished, and what to do next, so a new agent can continue without 
 | Item | State |
 |---|---|
 | Bot | `bots/legend/src` (C++). Ready-to-upload bundle: `submissions/legend.zip` (rebuild after every change, section 3) |
-| Current legend | = `_r2` (fuel fixes, review fixes, reworked learner) + exploration off + refreshed draft values. Commits `4a3920d`, `aece821`, `564785f` |
-| Strength (45-map panel, 90 games per cell) | `_r2`: vs `_v6` 74%, `_hunt` 89%, `_hunt2` 94%, `_devci` 63%, `_base` 88%, `_r1` 57%. Learner without exploration: mean 80.0% (section 5) |
+| Current legend | = `_r2` (fuel fixes, review fixes, reworked learner) + exploration off + refreshed draft values + **the economy patch** (`experiments/patches/x_econ.patch`, merged Oct 17). Build log with every submitted zip: `submissions/BUILDS.md`; older zips in `submissions/history/` |
+| Strength (45-map panel, 90 games per cell) | economy patch on `_r2`: 60% head-to-head vs `_r2`, panel mean 79.1% (vs `_r2` 77.6%). Promoted legend vs `_v6` (12 ladder maps): 17/24, 0 faults, 1.8 lost turns per game. Full numbers in section 5 |
 | In flight | (1) Full-panel A/B of two finished prototypes, economy and spells, saved as patches in `experiments/patches/` (section 6). (2) A workflow building three more prototypes: decision maths, routes, ML fight model (local only, `bots/_x_math`, `bots/_x_route`, `bots/_x_ml`). (3) The parameter trainer (ES) has to be re-run on the final code (it died after 4 of 10 generations when the container restarted) |
 | Next | Merge the prototypes that win, re-run ES, re-validate, rebuild the zip, update README/STRATEGY tables, commit, push (section 8) |
 

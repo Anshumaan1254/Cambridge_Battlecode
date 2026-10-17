@@ -15,10 +15,123 @@ void rep(std::vector<I>& v, I it, int n)
 		v.push_back(it);
 }
 
+// Repeat a cycle of five-shard blocks n times (late-game raw stats; the list must never run out: a rich Ren
+// earned 3,058 gold in one r2 game and stopped buying at 2,100 with 948 gold left).
+void cycle(std::vector<I>& v, std::initializer_list<I> blocks, int n)
+{
+	for (int k = 0; k < n; ++k)
+		for (const I it : blocks)
+			rep(v, it, 5);
+}
+
 // Shard plans: five shards of a family complete its emblem; only the emblem grants the passive.
 std::vector<I> build_for(CT t)
 {
 	std::vector<I> v;
+	if (P.build_style == 2)
+	{
+		// Value-model builds (tools/analysis/item_value.py, calibrated on 36 r2 games). Every shard adds one point
+		// of its stat whatever the family, so the family only decides the emblem bonus:
+		//  - Bruiser (5 points + 1 of each other stat) beats Power (6 of one): the sixth point of a stat is worth
+		//    less than a first point of two others (log utility), at the same 150 gold.
+		//  - Passives are unique per family (they do not stack), so each is bought once.
+		//  - Ren and Stellar earn 1.3-1.6 gold per round (30% of team gold each): Treasure (+20% gold) pays for
+		//    itself ~2x over a 700-round game. The model puts it first; measured vs _v6, keeping r2's first emblem
+		//    and Treasure second won 21/24 (gems +9,385) against 19/24 (+8,623) for Treasure first.
+		//  - Cassi and Issac earn 0.6 gold per round (first emblem near round 400) and die together 6 times a
+		//    game: health with Durability / Jungle first (ci_health_first). It halves Cassi's own farming, but
+		//    the pair survives fights: vs _v6 it measured 19/24 wins against 16/24 with Monster first.
+		switch (t)
+		{
+		case CT::ren:
+			if (P.rich_treasure_first)
+				rep(v, I::treasure_shard_of_focus, 5);
+			else
+			{
+				// The first emblem lands near round 240 and sets the early pace: Ren tanks the packs, and the
+				// kill-time planner (incoming_on) accepts more of them with Jungle health.
+				rep(v, I::jungle_shard_of_health, 5);
+				rep(v, I::treasure_shard_of_focus, 5);
+			}
+			rep(v, I::monster_shard_of_focus, 5);
+			rep(v, I::bruiser_shard_of_focus, 5);
+			if (P.rich_treasure_first)
+				rep(v, I::jungle_shard_of_health, 5);
+			rep(v, I::bruiser_shard_of_focus, 5);
+			rep(v, I::durability_shard_of_health, 5);
+			cycle(v, { I::bruiser_shard_of_focus, I::bruiser_shard_of_focus, I::bruiser_shard_of_health }, 8);
+			break;
+		case CT::stellar:
+		case CT::prism:
+		case CT::tavi:
+			if (P.rich_treasure_first)
+			{
+				rep(v, I::treasure_shard_of_focus, 5);
+				rep(v, I::monster_shard_of_focus, 5);
+			}
+			else
+			{
+				rep(v, I::monster_shard_of_focus, 5);
+				rep(v, I::treasure_shard_of_focus, 5);
+			}
+			rep(v, I::bruiser_shard_of_focus, 5);
+			rep(v, I::durability_shard_of_health, 5);
+			cycle(v, { I::bruiser_shard_of_focus, I::bruiser_shard_of_focus, I::bruiser_shard_of_health }, 8);
+			break;
+		case CT::cassi:
+		case CT::willow:
+			if (P.ci_health_first)
+			{
+				rep(v, I::durability_shard_of_health, 5);
+				rep(v, I::jungle_shard_of_health, 5);
+				rep(v, I::bruiser_shard_of_health, 5);
+				rep(v, I::monster_shard_of_focus, 5);
+			}
+			else
+			{
+				// The r2 order without Treasure: damage first, survival second (measured weaker, kept for A/B).
+				rep(v, I::monster_shard_of_focus, 5);
+				rep(v, I::durability_shard_of_health, 5);
+			}
+			cycle(v, { I::bruiser_shard_of_focus, I::bruiser_shard_of_health }, 12);
+			break;
+		case CT::issac:
+			if (P.ci_health_first)
+			{
+				rep(v, I::durability_shard_of_health, 5);
+				rep(v, I::jungle_shard_of_health, 5);
+				rep(v, I::bruiser_shard_of_strength, 5);
+				rep(v, I::monster_shard_of_strength, 5);
+			}
+			else
+			{
+				rep(v, I::monster_shard_of_strength, 5);
+				rep(v, I::durability_shard_of_health, 5);
+				rep(v, I::jungle_shard_of_health, 5);
+			}
+			cycle(v, { I::bruiser_shard_of_strength, I::bruiser_shard_of_health }, 12);
+			break;
+		case CT::ryth:
+		case CT::marcella:
+			// Model margin over the r2 order is ~0 here: keep it, Bruiser for the raw stats.
+			rep(v, I::jungle_shard_of_health, 5);
+			rep(v, I::monster_shard_of_strength, 5);
+			rep(v, I::durability_shard_of_health, 5);
+			cycle(v, { I::bruiser_shard_of_strength, I::bruiser_shard_of_health }, 12);
+			break;
+		case CT::varg:
+		case CT::vendetta:
+		case CT::vesper_vale:
+			// Splash makes strength Varg's best stat (2.2x on packs): Jungle on strength, not health.
+			rep(v, I::monster_shard_of_strength, 5);
+			rep(v, I::treasure_shard_of_strength, 5);
+			rep(v, I::jungle_shard_of_strength, 5);
+			rep(v, I::durability_shard_of_health, 5);
+			cycle(v, { I::bruiser_shard_of_strength, I::bruiser_shard_of_strength, I::bruiser_shard_of_health }, 8);
+			break;
+		}
+		return v;
+	}
 	if (P.build_style == 1)
 	{
 		// Ladder-proven: survive first (Jungle health, Durability), farm faster (Monster), earn more (Treasure),
@@ -1514,14 +1627,16 @@ void Brain::refresh_item_flags() const
 	// for every camp group every turn).
 	if (item_flags_idx == build_idx)
 		return;
-	int j = 0, d = 0;
+	int j = 0, d = 0, m = 0;
 	for (std::size_t i = 0; i < build_idx && i < build.size(); ++i)
 	{
 		j += build[i] == I::jungle_shard_of_strength || build[i] == I::jungle_shard_of_health || build[i] == I::jungle_shard_of_focus;
 		d += build[i] == I::durability_shard_of_health || build[i] == I::durability_shard_of_strength || build[i] == I::durability_shard_of_focus;
+		m += build[i] == I::monster_shard_of_health || build[i] == I::monster_shard_of_strength || build[i] == I::monster_shard_of_focus;
 	}
 	jungle_ok = j >= 5;
 	durability_ok = d >= 5;
+	monster_ok = m >= 5;
 	item_flags_idx = build_idx;
 }
 
@@ -1535,6 +1650,12 @@ bool Brain::durability_done() const
 {
 	refresh_item_flags();
 	return durability_ok;
+}
+
+bool Brain::monster_done() const
+{
+	refresh_item_flags();
+	return monster_ok;
 }
 
 float Brain::dps_on(const Group& g) const
@@ -1556,6 +1677,9 @@ float Brain::dps_on(const Group& g) const
 	float d = base + spells / 8.f;
 	if (type == CT::ren && !kit.ranged)
 		d += bc::constants::passive_abilities::ren_retaliation_focus_ratio * focus * static_cast<float>(std::min(g.attackers, 3));
+	// The Monster emblem's 10% applies to every damage dealt to camps (the engine's strength does not include it).
+	if (P.monster_in_dps && monster_done())
+		d *= 1.1f;
 	return d;
 }
 

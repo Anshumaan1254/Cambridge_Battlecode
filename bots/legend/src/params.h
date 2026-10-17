@@ -53,7 +53,15 @@ struct Params
 	int endgame_margin = 12;   // extra rounds of slack for the final tribute
 	int endgame_alarm = 800;   // their score from which stopping their tributes overrides everything
 
-	int build_style = 1;	   // 0 = old farm builds, 1 = health/durability/treasure builds (ladder-proven)
+	int build_style = 2;	   // 0 = old farm builds, 1 = health/durability/treasure builds (ladder-proven),
+							   // 2 = value-model builds (tools/analysis/item_value.py): Bruiser over Power, early Treasure
+							   //     on the rich farmers, survival first on Cassi & Issac, builds that never run out
+	int rich_treasure_first = 0; // build_style 2: Ren and Stellar open with Treasure (1) or with r2's first emblem
+							   // (Ren Jungle health, Stellar Monster) and Treasure second (0); vs _v6 on the ladder
+							   // maps: 1 won 19/24 (gems +8,623), 0 won 21/24 (+9,385, deaths 441-670)
+	int ci_health_first = 1;   // build_style 2: Cassi & Issac buy health first (1) or Monster damage first (0);
+							   // vs _v6 on the ladder maps: 1 won 19/24 (gems +8,623, deaths 495-660), 0 won 16/24 (+3,449, 560-550)
+	int monster_in_dps = 1;	   // count the Monster emblem's +10% camp damage in the kill-time model
 
 	// Shopping and home trips (heal + shop + bank near spawn; recall makes them cheap)
 	int shop_gold = 150;	   // go home to shop at this much gold when home is close

@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-17 21:45 UTC (session 6)**. Rule from the user: update this file and push at every step. Start with **§00000** (session 6), then **§0000**, **§000**, **§00** below. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
+- Last updated: **2026-10-17 23:05 UTC (session 6)**. Rule from the user: update this file and push at every step. Start with **§00000** (session 6), then **§0000**, **§000**, **§00** below. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
 - **Two sessions are live on this branch (20:00 UTC)**: session 4 (container with `/tmp/ev/fp_*`, still running its full
   panels: `_ST`, `_rm`, `_rs3`, `_rnr` done, `_rnd` running, then `_rmx`, `_x_side`, `_rmxp`; results written into §000) and
   session 5 (§0000). Before pushing: `git pull --rebase`. Do not duplicate each other's panels: see §000 for session 4's numbers.
@@ -37,6 +37,18 @@ running or unfinished, and what to do next, so a new agent can continue without 
 - rows cause: the claimer with the lowest index captures. Varg (index 4) cleared the pack (28 rounds, 490 damage taken) and Cassi (index 2), who
   walked in with it, took the 66 gems and 270 gold; Varg left for the next pack. Varg never gets gold, never buys items (econ_open: gold 15).
 - `_rmxp` re-check: pace 579.9 vs `_ST` 585.0; head-to-head vs `_ST` on the 17 official maps 47.1 (16/34). Not shipped on its own.
+- `capture_rank` (claim/capture tie-break by type Varg > Ren > Stellar > Ryth > rest, instead of index): pace 576.7 (`_b6` 576.2), Varg's gold
+  per game 70 -> 540 (it now buys its items). Kept.
+- **Deaths to camps unopposed**: 11 in 34 games of `_b6`. Causes: (1) the objective-camp retreat line allowed only `4 - distance` rounds
+  of hits (as little as 2) and ignored walls (ambush runs the objective plan since the pace patch: Issac fell to 60 HP, Stellar to 150);
+  (2) the flee goal was "outside the group's whole range mask", which counts harmless gem clusters: in ambush's elk room the safe tile 3 steps
+  away was ignored and Ren ran 6+ steps to the far exit, dying 4 times. Fixes: `exit_aware` (`World::escape_steps`: plain-code BFS over the
+  packed walls, only when health is within ~10 rounds of camp damage; the retreat line = real steps out + 1; groups remember it for the farm
+  plan's HP budget) and `camp_danger_live` (danger mask = live camps that hit). **Camp deaths 10 -> 0** in 34 games; pace 573.3 (exit only)
+  / 579.6 (both): more heal trips on pilgrimage/ambush, faster stampede/swirl (per-map pace from 2 games moves +-30: noise).
+- Body time unopposed (`tools/analysis/time_use.mjs` on LEGEND_TRACE builds, 17 official maps): walk 37%, hit 27%, wait for respawn 14.5%,
+  bank 11.5% (Varg 26%), capture 6%, home 2%. Session 4's pace agent: 46% of camp walking is in walks abandoned before arrival.
+- Rejected on pace (17 official maps vs idle): `build_style 3` (the ladder team's health-first builds) 606.1; draft Stellar, C&I, Varg, Ren, Ryth 584.9.
 
 ## 0000. SESSION 5: CURRENT POSITION (started 2026-10-17 19:46 UTC in a new container): read this first, then §000
 

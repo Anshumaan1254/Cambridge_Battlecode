@@ -1,3 +1,19 @@
+# Session 6 (2026-10-17, from 21:00 UTC, new container): read this block first; it overrides everything below
+
+- Baseline: **`bots/_b6`** = frozen copy of current `bots/legend` (commit 31e0ccb: session 5's `_rmxp` + `dist_landmark`). Read-only.
+  Make your copy with `SRC=bots/_b6 tools/variant.sh _x_NAME` (then edit `bots/_x_NAME/src`).
+  Patch: `cd bots && diff -ruN _b6/src _x_NAME/src > ../experiments/wip/x_NAME.patch`.
+- Other read-only bots, built: `_ST` (shipped `legend_st`), `_rm`, `_rmxp`, `_L0 _es2 _c3 _st _r2 _v6 _hunt _hunt2 _devci _base`, `idle`.
+- **The real ladder is far stronger than our sparring bots** (user report, 17 real games of `legend_st`: 1 win, deaths 232 vs 50, camp
+  gems half of theirs). Every sparring bot is our own code family: treat head-to-head numbers as a regression guard, not as the goal.
+  Code-family-independent measures come first: unopposed pace vs `idle` on the 17 official maps (`/tmp/ev/pace.sh BOT`, ~2 min at 4 jobs;
+  summary `/tmp/ev/p_BOT.txt`), deaths per game, gems/gold per body (`node tools/analysis/econ_open.mjs REPLAY...`).
+- CPU: 4 cores shared with the coordinator. Use `--jobs 2` and your own `--out /tmp/<name>/...`.
+- Acceptance: the targeted metric clearly better; head-to-head vs `_b6` >= ~48 on the 56 maps and on the official 17; no worse pace vs `idle`;
+  0 faults; no new fuel rollovers. Every behaviour change behind a switch in `params.h` with a comment giving the measured evidence.
+- Never commit/push/checkout/stash/reset, never `pkill -f`/`pgrep -f`/`killall`, never edit `bots/legend` or others' bots,
+  keep `experiments/wip/x_NAME.patch` and `x_NAME_NOTES.md` current as you go (the coordinator commits them).
+
 # Session 5 (2026-10-17, from ~19:50 UTC, new container): read this block first; it overrides everything below
 
 - Baseline: **`bots/_rm`** = frozen copy of current `bots/legend` (commit d6aa4ef: `_ST` + opening fuel fix, `start_round=2`,

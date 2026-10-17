@@ -5,39 +5,39 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 
 | Read this | For |
 |---|---|
+| [AGENTS.md](AGENTS.md) | **handoff context for AI agents**: status, everything done and measured, setbacks, open work, next steps |
 | [docs/STRATEGY.md](docs/STRATEGY.md) | how the game is won, hidden techniques, traps, the meta and its counters, the final strategy |
 | [docs/ENGINE_FACTS.md](docs/ENGINE_FACTS.md) | every rule we verified on the real engine (with evidence) and fuel costs |
 | [docs/HLD.md](docs/HLD.md) | architecture: modules, turn pipeline, data model, navigation, comms, fuel budget |
-| [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams and paste results back so the bot can be re-tuned |
-| [docs/LADDER_LOSSES.md](docs/LADDER_LOSSES.md) | round 1 of that loop: why we lost five ladder matches, the opponent's playbook, every fix and its measured effect |
+| [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
+| [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Results (local)
+## Results (local, 39 maps × both sides = 78 games per row)
 
-Round 2 (after the ladder-loss analysis, [docs/LADDER_LOSSES.md](docs/LADDER_LOSSES.md)); 219 maps × both
-sides = 438 games per row unless noted. `_oppR` is a replica of the ladder opponent that beat us.
+The 39 maps are the 12 real ladder maps extracted from our ladder replays (`maps/ladder/`) plus 27
+generated ones. "Hunter" opponents are aggressive archetypes built on the current code with the drafts the
+top ladder teams use; the old bot (v5, what was on the ladder) loses most games to them, as it did on
+the ladder (17 of 20 scrims lost).
 
-| Opponent | Win rate |
-|---|---|
-| round-1 `legend` (what lost on the ladder) | **82%** |
-| `_oppR`, ladder-opponent replica | **65%** (round-1 `legend` only manages 37% against it) |
-| `_opp2`, our logic with the opponent's draft | 67% |
-| aggressive / early-rush archetypes | 92% / 93% |
-| starter bot | 100% |
-| unopposed | 1,000 gems in ~356 rounds (round 1: ~452 on official-style maps) |
+| Opponent | old bot (v5) | `legend` now |
+|---|---|---|
+| starter bot (`bots/starter-cpp`) | 88% | **100%** |
+| old bot v5 (`tools/snapshot.sh _base 6bb913e`) | — | **81%** |
+| pack-opening hunter (`_hunt`) | 42% | **87%** |
+| aggressive Cassi & Issac hunter (`_hunt2`) | 28% | **82%** |
+| current code with a Stellar/C&I draft (`_devci`) | 14% | **55%** |
+| unopposed: rounds to 1,000 gems | 574 | **500** |
 
-Win rates hold across map sizes (vs `_oppR`: 61% small, 70% medium, 62% large). `tools/stall_audit.py` finds
-no stalled games (low score or clock run out) against the starter bot or an idle opponent.
-
-Round 1 (67 maps × both sides): 100% vs the starter bot and the deathball archetype, 85–88% vs rush,
-aggressive and passive archetypes.
-
-Matches are deterministic; release and debug builds give identical games.
+What changed and why: [docs/STRATEGY.md](docs/STRATEGY.md) §1. How the bot learns:
+[docs/LEARNING.md](docs/LEARNING.md).
 
 ## Ready-to-submit ZIP
 
 [`submissions/legend.zip`](submissions/legend.zip) is `cambc bundle legend` output (the bot's `src/` only).
 Upload it on the platform's Submissions page, or submit from the CLI with `cambc login && cambc submit legend`.
 Rebuild it after changing the bot: `cambc bundle legend --output submissions/legend.zip` (delete the old file first).
+Every recommended build, with its commit and measured results, is logged in
+[`submissions/BUILDS.md`](submissions/BUILDS.md); previous zips are kept in `submissions/history/`.
 
 ## Quick start
 
@@ -51,15 +51,18 @@ tools/suite.sh legend                              # vs the sparring panel (buil
 cambc submit legend                                # needs `cambc login`
 ```
 
-Sparring opponents are generated, not committed:
+Sparring opponents are generated, not committed. `tools/make_sparring.sh` rebuilds the whole current panel
+(`_base`, `_v6`, `_r2`, `_hunt`, `_hunt2`, `_devci`) from commits, identical to the bots behind the result tables.
+The individual recipes:
 
 ```bash
-tools/snapshot.sh _v1 7928cfe                      # first version
-SRC=bots/_v1 tools/variant.sh _v1aggro fight_margin=0.85f enemy_half_penalty=0.f deny_bonus=1.2f steal_hp_frac=0.35f
-SRC=bots/_v1 tools/variant.sh _v1passive fight_margin=99.f tribute_risky=1
-tools/variant.sh _deathball style=1
-tools/variant.sh _rush deathball_until=160 deny_bonus=2.f enemy_half_penalty=0.f fight_margin=0.9f steal_hp_frac=0.3f
-tools/snapshot.sh _v4 25b39d0                      # previous release, for A/B
+tools/snapshot.sh _base 6bb913e                    # old bot (v5), what was on the ladder on Oct 16
+SRC=bots/legend tools/variant.sh _hunt learn_enabled=0 fight_margin=0.95f fight_back_margin=0.6f enemy_half_penalty=0.f \
+    deny_bonus=1.5f steal_hp_frac=0.3f deathball_until=110 deficit_defend=99 deficit_escort=99 --define "LEGEND_DRAFT 8,4,3,0,9"
+SRC=bots/legend tools/variant.sh _hunt2 learn_enabled=0 fight_margin=0.9f fight_back_margin=0.6f enemy_half_penalty=2.f \
+    deny_bonus=1.2f steal_hp_frac=0.4f isolated_fight_adv=1.0f deficit_defend=99 deficit_escort=99 --define "LEGEND_DRAFT 3,2,9,0,4"
+SRC=bots/legend tools/variant.sh _devci learn_enabled=0 --define "LEGEND_DRAFT 4,3,9,10,8"
+tools/panel.sh legend 'maps/*.map26a,maps/ladder/*.map26a' _base _hunt _hunt2 _devci starter-cpp idle
 ```
 
 The second map pool (40 maps) is reproducible: `node tools/mapgen/gen.mjs maps 40 991 s2_`.
@@ -80,10 +83,20 @@ bots/probe-fuel/    fuel cost of SDK helpers
 bots/probe-designs/ dumps every champion's stats, growth and abilities (range, modifier, cooldown)
 matches/ladder1/    the five lost ladder summaries (raw + converted)
 maps/               generated test maps (gen*), zz_test probe map
-tools/bench.py      parallel A-vs-B benchmark with summary
+maps/ladder/        12 real ladder maps rebuilt from replays (tools/replay/extract_map.mjs)
+maps/comp/          6 official competition maps (SDK 2.1.6 map pool; the ones not already in maps/ladder)
+tools/replay/       replay decoder, readable match report, map extractor, ASCII map view, map features
+tools/rl/           offline RL: evolution-strategies trainer (es_train.py), search space, apply_params.py
+tools/draft_tournament.py  composition round robins (forced drafts, same code) -> draft table
+tools/draft_model.py       map-aware draft model from a tournament (nearest training maps) -> draft_table.h
+tools/panel.sh      one summary line per sparring opponent
+tools/bench.py      parallel A-vs-B benchmark with summary (comma-separated map globs)
 tools/suite.sh      bench against the sparring panel
 tools/tune.py       self-play parameter tuner
 tools/variant.sh    build a parameter/define variant of legend
+tools/make_sparring.sh  recreate the sparring panel from commits
+tools/analysis/     item-value model, spell usage, decision-formula audit, bag/recall risk, route time use
+experiments/patches/  unmerged prototypes as patches (economy, spells), see AGENTS.md
 tools/snapshot.sh   freeze a past commit of legend as an opponent
 tools/analyze_match.py  report from a match statistics JSON (local or ladder)
 tools/raw_summary.py    convert a website-downloaded summary (numeric ids) into the named JSON
@@ -95,12 +108,14 @@ tools/mapgen/       symmetric map generator using the engine's MapBuilder
 
 ## How it plays, in one paragraph
 
-Draft the durable core **Varg → Tavi → Stellar → Ren → Ryth** (chosen by composition tournaments).
-Every champion scores every camp group each turn by gems-and-gold per round of travel, waiting,
-killing, capturing and *heal trips* (camps never heal, so strong groups are farmed over several trips),
-claims its target in shared memory so allies spread out, banks gems on the way or at 34+, retreats
-before camps or enemies can kill it and never recalls under fire. In fights it estimates a local
-advantage from visible allies and enemies, fights back when already engaged unless clearly outmatched,
-never tries to outrun same-speed melee, focus-fires a team-consistent target, stuns channellers, and
-avoids diving the enemy spawn. It reads visible enemies' cooldowns, plays the scoreboard (safer when
-ahead, riskier when the enemy is close to winning) and teleports into walled-off camp islands.
+Draft **Ren → Stellar → Cassi & Issac → Ryth → Varg** (Varg before Ryth on pack-heavy 4-champion maps),
+the composition that won our 780-game tournament and the one the strongest ladder team uses. Every
+champion scores every camp group by gems-and-gold per round of travel, kill time (Varg splash, area
+spells, Ren retaliation), capture and heal trips, and claims it in shared memory; a second body joins
+packs that are heavy for one. Recall is transport: recall while capturing (the reward lands with the
+teleport), after banking far away, to shop, and bank via the altar next to spawn. In fights it counts
+allies and their spells, fights back against chasers it cannot outrun, retreats early when alone, plays
+defensively when outnumbered, never trades with enemies healing on their spawn, acts first through
+dynamic `set_priority`, and converges on enemy tributes. A team stance bandit, a pain map and per-champion
+fight calibration learn from rewards and punishments during each match; the parameters themselves are
+trained offline by evolution strategies.

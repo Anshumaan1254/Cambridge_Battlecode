@@ -1,46 +1,65 @@
-// In-match online learning. Everything here is deterministic and cheap (a few hundred fuel per turn).
+// In-match learning: reward good outcomes and punish mistakes while the game is running.
 //
-// Team level: the inputs (every champion's global alive flag, both teams' banked gems) are identical for all
-// of our instances, so every instance holds the same estimates without spending shared memory.
-// - Fight posterior: Beta(3,3) prior on "an exchange ends with an enemy death rather than ours", updated by
-//   every death on either side. Fights that keep going badly make us more careful and keep us off their half.
-// - Race model: banked-gem rates for both teams (exponential moving averages) project who finishes first.
+// A submitted bot cannot be updated and keeps nothing between matches, so learning happens at two levels:
+//   * offline, the parameters in params.h are trained by self-play policy search (tools/rl/es_train.py);
+//   * online, inside every match, this module adapts the team to the opponent it is actually facing.
 //
-// Instance level: each champion calibrates its own camp model against what actually happens.
-// - Damage dealt to a camp group and damage taken from it, observed vs predicted while farming alone, as
-//   decayed sums with pseudo-counts; the ratios scale the farm model's kill time and incoming damage.
-// - The largest one-round damage each enemy has dealt us (its real burst, items included).
+// Three online learners, all cheap in fuel:
+//   1. Team stance bandit. Every `learn_window` rounds the team scores the stance it just played
+//      (reward = banked-gem difference per 10 rounds + kills - deaths, punishments weighted heavier)
+//      and picks the stance with the best running value: SPREAD (farm everywhere), GROUPED (farm close
+//      together, keep backup, stay off their half) or PUSH (invade, contest, take fights).
+//      One body (the lowest index, which runs every round even while dead) decides and broadcasts the
+//      stance in two spare shared-memory bits, so every body plays the same stance.
+//   2. Pain map. Each body remembers where allies died and where it took champion damage, decaying
+//      over time; farming targets in painful regions cost extra, places where we got kills heal.
+//   3. Fight calibration. Each body scales its fight-advantage estimate: dying soon after choosing to
+//      fight makes it more careful, kills after choosing to fight make it bolder.
 #pragma once
 #include "common.h"
-#include "params.h"
+
+enum Stance : int
+{
+	STANCE_SPREAD = 0,
+	STANCE_GROUPED = 1,
+	STANCE_PUSH = 2,
+	STANCE_COUNT = 3
+};
 
 struct Learner
 {
-	// team level
-	int ally_deaths = 0, enemy_deaths = 0;
-	std::vector<std::uint8_t> ally_alive, enemy_alive;
-	int ours = 0, theirs = 0, last_round = -1;
-	float our_rate = 0, their_rate = 0; // banked gems per round, smoothed
+	// ---- team stance (decided by the leader, read by everyone through comms)
+	int stance = STANCE_SPREAD;
+	std::array<float, STANCE_COUNT> q{};
+	std::array<int, STANCE_COUNT> plays{};
+	int window_start = 1;
+	int ours0 = 0, theirs0 = 0;
+	int ally_deaths = 0, enemy_deaths = 0;	   // running totals seen by this body
+	int ally_deaths0 = 0, enemy_deaths0 = 0;   // at window start
+	int ally_deaths_our_half = 0, our_half0 = 0;
+	std::vector<bool> ally_alive, enemy_alive;
+	float last_reward = 0;
+	float prev_diff = 0; // previous window's banked-gem difference (smooths the lumps)
 
-	// instance level
-	float out_obs = 0, out_pred = 0, in_obs = 0, in_pred = 0;
-	std::vector<float> enemy_burst; // per enemy index
+	// ---- pain map (per body): coarse cells of CELL x CELL tiles
+	static constexpr int CELL = 6;
+	int cw = 0, ch = 0;
+	std::vector<float> pain;
+	int pain_round = 0;
 
-	void team_update(int round);
-	// P(we win an exchange): 0.5 with no evidence.
-	float fight_p() const { return (static_cast<float>(enemy_deaths) + 3.f) / (static_cast<float>(enemy_deaths + ally_deaths) + 6.f); }
-#ifndef LG_NO_CALIB
-	float k_out() const { return std::clamp((out_obs + 600.f) / (out_pred + 600.f), 0.6f, 1.8f); }
-	float k_in() const { return std::clamp((in_obs + 300.f) / (in_pred + 300.f), 0.4f, 1.8f); }
-#else
-	float k_out() const { return 1.f; }
-	float k_in() const { return 1.f; }
-#endif
-	void sample_out(float obs, float pred);
-	void sample_in(float obs, float pred);
-	// Rounds each team needs to reach the goal at its current pace (BIG when it is not scoring).
-	int eta_ours() const;
-	int eta_theirs() const;
+	// ---- fight calibration (per body)
+	float fight_bias = 0.f;			// log-scale multiplier on the advantage estimate
+	int fight_round = -1000;		// last round we chose to fight
+	bool was_alive = true;
+
+	void init(int width, int height);
+	// Called every turn by every body (alive or dead). Leader updates the stance; others read it.
+	void tick(int round, bool leader, bool me_alive);
+	void add_pain(vec2 p, float amount);
+	float pain_at(vec2 p) const;
+	void on_fight(int round) { fight_round = round; }
+	void on_enemy_killed_near(vec2 p, int round);
+	float fight_scale() const;
 };
 
 Learner& learner();

@@ -1,0 +1,125 @@
+diff -ru a/src/brain.cpp b/src/brain.cpp
+--- a/src/brain.cpp	2026-10-17 03:37:34.142707157 +0000
++++ b/src/brain.cpp	2026-10-17 09:22:12.166786043 +0000
+@@ -908,7 +908,22 @@
+ 	const float t_kill_them = their_hp / std::max(1.f, our_dps);
+ 	const float t_kill_us = our_hp / std::max(1.f, their_dps);
+ 	// Learned calibration: bodies that died after choosing fights trust their estimate less.
+-	const float adv = t_kill_us / std::max(0.1f, t_kill_them) * learner().fight_scale();
++	const float adv_formula = t_kill_us / std::max(0.1f, t_kill_them) * learner().fight_scale();
++	float adv = adv_formula;
++#ifdef XML_EXPLORE
++	// Data collection only (tools/ml): a random boldness multiplier per encounter, kept for the whole
++	// encounter (a new one after 6 quiet rounds), so the logged outcomes show what more or less
++	// aggressive choices than the formula's lead to in the same situations. Deterministic hash, no state.
++	if (round - ml_last_eval > 6)
++	{
++		std::uint32_t h = static_cast<std::uint32_t>(round) * 2654435761u ^ static_cast<std::uint32_t>(W.my_index + 1) * 40503u ^
++			static_cast<std::uint32_t>(bc::detail::sdk_my_team() + 1) * 2246822519u;
++		h ^= h >> 15, h *= 2246822519u, h ^= h >> 13, h *= 3266489917u, h ^= h >> 16;
++		ml_explore_log = (static_cast<float>(h % 10001u) / 10000.f * 2.f - 1.f) * 0.7f;
++	}
++	ml_last_eval = round;
++	adv *= std::exp(ml_explore_log);
++#endif
+ 
+ 	// Backup: allies in sight, plus hidden allies whose claimed camp is close (they are a few steps away).
+ 	// Half our deaths on the ladder were lone champions caught by two or more enemies.
+@@ -989,6 +1004,55 @@
+ 	const bool on_spawn = W.ally_spawn.is_set(pos);
+ 	const bool can_escape = on_spawn || !chaser || (ready(kit.dash) && !chaser_dash) || static_cast<float>(dh) + 1.f < t_die;
+ 
++#ifdef XML_LOG
++	// One line per evaluation for offline training (tools/ml/parse_logs.py): the features the formula
++	// sees plus a few it does not, and the decision taken. Free in debug builds (debug_block pauses the
++	// fuel meter), compiled out in release builds, so the logging bot plays exactly like the baseline.
++	auto ml_log = [&](int dec) {
++		debug_block({
++			float a_hp = 0, a_max = 0, a_dps = 0;
++			for (const auto& a : W.allies)
++				if (a.handle != self && a.alive && a.visible && cheb(a.pos, pos) <= 6)
++					a_hp += a.hp, a_max += a.max_hp, a_dps += a.str + a.focus * best_mod(a.kit) / 8.f + std::max(a.str, a.focus * best_mod(a.kit)) / 3.f;
++			float e_max = 0, e_min = 1e9f, e_gems = 0;
++			int e_reach = 0, e_d3 = 0, e_dash = 0, e_ranged = 0, e_alive = 0, a_alive = 0;
++			for (auto* e : E)
++			{
++				const int de = cheb(e->pos, pos);
++				e_max += e->max_hp;
++				e_min = std::min(e_min, e->hp);
++				e_gems += static_cast<float>(e->gems);
++				e_reach += de <= reach_of(*e);
++				e_d3 += de <= 3;
++				e_dash += e->ready(e->kit.dash);
++				e_ranged += e->kit.ranged;
++			}
++			for (const auto& e : W.enemies)
++				e_alive += e.alive;
++			for (const auto& a : W.allies)
++				a_alive += a.alive;
++			const int ours_g = static_cast<int>(bc::global_submitted_gems(team::ally));
++			const int theirs_g = static_cast<int>(bc::global_submitted_gems(team::enemy));
++			std::printf("ML,%d,%d,%d,%d,%d,%d,%.0f,%.0f,%.1f,%.1f,%d,%d,%d,%d,%d,%d,%.1f,"
++						"%d,%.0f,%.0f,%.1f,%d,%d,%d,"
++						"%d,%.0f,%.1f,%.1f,%d,%.0f,%.0f,%d,%d,%d,%d,%d,"
++						"%d,%d,%.0f,%.0f,%d,%u,%d,%.0f,"
++						"%d,%d,%d,%d,%d,%.2f,%d,%d,%d,%u,%u,"
++						"%.4f,%.4f,%.2f,%.2f,%.3f,%.3f,%.3f,%d,%d,%d,%d,%.3f,%d\n",
++				round, bc::detail::sdk_my_team(), W.my_index, static_cast<int>(type), pos.x, pos.y, hp, max_hp, str, focus,
++				ready(kit.dmg), ready(kit.cc), ready(kit.aoe), ready(kit.reset), ready(kit.dash), can_attack, my_burst,
++				allies_near, a_hp, a_max, a_dps, backup, dead_allies, a_alive,
++				static_cast<int>(E.size()), their_hp, their_dps, incoming, stunners, e_max, e_min, e_reach, e_d3, e_dash, e_ranged, e_alive,
++				nearest_enemy, static_cast<int>(tgt->type), tgt->hp, tgt->max_hp, d, tgt->gems, tgt->channeling, e_gems,
++				killable, in_reach, chaser, chaser_dash, can_escape, std::min(99.f, t_die), dh, W.dist_away(pos), on_spawn, gems, gold,
++				adv_formula, adv, t_kill_us, t_kill_them, fight_margin, fight_back_margin, isolated_fight_adv, stance, deficit, ours_g, theirs_g,
++				learner().fight_scale(), dec);
++		});
++	};
++#else
++	auto ml_log = [](int) {};
++#endif
++
+ 	bool fight = false;
+ 	if (killable && adv >= 0.5f)
+ 		fight = true;
+@@ -1015,6 +1079,10 @@
+ 	// Early warning: an outnumbering group is visible; allies keep away from it.
+ 	if (!fight && E.size() >= 3 && adv < 1.f)
+ 		post_danger(tgt->pos);
++	// Logged before acting: the decision codes are 1 fight, 2 retreat (they can hit us), 4 early leave,
++	// 0 ignore (combat falls through to farming).
++	const bool early_leave = !fight && !in_reach && (isolated || reserve) && adv < P.isolated_flee_adv && nearest_enemy <= P.flee_dist && task != T_CAPTURE;
++	ml_log(fight ? 1 : in_reach ? 2 : early_leave ? 4 : 0);
+ 	if (fight)
+ 	{
+ 		comms().post(AL_RALLY, tgt->pos, round);
+@@ -1049,7 +1117,7 @@
+ 	}
+ 	// Leave before they reach us: alone (or with half the team dead) against a stronger group, start walking
+ 	// home while they are still out of stun range. Same speed means they cannot close the gap.
+-	if ((isolated || reserve) && adv < P.isolated_flee_adv && nearest_enemy <= P.flee_dist && task != T_CAPTURE)
++	if (early_leave)
+ 	{
+ 		post_danger(tgt->pos);
+ 		task = T_FLEE;
+diff -ru a/src/brain.h b/src/brain.h
+--- a/src/brain.h	2026-10-17 03:37:34.142693130 +0000
++++ b/src/brain.h	2026-10-17 09:22:12.167210767 +0000
+@@ -153,6 +153,10 @@
+ 	float last_hp = 0;
+ 	int last_hit_round = -100;
+ 	std::vector<int> blacklist; // per group: round until which we ignore it
++
++	// fight-model data collection (tools/ml): last combat evaluation round, per-encounter exploration
++	int ml_last_eval = -1000;
++	float ml_explore_log = 0.f;
+ };
+ 
+ Brain& brain();
+diff -ru a/src/params.h b/src/params.h
+--- a/src/params.h	2026-10-17 03:37:34.142630575 +0000
++++ b/src/params.h	2026-10-17 09:22:12.178632879 +0000
+@@ -1,3 +1,4 @@
++#define XML_LOG
+ // Every tunable weight and threshold lives here so variants can be generated for self-play tuning.
+ #pragma once
+ 

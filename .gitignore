@@ -21,5 +21,7 @@ maps/s2_*
 bots/_*/
 tune_out.log
 dist/
-maps/o_*
-maps/o2_*
+
+# patch(1) leftovers (never bundle them into a submission)
+*.orig
+*.rej

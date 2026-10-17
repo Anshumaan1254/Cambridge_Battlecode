@@ -14,8 +14,8 @@ void Comms::read(int round)
 	{
 		const int v = b[static_cast<std::size_t>(i)] & 0x7F;
 		claim[static_cast<std::size_t>(i)] = v == 0 ? -1 : v - 1;
-		help[static_cast<std::size_t>(i)] = (b[static_cast<std::size_t>(i)] & 0x80) != 0;
 	}
+	stance = ((b[0] >> 7) & 1) | (((b[1] >> 7) & 1) << 1);
 	const std::uint16_t raw = static_cast<std::uint16_t>(b[6] | (b[7] << 8));
 	if (raw != last_raw)
 	{
@@ -28,15 +28,27 @@ void Comms::read(int round)
 	}
 }
 
-void Comms::write_self(int index, int group, bool needs_help)
+void Comms::write_self(int index, int group)
 {
 	if (index < 0 || index >= 6)
 		return;
 	std::uint8_t v = group >= 0 && group < 126 ? static_cast<std::uint8_t>(group + 1) : 0;
-	if (needs_help)
-		v |= 0x80;
+	// Keep bit 7: it carries the team stance on bytes 0-1.
+	const std::uint8_t old = bc::shared_memory[static_cast<std::size_t>(index)];
+	v |= old & 0x80;
 	bc::shared_memory[static_cast<std::size_t>(index)] = v;
 	claim[static_cast<std::size_t>(index)] = group;
+}
+
+void Comms::write_stance(int s)
+{
+	for (int i = 0; i < 2; ++i)
+	{
+		const std::uint8_t old = bc::shared_memory[static_cast<std::size_t>(i)];
+		const std::uint8_t bit = static_cast<std::uint8_t>(((s >> i) & 1) << 7);
+		bc::shared_memory[static_cast<std::size_t>(i)] = static_cast<std::uint8_t>((old & 0x7F) | bit);
+	}
+	stance = s;
 }
 
 void Comms::post(int kind, vec2 tile, int round)

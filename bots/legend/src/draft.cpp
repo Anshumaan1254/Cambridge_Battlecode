@@ -1,9 +1,22 @@
-// Draft: score champions against this map's camps, then pick greedily under composition rules.
-// Picks are simultaneous and duplicates across teams are allowed, so there is no denial; we only build our best team.
+// Draft: choose a whole team composition for this map, then pick its champions in order.
+//
+// Picks are simultaneous and duplicates across teams are allowed, so there is nothing to deny: the job is to
+// field the composition that wins most on this kind of map. Composition values come from round-robin
+// tournaments of the same bot code with forced drafts (tools/draft_tournament.py) on the ladder maps and
+// our generated pool, split by team size, plus small adjustments for map features measured here.
+// The choice is made once (first draft turn, 1M fuel) and kept, so later picks never switch plans.
 #include "draft.h"
+
+#include <cstdio>
 
 #include "common.h"
 #include "params.h"
+
+#include <cmath>
+#if __has_include("draft_table.h")
+#include "draft_table.h"
+#define LEGEND_DRAFT_TABLE 1
+#endif
 
 namespace
 {
@@ -13,18 +26,44 @@ struct Features
 {
 	int team = 3;
 	int groups = 0, gem = 0, gold = 0, wolf = 0, elk = 0, mono = 0, multi = 0, harmless = 0;
+	int gem_groups = 0;		   // groups that give gems (excluding monolith-only)
 	double mean_dist = 0;
-	int area = 0, holes = 0;
+	int area = 0, holes = 0, altars = 0;
 	bool ready = false;
 };
 
+struct Comp
+{
+	const char* name;
+	std::array<D, 5> picks;
+	std::array<double, 3> base; // tournament value at team size 3, 4, 5
+};
+
+// Values: win rate in the composition round robin (tools/draft_tournament.py, same bot code, forced drafts),
+// split by team size 3 / 4 / 5. October 17 run: 8 drafts, 45 maps (12 real ladder, 6 official, 27 generated)
+// x 2 sides, 2,520 games. Ren, Stellar, Cassi & Issac (+ Varg, Ryth) had the best mean and worst case; at team
+// size 4 Varg as the fourth pick beat Ryth (0.626 vs 0.610). Vendetta, C&I, Varg, Stellar, Ren was level at
+// size 5. Willow- and Vesper-based drafts finished last. Older drafts keep their earlier values (5-draft run).
+// A per-map nearest-neighbour model (tools/draft_model.py) did not beat this team-size choice in
+// leave-one-map-out validation against the strong drafts, so it is not shipped (draft_table.h absent).
+const std::array<Comp, 6> COMPS{ {
+	{ "meta", { D::ren, D::stellar, D::cassi_and_issac, D::ryth, D::varg }, { 0.603, 0.610, 0.556 } },
+	{ "metaV", { D::ren, D::stellar, D::cassi_and_issac, D::varg, D::ryth }, { 0.603, 0.626, 0.565 } },
+	{ "vci", { D::vendetta, D::cassi_and_issac, D::varg, D::stellar, D::ren }, { 0.516, 0.599, 0.565 } },
+	{ "ciS", { D::stellar, D::cassi_and_issac, D::varg, D::tavi, D::ren }, { 0.46, 0.46, 0.55 } },
+	{ "ciY", { D::stellar, D::cassi_and_issac, D::varg, D::ryth, D::tavi }, { 0.46, 0.49, 0.51 } },
+	{ "cur", { D::varg, D::tavi, D::stellar, D::ren, D::ryth }, { 0.50, 0.48, 0.36 } },
+} };
+
 Features F;
+int chosen = -1;
 
 void analyse()
 {
 	F.team = static_cast<int>(bc::draft::team_size());
 	F.area = bc::map::width() * bc::map::height();
 	F.holes = static_cast<int>(bc::map::holes().count());
+	F.altars = static_cast<int>(bc::map::altars().count());
 	const bc::bitboard walls = bc::map::walls() | bc::map::holes() | bc::map::altars();
 	bc::distance_field home, away;
 	bc::bitboard visited;
@@ -59,59 +98,92 @@ void analyse()
 		F.mono += has_mono;
 		F.multi += attackers >= 2;
 		F.harmless += attackers == 0;
+		F.gem_groups += (has_gem || has_wolf || has_elk) && !has_mono;
 		dsum += da;
 	}
 	F.mean_dist = F.groups ? dsum / F.groups : 0;
 	F.ready = true;
 }
 
-double score(D c)
+double comp_value(const Comp& c)
 {
-	const double per_body = F.groups / std::max(1.0, static_cast<double>(F.team));
-	const double multi = F.groups ? static_cast<double>(F.multi) / F.groups : 0;
-	const bool big = F.area >= 3600 || F.mean_dist >= 22;
-	// Base values come from composition tournaments (tools/bench.py, 128 games each): the durable
-	// Varg/Tavi/Stellar/Ren/Ryth core beat a Vendetta-first draft ~60% because 800-health Vendetta dies too often.
-	switch (c)
-	{
-	case D::varg: return 10.0 + 2.0 * multi;
-	case D::tavi: return 9.6 + (big ? 0.6 : 0);
-	case D::stellar: return 9.3 + 1.0 * multi;
-	case D::ren: return 9.2 + 1.0 * multi;
-	case D::ryth: return 8.6 + (F.elk >= 2 ? 0.3 : 0) + (F.mono ? 0.2 : 0);
-	case D::cassi_and_issac: return 8.2 + (per_body >= 3.5 ? 0.4 : 0) + (F.harmless >= F.team ? 0.2 : 0);
-	case D::vendetta: return 8.0;
-	case D::prism: return 7.0;
-	case D::marcella: return 6.5 + (F.elk ? 0.3 : 0);
-	case D::vesper_vale: return 6.2 + (F.gold >= 2 ? 0.4 : 0);
-	case D::willow: return 5.0 + (F.elk >= 2 ? 0.5 : 0);
-	}
-	return 0;
+	const int ts = std::clamp(F.team, 3, 5) - 3;
+	double v = c.base[static_cast<std::size_t>(ts)];
+	const auto end = c.picks.begin() + std::clamp(F.team, 3, 5);
+	const bool has_varg = std::find(c.picks.begin(), end, D::varg) != end;
+	const bool has_ryth = std::find(c.picks.begin(), end, D::ryth) != end;
+	// Multi-camp packs on our half: Varg's splash clears them several times faster (wolf-pack maps).
+	if (F.groups > 0 && F.multi * 5 >= F.groups * 2 && has_varg)
+		v += 0.03;
+	// Elk-heavy maps without packs: Ryth's health and area stun tank them.
+	if (F.elk >= 2 && F.multi * 5 < F.groups * 2 && has_ryth)
+		v += 0.01;
+	// Monolith-only maps (no other gem source): a 1200-health tank with an area stun.
+	if (F.gem_groups == 0 && F.mono > 0 && has_ryth)
+		v += 0.03;
+	return v;
 }
 
-bool is_stunner(D c) { return c == D::tavi || c == D::ryth || c == D::ren || c == D::prism || c == D::cassi_and_issac || c == D::marcella; }
-bool is_tank(D c) { return c == D::varg || c == D::ryth || c == D::marcella || c == D::ren; }
-
-D choose(const std::vector<D>& mine)
+#ifdef LEGEND_DRAFT_TABLE
+// Map-aware choice (content-based: "maps like this one"): compare this map's features with the training maps of
+// the composition tournament and take the composition that did best on the most similar ones, shrunk towards
+// its average at this team size. Feature vector and normalisation must match tools/draft_model.py.
+int choose_table()
 {
-	std::array<D, 11> all{ D::ryth, D::vesper_vale, D::vendetta, D::cassi_and_issac, D::stellar, D::prism, D::marcella, D::willow, D::ren, D::varg, D::tavi };
-	bool have_stun = false, have_tank = false;
-	for (auto m : mine)
-		have_stun |= is_stunner(m), have_tank |= is_tank(m);
-	const int remaining = F.team - static_cast<int>(mine.size());
-	D best = D::vendetta;
-	double best_s = -1e9;
-	for (auto c : all)
+	namespace T = draft_table;
+	const double g = std::max(1, F.groups), area = std::max(1, F.area);
+	const std::array<double, T::NF> x{ std::log(area), static_cast<double>(F.groups), F.multi / g, F.elk / g, F.mono > 0 ? 1.0 : 0.0,
+		F.wolf / g, F.gem_groups / g, F.harmless / g, F.mean_dist / std::sqrt(area), F.holes / area, static_cast<double>(F.altars) };
+	std::array<double, T::NF> z{};
+	for (int j = 0; j < T::NF; ++j)
+		z[static_cast<std::size_t>(j)] = (x[static_cast<std::size_t>(j)] - T::MEAN[static_cast<std::size_t>(j)]) / T::SD[static_cast<std::size_t>(j)];
+	const int team = std::clamp(F.team, 3, 5);
+	std::array<double, T::NCOMP> base{};
+	int nbase = 0;
+	std::array<std::pair<double, int>, T::ROWS.size()> d{};
+	for (std::size_t r = 0; r < T::ROWS.size(); ++r)
 	{
-		if (std::find(mine.begin(), mine.end(), c) != mine.end())
-			continue;
-		double s = score(c);
-		if (!have_stun && remaining <= 2 && is_stunner(c))
-			s += 2.0;
-		if (!have_tank && remaining <= 2 && is_tank(c) && (F.elk || F.mono))
-			s += 1.5;
-		if (s > best_s)
-			best_s = s, best = c;
+		const auto& row = T::ROWS[r];
+		double s2 = 0;
+		for (int j = 0; j < T::NF; ++j)
+		{
+			const double dz = z[static_cast<std::size_t>(j)] - row.z[static_cast<std::size_t>(j)];
+			s2 += dz * dz;
+		}
+		d[r] = { std::sqrt(s2) + T::TEAM_PENALTY * std::abs(row.team - team), static_cast<int>(r) };
+		if (row.team == team)
+		{
+			++nbase;
+			for (int c = 0; c < T::NCOMP; ++c)
+				base[static_cast<std::size_t>(c)] += row.score[static_cast<std::size_t>(c)];
+		}
+	}
+	std::sort(d.begin(), d.end());
+	const int k = std::min<int>(T::K, static_cast<int>(d.size()));
+	int best = 0;
+	double bv = -1e9;
+	for (int c = 0; c < T::NCOMP; ++c)
+	{
+		double v = T::PRIOR * (nbase ? base[static_cast<std::size_t>(c)] / nbase : 0.5);
+		for (int i = 0; i < k; ++i)
+			v += T::ROWS[static_cast<std::size_t>(d[static_cast<std::size_t>(i)].second)].score[static_cast<std::size_t>(c)];
+		v /= T::PRIOR + k;
+		if (v > bv)
+			bv = v, best = c;
+	}
+	return best;
+}
+#endif
+
+int choose_comp()
+{
+	int best = 0;
+	double bv = -1e9;
+	for (std::size_t i = 0; i < COMPS.size(); ++i)
+	{
+		const double v = comp_value(COMPS[i]);
+		if (v > bv)
+			bv = v, best = static_cast<int>(i);
 	}
 	return best;
 }
@@ -120,6 +192,21 @@ D choose(const std::vector<D>& mine)
 void play_draft()
 {
 	const auto mine = bc::draft::current_draft(team::ally);
+#ifdef LEGEND_FEATURES
+	// One line of map features for the offline draft model (tools/draft_model.py).
+	if (!F.ready)
+	{
+		try
+		{
+			analyse();
+		}
+		catch (...)
+		{
+		}
+		std::printf("FEAT team=%d groups=%d gem=%d gold=%d wolf=%d elk=%d mono=%d multi=%d harmless=%d gem_groups=%d mean_dist=%.2f area=%d holes=%d altars=%d\n",
+			F.team, F.groups, F.gem, F.gold, F.wolf, F.elk, F.mono, F.multi, F.harmless, F.gem_groups, F.mean_dist, F.area, F.holes, F.altars);
+	}
+#endif
 #ifdef LEGEND_DRAFT
 	// Forced composition for experiments: picks in this order (champion_draft values).
 	{
@@ -142,16 +229,41 @@ void play_draft()
 	}
 	catch (...)
 	{
-		F.ready = true; // fall back to static scores
+		F.ready = true; // fall back to base values
 	}
-	D pick = D::vendetta;
-	try
+	if (chosen < 0)
 	{
-		pick = choose(mine);
+		try
+		{
+#ifdef LEGEND_DRAFT_TABLE
+			chosen = P.draft_model ? 100 + choose_table() : choose_comp();
+#else
+			chosen = choose_comp();
+#endif
+		}
+		catch (...)
+		{
+			chosen = 0;
+		}
 	}
-	catch (...)
+	D pick = D::stellar;
+	bool found = false;
+	std::array<D, 5> plan = COMPS[0].picks;
+#ifdef LEGEND_DRAFT_TABLE
+	if (chosen >= 100)
+		plan = draft_table::COMPS[static_cast<std::size_t>(chosen - 100)].picks;
+	else
+#endif
+		plan = COMPS[static_cast<std::size_t>(chosen)].picks;
+	for (auto c : plan)
+		if (std::find(mine.begin(), mine.end(), c) == mine.end())
+		{
+			pick = c, found = true;
+			break;
+		}
+	if (!found)
 	{
-		const D fallback[] = { D::vendetta, D::varg, D::tavi, D::stellar, D::ren, D::ryth, D::marcella, D::vesper_vale, D::prism, D::willow, D::cassi_and_issac };
+		const D fallback[] = { D::stellar, D::cassi_and_issac, D::varg, D::tavi, D::ren, D::ryth, D::vendetta, D::marcella, D::vesper_vale, D::prism, D::willow };
 		for (auto f : fallback)
 			if (std::find(mine.begin(), mine.end(), f) == mine.end())
 			{
@@ -161,7 +273,7 @@ void play_draft()
 	}
 	try
 	{
-		const std::array<std::uint8_t, 4> mem{ 0xB7, 1, static_cast<std::uint8_t>(F.team), 0 };
+		const std::array<std::uint8_t, 4> mem{ 0xB7, 2, static_cast<std::uint8_t>(F.team), static_cast<std::uint8_t>(chosen) };
 		bc::draft_memory = mem;
 	}
 	catch (...)

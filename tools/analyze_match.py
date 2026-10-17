@@ -4,6 +4,7 @@
 Produce the JSON with either:
   cambc run legend other --map M --statistics out.json --json
   cambc matches summary <MATCH_ID> --json -o out.json      (ladder / scrim matches; needs `cambc login`)
+Numeric-id summaries (downloaded without --json) are converted to the named layout first, see normalise().
 
 usage: analyze_match.py FILE.json [FILE.json ...] [--us teamA|teamB|BOTNAME] [--brief]
 
@@ -28,8 +29,94 @@ def runs_value_at(runs, t):
     return last
 
 
+# Ladder/scrim summaries downloaded without --json (and the platform's JSON download) use numeric ids instead of
+# names. These tables mirror the schema embedded in the cambc CLI (formatVersion 1.0, metricSemanticsVersion 1)
+# and the SDK enums (champion_draft, champion_type, item_type); heatmaps are row-major (index = y * width + x).
+METRIC_NAMES = ['earnedGold', 'spentGold', 'gold', 'gems', 'collectedGems', 'submittedGems', 'saleRefunds', 'kills',
+                'deaths', 'assists', 'monsterDamageDone', 'monsterDamageTaken', 'championDamageDone',
+                'championDamageTaken', 'healingDone', 'healingReceived', 'shieldingDone']
+EVENT_KINDS = {1: 'death', 2: 'kill', 3: 'assist', 4: 'wardPlacement', 5: 'buyItem', 6: 'buyConsumable', 7: 'sellItem',
+               8: 'campClear', 9: 'gemSubmission', 10: 'gemCollection', 11: 'gemLoss', 12: 'itemCombination',
+               13: 'botFault', 14: 'fuelExhausted', 15: 'resignation'}
+DRAFT_NAMES = ['Ryth', 'Vesper Vale', 'Vendetta', 'Cassi & Issac', 'Stellar', 'Prism', 'Marcella', 'Willow', 'Ren',
+               'Varg', 'Tavi']
+CHAMP_NAMES = ['Ryth', 'Vesper Vale', 'Vendetta', 'Cassi', 'Issac', 'Stellar', 'Prism', 'Marcella', 'Willow', 'Ren',
+               'Varg', 'Tavi']
+ITEM_FAMILIES = ['Monster', 'Power', 'Durability', 'Treasure', 'Jungle', 'Home', 'Bruiser']
+CONSUMABLE_NAMES = {0: 'TP Crystal', 2: 'Altar Lock'}  # SDK raw_consumable_ids {tp_crystal: 0, altar_lock: 2}
+TEAM_NAMES = ['teamA', 'teamB']
+# Context codes: death/gemLoss 1 = killed by a champion, 2 = by a camp; gemCollection 1 = camp group, 2 = champion.
+DEATH_CONTEXT = {'1': 'champion', '2': 'camp'}
+GEM_SOURCE = {'1': 'campGroup', '2': 'champion'}
+
+
+def _name(table, i):
+    return table[i] if 0 <= i < len(table) else f'#{i}'
+
+
+def item_name(i):
+    fam, rest = divmod(int(i), 6)
+    stat, emblem = divmod(rest, 2)
+    return f"{_name(ITEM_FAMILIES, fam)} {'Emblem' if emblem else 'Shard'} of {('Strength', 'Focus', 'Health')[stat]}"
+
+
+def normalise(d):
+    """Convert a numeric-id summary into the named layout produced by `--json`; named files pass through unchanged."""
+    if not isinstance(d['match'].get('outcome'), int):
+        return d
+    team = lambda t: _name(TEAM_NAMES, int(t))
+    m = dict(d['match'])
+    m['outcome'] = {1: 'teamA', 2: 'teamB'}.get(m['outcome'], 'draw')
+    roster = d.get('roster', {})
+    who = {}
+    for c in roster.get('champions', []):
+        who[c['id']] = {'id': c['id'], 'kind': 'champion', 'name': _name(CHAMP_NAMES, c['type']), 'team': team(c['team'])}
+    out = dict(d)
+    out['match'] = m
+    out['roster'] = {
+        'draft': [{'team': team(p['team']), 'champion': _name(DRAFT_NAMES, p['type'])} for p in roster.get('draft', [])],
+        'champions': [dict(who[c['id']], draftPick=c['draftPick']) for c in roster.get('champions', [])],
+    }
+    out['teams'] = [{'team': team(t['id']), 'submittedGems': t['submittedGems']} for t in d['teams']]
+    inv = lambda lst, key, fn: [{key: fn(x['id']), 'quantity': x['quantity']} for x in lst]
+    cons = lambda i: CONSUMABLE_NAMES.get(int(i), f'#{i}')
+    out['champions'] = [dict(name=who[c['id']]['name'], team=who[c['id']]['team'], id=c['id'],
+                             metrics={_name(METRIC_NAMES, x['id']): x['value'] for x in c['metrics']},
+                             items=inv(c.get('items', []), 'item', item_name),
+                             itemsBought=inv(c.get('itemsBought', []), 'item', item_name),
+                             consumables=inv(c.get('consumables', []), 'consumable', cons),
+                             consumablesBought=inv(c.get('consumablesBought', []), 'consumable', cons))
+                        for c in d['champions']]
+    out['teamTimelines'] = [dict(t, owner=team(t['owner']), metric='submittedGems') for t in d.get('teamTimelines', [])]
+    out['championTimelines'] = [dict(t, owner=who.get(t['owner'], t['owner']), metric=_name(METRIC_NAMES, t['metric']))
+                                for t in d.get('championTimelines', [])]
+    events = []
+    for s in d.get('events', []):
+        kind = EVENT_KINDS.get(s['kind'], str(s['kind']))
+        entries = []
+        for e in s['entries']:
+            e = dict(e)
+            ctx = str(e.get('context', ''))
+            if kind in ('death', 'gemLoss'):
+                e['context'] = DEATH_CONTEXT.get(ctx, ctx)
+                e['target'] = who.get(e['target'], {'id': e['target'], 'kind': 'camp'}) if ctx == '1' else {'id': e['target'], 'kind': 'camp'}
+            elif kind == 'gemCollection':
+                e['context'] = GEM_SOURCE.get(ctx, ctx)
+                e['target'] = who.get(e['target'], e['target']) if ctx == '2' else {'id': e['target'], 'kind': 'campGroup'}
+            elif kind in ('kill', 'assist'):
+                e['target'] = who.get(e['target'], e['target'])
+            elif kind in ('buyItem', 'sellItem', 'itemCombination'):
+                e['target'] = {'kind': 'item', 'name': item_name(e['target'])}
+            elif kind == 'buyConsumable':
+                e['target'] = {'kind': 'consumable', 'name': cons(e['target'])}
+            entries.append(e)
+        events.append({'owner': who.get(s['owner'], s['owner']), 'kind': kind, 'entries': entries})
+    out['events'] = events
+    return out
+
+
 def analyse(path, us_hint, brief):
-    d = json.load(open(path))
+    d = normalise(json.load(open(path)))
     m = d['match']
     rounds = m['roundsCompleted']
     teams = {t['team']: int(t['submittedGems']) for t in d['teams']}

@@ -36,26 +36,62 @@ private:
 	bool tribute(bool force);
 	bool on_the_way(int altar) const;
 	bool shop_trip();
+	bool home_trip();
+	void update_priority();
+	bool escort_wait();
+	int deficit = 0, respawn_round = -1000;
+	bool was_alive = true;
+	int cur_prio = -1;
+	int capture_group_id = -1, capture_since = -1, last_bank_round = -100;
+	int tribute_cancel_round = -1000;
+	bool W_dist_home_ok() const;
+	bool engaged = false;
+	int dbg_path = 0, dbg_eng = 0; // SPELL_TRACE: which decision used the turn / which engage branch
+	bool dbg_hit_other = false;	   // SPELL_TRACE: the melee step-then-hit-another-enemy branch swung
+	bool safe_to_recall() const;
+	bool altar_unsafe(int i) const;
+	void post_danger(vec2 at);
+	void prepare_scoring();
+	struct RecentEnemy
+	{
+		vec2 pos;
+		float hp, dps;
+	};
+	std::array<RecentEnemy, 8> sc_recent{};
+	int sc_recent_n = 0;
+	float sc_risk = 0;
+	bool sc_alert = false;
+	bool reward_here(); // a dead group we were farming waits for its capture next to us
 	bool respond_to_alert();
 	void farm();
 	bool farm_group(Group& g);
 	bool capture_group(Group& g);
 	bool wait_group(Group& g);
-	float group_score(const Group& g, int& eta, bool relaxed = false, bool* kite = nullptr) const;
-	float dps_vs_group(const Group& g) const; // calibrated by learner().k_out()
-	float dps_vs_group_raw(const Group& g) const;
-	float mitigated(float raw, int live) const;
-	void learn_observe();
-	float kite_dps(const Group& g) const;
-	bool kite_group(Group& g);
-	void chip_passing();
-	float incoming_per_round(const Group& g, int helpers) const;
+	float group_score(const Group& g, int& eta, bool* need_pair = nullptr, int d_override = -1) const;
+	bool hop_task(int gid);
+	bool has_crystal() const;
+	int tp_hop = -1, tp_hop_since = 0;
+	int pair_group = -1, pair_since = 0;
 	bool go_home();
 	// Teleport-crystal islands
 	float island_score(int i) const;
 	bool island_task(int i);
 	bool inside_island() const;
 	int tp_island = -1;
+
+	// farming model
+	float dps_on(const Group& g) const;			  // our damage per round against g (splash, area, retaliation)
+	float incoming_on(const Group& g) const;	  // damage per round g deals to the champion it targets (after passives)
+	float ally_dps_on(int ally, const Group& g) const; // estimated contribution of an ally farming g
+	bool ally_melee(int ally) const;
+	int trip_cost(const Group& g) const;		  // rounds to heal at spawn and come back to g
+	bool jungle_done() const;
+	bool durability_done() const;
+	bool monster_done() const;
+	void refresh_item_flags() const;
+	mutable std::size_t item_flags_idx = static_cast<std::size_t>(-1);
+	mutable bool jungle_ok = false, durability_ok = false, monster_ok = false;
+	bool has_home = false; // Home emblem (faster recall); we never buy it, kept for the capture-recall timing
 
 	// combat helpers
 	float camp_dps() const;
@@ -87,6 +123,7 @@ private:
 
 	// identity
 	bool inited = false;
+	int init_round = 0;
 	std::uint32_t self = 0;
 	bc::champion_type type = bc::champion_type::ryth;
 	Kit kit;
@@ -106,10 +143,13 @@ private:
 	bc::bitboard camp_danger; // tiles in range of awake camps
 	bc::bitboard alert_zone;  // area an ally reported as dangerous (shared memory)
 	bool enemy_near = false;
-	float camp_in = 0;		  // damage per round awake camps can deal to our tile
+	int enemy_near_d = BIG; // nearest recently seen enemy, minus the rounds since we saw it (it may have closed in)
+	bool cast_area_stun_at(const Enemy& e); // area stun hitting e from up to range + radius away
 
 	// game-state modulated thresholds (recomputed each turn from P and the scoreboard)
 	float fight_margin = 1.3f, fight_back_margin = 0.75f, deny_bonus = 0.55f, enemy_half_penalty = 10.f;
+	float isolated_fight_adv = 1.6f;
+	int stance = 0;
 	int tribute_min = 34;
 	void update_mode();
 

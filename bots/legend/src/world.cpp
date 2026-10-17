@@ -47,10 +47,24 @@ void World::init_static()
 	home.f.compute(walls, ally_spawn, visited);
 	home.ready = true;
 	home_reach = visited;
+	spawn_altar_d = BIG;
+	for (const auto& app : altar_approach)
+		for (auto t : app)
+			spawn_altar_d = std::min(spawn_altar_d, home.get(t));
 	const bc::bitboard enemy_walls = terrain | bc::map::altars() | ally_spawn;
 	away.f.compute(enemy_walls, enemy_spawn, visited);
 	away.ready = true;
+	altar_contested.assign(altars.size(), false);
+	altar_enemy_round.assign(altars.size(), -1000);
+	for (std::size_t i = 0; i < altars.size(); ++i)
+	{
+		int dh = BIG, da = BIG;
+		for (auto t : altar_approach[i])
+			dh = std::min(dh, home.get(t)), da = std::min(da, away.get(t));
+		altar_contested[i] = dh < BIG && da < BIG && std::abs(dh - da) <= 6;
+	}
 
+	walls_no_holes = bc::map::walls() | bc::map::altars() | enemy_spawn;
 	groups.clear();
 	int id = 0;
 	const auto all_groups = bc::map::camp_groups();
@@ -80,7 +94,7 @@ void World::init_static()
 			if (c.kind() == bc::camp_type::elk)
 				G.elk = true;
 			if (s.base_strength > 0)
-				G.harmless = false;
+				G.harmless = false, ++G.attackers;
 			sx += r.pos.x, sy += r.pos.y;
 			const int da = dist_home(r.pos), de = dist_away(r.pos);
 			G.d_ally = std::min(G.d_ally, da);
@@ -94,8 +108,13 @@ void World::init_static()
 				G.center = t;
 		G.hp_total = G.max_hp;
 		G.ours = G.d_ally <= G.d_enemy;
+		G.d_home_c = dist_home(G.center);
+		for (auto t : G.tiles)
+			G.radius = std::max(G.radius, cheb(t, G.center));
+		G.update_cluster();
 		groups.push_back(std::move(G));
 	}
+	hops.assign(groups.size(), Hop{});
 }
 
 void World::find_islands()
@@ -180,6 +199,24 @@ void World::init_units()
 		enemies.push_back(Enemy{ std::nullopt, handles[i], bc::champion_type::ryth, Kit{} });
 }
 
+void Group::update_cluster()
+{
+	int best = 0, live = 0;
+	for (std::size_t i = 0; i < camps.size(); ++i)
+	{
+		if (hp[i] <= 0)
+			continue;
+		++live;
+		int n = 0;
+		for (std::size_t j = 0; j < camps.size(); ++j)
+			n += hp[j] > 0 && cheb(camps[i].pos, camps[j].pos) <= 1;
+		best = std::max(best, n);
+	}
+	// Splash on the best target hits `best` camps while all live; as they die it falls to 1.
+	cluster = best <= 1 ? 1.f : (static_cast<float>(best) + 1.f) * 0.5f + (best >= 3 ? 0.2f : 0.f);
+	(void)live;
+}
+
 int World::group_at(vec2 p) const
 {
 	for (const auto& g : groups)
@@ -211,15 +248,9 @@ void World::perceive(vec2 me)
 	}
 
 	// Enemies: global alive flag is always readable; details only when visible.
+	update_alive(round);
 	for (auto& e : enemies)
 	{
-		std::int32_t alive = 1;
-		if (bc::detail::sdk_champion_is_alive(e.handle, &alive) == 0)
-		{
-			if (e.alive && !alive)
-				e.died_round = round;
-			e.alive = alive != 0;
-		}
 		bc::detail::champion_info info{};
 		e.visible = e.alive && read_champion(e.handle, info);
 		if (!e.visible)
@@ -253,18 +284,22 @@ void World::perceive(vec2 me)
 	}
 	for (auto& a : allies)
 	{
-		std::int32_t alive = 1;
-		if (bc::detail::sdk_champion_is_alive(a.handle, &alive) == 0)
-			a.alive = alive != 0;
 		bc::detail::champion_info info{};
 		a.visible = a.alive && read_champion(a.handle, info);
 		if (a.visible)
 		{
+			a.seen_round = round;
 			a.type = static_cast<bc::champion_type>(info.type);
 			a.pos = { info.x, info.y };
 			a.hp = info.health;
 			a.max_hp = info.max_health;
 			a.str = info.strength;
+			a.focus = info.focus;
+			if (!a.kit_ready)
+			{
+				a.kit = kit_of(bc::champion_designs[static_cast<std::size_t>(a.type)]);
+				a.kit_ready = true;
+			}
 		}
 	}
 
@@ -272,11 +307,13 @@ void World::perceive(vec2 me)
 	for (auto& g : groups)
 	{
 		std::uint32_t s = 0;
+		bool changed = false; // a camp died or came back: the splash cluster changes only then
 		if (bc::detail::sdk_camp_group_state(g.handle, &s) == 0 && s != 0)
 		{
 			g.seen_round = round;
 			if (s == 1)
 			{
+				changed |= g.st != ST_ALIVE;
 				g.st = ST_ALIVE;
 				float total = 0;
 				bool awake = false;
@@ -284,7 +321,10 @@ void World::perceive(vec2 me)
 				{
 					bc::detail::camp_state cs{};
 					if (bc::detail::sdk_camp(handle_of(g.camps[i].camp), &cs) == 0)
+					{
+						changed |= (g.hp[i] > 0) != (cs.health > 0);
 						g.hp[i] = cs.health;
+					}
 					total += g.hp[i];
 					if (g.hp[i] > 0 && cheb(g.camps[i].pos, me) <= 6)
 					{
@@ -298,6 +338,7 @@ void World::perceive(vec2 me)
 			}
 			else if (s == 2)
 			{
+				changed |= g.st != ST_REWARD;
 				g.st = ST_REWARD;
 				g.awake = false;
 				for (auto& h : g.hp)
@@ -318,6 +359,7 @@ void World::perceive(vec2 me)
 			// Unseen: advance our belief.
 			if (g.st == ST_RESPAWN && round >= g.ready_round)
 			{
+				changed = true;
 				g.st = ST_ALIVE;
 				for (std::size_t i = 0; i < g.camps.size(); ++i)
 					g.hp[i] = g.camps[i].max_hp;
@@ -330,8 +372,16 @@ void World::perceive(vec2 me)
 			}
 		}
 		g.enemy_on_tile = false;
+		if (changed)
+			g.update_cluster();
 	}
 
+	// Enemy proximity to altars (contested-altar discipline).
+	for (const auto& e : enemies)
+		if (e.visible)
+			for (std::size_t i = 0; i < altars.size(); ++i)
+				if (cheb(altars[i], e.pos) <= 6)
+					altar_enemy_round[i] = round;
 	// Enemy proximity to groups.
 	for (const auto& e : enemies)
 		if (e.visible)
@@ -340,7 +390,33 @@ void World::perceive(vec2 me)
 				const int d = cheb(g.center, e.pos);
 				if (d <= 6)
 					g.enemy_round = round;
-				if (g.mask.is_set(e.pos))
+				if (d <= g.radius && g.mask.is_set(e.pos)) // host call only when it can be on a tile
 					g.enemy_on_tile = true;
 			}
+}
+
+void World::update_alive(int round)
+{
+	// Cheap (one host call per ally); also run while this body is dead so deaths it did not witness get
+	// their real round (the respawn escort predicts respawns from it).
+	for (auto& a : allies)
+	{
+		std::int32_t alive = 1;
+		if (bc::detail::sdk_champion_is_alive(a.handle, &alive) == 0)
+		{
+			if (a.alive && !alive)
+				a.died_round = round;
+			a.alive = alive != 0;
+		}
+	}
+	for (auto& e : enemies)
+	{
+		std::int32_t alive = 1;
+		if (bc::detail::sdk_champion_is_alive(e.handle, &alive) == 0)
+		{
+			if (e.alive && !alive)
+				e.died_round = round;
+			e.alive = alive != 0;
+		}
+	}
 }

@@ -1,238 +1,148 @@
 # CAMBC 2026a — winning strategy
 
-This is the strategy the `legend` bot implements, why, and how it was validated. It follows the team
-plan (`CAMBC_2026a_Strategy_Plan.md`) section by section, and replaces its guesses with measurements
-from the real engine wherever we could test them. Numbers marked *(measured)* come from the local
-engine; the full list of verified mechanics is in [ENGINE_FACTS.md](ENGINE_FACTS.md).
+This is the strategy the `legend` bot implements and the evidence behind it. The October 16 revision
+is built on 24 decoded ladder losses (we lost 17 of 20 scrims against four top teams) and the 12 real
+ladder maps extracted from those replays. Verified mechanics are in [ENGINE_FACTS.md](ENGINE_FACTS.md),
+the learning system in [LEARNING.md](LEARNING.md).
 
-> Scope note. The competition site (`2026a.battlecode.co.uk`) is blocked from the environment this was
-> built in, so the official map pool, ladder and other teams' replays were not available. Everything
-> was tested on 64 generated symmetric maps (sizes 30–100, all three symmetries, 3–5 champions) against
-> our own sparring archetypes. The feedback loop in [FEEDBACK_LOOP.md](FEEDBACK_LOOP.md) closes that gap:
-> it turns your ladder matches into reports this strategy can be re-tuned from.
+## 1. Why we were losing
 
-## 1. What actually decides a game
+Every number below comes from the decoded replays (`tools/replay/decode.mjs` + `report.py`).
 
-1. **It is a farming race with a fixed supply.** First to 1,000 tributed gems wins. Unopposed, the
-   bot reaches 1,000 in ~440 rounds on average *(measured, 128 games)*. Against an equal opponent
-   it takes ~630 rounds, so the opponent removes about a third of our pace. Every round a body is idle,
-   travelling or dead is lost supply.
-2. **The real throughput limit is body-rounds, not camps.** A capture pins one champion for 6 rounds,
-   and only one champion is needed. With 3–5 bodies the team is body-limited on most maps. The plan's
-   rule "one champion per camp, pairs only for elks" is right; **extra allies on a capture split the
-   reward and waste a body**.
-3. **Deaths are the biggest leak.** In contested games each team loses 8–18 champions per game *(measured)*.
-   Each death costs 60 rounds of that body plus the carried bag, and gives the killer 50 gold and the bag.
-   Cutting our deaths was worth more than any farming tweak.
-4. **Gold snowballs.** Shards add the champion's full growth per 30 gold. A 2x gold edge shows up as
-   faster kills and won fights. Lifetime gold is also the first tiebreak at round 2,000.
-5. **Camps never heal.** This one fact changes the economy (section 3).
-
-## 2. Hidden techniques, loopholes, traps and baits
-
-### Techniques we exploit (all verified)
-
-| # | Technique | Why it works | Where in the bot |
-|---|---|---|---|
-| 1 | **Multi-trip farming** | Camps never heal. A group too strong for one health bar (2-wolf packs, elks) is cleared over several heal trips. This removed ~50% idle time on elk-heavy maps (747 → 349 rounds to win on one map) | `group_score` trip model |
-| 2 | **Zero-risk spell chipping** | Range-4 spells outrange the camps' range 3 | `spells_on_camp`, pinned-turn casts |
-| 3 | **Stun the camp, not just the enemy** | Stunned camps skip their attack | Tavi/Prism/Ren/Ryth casts on awake camps when no enemy is near |
-| 4 | **Move + tribute in one turn; ≤10 gems is free** | Engine allows starting the channel after walking | `tribute()` |
-| 5 | **Global death tracking** | `is_alive()` works on unseen enemies | enemy-half risk scales with living enemies |
-| 6 | **Retreat before recalling** | Any damage cancels recall; camps don't chase | `safety()`, `go_home()` |
-| 7 | **Ranged dash-then-shoot, double attack** | Dash spends the cast, not the move/attack; reset restores the attack | `farm_group`, `engage` |
-| 8 | **Never wait on a respawning tile** | An occupied spawn tile delays the respawn | `wait_group` |
-| 9 | **One body per capture** | Rewards are split | claims in shared memory |
-| 10 | **Altar lock as a channel breaker** | Placing a lock cancels enemy tributes at that altar; our own team can still use it | `use_locks()` |
-| 11 | **Reverse search fields** | One field per target, built lazily; stepping is a neighbour lookup | `nav.cpp` |
-| 12 | **Fuel discipline** | Cache `camp_groups()` (25k) and champion handles; never iterate tiles | `world.cpp` |
-| 13 | **Read enemy cooldowns** | A visible enemy's ability cooldowns are readable: no dash up means melee reach 2, not 4; no burst up means a cheaper fight | `build_danger`, `combat` |
-| 14 | **Teleport islands** | Camps walled off from walking are reachable with a 10-gold crystal (range 3, ignores walls); recall gets you out with the bag. Uncontested gems on maps that have them (5–1 on our island maps) | `find_islands`, `island_task` |
-| 15 | **Stunners act first** | Within a team, higher priority acts first; stunners get the highest so their stun lands before allies and enemies act | `Brain::init` |
-| 16 | **Play the scoreboard** | Ahead by 150: bank smaller bags, raise the fight bar. Enemy ≥ 650 and ahead: steal, hunt carriers, take closer fights (+4.6% head-to-head) | `update_mode` |
-
-### Traps and baits (what looks good but loses)
-
-| Trap | Why it loses | Evidence |
+| Finding | Evidence | Fixed by |
 |---|---|---|
-| **Vendetta first pick** (the plan's default) | Best farmer on paper, but 800 health melee dies too often in contested games | Varg/Tavi/Stellar/Ren core beat a Vendetta-first draft ~60% over 128 games |
-| **Monolith early** | 20,000 HP, 200 damage per round: even five range-4 casters need ~170 rounds for 200 gems — farming pays ~2.5x more | arithmetic + scoring |
-| **Solo elk at full commitment** | 2,400 HP × 60 dps kills any champion before the elk dies | Ryth died soloing an elk in the probe |
-| **Recalling in a fight** | Damage cancels it; you die channelling | probe |
-| **Chasing fleeing enemies** | Kills don't win; gems do. We killed a passive bot ~10× per game and still lost 25% of games until chasing was reined in | sparring results |
-| **Waiting for respawns** while enemy-side camps sit untouched | Bodies idle 50%+ | trace stats |
-| **Cassi & Issac as "free extra body"** | Linked death: one gank kills both and pays one bag | tournaments: never better than Ryth/Ren in the 5th slot |
-| **Danger-zone avoidance via one shared alert** | One 2-byte alert slot overwrites rally calls; allies abandon contested areas | win rate vs aggressive fell 79% → 67%; disabled |
-| **Verbose draft analysis** | 1M first-turn fuel runs out → random picks | probe |
-| **Standing on spawn tiles to "guard" a camp** | Delays our own respawn | engine rule |
+| **Big packs were never farmed.** The camp score assumed one champion tanks every camp for the whole kill, ignored Varg's splash and allies, and rejected anything needing more than 3 heal trips | On the 3-wolf-pack ladder map the old bot lost **132-1012 to the official starter bot** on both sides; every 66-gem pack scored -1, the team farmed gold clusters | §3 farming model |
+| **We died 3x as often.** 12.2 deaths per match vs their 4.0; 28-42% of our body-rounds dead; half the team dead for a third of the game | 245 deaths: 50% with no ally within 6 tiles, 64% on our own half, median HP 5 rounds before death 58% (burst, not attrition), 40 of 69 deaths against one opponent dealt zero damage (we fled same-speed chasers) | §4 fights |
+| **They recall as transport, we only in emergencies** | They recall 2.4x more, at ~50-70% HP, right after captures (the reward still lands), then heal, shop and bank near spawn. Our recalls came at a median 20% HP; 8 of 28 died mid-recall | §3 recall loop |
+| **They act first in fights** | One team called `set_priority` ~200 times per game; its killing blow landed before our victim could act in 51 of 64 deaths | §4 priority |
+| **Every top team drafts Cassi & Issac** | 24 of 24 opponent drafts; an extra body for one pick (+33% farmers at team size 3) | §2 draft |
+| **Spawn deadlock** | On maps where the spawns touch, three of our four champions traded hits with healing enemies on their spawn for the whole game (110-286 at round 2000 vs the starter bot) | §4 |
+| **Gold-only clusters overvalued, HP never bought** | 25 of 32 captures gave 0 gems in one loss; their champions ended with 1800-2000 HP vs our 1125-1500 | §3 items |
 
-## 3. The meta: common strategies and their counters
+## 2. Draft
 
-We built each common archetype as a parameter or style variant of the same engine-correct bot,
-so the comparison isolates the strategy, not the code quality.
+Picks are simultaneous and duplicates are allowed, so the draft is about fielding the composition that
+wins most on the map, not denial. Values come from round-robin tournaments of the **same bot code** with
+forced drafts (`tools/draft_tournament.py`, 5 drafts, 39 maps x 2 sides, 780 games):
 
-| Archetype | What it does | How it fares | Counter (implemented) |
+| Draft (pick order) | Mean | Worst matchup | Size 3 / 4 / 5 |
 |---|---|---|---|
-| **Pure farmer** ("passive") | Farms, never fights, banks often | Loses to fighters: we win 90.6% | Punish carriers and channellers; fight only with local edge; keep farming |
-| **Aggressive invader** | Fights at even odds, farms the enemy half | Bloody, many deaths both sides; we win 80–85% | Fight back when they can already hit us; don't flee same-speed melee; focus fire; tribute before risky fights |
-| **Deathball** (all five together) | Groups up, kills isolated champions | Kills us often but farms ~5x slower: we win 99–100% | Keep farming in parallel; one body per capture; avoid 1v5s; their side is empty, so steal it |
-| **Vendetta rush / burst drafts** | Early ganks with dash + reset | Dies to durable comps | Durable draft (Varg, Ren, Ryth), stun first |
-| **Monolith rush** | Whole team on the monolith | 170+ team-rounds for 200 gems | Farm harder; contest the capture tile at the end (one body on any tile resets their timer) |
-| **Altar locker** | Locks our altars | Costs 3 attacks per lock | Tribute converts to lock attacks automatically; prefer unlocked altars (+6 step penalty) |
+| **Ren, Stellar, Cassi & Issac, Ryth, Varg** ("meta") | **0.554** | **0.538** | 0.50 / 0.53 / 0.58 |
+| Stellar, C&I, Ren, Varg, Tavi | 0.522 | 0.462 | 0.58 / 0.54 / 0.49 |
+| Stellar, C&I, Varg, Tavi, Ren | 0.506 | 0.436 | 0.46 / 0.46 / 0.55 |
+| Stellar, C&I, Varg, Ryth, Tavi | 0.497 | 0.449 | 0.46 / 0.49 / 0.51 |
+| Varg, Tavi, Stellar, Ren, Ryth (old) | 0.420 | 0.385 | 0.50 / 0.48 / 0.36 |
 
-Game-theoretically the draft is **simultaneous with duplicates allowed**, so there is no denial and no
-counter-picking on information we don't have: the right move is the best *robust* composition, found
-empirically by round-robin tournaments (section 5), with small map adjustments.
+The bot drafts "meta" (it is also what the strongest ladder team drafts), with one map adjustment: at
+team size 4, when most of our camp groups are multi-camp packs, Varg comes before Ryth (splash). Ren is
+a health/focus tank whose retaliation hits every camp (and champion) that hits him; Cassi & Issac are two
+farmers; Stellar is the range-4 burst; Ryth tanks elks and stuns packs. The draft code keeps every
+composition's measured value so re-running the tournament after a patch updates the choice.
 
-## 4. The final strategy (what `legend` does)
+## 3. Farming
 
-### Draft
-Base values from composition tournaments, then small map adjustments (multi-monster groups favour
-Varg/Stellar/Ren, two or more elks favour Ryth, very spread small camps favour Cassi & Issac):
+**Camp value per round** (`group_score`): gems + 0.22 x gold, divided by travel + wait + kill time + 6
+capture rounds + heal trips, with risk terms.
 
-**Varg → Tavi → Stellar → Ren → Ryth** (Cassi & Issac / Vendetta as alternates).
+- *Kill time* uses our real damage against this group: Varg's basic attack hits every live camp next to
+  the target (a packed trio takes ~2.2x damage), radius-1 area spells likewise, Ren's retaliation adds
+  0.2 x focus per attacking camp, attack resets add 1/8.
+- *Damage taken*: camps hit the nearest champion, so a ranged champion next to a melee ally takes almost
+  nothing; Jungle (-30%) and Durability (-10%) emblems, Varg's shield and stuns on camps reduce it.
+- *Heal trips*: camps never heal, so a group too strong for one health bar is farmed over several trips;
+  each costs recall-or-walk home and back. Up to 5 trips.
+- *Joining*: a second body joins a pack that is heavy for the bodies already on it (multi-camp, elk, or
+  more than 14 rounds for them); the lowest claimer index captures.
+- *Threat*: camps where a stronger enemy force was seen in the last 8 rounds are skipped.
+- *Never idle*: with nothing worth farming, top up at home (heal, shop) or move to an ally's pack.
 
-- Varg: splash on multi-camp groups, 250-point self-shield, 1,000 HP — the most robust farmer-fighter.
-- Tavi: shops anywhere (no trips home), 2.2× focus stun-nuke at range 4.
-- Stellar: highest spell damage at range 4 (2.0× and 1.4× area) — safe chipping and burst.
-- Ren: stun + dash + retaliation (hits back at every camp and enemy that hits him).
-- Ryth: 1,200 HP tank, area stun, strength from health.
+**Recall loop.** Recall is transport, not an emergency:
+- *Recall while capturing*: step on the dead camp's tile, recall one turn later; the reward lands with
+  the teleport (ENGINE_FACTS). Done whenever spawn is 8+ steps away, nothing can reach us, and we are
+  hurt, can shop (90+ gold after the capture), or will need to bank.
+- *After banking* far from home while hurt or rich; *to shop* once 4 shards are affordable; bank via the
+  altar next to spawn when recall + walk beats walking to the nearest altar.
+- Never recall when an enemy seen in the last 2 rounds is within 7 tiles (any damage cancels it), and
+  cancel a recall when a threat closes in.
 
-Fuel-safe: analysis is one BFS from each spawn; any failure falls back to a fixed list so a pick is
-never missed.
+**Banking**: from 22 gems before round 150 (gold and safety sooner), 34 after; immediately when an altar
+is on the way, before risky fights, or when it wins. *Contested altars* (about as close to their spawn as
+ours) where enemies were seen in the last 8 rounds are avoided unless an ally stands by: the bag is
+safer moving with us than walking alone into their pack.
 
-### Farming loop (every champion, every turn)
-Score every camp group and run the best one (claims in shared memory stop duplicates):
+**Items**: Monster > Jungle (health) > Treasure > Durability (health) > Power for melee farmers; Ren:
+Jungle (health) > Power (focus) > Durability > Treasure (focus); casters: Monster (focus) > Durability >
+Treasure > Power. +13% gold and 65% head-to-head against the old builds.
 
-```
-score = (gems·(1 + 0.55 if enemy half) + 0.22·gold) / (travel + wait + kill + 6 + trips·homeTrip + risk)
-```
+**Crystal shortcuts.** Teleport crystals hop up to Chebyshev 3 over holes and walls. A resumable scan of
+the map collects launch->land pairs that save 15+ steps; a group reached much faster through a hop is
+scored with the hop's travel time, and the champion buys a crystal, walks to the launch tile and hops.
 
-- *kill* = remaining HP (remembered — camps don't heal) / our damage per round, where our damage counts
-  Varg's splash on every adjacent live camp, area spells on the whole cluster, Ren's retaliation, and an
-  ally on the same group; it is then corrected by what this champion actually dealt earlier in the match.
-- *trips* = extra heal trips (up to 5) needed when the camps' damage over the kill time exceeds our
-  health budget. Incoming damage decays as camps die, minus our shield and stun uptime, is shared with
-  an ally in front, and is corrected by what we actually took.
-- Heavy groups (3-wolf lines, elk groups) take two bodies; a champion with no positive target relaxes the
-  limits rather than idle. The ladder showed these groups hold most of the gems on official maps.
-- A target is dropped only when no damage has landed on it for `2·eta + 60` rounds (the old fixed timer
-  abandoned big groups at 95%).
-- Spells that would idle chip any live camp within range 4; kiting a whole group from range 4 is chosen
-  only once spells are ≥ 80% of our damage (focus items), because at base focus it is too slow.
-- *risk* adds rounds for the enemy half (scaled by how many enemies are alive), for recent enemy
-  sightings, and halves the value if an enemy stands on the tile.
-- Respawning groups are worth going to if they come back within ~18 rounds of arrival; we wait next to
-  the tiles, never on them.
-- A little hysteresis (×1.15) keeps a champion on its current task.
+## 4. Fights
 
-### Tribute
-Bank when carrying ≥34, when an altar is ≤5 steps away, before fights while carrying ≥10, when the
-team would reach 1,000, and in the endgame (round + distance + ticks + margin ≥ 2,000). Within 200 gems of
-the goal (either team) the bag threshold shrinks linearly to 1, so the team's bags get banked even when
-no single bag would win (we lost 962–1000 holding 152 gems). With ≥20 gems and an enemy near but not
-yet in reach, banking comes before fighting. Ten gems or fewer
-are free; moving and starting a tribute happen in the same turn.
+Each champion estimates the local fight (`combat()`):
 
-### Combat
-Each champion estimates a local fight from what it can see:
+    advantage = (our HP / their DPS) / (their HP / our DPS) x learned confidence
 
-```
-advantage = (our HP / their DPS) / (their HP / our DPS)      (allies within 5, enemies within 8)
-```
+Our side counts allies within 6 with their spells (Stellar and Cassi were counted as ~0 before); a ready
+enemy stun counts as extra damage; on our own spawn we add a full health bar (it heals 100% per round).
 
-- **Engage** proactively at advantage ≥ 1.3, or when the focus target dies to our burst this turn.
-- **Fight back** when they can already hit us and advantage ≥ 0.75 — fleeing an even fight just
-  hands them free hits.
-- **Cornered** by melee we can't outrun (same speed, they move and hit in one turn): fight unless
-  advantage < 0.45.
-- **Flee** otherwise, toward spawn, avoiding threatened tiles; post a danger alert.
-- **Focus target** is team-consistent (gems + channelling bonus over HP, no distance term), so allies
-  who see the same fight hit the same enemy. Stun first on channellers and melee divers.
-- Don't fight near their spawn unless the kill is certain; don't take even fights while carrying ≥40 gems.
-- Awake camps hitting our tile count on the enemy's side of the estimate.
-- An enemy that has already landed a one-round burst ≥ our health (remembered per enemy) is not fought
-  while its spells are up unless we kill it first.
+- **Ignore enemies on their own spawn** unless one turn of burst kills them.
+- **Escape feasibility**: fleeing works only if no melee/dash chaser is close, our dash outruns theirs,
+  or we survive the walk home. Otherwise fight back (unless hopeless): fleeing a same-speed chaser
+  hands it free hits. When we do retreat, stun the chaser if that stun allows walking, and melee
+  champions strike after their step.
+- **Backup**: allies in sight or claiming a camp within 8 tiles count as backup. Alone, a fight needs
+  advantage 1.6 or a sure kill, and we start walking home as soon as a stronger group is within 7.
+- **Numbers**: with more enemies alive than allies, play defensively (no enemy half, higher fight bar);
+  down by two, a freshly respawned champion waits up to 15 rounds on spawn for the next ally instead of
+  walking out alone into their pack. With half the team dead, only sure fights.
+- **Targets** are team-consistent: carriers, channellers, and Cassi/Issac (linked death) first; never
+  swing at Ren with less health than 2.5x his retaliation.
+- **Turn order**: the engaged champion sets the highest priority (stunners and low-health champions a
+  little higher) so it acts before the enemy fighters it faces; capturers medium; others low.
+- **Channels** are cancelled when finishing them would cost the bag or our life.
+- **Opportunities**: a visible enemy tributing (or recalling with a bag) is posted to the team; allies
+  within 12 (16 when they are close to winning) converge, at lower health than a normal rally.
 
-### Scoreboard modes
-`global_submitted_gems()` shows both scores. Ahead by ≥150: tribute at ¾ of the normal bag and require
-advantage ≥1.6 to start a fight. When the enemy has ≥650 and leads by ≥75: lower the fight bars, raise
-the value of their camps and drop the enemy-half risk, because a slow loss is still a loss.
+## 5. Scoreboard and stance
 
-### Teleport islands
-At start, find camp groups no walking path reaches, and a launch tile within range 3 of a free tile
-inside. Buy a crystal (10 gold) first when such islands exist; a champion near spawn compares the trip
-(walk + 4-turn channel + kills + captures) with its best walking target, teleports in, farms every group
-inside, then recalls out once nothing there is worth waiting for, or as soon as its bag reaches 60
-gems (islands have no altar; the recall keeps the bag).
+`global_submitted_gems()` shows both scores. Ahead by 150: bank smaller bags and fight only clearly
+winning fights. They have 650+ and lead: steal, hunt carriers, take closer fights. On top of that the
+in-match learner (LEARNING.md) picks a team stance every 40 rounds from rewards and punishments: SPREAD,
+GROUPED (when we are being invaded) or PUSH (when we win fights).
 
-### Safety
-Retreat when health falls below 25% or below four rounds of the camp damage hitting us. Step out of
-camp range first, recall only when nothing can hit us and spawn is > 5 steps away; heal fully on spawn.
+## 6. Measured results
 
-### Items
-Complete one emblem at a time: melee farmers **Jungle (strength)** first (30% less camp damage =
-fewer heal trips), then a **Durability Emblem of Health** (+5 health points, 10% less damage: it is what
-makes elk groups affordable, and every ladder opponent farmer buys one), then Monster, then Power. Tavi
-and the casters take the health emblem right after their first emblem. Carry one 10-gold altar lock
-after the first emblem. With ≥300 gold and nothing able to interrupt, recall to spend it.
+Local evaluation on 39 maps (12 real ladder maps + 27 generated) x both sides = 78 games per row; the
+"hunter" opponents are aggressive archetypes on the new code with the ladder's drafts.
 
-### Team talk (8 bytes)
-Bytes 0–5: one per body, claimed group + "need help" bit. Bytes 6–7: one alert (tile + kind:
-danger / rally / opportunity). Allies within ~9 tiles answer rally calls when healthy.
+| Opponent | Old bot (v5, what was on the ladder) | New bot |
+|---|---|---|
+| starter bot | 88% (lost the 3-wolf-pack map on both sides) | **100%** |
+| old bot (v5) | — | **81%** |
+| pack-opening hunter (Ren/Stellar/C&I/Ryth/Varg, aggressive) | 42% | **87%** |
+| aggressive C&I hunter (C&I/Vendetta/Varg/Ryth/Stellar) | 28% | **82%** |
+| new code with the Stellar/C&I draft | 14% | **55%** |
+| unopposed, rounds to 1,000 | 574 | **500** |
 
-## 5. ML, RL and game theory: what is used and why
+Noise floor: identical code differing only in fuel use moves a 78-game result by up to ~3 points, so
+differences under ~5 points are not significant.
 
-- **In-game neural policies are not viable.** 100k fuel per turn is ~100k wasm instructions; the bot
-  already spends 30–70k on perception and pathing on 100×100 maps. A tiny linear scorer is the most a
-  turn can afford, which is exactly what the utility function is.
-- **Offline optimisation is where learning pays.** Matches are deterministic and take ~1.5 s, so the
-  bot is tuned by **self-play black-box optimisation**: `tools/tune.py` runs coordinate descent over
-  `params.h`. Each candidate plays head-to-head against the current best on 64 maps × both sides and
-  must not regress against a panel of frozen opponents. This is the same idea as RL from self-play,
-  but with a sample-efficient optimiser instead of gradient steps.
-- **Empirical game theory for the draft.** Composition tournaments (round robins of forced drafts)
-  form a payoff matrix; we pick the composition with the best worst-case and average, which is the
-  robust answer to a simultaneous, duplicate-allowed draft.
-- **In-match online learning** (`learn.cpp`, see HLD): a Bayesian fight record (Beta posterior over
-  exchanges, from global death events) moves the fight margin and the enemy-half cost; a banking-pace
-  model projects both finish rounds and switches between protecting a lead and taking risks; each
-  champion calibrates its camp damage model (dealt and taken) against what happens; each enemy's real
-  burst is remembered. All deterministic and cheap, so it fits the fuel budget.
-- **Learning from ladder losses.** Five lost matches were dissected (docs/LADDER_LOSSES.md); the
-  opponent's behaviour became a sparring bot (`_oppR`) that reproduces the ladder result against the old
-  bot, and every fix was kept or dropped by A/B benchmarks against it.
-- **Python was considered and rejected** for the bot: measured, it has ~15× less usable compute per
-  turn than C++ (a bare 1,000-step loop costs 71% of a Python turn).
+## 7. What did not work (kept switchable)
 
-## 6. Measured results (current bot)
+| Idea | Result | Switch |
+|---|---|---|
+| Pair plans (claim a pack too heavy for one, wait for a partner) | -24 rounds unopposed pace, no win-rate gain | `pair_plans` |
+| Untuned online learners (first version) | -10 points until the combat model was fixed; neutral now; the trainer tunes them | `learn_*` |
+| Early deathball opening (`deathball_until`) | Lost to plain spread farming (also found by the analysts) | `deathball_until` |
 
-| Opponent | Win rate (134 games: 67 maps × both sides) |
-|---|---|
-| starter bot | 100% |
-| deathball variant | 100% |
-| early rush (deathball invade for 160 rounds) | 88% |
-| v1 aggressive variant | 86% |
-| v1 passive variant | 85% |
-| v1 (first version of this bot) | 63% |
-| previous release (v4) | 56% |
-| unopposed pace | 1,000 gems in ~466 rounds |
+## 8. Where this could be wrong
 
-Tuning log, for the record: a 30-candidate coordinate-descent pass over 15 parameters accepted only
-`gold_value 0.22 → 0.12`, and that gain did **not** transfer once the newer features were merged
-(0.12 lost 48.5% to 0.22 head-to-head), so the shipped value is 0.22. The hand-set defaults sit at a
-local optimum for our sparring panel; real gains came from structural changes (multi-trip farming,
-fight-back rules, the durable draft, scoreboard modes, cooldown reading, islands). Re-tune on the
-official map pool against ladder-derived opponents (FEEDBACK_LOOP.md).
-
-## 7. Where this could be wrong
-
-- **Map pool.** Our generator is a guess at the official maps, now shaped by the five ladder maps
-  (3-wolf lines, elk groups with gem/gold clusters, gold columns near spawn: `gen.mjs ... official`). Re-run the composition tournament
-  and the tuner on the real pool (`cambc maps pull`) as soon as you have it.
-- **Top teams may fight better than our archetypes.** If ladder reports show us losing fights we
-  "should" win, raise `fight_margin`, and look at the death list in the match report.
-- **Turn order inside a round** was not probed. Priority (`set_priority`) is unused; stunners acting
-  first could matter in close fights.
-- **Patches.** All costs, ranges and stats are read from the API at runtime, but tuned constants
-  should be re-validated after any balance change.
+- Our opponents in local tests are archetypes built on our own code. They reproduce the ladder result
+  (the old bot loses 14-42% to them) but real teams will differ: keep feeding ladder replays back
+  (FEEDBACK_LOOP.md).
+- Map pool: 12 real maps so far. Tournament maps are unseen; the draft and the trainer should be re-run
+  as more real maps are extracted.
+- Balance patches (Prism buff, kill reward, `HeartOfRuin`): all stats are read from the engine at run
+  time, but the draft table and the trained parameters need re-running after a patch.

@@ -32,7 +32,7 @@ def main():
     ap.add_argument('--quiet', action='store_true')
     args = ap.parse_args()
 
-    maps = sorted(glob.glob(args.maps))
+    maps = sorted({m for pat in args.maps.split(',') for m in glob.glob(pat)})
     maps = [m for m in maps if not os.path.basename(m).startswith('zz_')]
     run_dir = os.path.join(args.out, f'{args.a}_vs_{args.b}_{int(time.time())}')
     os.makedirs(run_dir, exist_ok=True)

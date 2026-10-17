@@ -30,7 +30,13 @@ struct Group
 	int gems = 0, gold = 0, respawn = 0;
 	float max_hp = 0, dps = 0;
 	bool monolith = false, elk = false, harmless = true;
+	int attackers = 0; // camps that fight back
+	// Live camps hit by a radius-1 splash or area spell centred on the best target, averaged over the kill
+	// (a packed trio starts at 3 and ends at 1). Recomputed from remembered health every perception.
+	float cluster = 1.f;
 	int d_ally = BIG, d_enemy = BIG;
+	int d_home_c = BIG; // walking steps from our spawn to the centre (static; trip costs read it every turn)
+	int radius = 0;		// Chebyshev reach of the tiles from the centre
 	bool ours = true;
 
 	// Dynamic memory
@@ -42,6 +48,8 @@ struct Group
 	bool awake = false;
 	int enemy_round = -1000;  // last round an enemy was seen within 6 tiles
 	bool enemy_on_tile = false;
+
+	void update_cluster();
 };
 
 // Camp groups that cannot be reached on foot from our spawn, with a teleport-crystal entry (range 3).
@@ -52,6 +60,16 @@ struct Island
 	int launch_home = BIG; // steps from our spawn to the launch tile
 	int gems = 0;
 	Field to_launch;	   // field rooted at the launch tile (built at init)
+};
+
+// A teleport-crystal shortcut to a camp group that is far on foot (hole mazes): walk to `launch`, hop to
+// `land` (up to 3 tiles over holes), then walk on. Computed lazily per group.
+struct Hop
+{
+	bool tried = false, valid = false;
+	vec2 launch{ -1, -1 }, land{ -1, -1 };
+	int cost = BIG; // rounds from our spawn to the group through the hop
+	Field to_launch;
 };
 
 struct Enemy
@@ -89,7 +107,11 @@ struct Ally
 	bc::champion_type type;
 	bool alive = true, visible = false;
 	vec2 pos{ -1, -1 };
-	float hp = 0, max_hp = 1, str = 0;
+	float hp = 0, max_hp = 1, str = 0, focus = 0;
+	Kit kit{};
+	bool kit_ready = false;
+	int died_round = -1000; // last death we saw (respawn after respawn_time)
+	int seen_round = -1000; // last round this body saw it (pos is that sighting)
 };
 
 struct World
@@ -101,10 +123,15 @@ struct World
 	vec2 ally_spawn_c, enemy_spawn_c;
 	std::vector<vec2> altars;
 	std::vector<std::vector<vec2>> altar_approach;
+	std::vector<bool> altar_contested;	 // about as close to their spawn as to ours
+	std::vector<int> altar_enemy_round;	 // last round an enemy was seen within 6 of the altar
 	std::vector<Group> groups;
 	std::vector<Island> islands;
+	std::vector<Hop> hops;	 // per group
+	bc::bitboard walls_no_holes; // walls, altars and the enemy spawn (holes passable: a crystal hops them)
 	std::vector<int> island_of; // per group: island index or -1
 	Field home; // steps from our spawn
+	int spawn_altar_d = BIG; // walking steps from our spawn to the nearest altar's approach tile
 	bc::bitboard home_reach; // tiles reachable on foot from our spawn
 	Field away; // steps from enemy spawn
 
@@ -119,6 +146,7 @@ struct World
 	void init_static();
 	void find_islands();
 	void init_units();
+	void update_alive(int round); // ally and enemy alive flags and death rounds (cheap; also while dead)
 	void perceive(vec2 me);
 	int group_at(vec2 p) const;
 	bool altar_locked_by_enemy(int altar_index) const;

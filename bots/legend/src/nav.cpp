@@ -1,4 +1,5 @@
 #include "nav.h"
+#include <cstdio>
 #include "params.h"
 
 Nav& nav()
@@ -56,6 +57,138 @@ bool Nav::ensure_altar(int id)
 	fld.ready = true;
 	++built_this_turn;
 	return true;
+}
+
+void Nav::hop_scan_step(long long fuel_floor, int turn_round)
+{
+	auto& w = world();
+	if (hop_scan == -2)
+		return;
+	const int W = w.W, H = w.H;
+	if (hop_scan == -1)
+	{
+		if (bc::fuel_remaining() < fuel_floor + 25000)
+			return;
+		const bc::bitboard holes = bc::map::holes();
+		// A hop saves at most the walk minus the straight-line (Chebyshev) distance: skip the scan when no
+		// group is far enough out of the way on foot for a hop to save hop_min_save steps.
+		bool worth = false;
+		for (const auto& g : w.groups)
+			if (g.d_ally < BIG &&
+				g.d_ally - std::max(0, cheb(g.center, w.ally_spawn_c) - 3 - g.radius) - static_cast<int>(bc::constants::tp_crystal_time) - 1 >= P.hop_min_save)
+				worth = true;
+		if (holes.is_empty() || !worth)
+		{
+			hop_scan = -2;
+			return;
+		}
+		// Bitboard exports are packed (one bit per tile, row-major, LSB first); distance fields are one
+		// uint16 per tile. Walls and holes are already UNREACH in the home field; camp spawn tiles are not
+		// valid landing tiles (a crystal cannot land on a camp).
+		bc::bitboard camps;
+		for (const auto& g : w.groups)
+			camps |= g.mask;
+		home_lin = w.home.f.export_linear_buffer();
+		holes_lin = holes.export_linear_buffer();
+		blocked_lin = camps.export_linear_buffer();
+		hop_scan = 0;
+		hop_x = 0;
+	}
+	auto at = [W](int x, int y) { return static_cast<std::size_t>(y * W + x); };
+	auto bit = [](const std::vector<std::uint8_t>& v, std::size_t i) { return ((v[i >> 3] >> (i & 7)) & 1) != 0; };
+	for (; hop_scan < H; ++hop_scan, hop_x = 0)
+	{
+		const int y = hop_scan;
+		for (; hop_x < W; ++hop_x)
+		{
+			// Resumable per tile: one hole-edge tile costs ~1-2k fuel, a full row far more.
+			if ((hop_x & 3) == 0 && (bc::fuel_remaining() < fuel_floor || static_cast<int>(bc::round_number()) != turn_round))
+				return;
+			const int x = hop_x;
+			const std::size_t li = at(x, y);
+			if (home_lin[li] == UNREACH)
+				continue;
+			bool edge = false;
+			for (int dy = -1; dy <= 1 && !edge; ++dy)
+				for (int dx = -1; dx <= 1; ++dx)
+				{
+					const int nx = x + dx, ny = y + dy;
+					if (nx >= 0 && ny >= 0 && nx < W && ny < H && bit(holes_lin, at(nx, ny)))
+					{
+						edge = true;
+						break;
+					}
+				}
+			if (!edge)
+				continue;
+			const int hl = home_lin[li];
+			int best_save = P.hop_min_save - 1;
+			vec2 bt{ -1, -1 };
+			for (int ty = std::max(0, y - 3); ty <= std::min(H - 1, y + 3); ++ty)
+				for (int tx = std::max(0, x - 3); tx <= std::min(W - 1, x + 3); ++tx)
+				{
+					const std::size_t ti = at(tx, ty);
+					// Walled-off pockets are islands (handled separately): only shortcuts between walkable areas.
+					if (home_lin[ti] == UNREACH || bit(blocked_lin, ti))
+						continue;
+					const int ht = home_lin[ti];
+					const int save = ht - (hl + static_cast<int>(bc::constants::tp_crystal_time) + 1);
+					if (save > best_save)
+						best_save = save, bt = { tx, ty };
+				}
+			if (bt.x >= 0)
+			{
+				if (hop_edges.size() < 64)
+					hop_edges.push_back({ { x, y }, bt, best_save, hl });
+				else
+				{
+					auto worst = std::min_element(hop_edges.begin(), hop_edges.end(), [](const HopEdge& a, const HopEdge& b) { return a.save < b.save; });
+					if (worst->save < best_save)
+						*worst = { { x, y }, bt, best_save, hl };
+				}
+			}
+		}
+	}
+	hop_scan = -2;
+	home_lin.clear();
+	holes_lin.clear();
+	blocked_lin.clear();
+}
+
+bool Nav::ensure_hop(int id)
+{
+	auto& w = world();
+	auto& h = w.hops[static_cast<std::size_t>(id)];
+	if (h.tried)
+		return h.valid;
+	if (hop_scan != -2 || bc::fuel_remaining() < 40000 + 80 * static_cast<long long>(hop_edges.size()))
+		return false;
+	h.tried = true;
+	if (hop_edges.empty())
+		return false;
+	const auto& g = w.groups[static_cast<std::size_t>(id)];
+	if (!ensure_group(id))
+	{
+		h.tried = false; // retry when the budget allows
+		return false;
+	}
+	const auto& gf = group_fields[static_cast<std::size_t>(id)];
+	int best = BIG;
+	for (const auto& e : hop_edges)
+	{
+		const int after = gf.get(e.t);
+		if (after >= BIG)
+			continue;
+		const int c = e.home + static_cast<int>(bc::constants::tp_crystal_time) + 1 + after;
+		if (c < best)
+			best = c, h.launch = e.l, h.land = e.t;
+	}
+	h.cost = best;
+	h.valid = best < BIG && best + P.hop_min_save <= g.d_ally;
+#ifdef LEGEND_TRACE
+	debug_block({ std::printf("HOP g=%d walk=%d cost=%d launch=(%d,%d) land=(%d,%d) valid=%d edges=%zu\n", id, g.d_ally, h.cost, h.launch.x, h.launch.y, h.land.x, h.land.y, (int)h.valid, hop_edges.size()); });
+#endif
+	return h.valid;
 }
 
 int Nav::group_dist(const Group& g, vec2 from, bool allow_estimate)

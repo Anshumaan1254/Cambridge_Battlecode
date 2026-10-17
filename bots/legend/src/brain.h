@@ -87,6 +87,10 @@ private:
 	bool wake_guard_hold(const Group& g);
 	bool capture_group(Group& g);
 	bool wait_group(Group& g);
+	void plan_owners();
+	float own_mult(const Group& g) const; // P.own_plan score multiplier: our own group up, a living ally's down
+	std::vector<std::int8_t> owner;	   // group id -> owning ally index (-1 none), the same in every body
+	bool claim_before(int a, int b) const; // a's claim / capture goes before b's (P.capture_rank)
 	float group_score(const Group& g, int& eta, bool* need_pair = nullptr, int d_override = -1) const;
 	int approach_rounds(int d_tile) const; // rounds to attack range of a group d_tile steps away
 	float score_cap(const Group& g) const;  // upper bound on group_score(g)

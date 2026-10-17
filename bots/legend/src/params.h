@@ -41,6 +41,11 @@ struct Params
 	int finish_camp = 1;		 // below the retreat line, stay to finish the group we farm when it dies within
 								 // finish_rounds and we keep finish_hp_floor of max health (worst case: every camp in
 								 // range hits us every round) and no enemy is within finish_enemy_d
+	int exit_aware = 1;			 // retreat lines count the real steps out of camp reach (walls, rooms, holes: World::escape_steps), not
+								 // open-ground 4 (objective camps: 4 - distance): unopposed, 11 deaths to camps in 34 games of _b6
+								 // (ambush: Ren 4x at one elk-room exit; objective camps took Issac to 60 health) (session 6)
+	int camp_danger_live = 1;	 // the camp danger mask (flee goal, path avoidance) covers live camps that hit, not the group's whole mask
+	int exit_extra_max = 6;		 // ... searched up to 4 + this many steps
 	int capture_before_retreat = 1; // below the retreat line, still capture a reward next to us (no camp hits, no enemy near)
 	int finish_rounds = 4;
 	float finish_hp_floor = 0.08f;
@@ -98,7 +103,7 @@ struct Params
 	int endgame_margin = 12;   // extra rounds of slack for the final tribute
 	int endgame_alarm = 800;   // their score from which stopping their tributes overrides everything
 
-	int build_style = 2;	   // 0 = old farm builds, 1 = health/durability/treasure builds (ladder-proven),
+	int build_style = 2;	   // 3 = the top ladder team's builds (session 6 report), 0 = old farm builds, 1 = health/durability/treasure builds (ladder-proven),
 							   // 2 = value-model builds (tools/analysis/item_value.py): Bruiser over Power, early Treasure
 							   //     on the rich farmers, survival first on Cassi & Issac, builds that never run out
 	int rich_treasure_first = 0; // build_style 2: Ren and Stellar open with Treasure (1) or with r2's first emblem
@@ -205,6 +210,13 @@ struct Params
 	int sticky_tribute = 1;		// finish a bank trip once started
 	int claim_tiebreak = 1;		// on our own group only lower-index claimers count
 	int claim_helpers = 1;		// ... but higher-index claimers there still add their damage to our kill plan
+	int own_plan = 0;			// OFF (pace 17 official maps: 1.3/0.8 576.1 vs 579.6 off, 1.6/0.6 585.3; rows +48 / +20): each body owns one gem group on our half (Brain::plan_owners, same plan in every body) and returns to it
+	float own_bonus = 1.3f;		// ... score multiplier on our own group
+	float own_other = 0.8f;		// ... on a group a living ally owns
+	int own_max_trips = 2;		// ... a body only owns a group it can clear with at most this many heal trips
+	int capture_rank = 1;		// claim / capture tie-breaks by champion type (Varg, Ren, Stellar, Ryth, then the rest by index) instead of
+								// by index: rows unopposed, Varg (index 4) cleared the 66-gem / 270-gold packs and Cassi (index 2) took
+								// every reward, so Varg earned 15 gold all game and bought nothing (the enemy Varg: Monster + Power by r32)
 	int home_edge_fix = 1;		// home trips also from 1-2 steps away (else a hurt body flip-flops at the spawn edge)
 
 	// Bank routes. Recall-while-capturing makes most trips spawn -> camp -> (teleport) spawn, and the bag is then

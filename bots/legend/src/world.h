@@ -1,6 +1,7 @@
 // World model: static map facts computed once, plus per-turn perception and memory.
 #pragma once
 #include "common.h"
+#include "params.h"
 
 enum GroupState : std::uint8_t
 {
@@ -39,6 +40,7 @@ struct Group
 	int radius = 0;		// Chebyshev reach of the tiles from the centre
 	bool ours = true;
 	bool objective = false; // objective map (P.obj_plan): one of the few heavy groups that hold most of the gems
+	int exit_steps = -1;	// most steps out of camp reach seen while farming here (P.exit_aware; -1 unknown)
 
 	// Dynamic memory
 	GroupState st = ST_ALIVE; // every group starts alive
@@ -51,6 +53,8 @@ struct Group
 	bool enemy_on_tile = false;
 
 	void update_cluster();
+	// Rounds of hits a retreat from here costs in the farm plan's HP budget (open ground: 4).
+	int exit_rounds() const { return P.exit_aware && exit_steps >= 4 ? std::min(4 + P.exit_extra_max, exit_steps + 1) : 4; }
 };
 
 // Camp groups that cannot be reached on foot from our spawn, with a teleport-crystal entry (range 3).
@@ -132,7 +136,10 @@ struct World
 	bc::bitboard walls_no_holes; // walls, altars and the enemy spawn (holes passable: a crystal hops them)
 	bc::bitboard dash_walls;	 // walls minus 1-wide hole crossings (a dash kit routes over them, see P.dash_holes)
 	bool dash_kit = false;		 // this body has a dash (set by Brain::init before init_static)
-	const bc::bitboard& route_walls() const; // field walls for this body: dash_walls for dash kits, else walls
+	const bc::bitboard& route_walls() const;
+	// Steps out of every live awake camp's reach from `from`, around walls (P.exit_aware); max_d + 1 if not within max_d.
+	int escape_steps(vec2 from, int max_d) const;
+	std::vector<std::uint8_t> walls_bits; // packed export of `walls` (LSB first, row-major) // field walls for this body: dash_walls for dash kits, else walls
 	std::vector<int> island_of; // per group: island index or -1
 	// Objective map (P.obj_plan): the gem supply sits in one or a few heavy groups (stampede: one fused 2 gem
 	// clusters + 6 elks group pays 360 gems; contest: two monoliths). Decided once at init from camp geometry.

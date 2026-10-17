@@ -36,6 +36,47 @@ void cycle(std::vector<I>& v, std::initializer_list<I> blocks, int n)
 std::vector<I> build_for(CT t)
 {
 	std::vector<I> v;
+	if (P.build_style == 3)
+	{
+		// The strongest ladder profile's builds (user report, 13 real games of the Ren-first team): frontliners take
+		// Bruiser and Durability health first (their Ren had 1,900 health at r100 and never died), damage dealers take
+		// Power in their damage stat with one Durability health; then more Power. Monster (+10% camp damage) leads for
+		// the pack farmers (Varg, Issac), as in the farming profile (Monster then Power: rows Varg by r32).
+		switch (t)
+		{
+		case CT::ren:
+			rep(v, I::bruiser_shard_of_health, 5);
+			rep(v, I::durability_shard_of_health, 5);
+			rep(v, I::power_shard_of_focus, 50);
+			break;
+		case CT::ryth:
+		case CT::marcella:
+			rep(v, I::bruiser_shard_of_health, 5);
+			rep(v, I::durability_shard_of_health, 5);
+			rep(v, I::power_shard_of_strength, 50);
+			break;
+		case CT::varg:
+		case CT::vendetta:
+		case CT::issac:
+		case CT::vesper_vale:
+			rep(v, I::monster_shard_of_strength, 5);
+			rep(v, I::durability_shard_of_health, 5);
+			rep(v, I::power_shard_of_strength, 50);
+			break;
+		case CT::cassi:
+		case CT::willow:
+			rep(v, I::bruiser_shard_of_health, 5);
+			rep(v, I::durability_shard_of_focus, 5);
+			rep(v, I::power_shard_of_focus, 50);
+			break;
+		default: // Stellar, Prism, Tavi
+			rep(v, I::power_shard_of_focus, 5);
+			rep(v, I::durability_shard_of_health, 5);
+			rep(v, I::power_shard_of_focus, 50);
+			break;
+		}
+		return v;
+	}
 	if (P.build_style == 2)
 	{
 		// Value-model builds (tools/analysis/item_value.py, calibrated on 36 r2 games). Every shard adds one point
@@ -292,6 +333,7 @@ void Brain::init()
 		W.islands_pending = false, W.find_islands();
 	W.init_units();
 	blacklist.assign(W.groups.size(), -1);
+	plan_owners();
 	nav().init();
 	learner().init(W.W, W.H);
 	comms().bodies = static_cast<int>(W.allies.size());
@@ -351,7 +393,13 @@ void Brain::turn()
 	auto& W = world();
 	W.round = round;
 	if (!inited)
+	{
 		init();
+		// A heavy init can run out of fuel and continue in the next round: re-read the round, or the rest of this
+		// turn acts on a stale one (user report P1: ambush, Ren/Issac first moved at r7).
+		round = static_cast<int>(bc::round_number());
+		W.round = round;
+	}
 	read_self();
 	if (alive && round < P.start_round)
 	{
@@ -711,7 +759,19 @@ void Brain::build_danger()
 	}
 	for (const auto& g : W.groups)
 		if (g.st == ST_ALIVE && g.awake && g.hp_total > 0 && !g.harmless && cheb(g.center, pos) <= 10)
-			camp_danger |= g.near;
+		{
+			if (!P.camp_danger_live)
+			{
+				camp_danger |= g.near;
+				continue;
+			}
+			// Only the live camps that hit: a group's harmless gem clusters and dead camps leave safe tiles next to it
+			// (ambush elk room: (48,66) is 3 steps out of the elks' reach, the group's whole-room mask sent the flee
+			// 6+ steps to the far exit and Ren died there 4 times unopposed).
+			for (std::size_t i = 0; i < g.camps.size(); ++i)
+				if (g.hp[i] > 0 && g.camps[i].str > 0)
+					camp_danger.draw_chebyshev(g.camps[i].pos, 3.0f);
+		}
 	alert_zone.clear();
 	const auto& C = comms();
 	if (P.alert_radius > 0 && C.alert_kind == AL_DANGER && C.fresh(round, P.alert_age))
@@ -1791,14 +1851,25 @@ bool Brain::safety()
 				escape = std::max(escape, 4 - d);
 			}
 		}
-	float threshold = std::max(P.retreat_hp * max_hp, camp_in * static_cast<float>(P.safety_v2 ? escape + 1 : 4));
+	// Real steps out of reach (walls, rooms, holes), measured only when health is near the line: the open-ground
+	// 4 rounds (or 4 - distance for objective camps) let bodies die walking out of walled camp rooms (ambush elk
+	// room: Ren 4 deaths in one unopposed game; Issac down to 60 and Stellar to 150 health on objective camps).
+	int esc = -1;
+	if (P.exit_aware && camp_in + obj_in > 0 && hp < (camp_in + obj_in) * static_cast<float>(5 + P.exit_extra_max))
+	{
+		esc = W.escape_steps(pos, 4 + P.exit_extra_max);
+		for (auto& g : W.groups)
+			if (g.st == ST_ALIVE && !g.harmless && g.near.is_set(pos))
+				g.exit_steps = std::max(g.exit_steps, esc);
+	}
+	float threshold = std::max(P.retreat_hp * max_hp, camp_in * static_cast<float>(std::max(P.safety_v2 ? escape + 1 : 4, esc + 1)));
 	if (obj_in > 0)
 	{
 		// Objective camps: only those that target us (no ally nearer), after our emblems, for the steps out of
 		// reach plus one. Four rounds of every elk in reach (stampede: 6 x 60) exceeded Stellar's whole health
 		// (975 at r540), so the ranged bodies stepped in and out of range without a shot.
 		float eff = obj_in * (jungle_done() ? 0.7f : 1.f) * (durability_done() ? 0.9f : 1.f);
-		threshold = std::max(threshold, eff * static_cast<float>(obj_escape + 1));
+		threshold = std::max(threshold, eff * static_cast<float>(std::max(obj_escape, esc) + 1));
 		camp_in += obj_in;
 	}
 	if (hp < threshold && P.finish_camp && camp_in > 0 && enemy_near_d > P.finish_enemy_d && task_group >= 0 &&
@@ -2243,6 +2314,7 @@ float Brain::score_cap(const Group& g) const
 		v *= 1.f + std::max(0.f, deny_bonus);
 	if (g.enemy_on_tile)
 		v *= std::max(1.f, P.deny_capture_mult);
+	v *= std::max(1.f, own_mult(g));
 	const int lb = std::max(0, cheb(g.center, pos) - g.radius);
 	const int d = g.st == ST_REWARD ? lb : approach_rounds(lb);
 	return v / std::max(1.f, static_cast<float>(d) + 6.f);
@@ -2294,6 +2366,108 @@ bool Brain::obj_team_ready(const Group& g, float hp_left, float& kill) const
 	return kill <= P.obj_clear_max && taken <= P.obj_absorb * pool;
 }
 
+void Brain::plan_owners()
+{
+	// Ownership plan (P.own_plan): each body owns one gem group on our half and keeps returning to it around its
+	// respawn, like the strongest ladder teams (rows: their Ren took one 66-gem pack at r53, 124, 179, 228, 282;
+	// their Varg another at r27, 85, 139), instead of re-choosing every turn and walking to groups an ally clears
+	// first (session 4: 46% of camp walking was in walks abandoned before arrival). Every body computes the same
+	// plan from the same static facts (map, draft, champion designs: no shared memory), greedily pairing the body
+	// and group with the best solo gem rate.
+	auto& W = world();
+	owner.assign(W.groups.size(), -1);
+	if (!P.own_plan)
+		return;
+	const int nb = static_cast<int>(W.allies.size());
+	std::vector<char> has(static_cast<std::size_t>(nb), 0);
+	std::vector<float> rate(static_cast<std::size_t>(nb) * W.groups.size(), 0.f);
+	for (int b = 0; b < nb; ++b)
+	{
+		const auto t = W.allies[static_cast<std::size_t>(b)].type;
+		const auto st = bc::champion_designs[static_cast<std::size_t>(t)].base_stats();
+		for (const auto& g : W.groups)
+		{
+			if (g.gems <= 0 || g.monolith || !g.ours || g.d_ally >= BIG || (W.obj_mode && g.objective) || W.island_of[static_cast<std::size_t>(g.id)] >= 0)
+				continue;
+			float dps = st.base_strength * 1.1f * (t == CT::varg ? g.cluster : 1.f) +
+				st.base_focus * (t == CT::stellar ? 3.4f * std::min(g.cluster, 2.f) / 2.f : (t == CT::cassi ? 2.f : 1.5f)) / 8.f;
+			if (t == CT::ren)
+				dps += bc::constants::passive_abilities::ren_retaliation_focus_ratio * st.base_focus * static_cast<float>(std::min(g.attackers, 3));
+			const float kill = g.max_hp / std::max(10.f, dps);
+			// Camps die one by one: about 60% of the full damage over the kill. Each health bar beyond the first is a
+			// heal trip (recall 5 + walk back).
+			const float taken = g.dps * kill * 0.6f;
+			const float bar = 0.7f * std::max(1.f, st.base_health);
+			const float trips = std::max(0.f, std::ceil(taken / bar) - 1.f);
+			if (trips > static_cast<float>(P.own_max_trips))
+				continue;
+			const float d = static_cast<float>(std::min(g.d_ally, 120));
+			const float away = 5.f + static_cast<float>(std::min(W.spawn_altar_d, 60)) + d; // recall, bank near spawn, walk back
+			const float cycle = std::max(static_cast<float>(g.respawn), away) + kill + 6.f + trips * (5.f + d);
+			rate[static_cast<std::size_t>(b) * W.groups.size() + static_cast<std::size_t>(g.id)] =
+				(static_cast<float>(g.gems) + P.gold_value * static_cast<float>(g.gold)) / cycle;
+		}
+	}
+	for (int k = 0; k < nb; ++k)
+	{
+		float best = 0;
+		int bb = -1, bg = -1;
+		for (int b = 0; b < nb; ++b)
+			if (!has[static_cast<std::size_t>(b)])
+				for (const auto& g : W.groups)
+				{
+					const float r = rate[static_cast<std::size_t>(b) * W.groups.size() + static_cast<std::size_t>(g.id)];
+					if (owner[static_cast<std::size_t>(g.id)] < 0 && r > best)
+						best = r, bb = b, bg = g.id;
+				}
+		if (bb < 0)
+			break;
+		owner[static_cast<std::size_t>(bg)] = static_cast<std::int8_t>(bb);
+		has[static_cast<std::size_t>(bb)] = 1;
+	}
+#ifdef LEGEND_TRACE
+	debug_block({
+		if (W.my_index == 0)
+			for (const auto& g : W.groups)
+				if (owner[static_cast<std::size_t>(g.id)] >= 0)
+					std::printf("OWN g=%d owner=%d type=%d gems=%d\n", g.id, owner[static_cast<std::size_t>(g.id)], static_cast<int>(W.allies[static_cast<std::size_t>(owner[static_cast<std::size_t>(g.id)])].type), g.gems);
+	});
+#endif
+}
+
+float Brain::own_mult(const Group& g) const
+{
+	if (!P.own_plan || owner.empty())
+		return 1.f;
+	const int o = owner[static_cast<std::size_t>(g.id)];
+	if (o < 0)
+		return 1.f;
+	auto& W = world();
+	if (o == W.my_index)
+		return P.own_bonus;
+	return W.allies[static_cast<std::size_t>(o)].alive ? P.own_other : 1.f;
+}
+
+bool Brain::claim_before(int a, int b) const
+{
+	// Claim and capture precedence between two allies, the same in every body's view (types are known to all).
+	if (!P.capture_rank)
+		return a < b;
+	auto rank = [](CT t) {
+		switch (t)
+		{
+		case CT::varg: return 0;
+		case CT::ren: return 1;
+		case CT::stellar: return 2;
+		case CT::ryth: return 3;
+		default: return 4;
+		}
+	};
+	auto& W = world();
+	const int ra = rank(W.allies[static_cast<std::size_t>(a)].type), rb = rank(W.allies[static_cast<std::size_t>(b)].type);
+	return ra != rb ? ra < rb : a < b;
+}
+
 float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_override) const
 {
 	if (need_pair)
@@ -2326,7 +2500,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 		{
 			// Claims are seen a round late: on the group we already hold only lower-index claimers count,
 			// otherwise two allies wanting one group both yield, both switch, and repeat forever.
-			if (P.claim_tiebreak && g.id == task_group && i > W.my_index)
+			if (P.claim_tiebreak && g.id == task_group && claim_before(W.my_index, i))
 			{
 				// A higher-index claimer yields the group to us but still fights on it. Dropping its damage too
 				// made a pack that needs two bodies look impossible every other turn: the lower-index body
@@ -2340,8 +2514,9 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 				continue;
 			}
 			++claimers;
-			first_claimer = std::min(first_claimer, i);
-			if (g.st == ST_REWARD && i < W.my_index)
+			if (first_claimer == 99 || claim_before(i, first_claimer))
+				first_claimer = i;
+			if (g.st == ST_REWARD && claim_before(i, W.my_index))
 			{
 				const auto& a = W.allies[static_cast<std::size_t>(i)];
 				// Unseen allies are beyond vision, so farther than us when we are close.
@@ -2360,7 +2535,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 	case ST_REWARD:
 		// One body captures; if allies claim it, the lowest index takes it unless we are clearly nearer
 		// (the joiner may still be walking in while we stand next to the reward).
-		if (claimers && first_claimer < W.my_index && closer_lower_claimer)
+		if (claimers && claim_before(first_claimer, W.my_index) && closer_lower_claimer)
 			return -1;
 		eta = d_tile;
 		time = static_cast<float>(eta) + 6.f;
@@ -2471,7 +2646,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 				// of the raw strength of the camps in reach (safety counts every live camp within 3, before
 				// emblems). The old 18% / 3 rounds reserve promised health the retreat never lets us spend.
 				const float reach = n > 0 ? ss[0] + q * (raw - ss[0]) : raw;
-				reserve = std::max(std::max(P.camp_hp_reserve, P.retreat_hp) * max_hp, reach * 4.f);
+				reserve = std::max(std::max(P.camp_hp_reserve, P.retreat_hp) * max_hp, reach * static_cast<float>(g.exit_rounds()));
 				if (raw > 0)
 					in_now = in * reach / raw;
 			}
@@ -2587,6 +2762,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 		else
 			value *= 0.5f;
 	}
+	value *= own_mult(g);
 #ifdef XM_TRACE
 	if (xm_sp)
 		xm_sp->time = time, xm_sp->value = value, xm_sp->score = value / std::max(1.f, time);

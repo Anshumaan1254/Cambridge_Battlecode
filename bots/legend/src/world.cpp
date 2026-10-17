@@ -37,7 +37,8 @@ void World::init_static()
 	// a 100x100 distance field cost ~25k, unreserved vectors doubled loops. Bit reads of one packed walls export
 	// replace per-tile host calls here; vectors are reserved; the hole scan visits holes only; islands and contested
 	// altars are computed later (find_islands from prebuild_fields, contested() on first use).
-	const auto walls_lin = walls.export_linear_buffer();
+	walls_bits = walls.export_linear_buffer();
+	const auto& walls_lin = walls_bits;
 	auto bit = [](const std::vector<std::uint8_t>& v, int i) { return ((v[static_cast<std::size_t>(i) >> 3] >> (i & 7)) & 1) != 0; };
 	for (auto a : altars)
 	{
@@ -490,3 +491,73 @@ void World::update_alive(int round)
 }
 
 const bc::bitboard& World::route_walls() const { return P.dash_holes && dash_kit ? dash_walls : walls; }
+
+int World::escape_steps(vec2 from, int max_d) const
+{
+	// Steps from `from` to the nearest standable tile out of reach (Chebyshev > 3) of every live, awake camp that hits
+	// back, walking around walls and holes (plain-code BFS on the packed walls export: no host calls). max_d + 1 when
+	// no such tile is within max_d steps. Live camp tiles block like walls.
+	std::array<vec2, 24> hit{};
+	int nh = 0;
+	for (const auto& g : groups)
+		if (g.st == ST_ALIVE && g.awake && !g.harmless)
+			for (std::size_t i = 0; i < g.camps.size() && nh < 24; ++i)
+				if (g.hp[i] > 0 && g.camps[i].str > 0 && cheb(g.camps[i].pos, from) <= max_d + 3)
+					hit[static_cast<std::size_t>(nh++)] = g.camps[i].pos;
+	auto danger = [&](int x, int y) {
+		for (int k = 0; k < nh; ++k)
+			if (std::max(std::abs(hit[static_cast<std::size_t>(k)].x - x), std::abs(hit[static_cast<std::size_t>(k)].y - y)) <= 3)
+				return true;
+		return false;
+	};
+	if (!danger(from.x, from.y))
+		return 0;
+	constexpr int R = 8, S = 2 * R + 1;
+	max_d = std::min(max_d, R);
+	std::array<std::int8_t, S * S> dist;
+	dist.fill(-1);
+	std::array<std::int16_t, S * S> q{};
+	int qh = 0, qt = 0;
+	const int c = R * S + R;
+	dist[static_cast<std::size_t>(c)] = 0;
+	q[static_cast<std::size_t>(qt++)] = static_cast<std::int16_t>(c);
+	auto blocked = [&](int x, int y) {
+		if (x < 0 || y < 0 || x >= W || y >= H)
+			return true;
+		const int i = y * W + x;
+		if ((walls_bits[static_cast<std::size_t>(i) >> 3] >> (i & 7)) & 1)
+			return true;
+		for (int k = 0; k < nh; ++k)
+			if (hit[static_cast<std::size_t>(k)].x == x && hit[static_cast<std::size_t>(k)].y == y)
+				return true;
+		return false;
+	};
+	while (qh < qt)
+	{
+		const int cur = q[static_cast<std::size_t>(qh++)];
+		const int cx = cur % S, cy = cur / S, d = dist[static_cast<std::size_t>(cur)];
+		if (d >= max_d)
+			continue;
+		for (int dy = -1; dy <= 1; ++dy)
+			for (int dx = -1; dx <= 1; ++dx)
+			{
+				const int nx = cx + dx, ny = cy + dy;
+				if ((!dx && !dy) || nx < 0 || ny < 0 || nx >= S || ny >= S)
+					continue;
+				const int ni = ny * S + nx;
+				if (dist[static_cast<std::size_t>(ni)] >= 0)
+					continue;
+				const int mx = from.x + nx - R, my = from.y + ny - R;
+				if (blocked(mx, my))
+				{
+					dist[static_cast<std::size_t>(ni)] = 127;
+					continue;
+				}
+				if (!danger(mx, my))
+					return d + 1;
+				dist[static_cast<std::size_t>(ni)] = static_cast<std::int8_t>(d + 1);
+				q[static_cast<std::size_t>(qt++)] = static_cast<std::int16_t>(ni);
+			}
+	}
+	return max_d + 1;
+}

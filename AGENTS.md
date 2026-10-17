@@ -19,7 +19,10 @@ running or unfinished, and what to do next, so a new agent can continue without 
   Session 5 rebuilt everything (toolchain, sparring panel, `_L0 _ST _rm _es2 _c3 _st`, `_x_side`, `_rmx`, `_rmxp`) with
   `/tmp/ev/setup.sh` (local; the recipe is §000 "How to resume" plus `_ST` = `tools/snapshot.sh _ST cd4e2aa`, `_rm` = snapshot of HEAD).
 - Shipped build is still `legend_st`. Agent rules for this session: top block of `experiments/wip/AGENT_RULES.md` (baseline `bots/_rm`).
-- **In progress (20:20 UTC)**: `_rmxp` vs `_ST` 51.9 (official 47.1), vs `_L0` (partial) running.
+- **20:27 UTC `_rmxp` full panel done** (all / official, 212 / 34 games per cell): vs `_ST` 51.9 / 47.1, `_L0` 76.9 / 76.5, `_es2` 59.4 / 58.8,
+  `_r2` 84.4 / 82.4, `_v6` 90.6 / 91.2, `_c3` 49.5 / 55.9; 0 faults. Mean of the 5 (no `_ST`): **72.2** all, **73.0** official
+  (`_ST` 73.4 / 67.6, `_rm` 72.3 / 72.3). Same picture as `_rm`: better on the official maps and vs `_L0`/`_r2`, worse vs `_es2`/`_c3`
+  (our closest relatives). `_rmx` panel running (`/tmp/ev/fp__rmx`).
 
 | Task | Where | Left to do |
 |---|---|---|

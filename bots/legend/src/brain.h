@@ -42,10 +42,23 @@ private:
 	bool was_alive = true;
 	int cur_prio = -1;
 	int capture_group_id = -1, capture_since = -1, last_bank_round = -100;
+	int tribute_cancel_round = -1000;
 	bool W_dist_home_ok() const;
 	bool engaged = false;
 	bool safe_to_recall() const;
 	bool altar_unsafe(int i) const;
+	void post_danger(vec2 at);
+	void prepare_scoring();
+	struct RecentEnemy
+	{
+		vec2 pos;
+		float hp, dps;
+	};
+	std::array<RecentEnemy, 8> sc_recent{};
+	int sc_recent_n = 0;
+	float sc_risk = 0;
+	bool sc_alert = false;
+	bool reward_here(); // a dead group we were farming waits for its capture next to us
 	bool respond_to_alert();
 	void farm();
 	bool farm_group(Group& g);
@@ -71,6 +84,9 @@ private:
 	int trip_cost(const Group& g) const;		  // rounds to heal at spawn and come back to g
 	bool jungle_done() const;
 	bool durability_done() const;
+	void refresh_item_flags() const;
+	mutable std::size_t item_flags_idx = static_cast<std::size_t>(-1);
+	mutable bool jungle_ok = false, durability_ok = false;
 	bool has_home = false; // Home emblem (faster recall); we never buy it, kept for the capture-recall timing
 
 	// combat helpers
@@ -103,6 +119,7 @@ private:
 
 	// identity
 	bool inited = false;
+	int init_round = 0;
 	std::uint32_t self = 0;
 	bc::champion_type type = bc::champion_type::ryth;
 	Kit kit;

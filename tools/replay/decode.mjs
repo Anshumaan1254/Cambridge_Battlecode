@@ -183,7 +183,7 @@ async function decodeWith(wasmPath, buf, opts) {
       if (st.to.x >= 0) ev.to = [st.to.x, st.to.y];
       if (st.kind === 6) { ev.slot = st.slot; ev.ability = st.abilityType; }
       if (st.kind === 9) ev.priority = st.priority;
-      if (st.kind !== 8 && st.kind !== 26) events.push(ev);
+      if (st.kind !== 8 && (st.kind !== 26 || opts.rollovers)) events.push(ev); // 26: a turn that ran out of fuel continues next round
     }
     // Derived: deaths and captures by diffing champion / group state
     const pm = new Map(s.champions.map((c) => [c.index, c]));

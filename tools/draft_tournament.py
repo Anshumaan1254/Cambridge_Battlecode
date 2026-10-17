@@ -61,6 +61,7 @@ def main():
     games = collections.Counter()
     gemdiff = collections.Counter()
     per_map = collections.defaultdict(collections.Counter)
+    per_map_gd = collections.defaultdict(collections.Counter)  # gem margin per map and composition
     for a, b, mn, side, st in rows:
         if not os.path.exists(st):
             continue
@@ -79,6 +80,8 @@ def main():
             per_map[mn][b] += 1
         gemdiff[(a, b)] += gems[a_team] - gems[b_team]
         gemdiff[(b, a)] += gems[b_team] - gems[a_team]
+        per_map_gd[mn][a] += gems[a_team] - gems[b_team]
+        per_map_gd[mn][b] += gems[b_team] - gems[a_team]
     names = list(comps)
     print(f'payoff (row win rate vs column), {len(maps)} maps x 2 sides, {time.time() - t0:.0f}s')
     print(' ' * 9 + ''.join(f'{n:>9s}' for n in names) + '      mean    worst')
@@ -92,9 +95,11 @@ def main():
     print('\nwins per map (out of', 2 * (len(names) - 1), 'games each):')
     for mn in sorted(per_map):
         print(f'  {mn:30s} ' + ' '.join(f'{n}:{per_map[mn][n]}' for n in names))
-    json.dump({'comps': comps, 'summary': summary, 'per_map': {k: dict(v) for k, v in per_map.items()}}, open(os.path.join(run, 'result.json'), 'w'), indent=1)
-    for n in names:
-        sh(f'rm -rf bots/_dt_{n}')
+    json.dump({'comps': comps, 'summary': summary, 'per_map': {k: dict(v) for k, v in per_map.items()},
+               'per_map_gd': {k: dict(v) for k, v in per_map_gd.items()}, 'games_per_map': 2 * (len(names) - 1)}, open(os.path.join(run, 'result.json'), 'w'), indent=1)
+    if not os.environ.get('KEEP_DT'):
+        for n in names:
+            sh(f'rm -rf bots/_dt_{n}')
 
 
 if __name__ == '__main__':

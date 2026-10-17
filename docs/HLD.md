@@ -12,7 +12,8 @@ bots/legend/src/
   common.h     aliases, Field (cached distance field), Kit (abilities derived from engine designs)
   world.*      static map model + per-turn perception + memory (camp groups, enemies, allies)
   nav.*        lazy target-rooted distance fields, field stepping, dash, dynamic fallback search
-  comms.*      8-byte shared-memory protocol (claims, help bit, one team alert)
+  comms.*      8-byte shared-memory protocol (claims, team stance bits, one team alert)
+  learn.*      in-match learning: team stance bandit, pain map, fight calibration (docs/LEARNING.md)
   brain.*      decision pipeline and action execution for one champion
 ```
 
@@ -27,26 +28,31 @@ flowchart TD
   C --> D{dead?}
   D -- yes --> S0[shop while dead] --> Z
   D -- no --> P[perceive: vision masks, enemies/allies, raw group states, camp HP]
-  P --> Q[build danger masks: enemy reach, awake camp range]
+  P --> L[learner tick: deaths, stance (body 0 broadcasts), pain; post enemy tributes]
+  L --> Q[build danger masks: enemy reach, awake camp range]
   Q --> R{channelling?}
-  R -- yes --> RC[maybe cancel tribute vs lethal stunner] --> Z
+  R -- yes --> RC[cancel recall/tribute if a threat makes it pointless] --> R2{still channelling?}
+  R2 -- yes --> Z
+  R2 -- no --> SH
   R -- no --> SH[shop on spawn / Tavi anywhere]
   SH --> SP[support spells: heal ally, self-shield] --> LK[altar locks]
-  LK --> F{combat?}
+  LK --> ES{respawn escort: down 2+, wait on spawn?} -- yes --> W
+  ES -- no --> F{combat?}
   F -- fight / flee --> W
   F -- no --> SF{safety: low HP?}
   SF -- retreat --> W
-  SF -- no --> T{tribute?}
+  SF -- no --> T{tribute? (contested-altar check, recall-bank via spawn)}
   T -- yes --> W
-  T -- no --> ST{shop trip?} -- yes --> W
-  ST -- no --> AL{answer rally?} -- yes --> W
-  AL -- no --> FM[farm: score groups, claim best, farm / capture / wait]
-  FM --> W[ward, prebuild 1-2 fields with spare fuel]
-  W --> Z[write claim + help bit; end turn]
+  T -- no --> HT{home trip: heal/shop/after bank (recall)?} -- yes --> W
+  HT -- no --> ST{shop trip?} -- yes --> W
+  ST -- no --> AL{answer rally / opportunity?} -- yes --> W
+  AL -- no --> FM[farm: score groups (+islands, crystal hops), claim best, farm / capture (recall-overlap) / wait]
+  FM --> W[ward, set priority for next round, hop scan + prebuild fields with spare fuel]
+  W --> Z[write claim; end turn]
 ```
 
 Every decision step either uses the turn (returns true) or falls through, so the order is the priority:
-**fight/flee > survive > bank > shop > help allies > farm**.
+**fight/flee > survive > bank > heal/shop > help allies > farm**.
 
 ## Data model
 
@@ -55,7 +61,9 @@ Every decision step either uses the turn (returns true) or falls through, so the
 | `World` (static) | built on turn 1 | walls mask (terrain ∪ altars ∪ enemy spawn), spawns, altars and their free neighbours, `home`/`away` fields, camp groups |
 | `Group` | static + memory | handle, camps (type, tile, max HP, strength), tile mask, range-3 mask, gems/gold/respawn, our-half flag; memory: state (alive / reward / respawning), ready round, last-seen HP per camp, awake flag, last enemy sighting |
 | `Enemy` | memory | lazy champion object (built on first sight), kit (from design), alive (global), last position/HP/strength/focus/gems, channel flags, seen round, death round |
-| `Ally` | per turn | alive, visible position/HP |
+| `Ally` | per turn | alive, visible position/HP/strength/focus, kit, last death round |
+| `Hop` | lazy | crystal shortcut to a group: launch/land tiles, cost from spawn |
+| `Learner` | match | stance values and plays, window counters, pain map (6x6 cells), fight bias |
 | `Nav` | lazy cache | one `Field` per camp group (roots = its tiles) and per altar (roots = free neighbours) |
 | `Island` | static | groups unreachable on foot, launch/landing tiles for a crystal, field to the launch tile |
 | `Brain` | per champion | identity, kit, abilities, build order, current task/target, blacklist, last HP |
@@ -80,7 +88,7 @@ Every decision step either uses the turn (returns true) or falls through, so the
 
 | Bytes | Content |
 |---|---|
-| 0–5 | one per body (index = position in the engine's ally list): bit 7 = needs help, bits 0–6 = claimed group id + 1 (0 = none) |
+| 0–5 | one per body (index = position in the engine's ally list): bits 0–6 = claimed group id + 1 (0 = none); bit 7 of bytes 0 and 1 = team stance (written only by body 0; everyone else preserves bit 7) |
 | 6–7 | team alert: bits 0–13 tile index `y·W + x`, bits 14–15 kind (1 danger, 2 rally, 3 opportunity) |
 
 Writes land immediately, so allies acting later in the same round see them. Readers remember when an
@@ -88,8 +96,8 @@ alert value first appeared and treat it as fresh for a few rounds.
 
 ## Draft memory (1,024 bytes)
 
-Currently a 4-byte header (`0xB7`, version, team size, flags). Champions recompute everything on their
-200k first turn, so draft memory is reserved for future opening routes.
+A 4-byte header (`0xB7`, version 2, team size, chosen composition index). Champions recompute
+everything on their 200k first turn, so draft memory is reserved for future opening routes.
 
 ## Fuel budget (100×100 worst case, per champion turn)
 

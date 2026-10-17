@@ -182,7 +182,7 @@ def main():
     space = Space(spec, read_defaults())
     rng = random.Random(args.seed)
     nrng = np.random.default_rng(args.seed)
-    maps_all = sorted(m for m in glob.glob(os.path.join(ROOT, args.maps)) if not os.path.basename(m).startswith('zz_'))
+    maps_all = sorted({m for pat in args.maps.split(',') for m in glob.glob(os.path.join(ROOT, pat)) if not os.path.basename(m).startswith('zz_')})
     opponents = [o for o in args.opponents.split(',') if o]
     for o in opponents:
         sh(f'cambc build {o}')

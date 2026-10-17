@@ -8,22 +8,27 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/STRATEGY.md](docs/STRATEGY.md) | how the game is won, hidden techniques, traps, the meta and its counters, the final strategy |
 | [docs/ENGINE_FACTS.md](docs/ENGINE_FACTS.md) | every rule we verified on the real engine (with evidence) and fuel costs |
 | [docs/HLD.md](docs/HLD.md) | architecture: modules, turn pipeline, data model, navigation, comms, fuel budget |
-| [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams and paste results back so the bot can be re-tuned |
+| [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
+| [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Results (local, 67 maps × both sides = 134 games per row)
+## Results (local, 39 maps × both sides = 78 games per row)
 
-| Opponent | `legend` win rate |
-|---|---|
-| starter bot (`bots/starter-cpp`) | 100% |
-| deathball archetype (all five together) | 100% |
-| early-rush archetype (deathball invade for 160 rounds) | 88% |
-| aggressive archetype | 86% |
-| passive farmer archetype | 85% |
-| first version of this bot (v1) | 63% |
-| previous commit (v4) | 56% |
-| unopposed | 1,000 gems in ~466 rounds on average |
+The 39 maps are the 12 real ladder maps extracted from our ladder replays (`maps/ladder/`) plus 27
+generated ones. "Hunter" opponents are aggressive archetypes built on the current code with the drafts the
+top ladder teams use; the old bot (v5, what was on the ladder) loses most games to them, as it did on
+the ladder (17 of 20 scrims lost).
 
-Matches are deterministic; a full 128-game evaluation takes ~40 s on 4 cores.
+| Opponent | old bot (v5) | `legend` now |
+|---|---|---|
+| starter bot (`bots/starter-cpp`) | 88% | **100%** |
+| old bot v5 (`tools/snapshot.sh _base 6bb913e`) | — | **81%** |
+| pack-opening hunter (`_hunt`) | 42% | **87%** |
+| aggressive Cassi & Issac hunter (`_hunt2`) | 28% | **82%** |
+| current code with a Stellar/C&I draft (`_devci`) | 14% | **55%** |
+| unopposed: rounds to 1,000 gems | 574 | **500** |
+
+What changed and why: [docs/STRATEGY.md](docs/STRATEGY.md) §1. How the bot learns:
+[docs/LEARNING.md](docs/LEARNING.md).
 
 ## Ready-to-submit ZIP
 
@@ -46,12 +51,13 @@ cambc submit legend                                # needs `cambc login`
 Sparring opponents are generated, not committed:
 
 ```bash
-tools/snapshot.sh _v1 7928cfe                      # first version
-SRC=bots/_v1 tools/variant.sh _v1aggro fight_margin=0.85f enemy_half_penalty=0.f deny_bonus=1.2f steal_hp_frac=0.35f
-SRC=bots/_v1 tools/variant.sh _v1passive fight_margin=99.f tribute_risky=1
-tools/variant.sh _deathball style=1
-tools/variant.sh _rush deathball_until=160 deny_bonus=2.f enemy_half_penalty=0.f fight_margin=0.9f steal_hp_frac=0.3f
-tools/snapshot.sh _v4 25b39d0                      # previous release, for A/B
+tools/snapshot.sh _base 6bb913e                    # old bot (v5), what was on the ladder on Oct 16
+SRC=bots/legend tools/variant.sh _hunt learn_enabled=0 fight_margin=0.95f fight_back_margin=0.6f enemy_half_penalty=0.f \
+    deny_bonus=1.5f steal_hp_frac=0.3f deathball_until=110 deficit_defend=99 deficit_escort=99 --define "LEGEND_DRAFT 8,4,3,0,9"
+SRC=bots/legend tools/variant.sh _hunt2 learn_enabled=0 fight_margin=0.9f fight_back_margin=0.6f enemy_half_penalty=2.f \
+    deny_bonus=1.2f steal_hp_frac=0.4f isolated_fight_adv=1.0f deficit_defend=99 deficit_escort=99 --define "LEGEND_DRAFT 3,2,9,0,4"
+SRC=bots/legend tools/variant.sh _devci learn_enabled=0 --define "LEGEND_DRAFT 4,3,9,10,8"
+tools/panel.sh legend 'maps/*.map26a,maps/ladder/*.map26a' _base _hunt _hunt2 _devci starter-cpp idle
 ```
 
 The second map pool (40 maps) is reproducible: `node tools/mapgen/gen.mjs maps 40 991 s2_`.
@@ -67,7 +73,12 @@ bots/idle/          does nothing: measures unopposed farming pace
 bots/probe-rules/   scripted rule probe for maps/zz_test (capture/tribute/recall timing, stuns, sleep, dash)
 bots/probe-fuel/    fuel cost of SDK helpers
 maps/               generated test maps (gen*), zz_test probe map
-tools/bench.py      parallel A-vs-B benchmark with summary
+maps/ladder/        12 real ladder maps rebuilt from replays (tools/replay/extract_map.mjs)
+tools/replay/       replay decoder, readable match report, map extractor, ASCII map view, map features
+tools/rl/           offline RL: evolution-strategies trainer (es_train.py), search space, apply_params.py
+tools/draft_tournament.py  composition round robins (forced drafts, same code) -> draft table
+tools/panel.sh      one summary line per sparring opponent
+tools/bench.py      parallel A-vs-B benchmark with summary (comma-separated map globs)
 tools/suite.sh      bench against the sparring panel
 tools/tune.py       self-play parameter tuner
 tools/variant.sh    build a parameter/define variant of legend
@@ -79,12 +90,14 @@ tools/mapgen/       symmetric map generator using the engine's MapBuilder
 
 ## How it plays, in one paragraph
 
-Draft the durable core **Varg → Tavi → Stellar → Ren → Ryth** (chosen by composition tournaments).
-Every champion scores every camp group each turn by gems-and-gold per round of travel, waiting,
-killing, capturing and *heal trips* (camps never heal, so strong groups are farmed over several trips),
-claims its target in shared memory so allies spread out, banks gems on the way or at 34+, retreats
-before camps or enemies can kill it and never recalls under fire. In fights it estimates a local
-advantage from visible allies and enemies, fights back when already engaged unless clearly outmatched,
-never tries to outrun same-speed melee, focus-fires a team-consistent target, stuns channellers, and
-avoids diving the enemy spawn. It reads visible enemies' cooldowns, plays the scoreboard (safer when
-ahead, riskier when the enemy is close to winning) and teleports into walled-off camp islands.
+Draft **Ren → Stellar → Cassi & Issac → Ryth → Varg** (Varg before Ryth on pack-heavy 4-champion maps),
+the composition that won our 780-game tournament and the one the strongest ladder team uses. Every
+champion scores every camp group by gems-and-gold per round of travel, kill time (Varg splash, area
+spells, Ren retaliation), capture and heal trips, and claims it in shared memory; a second body joins
+packs that are heavy for one. Recall is transport: recall while capturing (the reward lands with the
+teleport), after banking far away, to shop, and bank via the altar next to spawn. In fights it counts
+allies and their spells, fights back against chasers it cannot outrun, retreats early when alone, plays
+defensively when outnumbered, never trades with enemies healing on their spawn, acts first through
+dynamic `set_priority`, and converges on enemy tributes. A team stance bandit, a pain map and per-champion
+fight calibration learn from rewards and punishments during each match; the parameters themselves are
+trained offline by evolution strategies.

@@ -43,31 +43,39 @@ python3 tools/rl/es_train.py --space tools/rl/space.json \
 python3 tools/rl/apply_params.py tune_out/es/best_params.json   # bake the learned values in
 ```
 
-`tools/rl/space.json` lists the 26 trained parameters and their ranges. Learner hyperparameters are
+`tools/rl/space.json` lists the 27 trained parameters and their ranges. Learner hyperparameters are
 in the space too, so training can also decide how much the in-match learners should be trusted (for
 example `pain_w = 0` switches the pain map off).
 
 ## 2. In-match online learning (`learn.h`, `learn.cpp`)
 
-Three learners run inside every game. All are cheap (a few hundred fuel per turn).
+Three learners run inside every game. All are cheap (a few hundred fuel per turn; the pain map decays every 8 rounds).
 
 **Team stance bandit (reward and punishment per 40-round window).** The team plays one of three stances:
 SPREAD (farm everywhere), GROUPED (farm near allies, stay off their half, need more advantage to fight
 alone) or PUSH (invade, contest, take closer fights). At the end of each window the stance just played is
-scored:
+scored, with every term in gems:
 
-    reward = 10 x (our banked gems - their banked gems) / window
-             + reward_kill x enemy deaths - punish_death x our deaths
+    gem term = 0.67 x (our banked - their banked this window) + 0.33 x (the same for the previous window)
+    reward   = (gem term + kill_gems x enemy deaths - death_gems x our deaths) / reward_scale
 
-and its running value is updated (`q += learn_rate x (reward - q)`, a non-stationary bandit). The next
-stance is the best value plus context: deaths on our own half (being invaded) add to GROUPED, winning
-fights adds to PUSH, and a hysteresis bonus keeps the current one. Optimistic starting values make the
-team try another stance as soon as the current one is punished. One body (index 0, which runs every round
-even while dead) decides; the stance travels to the others in two spare shared-memory bits, so all bodies
-play the same stance.
+(`kill_gems` 25, `death_gems` 45, `reward_scale` 40). Banks land in lumps of one capture, so half of the
+previous window is blended in; a death costs more than a kill earns because it also pays the enemy 50 gold
+and usually a bag. The first version mixed units (a death counted as about 6 gems while one bank swung the
+reward by 18-36), so the bandit followed the bank cycle and could lock a stance out for the whole game.
 
-**Pain map (punishment memory).** The map is split into 6x6 cells. Pain is added where an ally dies and
-where we take champion damage; it decays with a 50-round half-life, and an enemy dying near us relieves
+The value of the played stance gets a soft update (`q += learn_rate x (reward - q)`, an exponential moving
+average, the same idea as soft target updates in deep RL). Stances not played drift back towards their
+priors (`prior_pull`), so one unlucky window cannot rule a stance out for good. The next stance maximises
+value + UCB1 exploration bonus (`ucb_c x sqrt(ln N / (1 + plays))`) + context (deaths on our own half
+favour GROUPED, winning fights favours PUSH) + hysteresis for the current one. UCB rather than
+epsilon-greedy: a game has only ~25 windows, and exploring by optimism costs fewer bad windows than random
+exploration. One body (index 0, which runs every round even while dead) decides; the stance travels to the
+others in two spare shared-memory bits, so all bodies play the same stance.
+
+**Pain map (punishment memory).** The map is split into 6x6 cells. Pain is added where an ally dies (its
+sighting from the last two rounds, else the team's fresh fight alert; unknown deaths add no pain) and where
+we take champion damage; it decays with a 50-round half-life, and an enemy dying near us relieves
 it. Farming targets in painful cells cost extra rounds, so after losing champions somewhere the team
 stops walking back into the same trap one at a time.
 

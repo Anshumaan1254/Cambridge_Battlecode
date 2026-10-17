@@ -7,8 +7,16 @@
 // The choice is made once (first draft turn, 1M fuel) and kept, so later picks never switch plans.
 #include "draft.h"
 
+#include <cstdio>
+
 #include "common.h"
 #include "params.h"
+
+#include <cmath>
+#if __has_include("draft_table.h")
+#include "draft_table.h"
+#define LEGEND_DRAFT_TABLE 1
+#endif
 
 namespace
 {
@@ -112,6 +120,57 @@ double comp_value(const Comp& c)
 	return v;
 }
 
+#ifdef LEGEND_DRAFT_TABLE
+// Map-aware choice (content-based: "maps like this one"): compare this map's features with the training maps of
+// the composition tournament and take the composition that did best on the most similar ones, shrunk towards
+// its average at this team size. Feature vector and normalisation must match tools/draft_model.py.
+int choose_table()
+{
+	namespace T = draft_table;
+	const double g = std::max(1, F.groups), area = std::max(1, F.area);
+	const std::array<double, T::NF> x{ std::log(area), static_cast<double>(F.groups), F.multi / g, F.elk / g, F.mono > 0 ? 1.0 : 0.0,
+		F.wolf / g, F.gem_groups / g, F.harmless / g, F.mean_dist / std::sqrt(area), F.holes / area, static_cast<double>(F.altars) };
+	std::array<double, T::NF> z{};
+	for (int j = 0; j < T::NF; ++j)
+		z[static_cast<std::size_t>(j)] = (x[static_cast<std::size_t>(j)] - T::MEAN[static_cast<std::size_t>(j)]) / T::SD[static_cast<std::size_t>(j)];
+	const int team = std::clamp(F.team, 3, 5);
+	std::array<double, T::NCOMP> base{};
+	int nbase = 0;
+	std::array<std::pair<double, int>, T::ROWS.size()> d{};
+	for (std::size_t r = 0; r < T::ROWS.size(); ++r)
+	{
+		const auto& row = T::ROWS[r];
+		double s2 = 0;
+		for (int j = 0; j < T::NF; ++j)
+		{
+			const double dz = z[static_cast<std::size_t>(j)] - row.z[static_cast<std::size_t>(j)];
+			s2 += dz * dz;
+		}
+		d[r] = { std::sqrt(s2) + T::TEAM_PENALTY * std::abs(row.team - team), static_cast<int>(r) };
+		if (row.team == team)
+		{
+			++nbase;
+			for (int c = 0; c < T::NCOMP; ++c)
+				base[static_cast<std::size_t>(c)] += row.score[static_cast<std::size_t>(c)];
+		}
+	}
+	std::sort(d.begin(), d.end());
+	const int k = std::min<int>(T::K, static_cast<int>(d.size()));
+	int best = 0;
+	double bv = -1e9;
+	for (int c = 0; c < T::NCOMP; ++c)
+	{
+		double v = T::PRIOR * (nbase ? base[static_cast<std::size_t>(c)] / nbase : 0.5);
+		for (int i = 0; i < k; ++i)
+			v += T::ROWS[static_cast<std::size_t>(d[static_cast<std::size_t>(i)].second)].score[static_cast<std::size_t>(c)];
+		v /= T::PRIOR + k;
+		if (v > bv)
+			bv = v, best = c;
+	}
+	return best;
+}
+#endif
+
 int choose_comp()
 {
 	int best = 0;
@@ -129,6 +188,21 @@ int choose_comp()
 void play_draft()
 {
 	const auto mine = bc::draft::current_draft(team::ally);
+#ifdef LEGEND_FEATURES
+	// One line of map features for the offline draft model (tools/draft_model.py).
+	if (!F.ready)
+	{
+		try
+		{
+			analyse();
+		}
+		catch (...)
+		{
+		}
+		std::printf("FEAT team=%d groups=%d gem=%d gold=%d wolf=%d elk=%d mono=%d multi=%d harmless=%d gem_groups=%d mean_dist=%.2f area=%d holes=%d altars=%d\n",
+			F.team, F.groups, F.gem, F.gold, F.wolf, F.elk, F.mono, F.multi, F.harmless, F.gem_groups, F.mean_dist, F.area, F.holes, F.altars);
+	}
+#endif
 #ifdef LEGEND_DRAFT
 	// Forced composition for experiments: picks in this order (champion_draft values).
 	{
@@ -157,7 +231,11 @@ void play_draft()
 	{
 		try
 		{
+#ifdef LEGEND_DRAFT_TABLE
+			chosen = P.draft_model ? 100 + choose_table() : choose_comp();
+#else
 			chosen = choose_comp();
+#endif
 		}
 		catch (...)
 		{
@@ -166,7 +244,14 @@ void play_draft()
 	}
 	D pick = D::stellar;
 	bool found = false;
-	for (auto c : COMPS[static_cast<std::size_t>(chosen)].picks)
+	std::array<D, 5> plan = COMPS[0].picks;
+#ifdef LEGEND_DRAFT_TABLE
+	if (chosen >= 100)
+		plan = draft_table::COMPS[static_cast<std::size_t>(chosen - 100)].picks;
+	else
+#endif
+		plan = COMPS[static_cast<std::size_t>(chosen)].picks;
+	for (auto c : plan)
 		if (std::find(mine.begin(), mine.end(), c) == mine.end())
 		{
 			pick = c, found = true;

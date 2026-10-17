@@ -93,6 +93,14 @@ cambc run probe-rules probe-rules --map zz_test --rounds 140
 | `sdk_champion` record (pos, hp, stats, state in one call) | ~80 |
 | `printf` in the draft | expensive: a verbose draft dump ran out of the 1M first-draft-turn budget and the engine **auto-picked randomly** |
 
+Export formats: `bitboard::export_linear_buffer()` is **bit-packed** (`ceil(W·H/8)` bytes, row-major, least
+significant bit first), while `distance_field::export_linear_buffer()` is one `uint16` per tile. Reading a
+bitboard export one byte per tile reads past the buffer (our first crystal-shortcut scan did this).
+
+A turn that runs out of fuel pauses and finishes in the next round: the body loses that round. Any loop that
+can cost more than the remaining budget must check `fuel_remaining()` inside the loop, not only before it
+(the same scan lost each body 13-14 of its first 40 turns on the 50x65 hole map before this was fixed).
+
 First draft turn has 1M fuel, each champion's first turn 200k. Release and debug builds produced identical results in our tests; the platform always runs release.
 
 ## Added October 16: probes, local runs and 24 decoded ladder replays
@@ -126,12 +134,47 @@ Shards cost 30 gold, emblems are five shards (150). Emblem passives: Monster +10
 Durability -10% damage taken, Treasure +20% gold, Jungle -30% camp damage, Home 50% faster recall.
 Power emblems count as six shards; Bruiser emblems as five shards plus one of each other stat.
 
-### Turn order and priority (decoded ladder replays)
+### Turn order and priority (probe bots + 14,069 decoded ladder rounds, 0 mismatches)
 
-Teams alternate turns inside a round; team A goes first in odd rounds, team B in even rounds. Within a
-team, higher `set_priority` acts first (default 0, ties by body index) from the next round on. The
-strongest ladder team re-prioritises every round so its engaged champion acts first; their killing
-blow landed before our victim could act in 51 of 64 deaths.
+Each round: camp respawns, capture resolution, then **all camps attack**, then champion turns. Recall and
+tribute completions and respawns happen at the start of that champion's own turn.
+
+1. Team A acts first in odd rounds, team B in even rounds, whatever the priorities.
+2. Each team's bodies are sorted by priority, highest first (ties by draft index; dead bodies keep their
+   slot; Cassi and Issac are two bodies).
+3. The teams alternate turns, starting with the round's lead team; the bigger team's extra bodies act
+   last, one after another.
+4. `set_priority` accepts any int32; the last call in a turn wins; it applies from the next round and
+   persists. A visible enemy's current and next priority and its completed-turn bit are readable.
+
+So a champion can act twice in a row: last in a round its team trails, first in the next round its team
+leads. The strongest ladder team (5 bodies vs our 4) did this 5-21 times per game in fights. Our bot now
+gives fighters +1000 priority when we lead the next round and -1000 when we trail it, and escapers 2000.
+
+A stun cast before its target has acted this round removes the target's turn in the same round; cast
+after, it removes the next one.
+
+### Camps
+
+- Each camp hits the nearest champion within range 3; ties go to the tied champion that acts earliest in
+  the round. A tank strictly nearer to every camp absorbs all hits; a ranged ally at distance 2-3 takes 0.
+- Camps never wake from proximity, only from damage; damaging one camp wakes its whole group.
+- Varg's splash deals full damage to every camp within Chebyshev 1 of the target, diagonals included.
+
+### Recall, tribute, capture
+
+- Recall started in round R lands at the start of the champion's turn in R+5 with the bag and a full turn.
+  **Health is restored only after a turn ends on spawn**, so rest one turn. Moving and recalling in the
+  same turn is legal. Any camp or champion damage cancels it silently.
+- Tribute (banking) is **not** cancelled by camp or champion damage; only death stops it.
+- An enemy on any tile of a group **resets** our capture: it completes 6 rounds after they leave and they
+  get nothing. Two allies on a group split the reward equally with no speed-up.
+- Cassi and Issac die together wherever they are, both bags lost; they split a shared capture.
+
+### Vision
+
+- Bushes hide a champion completely from anyone outside the bush, even adjacent and even while it
+  attacks; a ward outside the bush does not reveal it, a ward inside does.
 
 ### Recall while capturing
 

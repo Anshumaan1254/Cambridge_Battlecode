@@ -86,8 +86,11 @@ struct Params
 	int learn_fight = 1;			 // fight calibration on/off
 	int learn_window = 40;			 // rounds per stance evaluation window
 	float learn_rate = 0.5f;		 // step size of the stance value update
-	float reward_kill = 1.0f;		 // reward per enemy death in a window (gem-diff per 10 rounds units)
-	float punish_death = 1.5f;		 // punishment per ally death in a window
+	float kill_gems = 25.f;			 // stance reward per enemy death, in gems (bag + 60 rounds of their farming)
+	float death_gems = 45.f;		 // stance punishment per ally death, in gems (heavier: we also pay them 50 gold)
+	float reward_scale = 40.f;		 // gems per window that count as reward 1
+	float ucb_c = 0.3f;				 // exploration bonus (UCB1) for rarely played stances
+	float prior_pull = 0.1f;		 // per window, unplayed stance values drift back to their priors
 	float q0_spread = 0.3f;			 // optimistic prior values per stance (SPREAD starts preferred)
 	float q0_grouped = 0.f;
 	float q0_push = -0.2f;
@@ -104,14 +107,29 @@ struct Params
 	int group_radius = 12;			 // GROUPED: camps farther than this from allies' camps cost extra
 	float group_far_w = 0.8f;		 // ... rounds per tile beyond the radius
 
+	// Draft
+	int draft_model = 1; // 1: map-aware composition choice from draft_table.h (nearest training maps) when present
+
+	// Fuel: farm scoring order and budget
+	int score_near = 20;			  // score groups within this Chebyshev distance first
+	int score_fuel_floor = 30000; // stop scoring farther groups below this much fuel
+
 	// Turn order (set_priority, higher acts first within our team, from the next round)
 	int prio_idle = 2;
 	int prio_capture = 5;
-	int prio_fight = 8;
+	int prio_fight = 1000;		// fighters: +this when we lead the next round, -this when we trail it
+	int prio_flee = 2000;		// escapers act first
+	int prio_alternate = 0;		// 1: fighters alternate for double turns (lost 8-17 points head-to-head); 0: engaged act first
+	int safety_v2 = 0;			// 1: retreat counts only camps that would target us (stayed out too long: -10 points)
+	int rest_on_spawn = 1;		// rest one turn on spawn after arriving hurt (health is restored at turn end)
+	int sticky_tribute = 1;		// finish a bank trip once started
+	int claim_tiebreak = 1;		// on our own group only lower-index claimers count
 
 	// Aggression
 	float steal_hp_frac = 0.55f; // need this health fraction to farm on the enemy half
 	int gank_bag = 25;			 // chase a visible carrier with at least this many gems
+	float deny_hp_frac = 0.6f;	 // contest an enemy's capture (step on its tiles) from this health fraction
+	float deny_capture_mult = 1.3f; // value multiplier for contesting an enemy's capture
 };
 
 inline constexpr Params P{};

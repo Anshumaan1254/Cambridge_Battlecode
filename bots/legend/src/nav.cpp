@@ -59,7 +59,7 @@ bool Nav::ensure_altar(int id)
 	return true;
 }
 
-void Nav::hop_scan_step(long long fuel_floor)
+void Nav::hop_scan_step(long long fuel_floor, int turn_round)
 {
 	auto& w = world();
 	if (hop_scan == -2)
@@ -70,33 +70,50 @@ void Nav::hop_scan_step(long long fuel_floor)
 		if (bc::fuel_remaining() < fuel_floor + 25000)
 			return;
 		const bc::bitboard holes = bc::map::holes();
-		if (holes.is_empty())
+		// A hop saves at most the walk minus the straight-line (Chebyshev) distance: skip the scan when no
+		// group is far enough out of the way on foot for a hop to save hop_min_save steps.
+		bool worth = false;
+		for (const auto& g : w.groups)
+			if (g.d_ally < BIG &&
+				g.d_ally - std::max(0, cheb(g.center, w.ally_spawn_c) - 3 - g.radius) - static_cast<int>(bc::constants::tp_crystal_time) - 1 >= P.hop_min_save)
+				worth = true;
+		if (holes.is_empty() || !worth)
 		{
 			hop_scan = -2;
 			return;
 		}
+		// Bitboard exports are packed (one bit per tile, row-major, LSB first); distance fields are one
+		// uint16 per tile. Walls and holes are already UNREACH in the home field; camp spawn tiles are not
+		// valid landing tiles (a crystal cannot land on a camp).
+		bc::bitboard camps;
+		for (const auto& g : w.groups)
+			camps |= g.mask;
 		home_lin = w.home.f.export_linear_buffer();
 		holes_lin = holes.export_linear_buffer();
-		blocked_lin = (w.walls | holes).export_linear_buffer();
+		blocked_lin = camps.export_linear_buffer();
 		hop_scan = 0;
+		hop_x = 0;
 	}
 	auto at = [W](int x, int y) { return static_cast<std::size_t>(y * W + x); };
-	for (; hop_scan < H; ++hop_scan)
+	auto bit = [](const std::vector<std::uint8_t>& v, std::size_t i) { return ((v[i >> 3] >> (i & 7)) & 1) != 0; };
+	for (; hop_scan < H; ++hop_scan, hop_x = 0)
 	{
-		if (bc::fuel_remaining() < fuel_floor)
-			return;
 		const int y = hop_scan;
-		for (int x = 0; x < W; ++x)
+		for (; hop_x < W; ++hop_x)
 		{
+			// Resumable per tile: one hole-edge tile costs ~1-2k fuel, a full row far more.
+			if ((hop_x & 3) == 0 && (bc::fuel_remaining() < fuel_floor || static_cast<int>(bc::round_number()) != turn_round))
+				return;
+			const int x = hop_x;
 			const std::size_t li = at(x, y);
-			if (blocked_lin[li] || home_lin[li] == UNREACH)
+			if (home_lin[li] == UNREACH)
 				continue;
 			bool edge = false;
 			for (int dy = -1; dy <= 1 && !edge; ++dy)
 				for (int dx = -1; dx <= 1; ++dx)
 				{
 					const int nx = x + dx, ny = y + dy;
-					if (nx >= 0 && ny >= 0 && nx < W && ny < H && holes_lin[at(nx, ny)])
+					if (nx >= 0 && ny >= 0 && nx < W && ny < H && bit(holes_lin, at(nx, ny)))
 					{
 						edge = true;
 						break;
@@ -112,7 +129,7 @@ void Nav::hop_scan_step(long long fuel_floor)
 				{
 					const std::size_t ti = at(tx, ty);
 					// Walled-off pockets are islands (handled separately): only shortcuts between walkable areas.
-					if (blocked_lin[ti] || home_lin[ti] == UNREACH)
+					if (home_lin[ti] == UNREACH || bit(blocked_lin, ti))
 						continue;
 					const int ht = home_lin[ti];
 					const int save = ht - (hl + static_cast<int>(bc::constants::tp_crystal_time) + 1);
@@ -121,13 +138,13 @@ void Nav::hop_scan_step(long long fuel_floor)
 				}
 			if (bt.x >= 0)
 			{
-				if (hop_edges.size() < 256)
-					hop_edges.push_back({ { x, y }, bt, best_save });
+				if (hop_edges.size() < 64)
+					hop_edges.push_back({ { x, y }, bt, best_save, hl });
 				else
 				{
 					auto worst = std::min_element(hop_edges.begin(), hop_edges.end(), [](const HopEdge& a, const HopEdge& b) { return a.save < b.save; });
 					if (worst->save < best_save)
-						*worst = { { x, y }, bt, best_save };
+						*worst = { { x, y }, bt, best_save, hl };
 				}
 			}
 		}
@@ -144,7 +161,7 @@ bool Nav::ensure_hop(int id)
 	auto& h = w.hops[static_cast<std::size_t>(id)];
 	if (h.tried)
 		return h.valid;
-	if (hop_scan != -2 || bc::fuel_remaining() < 40000)
+	if (hop_scan != -2 || bc::fuel_remaining() < 40000 + 80 * static_cast<long long>(hop_edges.size()))
 		return false;
 	h.tried = true;
 	if (hop_edges.empty())
@@ -162,7 +179,7 @@ bool Nav::ensure_hop(int id)
 		const int after = gf.get(e.t);
 		if (after >= BIG)
 			continue;
-		const int c = w.home.get(e.l) + static_cast<int>(bc::constants::tp_crystal_time) + 1 + after;
+		const int c = e.home + static_cast<int>(bc::constants::tp_crystal_time) + 1 + after;
 		if (c < best)
 			best = c, h.launch = e.l, h.land = e.t;
 	}

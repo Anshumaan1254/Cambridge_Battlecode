@@ -35,6 +35,8 @@ struct Group
 	// (a packed trio starts at 3 and ends at 1). Recomputed from remembered health every perception.
 	float cluster = 1.f;
 	int d_ally = BIG, d_enemy = BIG;
+	int d_home_c = BIG; // walking steps from our spawn to the centre (static; trip costs read it every turn)
+	int radius = 0;		// Chebyshev reach of the tiles from the centre
 	bool ours = true;
 
 	// Dynamic memory
@@ -109,6 +111,7 @@ struct Ally
 	Kit kit{};
 	bool kit_ready = false;
 	int died_round = -1000; // last death we saw (respawn after respawn_time)
+	int seen_round = -1000; // last round this body saw it (pos is that sighting)
 };
 
 struct World
@@ -143,6 +146,7 @@ struct World
 	void init_static();
 	void find_islands();
 	void init_units();
+	void update_alive(int round); // ally and enemy alive flags and death rounds (cheap; also while dead)
 	void perceive(vec2 me);
 	int group_at(vec2 p) const;
 	bool altar_locked_by_enemy(int altar_index) const;

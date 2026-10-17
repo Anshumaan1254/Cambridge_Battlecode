@@ -53,6 +53,28 @@ line that maps to tunables in `bots/legend/src/params.h`.
 
 To watch a replay: `cambc matches download <MATCH_ID>` then `cambc view <file>`.
 
+### 3b. Decode the replays themselves (no login needed)
+
+The match-group zips you download (or upload to a Claude session) contain one folder per match with
+`replay.repl26a` (and our team's fuel log). The replay holds everything: the map, both drafts, every
+action and the full state each round.
+
+```bash
+mkdir -p matches/<group> && unzip <match-group>.zip -d matches/<group>
+for z in matches/<group>/*.zip; do unzip -o -q "$z" -d "${z%.zip}"; done
+# readable report per match (captures, banking, recalls, shops, deaths with killer and headcount, priority use)
+for r in matches/<group>/*/replay.repl26a; do
+  node tools/replay/decode.mjs "$r" --out "${r%.repl26a}.json"
+  python3 tools/replay/report.py "${r%.repl26a}.json" --us A > "${r%.repl26a}.txt"
+done
+# the real maps those games were played on, for local tests and tournaments
+node tools/replay/extract_map.mjs --dir matches/<group> maps/ladder lad_
+node tools/replay/mapinfo.mjs maps/ladder/<name>.map26a        # ASCII view of a map
+```
+
+`--us A` assumes we were team A (true for match groups we created); use `--us B` otherwise (the draft line
+shows which side drafted Ren/Stellar/Cassi & Issac first).
+
 ## 4. What to paste back
 
 Paste this block (one per opponent) into the chat:
@@ -88,6 +110,17 @@ python3 tools/bench.py legend _their_style --maps 'maps/*.map26a'
 ```
 
 ## 6. Re-tuning on the real map pool
+
+The current trainer is evolution strategies with a shaped reward (docs/LEARNING.md):
+
+```bash
+tools/snapshot.sh _v_ladder HEAD                  # freeze what is on the ladder now (a league opponent)
+python3 tools/rl/es_train.py --opponents _v_ladder,_base,_hunt,_hunt2 --maps 'maps/*.map26a,maps/ladder/*.map26a'
+python3 tools/rl/apply_params.py tune_out/es/best_params.json
+python3 tools/draft_tournament.py --src bots/legend --maps 'maps/*.map26a,maps/ladder/*.map26a'   # after patches
+```
+
+The older coordinate-descent tuner still works:
 
 ```bash
 tools/snapshot.sh _v_ladder HEAD                  # freeze what is on the ladder now

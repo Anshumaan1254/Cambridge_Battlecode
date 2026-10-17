@@ -33,6 +33,29 @@ running or unfinished, and what to do next, so a new agent can continue without 
     earlier than heavy ones and the team arrives staggered. Testing `start_round=3` (hold until round 3) and `defer_islands=0`.
   - New switches (on in legend, under test): `capture_reset` (enemy on the group restarts the capture-recall clock),
     `tribute_elapsed` (channel bookkeeping), `danger_detour` (step_field routes around danger instead of stepping in).
+  - **Start timing flips mirror games**: `start_round=3` 54.5 vs `_ST` (comp 52.9); `start_round=2` without the new
+    mechanics 44.6 (comp 32.4), with them (`_w2d`) 50.9 (comp 50.0). Both are synchronized starts, so what matters is
+    who reaches contested points first relative to the opponent family, which is chaotic. Panel (`_L0 _es2 _r2 _v6`,
+    56 maps) mean: `_ST` 72.8 (comp 72.1), `start_round=3` 73.7, `_w2d` 75.9 (comp 75.0). Legend default `start_round=2`.
+  - **The user's request (message, session 4): "fight for the gems and win by gems, situationally, not hard-coded"**:
+    - Measured (`tools/analysis/gem_race.py`, 336 games of `_ST` vs `_L0 _es2 _r2 _v6`): losses are fight losses that
+      cost gems (lost games vs `_r2`: collected 903 vs 1156, gems lost at death 145 vs 76, kills 8.6 vs 14), not a
+      gold-over-gems preference. 12 of 77 losses ended with banked + carried >= 1000 (gen02 968 + 88, gen19 990 + 48):
+      close races where the last bag (7 tribute turns for 66 gems) landed too late.
+    - `team_bank`: a 6-bit team sum of carried gems in the claim bytes' bit 6 (exact: each body adds the change of its
+      own min(10, bag/10)); `wins_with` counts the others' bags, so every carrier banks when the team's bags win.
+      Hidden allies' bags cannot be read (rc 97), hence the shared sum. Result: neutral (45.5 vs `_w2d`, 51.0 held-out,
+      panel mean 76.1 vs 75.9): the remaining "winning bag" losses are timing, not bodies ignoring the win.
+    - `race_mode`: every 25 rounds each body samples both banked totals; the last ~200 rounds give each team's rate
+      and projected finish (ours counts the team's carried bags). Behind by > 40 rounds: gold worth 0.3 of its value
+      (it cannot pay back in time); and if our fights go well (enemy deaths + 2 >= ours, not outnumbered now): contest
+      their gems (deny bonus +0.5, enemy-half penalty x0.5, fight bar -0.15, enemy carriers with 30+ gems posted as
+      opportunities). Result (`_rm`): 54.5 vs `_tb`, held-out 47.0; panel mean 75.2 (comp **79.4** vs 75.0).
+    - `_rm` (everything) vs `_ST` 54.5 (comp 52.9), held-out 53.4; but vs `_c3` 44.6 (`_ST` had 56.2): over the 5
+      opponents incl. `_c3` the mean is 69.1 vs `_ST` 69.5. **Not shipped**: the differences are inside mirror noise.
+  - **Evaluation change**: `tools/fullpanel.sh BOT` = 6 opponents (`_L0 _es2 _r2 _v6 _c3 _ST`) x 106 maps (56 + 50
+    held-out) = 1,272 games per bot. Running (`/tmp/ev/e9.sh`): `_ST`, `_rm`, `_rs3` (start_round=3), `_rnr`
+    (race_mode=0), `_rnd` (danger_detour=0). Decide the ship from it.
 
 ### Note from the session-2 container (19:20 UTC): stopped, nothing running there
 

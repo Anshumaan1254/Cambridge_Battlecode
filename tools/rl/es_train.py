@@ -80,10 +80,19 @@ class Space:
 
 
 def make_variant(name, params):
-    args = ' '.join(f'{k}={v}' for k, v in params.items())
-    r = sh(f'tools/variant.sh {name} {args}')
-    if r.returncode != 0:
-        raise RuntimeError(r.stderr)
+    """bots/NAME = bots/legend with these params.h defaults (same as tools/variant.sh, but portable: no GNU sed)."""
+    dst = os.path.join(ROOT, 'bots', name)
+    shutil.rmtree(os.path.join(dst, 'src'), ignore_errors=True)
+    os.makedirs(dst, exist_ok=True)
+    shutil.copytree(os.path.join(ROOT, 'bots/legend/src'), os.path.join(dst, 'src'))
+    shutil.copy(os.path.join(ROOT, 'bots/legend/.gitignore'), dst)
+    hp = os.path.join(dst, 'src', 'params.h')
+    src = open(hp).read()
+    for k, v in params.items():
+        src, n = re.subn(rf'^(\s*\w+ {k} = )[^;]*;', lambda m: f'{m.group(1)}{v};', src, flags=re.M)
+        if n != 1:
+            raise RuntimeError(f'unknown param {k}')
+    open(hp, 'w').write(src)
     r = sh(f'cambc build {name}')
     if r.returncode != 0:
         raise RuntimeError(r.stdout[-2000:] + r.stderr[-2000:])

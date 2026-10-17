@@ -22,6 +22,15 @@ def load_stats(path):
         'gems': teams, 'per': per, 'faults': faults,
     }
 
+def build_if_stale(name):
+    """Build bots/NAME only when its wasm is missing or older than its sources. Several agents share the
+    sparring bots; rebuilding an unchanged bot from two benchmarks at once races in the same build dir."""
+    wasm = os.path.join('bots', name, '.cambc', 'build', 'bot-injected.wasm')
+    src = [os.path.join(d, f) for d, _, fs in os.walk(os.path.join('bots', name, 'src')) for f in fs]
+    if os.path.exists(wasm) and src and os.path.getmtime(wasm) >= max(os.path.getmtime(f) for f in src):
+        return
+    subprocess.run(['cambc', 'build', name], check=True, capture_output=True)
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('a'); ap.add_argument('b')
@@ -49,8 +58,8 @@ def main():
     cmd = ['cambc', 'run-batch', manifest, '--jobs', str(args.jobs), '--color', 'never']
     if args.rounds:
         cmd += ['--rounds', str(args.rounds)]
-    subprocess.run(['cambc', 'build', args.a], check=True, capture_output=True)
-    subprocess.run(['cambc', 'build', args.b], check=True, capture_output=True)
+    build_if_stale(args.a)
+    build_if_stale(args.b)
     t0 = time.time()
     p = subprocess.run(cmd, capture_output=True, text=True)
     if p.returncode != 0 and not args.quiet:

@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: 2026-10-17, ~09:30 UTC. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
+- Last updated: 2026-10-17, ~10:15 UTC (session 2). Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
 - Competition: Cambridge Battlecode 2026a (CAMBC), 12 Oct to 18 Nov 2026. C++ bot compiled to wasm.
 - The submitted bot cannot be changed after submission and keeps nothing between matches. All "learning"
   is either offline (training parameters before submission) or in-match (adapting inside one game).
@@ -17,57 +17,88 @@ running or unfinished, and what to do next, so a new agent can continue without 
 | Bot | `bots/legend/src` (C++). Ready-to-upload bundle: `submissions/legend.zip` (rebuild after every change, section 3) |
 | Current legend | = `_r2` (fuel fixes, review fixes, reworked learner) + exploration off + refreshed draft values + **the economy and spells patches** (`experiments/patches/x_econ.patch`, `x_spell.patch`, merged Oct 17). Build log with every submitted zip: `submissions/BUILDS.md`; older zips in `submissions/history/` |
 | Strength (45-map panel, 90 games per cell) | economy + spells on `_r2`: panel mean **85.2%** (vs `_r2` 77.6%), 57.8% head-to-head vs `_r2`. Promoted legend vs `_v6` (18 maps): 26/36, 0 faults, 2.6 lost turns per game. Full numbers in section 5 |
-| In flight | see **§0b Work in progress**: ES training on the final legend; maths and route prototypes built (reviews pending); ML fight model being built |
-| Next | Merge the prototypes that win, re-run ES, re-validate, rebuild the zip, update README/STRATEGY tables, commit, push (section 8) |
+| Engine | **cambc 2.2.5** since session 2 (was 2.2.2). Legend re-measured on it: unchanged (§0b) |
+| Tiebreakers (round 2000) | banked gems, then **gold earned**, then kills, then team B (read from the engine binary, §2) |
+| In flight | see **§0b**: five subagents (gold/tiebreak economy, stuck navigation, team coordination, maths + route review, ML fight model). RL training now runs on the user's machine with `tools/rl/train_local.sh` |
+| Next | Merge the prototypes that win one by one (panel after each), rebuild the zip, update README/STRATEGY tables, commit, push; apply the user's ES results when they arrive (§0b) |
 
 ---
 
-## 0b. Work in progress (as of 2026-10-17 09:30 UTC)
+## 0b. Work in progress (session 2, from 2026-10-17 09:45 UTC)
 
-Everything below is **unfinished or unmerged**. Patches in `experiments/wip/` are snapshots of local bot copies
-(the copies themselves are git-ignored); they may still change in the agent's copy.
+Everything below is **unfinished or unmerged** unless marked done. Patches in `experiments/wip/` are snapshots of local
+bot copies (the copies are git-ignored); they may still change in the agent's copy.
 
-| Item | State | Where |
-|---|---|---|
-| **Parameter training (ES, offline RL)** | Running on the final legend since 08:58 UTC: 10 generations × ~9 min, opponents `_v6,_hunt,_hunt2,_devci,_r2`, 45-map pool, `--jobs 2`. Gen 0: mean-policy reward +0.831 (84% win); gen 1: +0.864 (86%). Each generation samples 8 maps, so these move with the sample: judge only on the fixed panel afterwards | log `tune_out/es/log.txt`, best `tune_out/es/best_params.json` (both git-ignored; local only). Re-run command in §7.3 |
-| **Decision-maths prototype** (`_x_math`) | Build done; adversarial review pending; not yet run on the 45-map panel | `experiments/wip/x_math.patch` (applies cleanly on current legend) |
-| **Route prototype** (`_x_route`) | Build done; adversarial review running; not yet run on the 45-map panel | `experiments/wip/x_route.patch` (**conflicts** with the spells patch in `build_danger()` and `brain.h` next to `enemy_near_d`: merge by hand) |
-| **ML fight-model prototype** (`_x_ml`, logging copy `_x_ml_log`) | Build running (data logging, training of tree / boosted trees / MLP vs the formula) | `experiments/wip/x_ml.patch`, `x_ml_log.patch` (partial), `tools/ml/` |
-| Workflow that runs these agents | `wf_d475bc1a-380` (script `legend-decision-upgrade-*.js` in the session's workflows dir; run with `args.areas = ["math","ml","route"]`). Two agents at a time; the session limit cut an earlier run | — |
+**Session 2 started in a new container**: everything local from session 1 was gone (its ES run, all `bots/_*` copies,
+`tune_out/`). Session 1's ES run had finished generations 0 and 1 only (mean-policy reward +0.831 and +0.864); nothing was
+saved. Recreated in session 2:
+- `pip install cambc` gave **2.2.5** (was 2.2.2); `cambc init` moved `cambc.toml` to 2.2.5. The wasm toolchain had to be
+  fetched by hand again (TLS, §3 gotchas): wasi-sdk-33 into `/root/.cache/cambc/wasi-sdk-33`, cmake 3.31.8, ninja 1.12.1.
+- `tools/make_sparring.sh` rebuilt the panel. **`bots/_L0`** = frozen copy of legend at 25bed8d: baseline of every A/B in
+  session 2.
+- Legend re-measured on engine 2.2.5 (45 maps, 90 games per cell): results match session 1, so the engine change does
+  not affect us.
 
-### Still running right now (2026-10-17 09:30 UTC): not in the repo yet
+| Bot | `_r2` | `_v6` | `_hunt` | `_hunt2` | `_devci` | `_base` | Mean of the last five |
+|---|---|---|---|---|---|---|---|
+| legend (= `_L0`) on engine 2.2.5 | 60.0 | 73.3 | 91.1 | 95.6 | 76.7 | 88.9 | **85.1** |
 
-- **Parameter training (ES)**: at generation 2 of 10; generations 0 and 1 are done (about 9 min each, finish expected
-  ~10:45 UTC). Its results stay in local files (`tune_out/es/`, git-ignored) until they beat the current build.
-- **ML fight model** (`_x_ml`): still being built by its agent. The pipeline is committed in `tools/ml/`; the
-  prototype snapshot is `experiments/wip/x_ml.patch`.
-- **Reviews**: the adversarial review of the route prototype is running; the review of the maths prototype comes after it.
+**User requests in session 2** (also in §1, item 6):
+- continue the work in the md files, using Opus subagents for major tasks, Sonnet for medium, Haiku for documentation;
+- RL training moves to the user's machine: give an exact script; the user sends back the weights and every output;
+- maps with only gold and gems only in very hard camps: the bot must understand them and favour gold, as the
+  tiebreakers say;
+- our champions lack coordination: a proper team strategy;
+- champions sometimes get stuck between walls, which loses games;
+- keep this file updated at every step, in the same style.
 
-When those finish, the maths and route prototypes each get the 90-game panel. Whatever beats the current build gets
-merged and logged in `submissions/BUILDS.md`.
+**Agents in flight** (rules every parallel agent follows: `experiments/wip/AGENT_RULES.md`):
+
+| Agent (model) | Task | Bot copies | Deliverables |
+|---|---|---|---|
+| `mr` (Opus) | review, fix and panel the maths and route prototypes from session 1; combine the winners | `_x_math`, `_x_route`, `_x_mr` | refreshed `x_math.patch`, `x_route.patch`; `x_mr.patch`, `x_mr_NOTES.md` |
+| `gold` (Opus) | gem-scarce maps: test maps, scarcity detection, tiebreak-aware economy (gold earned, gem lead, monolith, endgame) | `_x_gold` | `x_gold.patch`, `x_gold_NOTES.md`, `maps/gold/`, map generator |
+| `stuck` (Opus) | champions stuck between walls: detector over replays, stress maps, root causes, nav fix | `_x_stuck` | `x_stuck.patch`, `x_stuck_NOTES.md`, `tools/analysis/stuck.mjs`, `maps/stuck/` |
+| `coord` (Opus) | team coordination: measure the failures first (deaths alone, allies not joining, split damage), then fix the costly ones (focus fire, engage protocol, buddies, sectors) | `_x_coord` | `x_coord.patch`, `x_coord_NOTES.md`, `tools/analysis/coord_audit.mjs` |
+| `ml` (Sonnet) | ML fight model: logging build, data, formula vs logistic / tree / boosted trees / MLP; export only if it clearly wins | `_x_ml`, `_x_ml_log` | `x_ml_NOTES.md` (+ `x_ml.patch` only if it wins) |
+| `docs` (Haiku) | document `tools/rl/train_local.sh` in `docs/LEARNING.md` and `README.md` | none | docs |
+
+**Merge plan** (coordinator): `mr` first, then `stuck`, `gold`, `coord`, `ml`. Each on top of the previous merge, a
+45-map panel after each, kept only if it wins (§7.1 rule), then a `submissions/BUILDS.md` row and a new zip.
+
+**Offline RL now runs on the user's machine** (session 2): `tools/rl/train_local.sh` does everything in one command
+(prerequisites, SDK, `cambc maps pull`, sparring panel + `_self` = frozen copy of the bot being trained, build and smoke
+test, ES training, validation panel of the learned parameters, results archive). Tested here end to end with a tiny run.
+- The user sends back `rl_results_<date>_<commit>.tar.gz` (git-ignored): `meta.txt` (commit, cambc version, CPUs, args),
+  `console.txt`, `log.txt`, `history.json`, `best_params.json`, `validation.txt` (learned parameters vs every opponent,
+  every map, both sides) and any official maps the repo does not have yet (`cambc maps pull` on their machine works;
+  it is blocked here).
+- When it arrives: extract it into a scratch directory, read `validation.txt` and `meta.txt` (which commit it trained),
+  apply `best_params.json` to a copy (`tools/variant.sh _es_user $(python3 -c "import json;print(' '.join(f'{k}={v}' for k,v in json.load(open('best_params.json')).items()))")`),
+  panel it against the current legend, and bake it in only if it wins. Add new official maps to `maps/comp/`.
+- Changes for it: `tools/variant.sh` and `es_train.py`'s variant builder no longer use GNU `sed -i` (macOS); the search
+  space (`tools/rl/space.json`) dropped `ucb_c` and `prior_pull` (27 params): both are measured harmful and sit at their
+  lower bound, where ES noise can only push them up.
+- Other tooling changes: `tools/bench.py` rebuilds a bot only when its sources are newer than its wasm (parallel agents
+  share the sparring bots); `tools/panel.sh` takes `PANEL_JOBS`.
 
 **If you are a new agent and these runs are gone** (new machine or container restart: running processes,
 `bots/_*` and `tune_out/` are local only), continue like this:
 
-1. Recreate the panel: `tools/make_sparring.sh` (builds `_base`, `_v6`, `_r2`, `_hunt`, `_hunt2`, `_devci`).
-2. Rebuild each prototype from its patch on top of `_r2` (the patches were cut against `_r2`):
-   ```bash
-   for p in x_math x_route; do tools/snapshot.sh _$p 4a3920d && (cd bots/_$p && patch -p1 --no-backup-if-mismatch < ../../experiments/wip/$p.patch) && cambc build _$p; done
-   ```
-   (`_r2` is legend at commit 4a3920d; byte-differences in `draft.cpp`/`params.h` are only the inactive draft hook, so
-   patches apply with offsets.) `x_ml.patch` is partial: rebuild the ML work from `tools/ml/` and the brief in §7.2.
+1. Set up: `pip install cambc && cambc init .` (choose C++); if the toolchain download fails TLS, fetch it by hand (above).
+   Then `tools/make_sparring.sh` and freeze the baseline: `mkdir -p bots/_L0 && cp -r bots/legend/src bots/_L0/ && cp bots/legend/.gitignore bots/_L0/`.
+2. Rebuild each prototype from its patch on top of the current legend:
+   `for p in x_math x_route x_gold x_stuck x_coord; do mkdir -p bots/_$p && cp -r bots/legend/src bots/_$p/ && cp bots/legend/.gitignore bots/_$p/ && (cd bots/_$p && patch -p1 --no-backup-if-mismatch < ../../experiments/wip/$p.patch) && cambc build _$p; done`
+   (session 2 patches are cut against legend at 25bed8d; read each `x_*_NOTES.md` for its state).
 3. Panel each prototype (90 games per opponent):
-   `tools/panel.sh _x_math 'maps/*.map26a,maps/ladder/*.map26a,maps/comp/*.map26a' _r2 _v6 _hunt _hunt2 _devci _base`.
-   Compare its mean with the table in §5 (current legend = `_x_combo` row: 85.2% mean, 57.8% vs `_r2`).
-4. Merge a winner onto `bots/legend`. `x_math.patch` applies cleanly; `x_route.patch` conflicts with the spells patch in
-   `build_danger()` and `brain.h` (`enemy_near_d` vs `enemy_near_field`), so merge those hunks by hand and keep both
-   variables. Then panel the merged legend against the previous build (archived in `submissions/history/`;
-   unzip it into a `bots/_prev/src` copy) and keep the merge only if it wins.
-5. ES: re-run the command in §7.3 on the final legend (10 generations, ~90 min on 4 CPUs), apply
-   `tune_out/es/best_params.json` to a copy with `tools/rl/apply_params.py`, and panel it before baking it in.
-6. For each new build: rebuild the zip (`rm -f submissions/legend.zip && cambc bundle legend --output submissions/legend.zip`),
+   `tools/panel.sh _x_math 'maps/*.map26a,maps/ladder/*.map26a,maps/comp/*.map26a' _L0 _r2 _v6 _hunt _hunt2 _devci _base`.
+   Compare with the engine-2.2.5 legend row above (mean 85.1).
+4. Merge winners onto `bots/legend` one at a time (merge plan above), panel after each.
+5. For each new build: rebuild the zip (`rm -f submissions/legend.zip && cambc bundle legend --output submissions/legend.zip`),
    check that it holds only `src/*.cpp|*.h` (no `.orig` files), archive it in `submissions/history/`, add a row to
    `submissions/BUILDS.md`, update §0 and §5 here, commit and push.
+
+### Findings from session 1's prototypes (still valid; the `mr` agent is reviewing and panelling them)
 
 **Decision maths: findings and changes** (`_x_math`; tools `xm_audit.mjs`, `xm_paired.mjs`, `xm_fe_time.mjs`, `xm_fe_taken.mjs`, `xm_fr_split.mjs`, `xm_econ.mjs`)
 - The bot does decide with explicit formulas; checked against 120 traced games:
@@ -115,21 +146,14 @@ merged and logged in `submissions/BUILDS.md`.
   - lookahead ordering, as above;
   - camp scoring that includes the bank cost: not built.
 
-**ML fight model** (`_x_ml`): in progress. The plan:
+**ML fight model** (`_x_ml`): session 1 built the pipeline (`tools/ml/`) but not the model; the `ml` agent continues it in
+session 2. The plan:
 - log the `combat()` features and the decision taken;
 - label the outcome from replays (death within 12 rounds, kill within 12 rounds);
 - compare the current formula, logistic regression, a decision tree, gradient-boosted trees (XGBoost if pip allows, else sklearn) and a tiny MLP, by AUC with a game-level split;
 - export to C++ (< 3k fuel per call) only if the model clearly beats the formula, then A/B it.
 
 The maths audit above already found the formula is biased but its chosen fights are net positive, so a learned model has to beat a reasonable baseline.
-
-**Next steps for the WIP** (in order):
-1. When the reviews finish, run each of `_x_math` and `_x_route` on the 45-map panel vs `_r2` and the five opponents
-   (`tools/panel.sh BOT 'maps/*.map26a,maps/ladder/*.map26a,maps/comp/*.map26a' _r2 _v6 _hunt _hunt2 _devci _base`).
-2. Merge each winner onto current legend (`x_math.patch` applies cleanly; `x_route.patch` needs a manual merge), run the
-   panel again on the merged bot, and keep it only if the mean beats the current legend.
-3. Finish ES; apply `best_params.json` to a copy with `tools/rl/apply_params.py`; keep it only if it beats legend on the panel.
-4. Log each new build in `submissions/BUILDS.md`, archive the zip in `submissions/history/`, update this file.
 
 **All analysis tools** (`tools/analysis/`, `tools/ml/`):
 
@@ -166,12 +190,22 @@ The maths audit above already found the formula is biased but its chosen fights 
    or RL concepts **only if they make the bot better**. Choose **optimal paths**, and work out **when to
    optimally use powers** and items.
 5. (Third message) Write this context file and push it, top priority.
+6. (Session 2, Oct 17) Continue the work in the md files with subagents: **Opus** for major tasks, **Sonnet** for medium
+   ones, **Haiku** for documentation. **RL training moves to the user's machine**: give an exact script; the user returns
+   the weights and all outputs. Some maps have **only gold, with gems only in very hard camps**: the bot must recognise
+   them and favour gold, as the **tiebreakers** say (the attachment did not arrive; the rules were read from the engine,
+   §2). Our champions **lack coordination**: build a proper team strategy. Champions sometimes **get stuck between
+   walls**, which loses games. Keep this file updated at every step, in the same style.
 
 ---
 
 ## 2. Game and engine essentials (full evidence in `docs/ENGINE_FACTS.md`)
 
-- First team to 1000 banked gems wins (round limit 2000). Champions farm camp groups (wolf, elk, gem and
+- First team to 1000 banked gems wins (round limit 2000). **Tiebreakers at round 2000** (strings in the engine binary
+  `/usr/local/bin/cambc`, cambc 2.2.5): more banked gems; tied on gems → more **gold earned** (match statistics
+  `earnedGold`); tied on gems and gold → more kills; tied on all three → team B wins. Lexicographic: one banked gem
+  beats any amount of gold. Kill gold is 50, assists and passive income are 0.
+- Champions farm camp groups (wolf, elk, gem and
   gold clusters, monolith), capture rewards (gems + gold), carry gems and **tribute** (bank) them at an
   altar. A tribute takes max(1, ceil(gems/10)) turns; damage does not cancel it, a stun or death does.
 - **Recall**: 5 turn ends; *any* damage cancels it. Health is restored only after a turn ends on spawn.
@@ -222,7 +256,8 @@ rm -f submissions/legend.zip && cambc bundle legend --output submissions/legend.
 | `tools/bench.py`, `tools/panel.sh` | A-vs-B on every map, both sides, in parallel; one summary line per opponent |
 | `tools/variant.sh`, `tools/snapshot.sh` | build a param/define variant (`SRC=bots/X tools/variant.sh NAME key=val --define "M v"`); freeze a past commit as a bot |
 | `tools/replay/decode.mjs` | replay decoder using the engine's own wasm: per-round state + events (`{rollovers: true}` keeps fuel rollovers); `report.py`, `extract_map.mjs`, `mapinfo.mjs`, `mapfeatures.mjs` |
-| `tools/rl/es_train.py` | offline RL: evolution strategies over `tools/rl/space.json` (29 params), shaped reward, uses bots/legend's params.h as the start |
+| `tools/rl/es_train.py` | offline RL: evolution strategies over `tools/rl/space.json` (27 params since session 2), shaped reward, uses bots/legend's params.h as the start |
+| `tools/rl/train_local.sh` | one-command ES training for the user's own machine: setup, training, validation panel, results archive (§0b) |
 | `tools/draft_tournament.py`, `tools/draft_model.py` | composition round robin (per-map wins and gem margins); nearest-map draft model with leave-one-map-out validation (`--vs` scores against a chosen field) |
 | `tools/analysis/` | item-value model (`item_value.py`), spell usage (`spell_usage.mjs`), decision-formula audit (`xm_audit.mjs`), bag/recall risk (`xm_econ.mjs`), route time use (`route_stats.mjs`) |
 | `docs/` | `STRATEGY.md`, `ENGINE_FACTS.md`, `HLD.md` (architecture), `LEARNING.md` (RL), `FEEDBACK_LOOP.md` (ladder replay loop) |
@@ -245,8 +280,9 @@ rm -f submissions/legend.zip && cambc bundle legend --output submissions/legend.
 - **Noise**: one 90-game result has a standard deviation of about ±5 points, so judge changes on the
   average over 5-6 opponents, and treat gaps under ~4 points as noise. Identical code differing only in fuel
   use can move a result by ~3 points.
-- `cambc` toolchain download failed TLS once: wasi-sdk-33, cmake-3.31.8 and ninja-1.12.1 were fetched
-  manually into `/root/.cache/cambc/` with `--cacert /root/.ccr/ca-bundle.crt`.
+- `cambc` toolchain download fails TLS in **every new cloud container** (sessions 1 and 2): fetch wasi-sdk-33 (extract
+  `wasi-sdk-33.0-x86_64-linux` and rename it to `wasi-sdk-33`), cmake-3.31.8-linux-x86_64 and ninja-1.12.1 (`ninja-linux.zip`
+  into `ninja-1.12.1-linux-x86_64/`) by hand into `/root/.cache/cambc/` with `curl --cacert /root/.ccr/ca-bundle.crt`.
 - The platform API (`2026a.battlecode.co.uk`) is blocked from the cloud container; the user must download
   ladder replays and match JSON themselves.
 - Building and running other teams' bot code (the Tarot Club clones of the top teams) was blocked by the
@@ -477,13 +513,14 @@ cloned read-only to `/home/user/fhl-08/tarot-club-cambc2026` in this container):
        (XGBoost if installable, or sklearn) and a tiny MLP, by AUC with a game-level split;
      - export the winner to C++ (if/else trees or constexpr weights, < 3k fuel per call) only if it
        clearly wins.
-3. **Re-run ES on the final code**:
+3. **ES on the final code** (session 2: the user runs it on their machine with `tools/rl/train_local.sh`, §0b). In a
+   container the equivalent is:
    ```bash
    python3 tools/rl/es_train.py --space tools/rl/space.json --opponents _v6,_hunt,_hunt2,_devci,_r2 \
      --maps 'maps/*.map26a,maps/ladder/*.map26a,maps/comp/*.map26a' --gens 10 --pop 4 --maps-per-gen 8 --jobs 4
    ```
-   Then `tools/rl/apply_params.py tune_out/es/best_params.json` on a copy, validate on the panel, and keep
-   the result only if it wins. ES reads its starting values from `bots/legend/src/params.h`.
+   Then apply `best_params.json` to a copy (§0b), validate on the panel, and keep the result only if it wins.
+   ES reads its starting values from `bots/legend/src/params.h`.
 4. **Ship**: sync `bots/_dev/src` into `bots/legend/src`; rebuild `submissions/legend.zip`; update the
    results tables in `README.md` and `docs/STRATEGY.md`; commit and push.
 5. **Ideas not yet tried** (from research and analysis):
@@ -520,14 +557,14 @@ cloned read-only to `/home/user/fhl-08/tarot-club-cambc2026` in this container):
 
 ## 9. What we are thinking right now (next actions, in order)
 
-1. Read the round-4/5 panels:
-   - if the econ + spells combination beats `_r2` on the mean, merge both into `_dev`;
-   - otherwise merge only the one that wins.
-2. When the maths/route/ML workflow returns, A/B each prototype in the same way, and merge the winners
-   (the ML fight model only if it beats the formula offline *and* in games).
-3. Sync to `legend`, re-run ES on the final code (fixed panel, 10 generations), validate, bake in the parameters.
-4. Final panel (including `starter-cpp` and `idle` pace), rebuild the zip, update README/STRATEGY/LEARNING,
-   commit, push, report to the user.
+Session 2 (10:15 UTC):
+1. Wait for the five agents (§0b). Merge in order `mr` → `stuck` → `gold` → `coord` → `ml`, each on the previous
+   merge, panel after each (45 maps, 90 games per opponent, plus the gold and stuck test maps), keep only winners.
+2. Gem-scarce maps: the gold mode must leave normal maps untouched (flag off on all 45 maps) and win the tiebreak on
+   `maps/gold/`; if the user sends the current official pool (from `train_local.sh`), test on the real gold maps too.
+3. Rebuild the zip, `submissions/BUILDS.md` row, README/STRATEGY tables (Haiku agent), commit, push.
+4. When the user's ES archive arrives: validate `best_params.json` on the merged build and bake it in only if it wins.
+   Best is for the user to train the merged build: tell them when it is pushed.
 
 ---
 

@@ -34,6 +34,18 @@ running or unfinished, and what to do next, so a new agent can continue without 
   - New switches (on in legend, under test): `capture_reset` (enemy on the group restarts the capture-recall clock),
     `tribute_elapsed` (channel bookkeeping), `danger_detour` (step_field routes around danger instead of stepping in).
 
+### Note from the session-2 container (19:20 UTC): stopped, nothing running there
+
+Session 2 (the original chat) ran in parallel with sessions 3-4 without knowing about them; it has now stopped its own
+agents and evaluations and synced to this branch. Its only addition: **`experiments/wip/x_rush_wip.patch`** (unfinished,
+untested), the user's **gold-rush strategy** for gem-scarce maps (user messages 9-10: "do not rely on the monolith,
+collect gold as fast as possible, melee on near clusters, ranged clear near then far ones, kill lone enemies we can
+surround or catch; kills count for the tiebreak"). It is cut against `_f1` (= `legend_es2` without the ES params) and
+already contains the gold agent's `x_gold.patch` (the `tb_*` scarcity detector, which fires only on `contest` and its
+ladder copy among the 56 maps). Params `rush_no_mono`, `rush_assign`, `rush_near_r`, `rush_melee_pen`, `rush_far_bonus`,
+`rush_gold_value`, `rush_hunt*`. Its agent was stopped before any A/B: if you pick it up, rebase onto current legend and
+test on `maps/gold`, `maps/gold2`, `contest` vs legend, `_v6`, `_r2` (`tools/analysis/gold_stats.py` shows how games were decided).
+
 ## 00. CURRENT POSITION (written 2026-10-17 17:10 UTC, session 3): read this first
 
 Branch `claude/laughing-curie-3rq6hu` (no PR unless the user asks). Everything below is committed and pushed unless it says

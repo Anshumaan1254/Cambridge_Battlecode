@@ -1,0 +1,201 @@
+diff -ru a/src/brain.cpp b/src/brain.cpp
+--- a/src/brain.cpp	2026-10-17 03:37:34.142707157 +0000
++++ b/src/brain.cpp	2026-10-17 09:05:31.214237819 +0000
+@@ -166,6 +166,22 @@
+ 	learner().init(W.W, W.H);
+ 	comms().bodies = static_cast<int>(W.allies.size());
+ 	inited = true;
++#ifdef LEGEND_TRACE
++	// Route analysis (tools/analysis): the static camp-group table, printed once per team (fuel-free in debug).
++	debug_block({
++		if (W.my_index == 0)
++		{
++			std::printf("M w=%d h=%d spawn=(%d,%d) team=%d\n", W.W, W.H, W.ally_spawn_c.x, W.ally_spawn_c.y, static_cast<int>(bc::detail::sdk_my_team()));
++			for (const auto& g : W.groups)
++			{
++				std::printf("G id=%d gems=%d gold=%d respawn=%d ours=%d d_ally=%d hp=%.0f tiles=", g.id, g.gems, g.gold, g.respawn, (int)g.ours, g.d_ally, g.max_hp);
++				for (auto t : g.tiles)
++					std::printf("%d,%d;", t.x, t.y);
++				std::printf("\n");
++			}
++		}
++	});
++#endif
+ }
+ 
+ void Brain::read_self()
+@@ -435,6 +451,7 @@
+ 	danger.clear();
+ 	camp_danger.clear();
+ 	enemy_near = false;
++	enemy_near_field = false;
+ 	for (const auto& e : W.enemies)
+ 	{
+ 		if (!e.alive || e.seen_round < 0)
+@@ -453,7 +470,14 @@
+ 		reach += age;
+ 		danger.draw_chebyshev(e.pos, static_cast<float>(reach));
+ 		if (cheb(e.pos, pos) <= 9)
++		{
+ 			enemy_near = true;
++			// An enemy on its own spawn heals fully every round and cannot chase a bag that stays away; on
++			// maps whose spawns touch, counting it made every body bank whatever it carried straight off its
++			// spawn (30x80: 40 bank walks of 37 steps for 22-25 gems each).
++			if (!P.bank_ignore_spawn || !W.enemy_spawn.is_set(e.pos))
++				enemy_near_field = true;
++		}
+ 	}
+ 	for (const auto& g : W.groups)
+ 		if (g.st == ST_ALIVE && g.awake && g.hp_total > 0 && !g.harmless && cheb(g.center, pos) <= 10)
+@@ -1257,7 +1281,10 @@
+ 	if (task == T_CAPTURE || reward_here() || W.ally_spawn.is_set(pos))
+ 		return false;
+ 	const int dh = W.dist_home(pos);
+-	if (dh >= BIG || dh <= 2)
++	// Within two steps of spawn the trip is almost free, so it is not skipped there: skipping it let farm()
++	// walk a hurt champion back out, and at three steps this check sent it home again, a farm/home flip-flop
++	// that held bodies at the spawn edge for hundreds of rounds (63% of all turns on the 30x80 ladder map).
++	if (dh >= BIG || dh <= (P.home_edge_fix ? 0 : 2))
+ 		return false;
+ 	const bool can_recall = dh > P.recall_min_dist && safe_to_recall();
+ 	const int cost = can_recall ? static_cast<int>(bc::constants::recall_time) : dh;
+@@ -1406,6 +1433,16 @@
+ 	return direct < BIG && via < BIG && via - direct <= 2;
+ }
+ 
++int Brain::bank_min(int trip) const
++{
++	// Each bank costs about the walk to the altar (and back out, or a recall), whatever the bag: fewer, bigger
++	// bags when the altar is far. Short trips keep the plain threshold (risk and scoreboard rules set it).
++	if (P.bank_trip_w <= 0.f || trip >= BIG)
++		return tribute_min;
++	const int extra = static_cast<int>(P.bank_trip_w * static_cast<float>(std::max(0, trip - P.bank_trip_free)));
++	return std::min(tribute_min + extra, static_cast<int>(P.bank_trip_cap * static_cast<float>(tribute_min)));
++}
++
+ bool Brain::tribute(bool force)
+ {
+ 	if (gems == 0)
+@@ -1418,20 +1455,31 @@
+ 	const int ticks = static_cast<int>((gems + 9) / 10);
+ 	const bool endgame = round + dist + ticks + P.endgame_margin >= static_cast<int>(bc::constants::max_rounds);
+ 	const bool winning = bc::global_submitted_gems(team::ally) + gems >= bc::constants::winning_gems;
+-	const bool risky = enemy_near && static_cast<int>(gems) >= P.tribute_risky;
++	const bool risky = enemy_near_field && static_cast<int>(gems) >= P.tribute_risky;
+ 	// Once a bank trip starts, finish it: re-deciding every turn let a passing enemy or the on-the-way test
+ 	// flip the choice each round and the champion oscillated in place for hundreds of rounds.
+ 	const bool committed = P.sticky_tribute && task == T_TRIBUTE && static_cast<int>(gems) >= 10;
+-	const bool want = force || endgame || winning || risky || committed || static_cast<int>(gems) >= tribute_min || dist <= P.tribute_near ||
++	// Recall and bank at the altar next to spawn when that beats walking (and heals and shops on the way).
++	const int via_home = static_cast<int>(bc::constants::recall_time) + W.spawn_altar_d;
++	const bool recall_bank = W.dist_home(pos) > P.recall_min_dist && via_home + 2 < dist && safe_to_recall() && !endgame;
++	// A long bank trip is worth a bigger bag: the threshold rises with the cheapest way to an altar from here,
++	// so a body far from every altar keeps farming and banks when its route passes close to one.
++	const int need = bank_min(recall_bank ? via_home : dist);
++	const bool want = force || endgame || winning || risky || committed || static_cast<int>(gems) >= need || dist <= P.tribute_near ||
+ 		(static_cast<int>(gems) >= 10 && on_the_way(a));
+ 	if (!want)
+ 		return false;
++#ifdef LEGEND_TRACE
++	debug_block({
++		if (task != T_TRIBUTE)
++			std::printf("B r=%d %d gems=%u dist=%d need=%d via=%d rb=%d f=%d e=%d w=%d risky=%d near=%d otw=%d\n", round, static_cast<int>(type), gems, dist, need, via_home, (int)recall_bank,
++				(int)force, (int)endgame, (int)winning, (int)risky, (int)(dist <= P.tribute_near), (int)(gems >= 10 && on_the_way(a)));
++	});
++#endif
+ 	// A tribute cancelled this turn or last (a threat made it pointless): flee, fight or move on first.
+ 	if (round - tribute_cancel_round <= 2 && !endgame && !winning && !force)
+ 		return false;
+-	// Recall and bank at the altar next to spawn when that beats walking (and heals and shops on the way).
+-	const int via_home = static_cast<int>(bc::constants::recall_time) + W.spawn_altar_d;
+-	if (W.dist_home(pos) > P.recall_min_dist && via_home + 2 < dist && safe_to_recall() && !endgame)
++	if (recall_bank)
+ 	{
+ 		task = T_TRIBUTE;
+ 		return go_home();
+@@ -1631,7 +1679,18 @@
+ 			// Claims are seen a round late: on the group we already hold only lower-index claimers count,
+ 			// otherwise two allies wanting one group both yield, both switch, and repeat forever.
+ 			if (P.claim_tiebreak && g.id == task_group && i > W.my_index)
++			{
++				// A higher-index claimer yields the group to us but still fights on it. Dropping its damage too
++				// made a pack that needs two bodies look impossible every other turn: the lower-index body
++				// flipped between joining (partner counted) and leaving (partner ignored) each round
++				// (route_stats: most target flip-flops in local games).
++				if (P.claim_helpers)
++				{
++					ally_dps += ally_dps_on(i, g);
++					melee_ally |= ally_melee(i);
++				}
+ 				continue;
++			}
+ 			++claimers;
+ 			first_claimer = std::min(first_claimer, i);
+ 			if (g.st == ST_REWARD && i < W.my_index)
+@@ -2218,7 +2277,22 @@
+ 			const bool shopper = type != CT::tavi && build_idx < build.size();
+ 			const bool rich = shopper && gold + static_cast<std::uint32_t>(g.gold) >= static_cast<std::uint32_t>(P.cap_recall_gold);
+ 			const bool hurt = hp < P.cap_recall_hp * max_hp;
+-			const bool bag = static_cast<int>(gems) + g.gems >= tribute_min;
++			// Where will the bag be banked? After the recall, from spawn (spawn_altar_d steps, after the rest
++			// turn); without it, at the altar nearest this tile. When the nearest altar plus a recall home
++			// afterwards is still cheaper, bank first: tribute() walks there once the reward lands and
++			// home_trip() recalls from the altar to heal and shop.
++			const int spawn_altar = world().spawn_altar_d;
++			int adist = BIG;
++			if (P.bank_first || P.bank_trip_w > 0)
++				nearest_altar(adist);
++			const bool bank_here = P.bank_first && adist < BIG && spawn_altar < BIG &&
++				adist + static_cast<int>(bc::constants::recall_time) + P.bank_first_margin <= spawn_altar;
++			const bool bag = static_cast<int>(gems) + g.gems >= bank_min(std::min(adist, spawn_altar < BIG ? 1 + spawn_altar : BIG));
++			if (bag && bank_here && !hurt)
++			{
++				place_ward(round - ward_round > 4);
++				return true;
++			}
+ 			if (rich || hurt || bag)
+ 			{
+ 				try
+diff -ru a/src/brain.h b/src/brain.h
+--- a/src/brain.h	2026-10-17 03:37:34.142693130 +0000
++++ b/src/brain.h	2026-10-17 09:00:10.924913097 +0000
+@@ -33,6 +33,7 @@
+ 	bool combat();
+ 	bool safety();
+ 	bool tribute(bool force);
++	int bank_min(int trip) const; // gems worth a bank trip of `trip` rounds (longer trips bank bigger bags)
+ 	bool on_the_way(int altar) const;
+ 	bool shop_trip();
+ 	bool home_trip();
+@@ -139,6 +140,7 @@
+ 	bc::bitboard camp_danger; // tiles in range of awake camps
+ 	bc::bitboard alert_zone;  // area an ally reported as dangerous (shared memory)
+ 	bool enemy_near = false;
++	bool enemy_near_field = false; // enemy_near, not counting enemies standing on their own spawn
+ 
+ 	// game-state modulated thresholds (recomputed each turn from P and the scoreboard)
+ 	float fight_margin = 1.3f, fight_back_margin = 0.75f, deny_bonus = 0.55f, enemy_half_penalty = 10.f;
+diff -ru a/src/params.h b/src/params.h
+--- a/src/params.h	2026-10-17 03:37:34.142630575 +0000
++++ b/src/params.h	2026-10-17 09:12:52.934544441 +0000
+@@ -121,6 +121,20 @@
+ 	int rest_on_spawn = 1;		// rest one turn on spawn after arriving hurt (health is restored at turn end)
+ 	int sticky_tribute = 1;		// finish a bank trip once started
+ 	int claim_tiebreak = 1;		// on our own group only lower-index claimers count
++	int claim_helpers = 1;		// ... but higher-index claimers there still add their damage to our kill plan
++	int home_edge_fix = 1;		// home trips also from 1-2 steps away (else a hurt body flip-flops at the spawn edge)
++
++	// Bank routes. Recall-while-capturing makes most trips spawn -> camp -> (teleport) spawn, and the bag is then
++	// banked at the altar nearest spawn; where that altar is far (30x80: 36 steps), each bank costs a long walk
++	// out and a recall back for a 22-34 gem bag. Unopposed, 14.6% of body-rounds were walks to an altar
++	// (tools/analysis/bank_audit.mjs); banking before the recall would have saved >=10 rounds on 166 of 355
++	// capture-recall-then-bank trips (tools/analysis/bank_first.mjs).
++	int bank_first = 1;			// full bag at a capture: skip the recall and bank at the nearest altar when that beats banking from spawn
++	int bank_first_margin = 2;	// ... by at least this many steps (nearest-altar walk + recall_time + margin <= spawn altar walk)
++	float bank_trip_w = 1.0f;	// bank threshold rises by this many gems per step of bank trip beyond bank_trip_free
++	int bank_trip_free = 12;	// bank trips up to this many steps keep the plain threshold
++	float bank_trip_cap = 2.0f;	// ... and the threshold never exceeds this multiple of the plain one
++	int bank_ignore_spawn = 1;	// "bank before a risky fight" ignores enemies standing on their own spawn
+ 
+ 	// Aggression
+ 	float steal_hp_frac = 0.55f; // need this health fraction to farm on the enemy half

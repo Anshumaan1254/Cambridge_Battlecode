@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: 2026-10-17, ~08:45 UTC. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
+- Last updated: 2026-10-17, ~09:30 UTC. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
 - Competition: Cambridge Battlecode 2026a (CAMBC), 12 Oct to 18 Nov 2026. C++ bot compiled to wasm.
 - The submitted bot cannot be changed after submission and keeps nothing between matches. All "learning"
   is either offline (training parameters before submission) or in-match (adapting inside one game).
@@ -17,8 +17,97 @@ running or unfinished, and what to do next, so a new agent can continue without 
 | Bot | `bots/legend/src` (C++). Ready-to-upload bundle: `submissions/legend.zip` (rebuild after every change, section 3) |
 | Current legend | = `_r2` (fuel fixes, review fixes, reworked learner) + exploration off + refreshed draft values + **the economy and spells patches** (`experiments/patches/x_econ.patch`, `x_spell.patch`, merged Oct 17). Build log with every submitted zip: `submissions/BUILDS.md`; older zips in `submissions/history/` |
 | Strength (45-map panel, 90 games per cell) | economy + spells on `_r2`: panel mean **85.2%** (vs `_r2` 77.6%), 57.8% head-to-head vs `_r2`. Promoted legend vs `_v6` (18 maps): 26/36, 0 faults, 2.6 lost turns per game. Full numbers in section 5 |
-| In flight | (1) Full-panel A/B of two finished prototypes, economy and spells, saved as patches in `experiments/patches/` (section 6). (2) A workflow building three more prototypes: decision maths, routes, ML fight model (local only, `bots/_x_math`, `bots/_x_route`, `bots/_x_ml`). (3) The parameter trainer (ES) has to be re-run on the final code (it died after 4 of 10 generations when the container restarted) |
+| In flight | see **§0b Work in progress**: ES training on the final legend; maths and route prototypes built (reviews pending); ML fight model being built |
 | Next | Merge the prototypes that win, re-run ES, re-validate, rebuild the zip, update README/STRATEGY tables, commit, push (section 8) |
+
+---
+
+## 0b. Work in progress (as of 2026-10-17 09:30 UTC)
+
+Everything below is **unfinished or unmerged**. Patches in `experiments/wip/` are snapshots of local bot copies
+(the copies themselves are git-ignored); they may still change in the agent's copy.
+
+| Item | State | Where |
+|---|---|---|
+| **Parameter training (ES, offline RL)** | Running on the final legend since 08:58 UTC: 10 generations × ~9 min, opponents `_v6,_hunt,_hunt2,_devci,_r2`, 45-map pool, `--jobs 2`. Gen 0: mean-policy reward +0.831 (84% win); gen 1: +0.864 (86%). Each generation samples 8 maps, so these move with the sample: judge only on the fixed panel afterwards | log `tune_out/es/log.txt`, best `tune_out/es/best_params.json` (both git-ignored; local only). Re-run command in §7.3 |
+| **Decision-maths prototype** (`_x_math`) | Build done; adversarial review pending; not yet run on the 45-map panel | `experiments/wip/x_math.patch` (applies cleanly on current legend) |
+| **Route prototype** (`_x_route`) | Build done; adversarial review running; not yet run on the 45-map panel | `experiments/wip/x_route.patch` (**conflicts** with the spells patch in `build_danger()` and `brain.h` next to `enemy_near_d`: merge by hand) |
+| **ML fight-model prototype** (`_x_ml`, logging copy `_x_ml_log`) | Build running (data logging, training of tree / boosted trees / MLP vs the formula) | `experiments/wip/x_ml.patch`, `x_ml_log.patch` (partial), `tools/ml/` |
+| Workflow that runs these agents | `wf_d475bc1a-380` (script `legend-decision-upgrade-*.js` in the session's workflows dir; run with `args.areas = ["math","ml","route"]`). Two agents at a time; the session limit cut an earlier run | — |
+
+**Decision maths: findings and changes** (`_x_math`; tools `xm_audit.mjs`, `xm_paired.mjs`, `xm_fe_time.mjs`, `xm_fe_taken.mjs`, `xm_fr_split.mjs`, `xm_econ.mjs`)
+- The bot does decide with explicit formulas; checked against 120 traced games:
+  - camp score = value / time = long-run gem rate;
+  - DPS model accurate solo (actual/predicted 0.85-1.12);
+  - `combat()` advantage already behaves like Lanchester's square law;
+  - tribute thresholds, recall safety and capture-recall timing hold up (512 of 518 capture-recalls got the reward).
+- Measurably wrong:
+  - **damage taken over a kill** was over-predicted 1.7-2.3x: it was assumed constant, but camps die one by one, and allies at the group tank;
+  - **travel** was 2.2-2.5 rounds too long for ranged and dash champions;
+  - the heal-trip HP budget did not match `safety()`'s retreat line;
+  - **gold had no end-of-game discount**: 20% of gold is earned after a team passes 800 gems, and ~485 gold per team is never spent.
+- Fixes, all switchable:
+  - travel to attack range, with a dash pace;
+  - sequential kill integral, with exposure 0.25 for a lone ranged champion and allies counted as tanks;
+  - reserve aligned with `safety()`;
+  - gold value scaled down over the last 500 rounds.
+- Prediction errors on the same episodes: travel 3.08 → 1.74 rounds, damage 281 → 167 HP, episode time 10.5 → 6.8 rounds.
+- Smoke tests (24 ladder games each): vs `_v6` 18-6 (`_r2` 17-7), vs `_r2` 15-9, vs `_hunt2` 23-1 (same as `_r2`). 13-28% fewer deaths.
+- Weak spot: fight-free farming races are 3-7% slower; it lost 3 of 4 of them to `_r2`.
+- The fight estimator over-states advantage x1.6-2.0, growing with body count, but the fights it picks are net positive in every bin. It was left unchanged, as was the double-counted spell DPS in `combat()` (it affects both sides; fixing it rescales every threshold).
+
+**Routes: findings and changes** (`_x_route`; tools `route_stats.mjs`, `route_audit.mjs`, `bank_audit.mjs`, `bank_first.mjs`)
+- **Optimal path, answered with data:**
+  - camp ordering (two-step lookahead / TSP) would save only 0.2-0.7% of walking: 83% of captures end in a recall-while-capturing, so trips are star-shaped (spawn → camp → teleport home);
+  - camp supply is not the bottleneck: ~440 gem-value of untouched live groups on our half;
+  - target swaps between bodies are limited by the 8-byte shared memory.
+- **Real waste:**
+  - banking walks: 14.6% of body-rounds unopposed, 32% on the 30x80 map;
+  - farm↔home flip-flops at the spawn edge: 15.3% of turns → 1.1%;
+  - walks abandoned before arrival: ~37% of camp-walk steps.
+- **Changes:**
+  - `home_edge_fix` (home trips also from 1-2 steps away);
+  - `claim_helpers` (a yielding ally's damage still counts in the kill plan);
+  - **bank first** (when a capture fills the bag and the nearest altar plus a recall home beats banking from spawn, bank there, then recall);
+  - a trip-aware bank threshold (+1 gem per step beyond 12, capped at 2x);
+  - "bank before a risky fight" ignores enemies standing on their own spawn.
+- **Results:**
+  - unopposed pace 622 → 523 rounds to 1000 (−16%);
+  - bank walking −30-35%, gems per bank 40 → 44;
+  - head-to-head vs `_r2` 25-11 (69%);
+  - vs `_v6` side A only, 13/18: not yet confirmed neutral.
+- Rejected:
+  - claim seniority: fewer target swaps, but slower pace;
+  - lookahead ordering, as above;
+  - camp scoring that includes the bank cost: not built.
+
+**ML fight model** (`_x_ml`): in progress. The plan:
+- log the `combat()` features and the decision taken;
+- label the outcome from replays (death within 12 rounds, kill within 12 rounds);
+- compare the current formula, logistic regression, a decision tree, gradient-boosted trees (XGBoost if pip allows, else sklearn) and a tiny MLP, by AUC with a game-level split;
+- export to C++ (< 3k fuel per call) only if the model clearly beats the formula, then A/B it.
+
+The maths audit above already found the formula is biased but its chosen fights are net positive, so a learned model has to beat a reasonable baseline.
+
+**Next steps for the WIP** (in order):
+1. When the reviews finish, run each of `_x_math` and `_x_route` on the 45-map panel vs `_r2` and the five opponents
+   (`tools/panel.sh BOT 'maps/*.map26a,maps/ladder/*.map26a,maps/comp/*.map26a' _r2 _v6 _hunt _hunt2 _devci _base`).
+2. Merge each winner onto current legend (`x_math.patch` applies cleanly; `x_route.patch` needs a manual merge), run the
+   panel again on the merged bot, and keep it only if the mean beats the current legend.
+3. Finish ES; apply `best_params.json` to a copy with `tools/rl/apply_params.py`; keep it only if it beats legend on the panel.
+4. Log each new build in `submissions/BUILDS.md`, archive the zip in `submissions/history/`, update this file.
+
+**All analysis tools** (`tools/analysis/`, `tools/ml/`):
+
+| Tool | Measures |
+|---|---|
+| `item_value.py` | item value per champion (log utility over farming, kills, survival, heal trips), greedy build order |
+| `spell_usage.mjs` (+ `spell_decode.mjs`) | per champion and ability slot: ready turns, casts, wasted cooldowns, stun timing, resets, shields, wards and locks |
+| `xm_audit.mjs`, `xm_paired.mjs`, `xm_fe_time.mjs`, `xm_fe_taken.mjs`, `xm_fr_split.mjs` | predicted vs actual (kill time, damage, trips, fight advantage) from `XM_TRACE` builds |
+| `xm_econ.mjs` | bags lost at death, bag-size histograms, recall reliability |
+| `route_stats.mjs`, `route_audit.mjs` | time shares, walking per gem, oscillation, duplicate walks, ordering regret, coverage (`LEGEND_TRACE` builds) |
+| `bank_audit.mjs`, `bank_first.mjs` | banking time split; capture-recall versus bank-first |
+| `tools/ml/benchsum.py` | summary of bench.py output directories |
 
 ---
 

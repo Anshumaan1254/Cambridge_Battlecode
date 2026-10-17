@@ -1,0 +1,122 @@
+diff -ruN _b6/src/brain.cpp _x_contest6/src/brain.cpp
+--- _b6/src/brain.cpp	2026-10-17 21:12:01.622002237 +0000
++++ _x_contest6/src/brain.cpp	2026-10-17 22:33:32.375034476 +0000
+@@ -2578,6 +2578,22 @@
+ 		if (near < BIG && near > P.group_radius)
+ 			time += P.group_far_w * static_cast<float>(near - P.group_radius);
+ 	}
++	if (W.cm_mode && round < P.cm_rush_until)
++		value *= g.id == W.cm_rush_group ? P.cm_rush_bonus : P.cm_rush_pen;
++	if (W.cm_mode && P.cm_buddy_pen < 1.f && !g.monolith && g.d_enemy - g.d_ally < P.cm_buddy_margin && !claimers)
++	{
++		// Contested gold alone: the opening deaths (kill difference of the first 150 rounds decides 70% of the games)
++		// are lone bodies meeting a pack. Without a claiming ally and without a visible one near the group, the group is
++		// worth less.
++		bool buddy = false;
++		for (int i = 0; i < static_cast<int>(W.allies.size()) && !buddy; ++i)
++		{
++			const auto& a = W.allies[static_cast<std::size_t>(i)];
++			buddy = i != W.my_index && a.alive && a.visible && cheb(a.pos, g.center) <= P.cm_buddy_r;
++		}
++		if (!buddy)
++			value *= P.cm_buddy_pen;
++	}
+ 	if (g.enemy_on_tile)
+ 	{
+ 		// An enemy capturing a reward: any of our bodies on any tile of the group resets their capture (it
+diff -ruN _b6/src/params.h _x_contest6/src/params.h
+--- _b6/src/params.h	2026-10-17 21:11:44.754162949 +0000
++++ _x_contest6/src/params.h	2026-10-17 22:33:32.376454377 +0000
+@@ -276,6 +276,17 @@
+ 	int obj_open_margin = 4;	// ... (enemy spawn less than this many steps farther than ours; contest: the opening
+ 								// fights at the central gold triples decided the game, 6 of our deaths by r59 vs _r2)
+ 
++	// Contest-like maps (agent contest6): all gems come from lone monoliths, the rest is gold (contest, gold_mono_*).
++	int cm_mode = 1;			// detect such maps at init (World::detect_contest); everything cm_* below needs it
++	int cm_obj = 1;				// lone monoliths join the objective plan (gather, attackers first, objective safety).
++								// contest vs idle 1087 -> 905 rounds to 1000 gems (obj_min_attackers 1, pace agent)
++	int cm_rush_until = 0;		// before this round every body prefers the richest gold group on our side (opening: arrive as a pack)
++	float cm_rush_bonus = 3.f;	// ... value multiplier for that group
++	float cm_rush_pen = 0.25f;	// ... and for every other group
++	float cm_buddy_pen = 1.f;	// value multiplier for a contested gold group with no claiming or visible ally near it (1 = off)
++	int cm_buddy_margin = 6;	// ... contested = the enemy spawn is less than this many steps farther than ours
++	int cm_buddy_r = 8;			// ... a visible ally within this of the group counts
++
+ 	// Stuck champions (tools/analysis/stuck.mjs; experiments/wip/x_stuck_NOTES.md)
+ 	int stuck_live_goal = 1;	 // farming without the group's field: walk to tiles in range of live camps, not of any
+ 								 // group tile (a tile next to a dead camp counted as arrived: frozen 30-78 rounds on gen16)
+diff -ruN _b6/src/world.cpp _x_contest6/src/world.cpp
+--- _b6/src/world.cpp	2026-10-17 21:11:44.754224094 +0000
++++ _x_contest6/src/world.cpp	2026-10-17 21:59:43.525764122 +0000
+@@ -138,6 +138,13 @@
+ 		for (auto t : G.tiles)
+ 			G.radius = std::max(G.radius, cheb(t, G.center));
+ 		G.update_cluster();
++		if (G.gems > 0)
++		{
++			if (G.monolith && G.camps.size() == 1)
++				++cm_lone;
++			else
++				++cm_other;
++		}
+ 		if (P.obj_plan && G.gems > 0)
+ 		{
+ 			// Objective-map detector input (see detect_objective), gathered here to keep init fuel flat.
+@@ -153,6 +160,7 @@
+ 	}
+ 	hops.assign(groups.size(), Hop{});
+ 	detect_objective();
++	detect_contest();
+ }
+ 
+ bool World::contested(int i)
+@@ -185,6 +193,32 @@
+ 		groups[static_cast<std::size_t>(id)].objective = true;
+ }
+ 
++void World::detect_contest()
++{
++	// Contest-like: gems only from lone monoliths (at least one on each side), everything else is gold.
++	cm_mode = P.cm_mode && cm_lone >= 2 && cm_other == 0;
++	if (!cm_mode)
++		return;
++	if (P.cm_obj)
++	{
++		// The per-body plan never reached the monoliths before r~600 (obj_min_attackers 2 leaves a lone monolith
++		// out of the objective mode): treat them as objective groups (gather, attackers first, safety, patience).
++		obj_groups.clear();
++		for (auto& g : groups)
++			if (g.monolith && g.gems > 0 && g.d_ally < BIG)
++				obj_groups.push_back(g.id), g.objective = true;
++		obj_mode = !obj_groups.empty();
++	}
++	// Opening rush group: the richest gold group on our side (ties: nearest, then lowest id).
++	int best = -1;
++	for (const auto& g : groups)
++		if (!g.monolith && g.gems == 0 && g.gold > 0 && g.ours && g.d_ally < BIG)
++			if (best < 0 || g.gold > groups[static_cast<std::size_t>(best)].gold ||
++				(g.gold == groups[static_cast<std::size_t>(best)].gold && g.d_ally < groups[static_cast<std::size_t>(best)].d_ally))
++				best = g.id;
++	cm_rush_group = best;
++}
++
+ void World::find_islands()
+ {
+ 	islands.clear();
+diff -ruN _b6/src/world.h _x_contest6/src/world.h
+--- _b6/src/world.h	2026-10-17 21:11:44.754249237 +0000
++++ _x_contest6/src/world.h	2026-10-17 21:59:43.525046512 +0000
+@@ -141,6 +141,13 @@
+ 	float obj_rate_total = 0, obj_rate_heavy = 0;
+ 	std::vector<int> obj_groups; // heavy gem groups, nearest to our spawn first
+ 	void detect_objective();
++	// Contest-like map (P.cm_mode, agent contest6): every gem comes from lone monoliths (one camp, no elks, wolves
++	// or gem clusters), the rest is gold. contest, its ladder copy and the 12 maps/gold*/gold_mono_* maps fire; no
++	// other map of the 56-map pool does. Decided at init from camp geometry.
++	void detect_contest();
++	bool cm_mode = false;
++	int cm_lone = 0, cm_other = 0; // gem groups that are a lone monolith / any other gem group
++	int cm_rush_group = -1;		   // the gold group the opening rush converges on (P.cm_rush_until)
+ 	Field home; // steps from our spawn
+ 	int spawn_altar_d = BIG; // walking steps from our spawn to the nearest altar's approach tile
+ 	bc::bitboard home_reach; // tiles reachable on foot from our spawn

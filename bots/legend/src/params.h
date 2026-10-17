@@ -288,6 +288,17 @@ struct Params
 	int obj_open_margin = 4;	// ... (enemy spawn less than this many steps farther than ours; contest: the opening
 								// fights at the central gold triples decided the game, 6 of our deaths by r59 vs _r2)
 
+	// Contest-like maps (agent contest6): all gems come from lone monoliths, the rest is gold (contest, gold_mono_*).
+	int cm_mode = 1;			// detect such maps at init (World::detect_contest); everything cm_* below needs it
+	int cm_obj = 1;				// lone monoliths join the objective plan (gather, attackers first, objective safety).
+								// contest vs idle 1087 -> 905 rounds to 1000 gems (obj_min_attackers 1, pace agent)
+	int cm_rush_until = 0;		// before this round every body prefers the richest gold group on our side (opening: arrive as a pack)
+	float cm_rush_bonus = 3.f;	// ... value multiplier for that group
+	float cm_rush_pen = 0.25f;	// ... and for every other group
+	float cm_buddy_pen = 1.f;	// value multiplier for a contested gold group with no claiming or visible ally near it (1 = off)
+	int cm_buddy_margin = 6;	// ... contested = the enemy spawn is less than this many steps farther than ours
+	int cm_buddy_r = 8;			// ... a visible ally within this of the group counts
+
 	// Stuck champions (tools/analysis/stuck.mjs; experiments/wip/x_stuck_NOTES.md)
 	int stuck_live_goal = 1;	 // farming without the group's field: walk to tiles in range of live camps, not of any
 								 // group tile (a tile next to a dead camp counted as arrived: frozen 30-78 rounds on gen16)

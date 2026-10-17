@@ -2753,6 +2753,22 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 		if (near < BIG && near > P.group_radius)
 			time += P.group_far_w * static_cast<float>(near - P.group_radius);
 	}
+	if (W.cm_mode && round < P.cm_rush_until)
+		value *= g.id == W.cm_rush_group ? P.cm_rush_bonus : P.cm_rush_pen;
+	if (W.cm_mode && P.cm_buddy_pen < 1.f && !g.monolith && g.d_enemy - g.d_ally < P.cm_buddy_margin && !claimers)
+	{
+		// Contested gold alone: the opening deaths (kill difference of the first 150 rounds decides 70% of the games)
+		// are lone bodies meeting a pack. Without a claiming ally and without a visible one near the group, the group is
+		// worth less.
+		bool buddy = false;
+		for (int i = 0; i < static_cast<int>(W.allies.size()) && !buddy; ++i)
+		{
+			const auto& a = W.allies[static_cast<std::size_t>(i)];
+			buddy = i != W.my_index && a.alive && a.visible && cheb(a.pos, g.center) <= P.cm_buddy_r;
+		}
+		if (!buddy)
+			value *= P.cm_buddy_pen;
+	}
 	if (g.enemy_on_tile)
 	{
 		// An enemy capturing a reward: any of our bodies on any tile of the group resets their capture (it

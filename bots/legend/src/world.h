@@ -148,6 +148,13 @@ struct World
 	float obj_rate_total = 0, obj_rate_heavy = 0;
 	std::vector<int> obj_groups; // heavy gem groups, nearest to our spawn first
 	void detect_objective();
+	// Contest-like map (P.cm_mode, agent contest6): every gem comes from lone monoliths (one camp, no elks, wolves
+	// or gem clusters), the rest is gold. contest, its ladder copy and the 12 maps/gold*/gold_mono_* maps fire; no
+	// other map of the 56-map pool does. Decided at init from camp geometry.
+	void detect_contest();
+	bool cm_mode = false;
+	int cm_lone = 0, cm_other = 0; // gem groups that are a lone monolith / any other gem group
+	int cm_rush_group = -1;		   // the gold group the opening rush converges on (P.cm_rush_until)
 	Field home; // steps from our spawn
 	int spawn_altar_d = BIG; // walking steps from our spawn to the nearest altar's approach tile
 	bc::bitboard home_reach; // tiles reachable on foot from our spawn

@@ -52,6 +52,11 @@ running or unfinished, and what to do next, so a new agent can continue without 
 - `own_plan` (each body owns one gem group, the same deterministic plan in every body): pace 576.1 (1.3/0.8) / 585.3 (1.6/0.6) vs 579.6 off;
   rows got slower (+48). Off. Stale round after a heavy init: fixed (round re-read after `init()`).
 - Verification of the ship candidate (`_c6`): vs `_b6` 48.2 (official 50.0), **vs `_ST` 54.5 (official 55.9)**; pace 56 maps 478.2 vs `_b6` 472.7.
+- **Agent `contest6` (Sonnet, done)**: `cm_mode` detector (>= 2 lone-monolith gem groups and no other gem group: contest, its ladder copy, the 12
+  `gold_mono_*` maps; nothing else of the 56) + `cm_obj` (lone monoliths join the objective plan only there): contest pace 1074 -> 936, official 17
+  576.2 -> 568.9, vs `_b6` 49.1 on the 56 maps. **Merged into `bots/legend` (not shipped yet)**. The contest opening fight is not solved: the kill
+  difference in rounds 1-150 predicts the game (72% vs 23%); 56% of deaths happen while fleeing (`can_escape` ignores enemies joining during the walk
+  home). Notes: `experiments/wip/x_contest6_NOTES.md`.
 - Rejected on pace (17 official maps vs idle): `build_style 3` (the ladder team's health-first builds) 606.1; draft Stellar, C&I, Varg, Ren, Ryth 584.9.
 
 ## 0000. SESSION 5: CURRENT POSITION (started 2026-10-17 19:46 UTC in a new container): read this first, then §000

@@ -139,6 +139,13 @@ void World::init_static()
 		for (auto t : G.tiles)
 			G.radius = std::max(G.radius, cheb(t, G.center));
 		G.update_cluster();
+		if (G.gems > 0)
+		{
+			if (G.monolith && G.camps.size() == 1)
+				++cm_lone;
+			else
+				++cm_other;
+		}
 		if (P.obj_plan && G.gems > 0)
 		{
 			// Objective-map detector input (see detect_objective), gathered here to keep init fuel flat.
@@ -154,6 +161,7 @@ void World::init_static()
 	}
 	hops.assign(groups.size(), Hop{});
 	detect_objective();
+	detect_contest();
 }
 
 bool World::contested(int i)
@@ -184,6 +192,32 @@ void World::detect_objective()
 	std::sort(obj_groups.begin(), obj_groups.end(), [&](int a, int b) { return groups[static_cast<std::size_t>(a)].d_ally < groups[static_cast<std::size_t>(b)].d_ally; });
 	for (int id : obj_groups)
 		groups[static_cast<std::size_t>(id)].objective = true;
+}
+
+void World::detect_contest()
+{
+	// Contest-like: gems only from lone monoliths (at least one on each side), everything else is gold.
+	cm_mode = P.cm_mode && cm_lone >= 2 && cm_other == 0;
+	if (!cm_mode)
+		return;
+	if (P.cm_obj)
+	{
+		// The per-body plan never reached the monoliths before r~600 (obj_min_attackers 2 leaves a lone monolith
+		// out of the objective mode): treat them as objective groups (gather, attackers first, safety, patience).
+		obj_groups.clear();
+		for (auto& g : groups)
+			if (g.monolith && g.gems > 0 && g.d_ally < BIG)
+				obj_groups.push_back(g.id), g.objective = true;
+		obj_mode = !obj_groups.empty();
+	}
+	// Opening rush group: the richest gold group on our side (ties: nearest, then lowest id).
+	int best = -1;
+	for (const auto& g : groups)
+		if (!g.monolith && g.gems == 0 && g.gold > 0 && g.ours && g.d_ally < BIG)
+			if (best < 0 || g.gold > groups[static_cast<std::size_t>(best)].gold ||
+				(g.gold == groups[static_cast<std::size_t>(best)].gold && g.d_ally < groups[static_cast<std::size_t>(best)].d_ally))
+				best = g.id;
+	cm_rush_group = best;
 }
 
 void World::find_islands()

@@ -35,6 +35,40 @@ Everything below is **unfinished or unmerged**. Patches in `experiments/wip/` ar
 | **ML fight-model prototype** (`_x_ml`, logging copy `_x_ml_log`) | Build running (data logging, training of tree / boosted trees / MLP vs the formula) | `experiments/wip/x_ml.patch`, `x_ml_log.patch` (partial), `tools/ml/` |
 | Workflow that runs these agents | `wf_d475bc1a-380` (script `legend-decision-upgrade-*.js` in the session's workflows dir; run with `args.areas = ["math","ml","route"]`). Two agents at a time; the session limit cut an earlier run | — |
 
+### Still running right now (2026-10-17 09:30 UTC): not in the repo yet
+
+- **Parameter training (ES)**: at generation 2 of 10; generations 0 and 1 are done (about 9 min each, finish expected
+  ~10:45 UTC). Its results stay in local files (`tune_out/es/`, git-ignored) until they beat the current build.
+- **ML fight model** (`_x_ml`): still being built by its agent. The pipeline is committed in `tools/ml/`; the
+  prototype snapshot is `experiments/wip/x_ml.patch`.
+- **Reviews**: the adversarial review of the route prototype is running; the review of the maths prototype comes after it.
+
+When those finish, the maths and route prototypes each get the 90-game panel. Whatever beats the current build gets
+merged and logged in `submissions/BUILDS.md`.
+
+**If you are a new agent and these runs are gone** (new machine or container restart: running processes,
+`bots/_*` and `tune_out/` are local only), continue like this:
+
+1. Recreate the panel: `tools/make_sparring.sh` (builds `_base`, `_v6`, `_r2`, `_hunt`, `_hunt2`, `_devci`).
+2. Rebuild each prototype from its patch on top of `_r2` (the patches were cut against `_r2`):
+   ```bash
+   for p in x_math x_route; do tools/snapshot.sh _$p 4a3920d && (cd bots/_$p && patch -p1 --no-backup-if-mismatch < ../../experiments/wip/$p.patch) && cambc build _$p; done
+   ```
+   (`_r2` is legend at commit 4a3920d; byte-differences in `draft.cpp`/`params.h` are only the inactive draft hook, so
+   patches apply with offsets.) `x_ml.patch` is partial: rebuild the ML work from `tools/ml/` and the brief in §7.2.
+3. Panel each prototype (90 games per opponent):
+   `tools/panel.sh _x_math 'maps/*.map26a,maps/ladder/*.map26a,maps/comp/*.map26a' _r2 _v6 _hunt _hunt2 _devci _base`.
+   Compare its mean with the table in §5 (current legend = `_x_combo` row: 85.2% mean, 57.8% vs `_r2`).
+4. Merge a winner onto `bots/legend`. `x_math.patch` applies cleanly; `x_route.patch` conflicts with the spells patch in
+   `build_danger()` and `brain.h` (`enemy_near_d` vs `enemy_near_field`), so merge those hunks by hand and keep both
+   variables. Then panel the merged legend against the previous build (archived in `submissions/history/`;
+   unzip it into a `bots/_prev/src` copy) and keep the merge only if it wins.
+5. ES: re-run the command in §7.3 on the final legend (10 generations, ~90 min on 4 CPUs), apply
+   `tune_out/es/best_params.json` to a copy with `tools/rl/apply_params.py`, and panel it before baking it in.
+6. For each new build: rebuild the zip (`rm -f submissions/legend.zip && cambc bundle legend --output submissions/legend.zip`),
+   check that it holds only `src/*.cpp|*.h` (no `.orig` files), archive it in `submissions/history/`, add a row to
+   `submissions/BUILDS.md`, update §0 and §5 here, commit and push.
+
 **Decision maths: findings and changes** (`_x_math`; tools `xm_audit.mjs`, `xm_paired.mjs`, `xm_fe_time.mjs`, `xm_fe_taken.mjs`, `xm_fr_split.mjs`, `xm_econ.mjs`)
 - The bot does decide with explicit formulas; checked against 120 traced games:
   - camp score = value / time = long-run gem rate;

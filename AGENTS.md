@@ -16,6 +16,14 @@ running or unfinished, and what to do next, so a new agent can continue without 
   Session 5 rebuilt everything (toolchain, sparring panel, `_L0 _ST _rm _es2 _c3 _st`, `_x_side`, `_rmx`, `_rmxp`) with
   `/tmp/ev/setup.sh` (local; the recipe is §000 "How to resume" plus `_ST` = `tools/snapshot.sh _ST cd4e2aa`, `_rm` = snapshot of HEAD).
 - Shipped build is still `legend_st`. Agent rules for this session: top block of `experiments/wip/AGENT_RULES.md` (baseline `bots/_rm`).
+- **In progress (20:05 UTC)**:
+
+| Task | Where | Left to do |
+|---|---|---|
+| Full panels `_rmxp` then `_rmx` (vs `_ST _L0 _es2 _r2 _v6 _c3`, 1,272 games each, 2 jobs, ~45 min each) | `/tmp/ev/e1.sh`, log `/tmp/ev/e1.log`, results `/tmp/ev/fp_<bot>/` (`python3 tools/sum.py DIR`) | compare with `_ST` (mean 73.4, official 67.6) and `_rm` (72.3 / 72.3); ship the best that beats `_ST` |
+| Agent `race` (Opus): close gem-race endgame (late banking, race hysteresis, endgame denial) | copy `bots/_x_race`, outputs `/tmp/race/`, deliverables `experiments/wip/x_race.patch` + `x_race_NOTES.md` | merge if it beats `_rm` (acceptance in AGENT_RULES.md) |
+| Agent `probe` (Sonnet): engine rules (stun vs tribute, altar lock, simultaneous tributes, tribute timing at 1000, Home emblem) | `bots/_x_probe`, `maps/probe5/`, deliverables: section in `docs/ENGINE_FACTS.md`, `experiments/wip/x_probe_NOTES.md` | fix legend code that relies on a wrong assumption |
+
 - Plan: (1) full panels of `_rmxp` then `_rmx` (the panels session 4 had queued; `_rnr`/`_rnd` ablations only if needed), ship the best
   build that beats `_ST`; (2) agents on the unstarted tasks of §000.4 (gem-race endgame, engine probes, walk waste, audit items).
 

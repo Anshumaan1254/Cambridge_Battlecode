@@ -3036,9 +3036,15 @@ bool Brain::cast_en_route()
 	const bool cc_up = P.cast_en_route >= 2 && kit.cc >= 0 && ready(kit.cc) && kit.cc_mod > 0;
 	if (!dmg_up && !aoe_up && !cc_up)
 		return false;
-	if (enemy_near_d <= P.hold_spell_dist || enemies_within(9) > 0)
+	if (enemy_near_d <= P.hold_spell_dist || enemies_within(9) > 0 || round < P.cast_route_from)
 		return false;
 	auto& W = world();
+	// The spell is down for 8 rounds after a camp cast: not while an enemy seen recently could reach us in that time
+	// (eight: the centre fights come through the bushes; with en-route casts we lost all 6 games vs _es2/_r2/_L0).
+	if (P.cast_route_enemy_d > 0)
+		for (const auto& e : W.enemies)
+			if (e.alive && e.seen_round >= 0 && round - e.seen_round <= P.cast_route_memory && cheb(e.pos, pos) <= P.cast_route_enemy_d)
+				return false;
 	const int reach = static_cast<int>(std::max({ dmg_up ? kit.dmg_range : 0.f, aoe_up ? kit.aoe_range : 0.f, cc_up ? kit.cc_range : 0.f }));
 	Group* bg = nullptr;
 	std::size_t bi = 0;

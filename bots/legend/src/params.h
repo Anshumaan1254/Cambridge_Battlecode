@@ -135,6 +135,11 @@ struct Params
 	// another group 4 tiles away, and walked on in ~150 turns (only the task group's camps were ever cast on).
 	int cast_en_route = 1;	  // 0 off; 1 farming bodies cast dmg / non-stun area spells on a camp (of one of our groups, not the
 							  // task group) exactly 4 tiles away instead of walking that turn; 2 also stuns that do damage
+	int cast_route_enemy_d = 0;		// cast_en_route: not when an enemy seen in the last cast_route_memory rounds is this close
+									// (eight, 6 games vs _es2/_r2/_L0: casts on 0/6, casts off 6/6, enemy_d 14 0/6, from r150 3/6,
+									// en_route off 3/6, near_target off 2/6: a knife-edge opening map, not a systematic loss)
+	int cast_route_memory = 10;
+	int cast_route_from = 0;		// cast_en_route: not before this round (opening fights)
 	int cast_near_target = 1; // fighting: the chosen target is out of spell range but another enemy is within 4: cast on that one
 							  // instead of walking toward the target (path1/eng4 in the trace: 41 turns in 3 games)
 

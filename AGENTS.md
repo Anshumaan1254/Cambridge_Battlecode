@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: 2026-10-17, ~10:45 UTC (session 2). Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
+- Last updated: 2026-10-17, ~14:30 UTC (session 2, part 2). Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
 - Competition: Cambridge Battlecode 2026a (CAMBC), 12 Oct to 18 Nov 2026. C++ bot compiled to wasm.
 - The submitted bot cannot be changed after submission and keeps nothing between matches. All "learning"
   is either offline (training parameters before submission) or in-match (adapting inside one game).
@@ -15,7 +15,7 @@ running or unfinished, and what to do next, so a new agent can continue without 
 | Item | State |
 |---|---|
 | Bot | `bots/legend/src` (C++). Ready-to-upload bundle: `submissions/legend.zip` (rebuild after every change, section 3) |
-| Current legend | = `_r2` (fuel fixes, review fixes, reworked learner) + exploration off + refreshed draft values + **the economy and spells patches** (`experiments/patches/x_econ.patch`, `x_spell.patch`, merged Oct 17). Build log with every submitted zip: `submissions/BUILDS.md`; older zips in `submissions/history/` |
+| Current legend | **session 2: legend = `_L1` (old legend + maths + route patches, merged 14:00 UTC) + three switchable fixes under test** (`dash_holes`, `finish_camp`, `capture_before_retreat`; frozen as `bots/_f1`). `submissions/legend.zip` is still the old build until the fixes pass the panel |
 | Strength (45-map panel, 90 games per cell) | economy + spells on `_r2`: panel mean **85.2%** (vs `_r2` 77.6%), 57.8% head-to-head vs `_r2`. Promoted legend vs `_v6` (18 maps): 26/36, 0 faults, 2.6 lost turns per game. Full numbers in section 5 |
 | Engine | **cambc 2.2.5** since session 2 (was 2.2.2). Legend re-measured on it: unchanged (§0b) |
 | Tiebreakers (round 2000) | banked gems, then **gold earned**, then kills, then team B (read from the engine binary, §2) |
@@ -23,6 +23,61 @@ running or unfinished, and what to do next, so a new agent can continue without 
 | Next | Merge the prototypes that win one by one (panel after each), rebuild the zip, update README/STRATEGY tables, commit, push; apply the user's ES results when they arrive (§0b) |
 
 ---
+
+## 0a. Session 2, part 2 (from 13:45 UTC): read this first
+
+At ~11:00 UTC the account's session limit stopped all five agents mid-work; the container survived (all `bots/_*`
+copies and `/tmp/<agent>/` outputs were still there at 13:45).
+
+**The user's new requests (message 7, 13:45 UTC)**, with the state of each:
+
+| Request | State |
+|---|---|
+| Analyse the RL results (`rl_results_20261017_1715_ccc8269.tar.gz`, plus the same files sent loose) | **done**, see below |
+| Champions kill camps but do not collect them | **cause found, fix under test**: `safety()` runs before the capture, so a body at low HP after a kill walked home and left the reward (dead camps do not hit). `capture_before_retreat`. Measured with `tools/analysis/rewards.mjs`: on `contest`, 6 of 91 rewards waited 46 rounds (= expiry) uncollected |
+| Retreating from a camp that is almost dead | **fix under test**: `finish_camp` (stay when the group dies within 4 rounds and we keep 8% HP in the worst case, no enemy within 8) |
+| Not dashing over 1-tile holes | **cause found, fix under test**: every route field treated holes as walls, so routes never planned a dash. `dash_holes`: dash kits build fields where 1-wide hole crossings are ground (`World::dash_walls`), and wait up to `dash_wait_max` rounds at the crossing for the dash. Crossings exist on rushbait-v2 (62 tiles), eight (22), expanse (16), ambush (42) |
+| Use emblems / gold (only Ren seemed to) | **measured: not a bug in our local games**: on `contest` every legend champion owns 4-6 emblems except Cassi & Issac (1 emblem + shards each: they earned ~270 gold each and died 17 times). If ladder replays show otherwise, the ladder build may be an old zip |
+| Use recall better | open (route patch's bank-first is merged; recall policy to revisit after the panel) |
+| Optimal (danger/reward-weighted) paths | open; partly covered by camp scoring (risk, pain map, threat); route fields are still shortest-walk |
+| Stuck, walking the same path again and again | `stuck` agent resumed (its detector: 75 episodes per game; top causes target-flip 505, home-edge 351 (fixed by the merged `home_edge_fix`), walk-away 238, task-flip 248 over 360 games) |
+| Coordination between champions | coord agent's best variant (`coord_joint` + `coord_flee_ally`) rebased onto legend as `bots/_c1`, under test. Its measurements are in §0b |
+| A strategy decided before the match from the map | open (next after the panel results) |
+| Keep this file updated | ongoing |
+| Use Opus subagents as little as possible | only `gold` and `stuck` were resumed (they held hours of context); coord and ML stay stopped; the rest is done by the main session |
+
+**RL results from the user's machine** (Windows/MSYS, 20 CPUs, commit ccc8269 = old legend `_L0` code, 16 generations x
+864 games, 76-map pool incl. `maps/gold/`, opponents `_v6,_hunt,_hunt2,_devci,_r2,_self`):
+- Training worked: mean-policy reward +0.66 (gen 0) → +0.79 (gen 15), noisy (+0.44 to +1.03; each generation samples 8 maps).
+- **Validation played 0 games** on Windows: `bench.py` ran without `--release` and hid the error. Fixed: `bench.py --release`,
+  an error message when a batch produces no statistics, and `train_local.sh` validates with `--release`.
+- The archive brought the **17-map official pool** (`cambc maps pull`): now in `maps/comp/` (11 new maps; the 6 we had
+  are updated versions). **Panel pool from now on: 56 maps = 27 generated + 12 ladder + 17 official, 112 games per
+  opponent.** Real gem-scarce maps: `contest` (1 monolith + 10 gold clusters per side), `elkring` (elks + gold only),
+  `monolith`, `rows` (monolith is the big gem source).
+- `best_params.json` applied to the merged legend (`_es1`): **43% head-to-head vs `_L1`** (it was tuned for the old code).
+- Consistency of each parameter's drift (share of generation steps in the final direction, move in % of its range):
+  8 moved consistently: `deny_bonus` 0.60 → 0.04 (100%, −47%), `cap_recall_hp` 0.73 → 0.61 (100%), `q0_push` −0.27 → −0.72
+  (100%), `fight_learn_rate` 0.16 → 0.24 (100%), `cornered_margin` 0.48 → 0.63 (93%), `isolated_fight_adv` 1.65 → 1.43
+  (93%), `target_threat_adv` 1.06 → 1.31 (93%), `fight_back_margin` 0.77 → 0.87 (87%). The rest drifted like noise
+  (`gold_value`, `fight_margin`, `tribute_min`, `early_tribute_min`, `shop_shards`, `steal_hp_frac`, `deficit_defend`).
+  Variant `_es2` = `_f1` + only those 8, under test.
+
+**Merged at 14:00 UTC: maths + route** (`mr` agent's panels, 45-map pool, 90 games each):
+
+| Bot | vs `_L0` | `_r2` | `_v6` | `_hunt` | `_hunt2` | `_devci` | `_base` | mean of last five | pace vs `idle` |
+|---|---|---|---|---|---|---|---|---|---|
+| `_L0` (old legend) | — | 60.0 | 73.3 | 91.1 | 95.6 | 76.7 | 88.9 | 85.1 | 467 |
+| `_x_math` (+ score cap) | 53.3 | 67.8 | 81.1 | 87.8 | 92.2 | 77.8 | 96.7 | 87.1 | 455 |
+| `_x_route` | 53.3 | 56.7 | 76.7 | 95.6 | 93.3 | 76.7 | 91.1 | 86.7 | 442 |
+| **`_x_mr` (both) = `_L1`, merged** | **62.2** | 72.2 | 84.4 | 93.3 | 95.6 | 80.0 | 94.4 | **89.5** | **428** |
+
+Lost turns on gen16_98x99 unchanged (12, `tools/analysis/rollovers.mjs`). On the new 56-map pool `_L1`: vs `_L0` 56.2,
+`_r2` 72.3, `_v6` 86.6, `_hunt` 93.8, `_hunt2` 94.6 (rest running).
+
+**Running now**: `scratchpad/eval1.sh` / `eval2.sh` (panels of `_L1`, `_es1`, `_L0` on the 56 maps, then `_f1`, `_c1`, `_es2`,
+and `_f1` vs `_L1` on the hole maps); agents `gold` and `stuck` (resumed, working on copies of the new legend).
+If they are gone: rebuild from `experiments/wip/x_*.patch` (§0b recovery steps; base = current legend).
 
 ## 0b. Work in progress (session 2, from 2026-10-17 09:45 UTC)
 

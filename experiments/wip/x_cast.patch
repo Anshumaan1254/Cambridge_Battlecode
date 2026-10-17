@@ -1,0 +1,161 @@
+diff -ruN _k1/src/brain.cpp _x_cast/src/brain.cpp
+--- _k1/src/brain.cpp	2026-10-17 15:05:31.633612136 +0000
++++ _x_cast/src/brain.cpp	2026-10-17 15:21:26.166346436 +0000
+@@ -421,6 +421,10 @@
+ 	}
+ 
+ 	dbg_path = 0, dbg_eng = 0, dbg_hit_other = false;
++#ifdef SPELL_TRACE
++	const vec2 pos0 = pos;
++	const bool dmg_up0 = kit.dmg >= 0 && cd[static_cast<std::size_t>(kit.dmg)] <= 0, aoe_up0 = kit.aoe >= 0 && cd[static_cast<std::size_t>(kit.aoe)] <= 0;
++#endif
+ 	bool acted = combat();
+ 	if (acted)
+ 		dbg_path = task == T_FIGHT ? 1 : 2;
+@@ -439,6 +443,24 @@
+ #ifdef SPELL_TRACE
+ 	debug_block({
+ 		auto& WW = world();
++		if ((dmg_up0 || aoe_up0) && !cast_done)
++		{
++			int cd4 = 99, live4 = 0;
++			for (const auto& g : WW.groups)
++				for (std::size_t k = 0; k < g.camps.size(); ++k)
++					if (g.hp[k] > 0 && WW.camp_occ.is_set(g.camps[k].pos) && cheb(pos0, g.camps[k].pos) <= 4)
++						cd4 = std::min(cd4, cheb(pos0, g.camps[k].pos)), ++live4;
++			int tg4 = 99;
++			if (task_group >= 0 && task_group < static_cast<int>(WW.groups.size()))
++			{
++				const auto& g = WW.groups[static_cast<std::size_t>(task_group)];
++				for (std::size_t k = 0; k < g.camps.size(); ++k)
++					if (g.hp[k] > 0 && WW.camp_occ.is_set(g.camps[k].pos))
++						tg4 = std::min(tg4, cheb(pos0, g.camps[k].pos));
++			}
++			if (live4 > 0)
++				std::printf("WM tg=%d r=%d ch=%d path=%d eng=%d task=%d cd4=%d live4=%d mv=%d enemy=%d\n", tg4, round, static_cast<int>(type), dbg_path, dbg_eng, task, cd4, live4, static_cast<int>(!can_move), enemy_near_d);
++		}
+ 		int nd = 99, nt = -1, nsp = 0;
+ 		for (const auto& e : WW.enemies)
+ 			if (e.alive && e.visible && cheb(e.pos, pos) < nd)
+@@ -1359,6 +1381,8 @@
+ 	}
+ 	auto& ec = *e.ch;
+ 	int d = cheb(pos, e.pos);
++	if (d > 4 && cast_on_nearer(e))
++		return true;
+ 	if (d > kit.attack_range)
+ 	{
+ 		bc::bitboard goal;
+@@ -2456,6 +2480,8 @@
+ void Brain::farm()
+ {
+ 	auto& W = world();
++	if (task != T_CAPTURE && cast_en_route())
++		return;
+ 	if (P.style == 1 || round < P.deathball_until)
+ 	{
+ 		int leader = -1;
+@@ -2796,6 +2822,74 @@
+ 	return false;
+ }
+ 
++// Cast before walking: a ready damage spell is lost cooldown while the body walks past camps. Casting from exactly 4
++// tiles is free (camps hit at 3), and camps never heal, so the damage is still there when a body farms the group.
++// Only groups that are not the task group (farm_group already casts there), and only when no enemy is near.
++bool Brain::cast_en_route()
++{
++	if (!P.cast_en_route || cast_done || !can_move || !can_cast)
++		return false;
++	const bool dmg_up = kit.dmg >= 0 && ready(kit.dmg);
++	const bool aoe_up = kit.aoe >= 0 && ready(kit.aoe) && (!kit.aoe_stuns || P.cast_en_route >= 2);
++	const bool cc_up = P.cast_en_route >= 2 && kit.cc >= 0 && ready(kit.cc) && kit.cc_mod > 0;
++	if (!dmg_up && !aoe_up && !cc_up)
++		return false;
++	if (enemy_near_d <= P.hold_spell_dist || enemies_within(9) > 0)
++		return false;
++	auto& W = world();
++	const int reach = static_cast<int>(std::max({ dmg_up ? kit.dmg_range : 0.f, aoe_up ? kit.aoe_range : 0.f, cc_up ? kit.cc_range : 0.f }));
++	Group* bg = nullptr;
++	std::size_t bi = 0;
++	float bk = 1e30f;
++	for (auto& g : W.groups)
++	{
++		if (!g.ours || g.monolith || g.id == task_group || g.st != ST_ALIVE || g.seen_round < 0 || cheb(g.center, pos) > reach + g.radius + 1)
++			continue;
++		for (std::size_t i = 0; i < g.camps.size(); ++i)
++		{
++			const int d = cheb(pos, g.camps[i].pos);
++			if (g.hp[i] <= 0 || !W.camp_occ.is_set(g.camps[i].pos) || d < 4 || d > reach)
++				continue;
++			// A camp at 4 is outside every camp's reach (3); a group whose other camps stand closer than that could hit us.
++			bool safe = true;
++			for (std::size_t j = 0; j < g.camps.size(); ++j)
++				safe &= !(g.hp[j] > 0 && W.camp_occ.is_set(g.camps[j].pos) && cheb(pos, g.camps[j].pos) <= 3);
++			if (!safe)
++				continue;
++			if (g.hp[i] < bk)
++				bk = g.hp[i], bg = &g, bi = i;
++		}
++	}
++	if (!bg)
++		return false;
++	return spells_on_camp(*bg, bi, P.cast_en_route < 2);
++}
++
++// Fight: the target is out of reach but another enemy stands within spell range: cast on it, hold position.
++bool Brain::cast_on_nearer(const Enemy& skip)
++{
++	if (!P.cast_near_target || cast_done || !can_cast)
++		return false;
++	if (!(ready(kit.cc) || ready(kit.dmg) || ready(kit.aoe)))
++		return false;
++	auto& W = world();
++	Enemy* pick = nullptr;
++	for (auto& o : W.enemies)
++	{
++		if (&o == &skip || !o.ch || !o.alive || !o.visible || cheb(pos, o.pos) > 4 || W.enemy_spawn.is_set(o.pos))
++			continue;
++		if (o.type == CT::ren && hp <= 2.5f * bc::constants::passive_abilities::ren_retaliation_focus_ratio * o.focus && o.hp > burst_vs(o))
++			continue;
++		if (!pick || o.hp < pick->hp)
++			pick = &o;
++	}
++	if (!pick)
++		return false;
++	if (!cast_unit_champ(kit.cc, *pick->ch) && !cast_unit_champ(kit.dmg, *pick->ch))
++		cast_ground(kit.aoe, pick->pos);
++	return cast_done;
++}
++
+ bool Brain::attack_chain_camp(Group& g, std::size_t idx)
+ {
+ 	auto& W = world();
+diff -ruN _k1/src/brain.h _x_cast/src/brain.h
+--- _k1/src/brain.h	2026-10-17 15:05:31.634336801 +0000
++++ _x_cast/src/brain.h	2026-10-17 15:21:26.162283919 +0000
+@@ -138,6 +138,8 @@
+ 	bool attack_unit(const bc::unit& u);
+ 	bool attack_chain_camp(Group& g, std::size_t idx);
+ 	bool spells_on_camp(Group& g, std::size_t idx, bool save_cc);
++	bool cast_en_route();
++	bool cast_on_nearer(const Enemy& skip);
+ 	bool engage(Enemy& e);
+ 	bool cast_unit_camp(int slot, const bc::camp& c);
+ 	bool cast_unit_champ(int slot, const bc::champion& c);
+diff -ruN _k1/src/params.h _x_cast/src/params.h
+--- _k1/src/params.h	2026-10-17 15:05:31.819666712 +0000
++++ _x_cast/src/params.h	2026-10-17 15:21:26.158342246 +0000
+@@ -114,6 +114,13 @@
+ 	int melee_aoe_stun = 1;	  // melee area stunners (Ryth) stun from range 2..range+radius instead of walking in first
+ 	int flee_stun = 1;		  // fleeing with a walk-exclusive stun: stun a melee/dash chaser that can hit us next turn
+ 	int step_hit_other = 1;	  // melee: after a step that leaves the target out of reach, hit another enemy in reach
++	// Cast before walking (session 3, agent cast). Damage spells are walk-exclusive, so a turn spent walking past a
++	// camp wastes the cooldown. Traced on 3 comp games: Stellar/Cassi had a ready damage spell, a live camp of
++	// another group 4 tiles away, and walked on in ~150 turns (only the task group's camps were ever cast on).
++	int cast_en_route = 1;	  // 0 off; 1 farming bodies cast dmg / non-stun area spells on a camp (of one of our groups, not the
++							  // task group) exactly 4 tiles away instead of walking that turn; 2 also stuns that do damage
++	int cast_near_target = 1; // fighting: the chosen target is out of spell range but another enemy is within 4: cast on that one
++							  // instead of walking toward the target (path1/eng4 in the trace: 41 turns in 3 games)
+ 
+ 	int dash_holes = 1;		   // dash kits route over 1-wide hole crossings (fields treat those holes as ground; the
+ 							   // step waits for the dash instead of walking around), see world.cpp

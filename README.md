@@ -36,6 +36,8 @@ What changed and why: [docs/STRATEGY.md](docs/STRATEGY.md) §1. How the bot lear
 [`submissions/legend.zip`](submissions/legend.zip) is `cambc bundle legend` output (the bot's `src/` only).
 Upload it on the platform's Submissions page, or submit from the CLI with `cambc login && cambc submit legend`.
 Rebuild it after changing the bot: `cambc bundle legend --output submissions/legend.zip` (delete the old file first).
+Every recommended build, with its commit and measured results, is logged in
+[`submissions/BUILDS.md`](submissions/BUILDS.md); previous zips are kept in `submissions/history/`.
 
 ## Quick start
 

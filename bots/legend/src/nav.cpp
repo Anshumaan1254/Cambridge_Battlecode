@@ -36,7 +36,7 @@ bool Nav::ensure_group(int id)
 		return false;
 	auto& w = world();
 	bc::bitboard visited;
-	fld.f.compute(w.walls, w.groups[static_cast<std::size_t>(id)].mask, visited);
+	fld.f.compute(w.route_walls(), w.groups[static_cast<std::size_t>(id)].mask, visited);
 	fld.ready = true;
 	++built_this_turn;
 	return true;
@@ -53,7 +53,7 @@ bool Nav::ensure_altar(int id)
 	bc::bitboard roots, visited;
 	for (auto t : w.altar_approach[static_cast<std::size_t>(id)])
 		roots.set(t);
-	fld.f.compute(w.walls, roots, visited);
+	fld.f.compute(w.route_walls(), roots, visited);
 	fld.ready = true;
 	++built_this_turn;
 	return true;
@@ -318,6 +318,30 @@ bool Nav::step_field(vec2& pos, const Field& field, int stop_at, const bc::bitbo
 		}
 		catch (...)
 		{
+		}
+	}
+	// A dash route (P.dash_holes) whose next tile is a 1-wide hole: wait a few rounds for the dash rather than
+	// walking around (the next turn's field would pull the body back: an oscillation).
+	if (P.dash_holes && dash_slot >= 0 && !moved)
+	{
+		const bc::bitboard holes = bc::map::holes();
+		for (auto d : DIRS)
+		{
+			const vec2 p = pos + d;
+			if (bc::map::is_in_bounds(p) && holes.is_set(p) && field.get(p) < here)
+			{
+				int c = 99;
+				try
+				{
+					c = static_cast<int>(me.abilities()[static_cast<std::size_t>(dash_slot)].cooldown());
+				}
+				catch (...)
+				{
+				}
+				if (c <= P.dash_wait_max)
+					return false;
+				break;
+			}
 		}
 	}
 	// Units block every improving step: route around them with a dynamic search.

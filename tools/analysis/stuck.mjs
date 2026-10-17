@@ -145,7 +145,7 @@ function parseTrace(text) {
 }
 
 function newAcc() {
-	return { games: 0, wins: 0, bodyRounds: 0, alive: 0, eligible: 0, wait: 0, ep: {}, epRounds: {}, blocked: 0, rollovers: 0, rollOpen: 0, perMap: {}, perChamp: {}, worst: [] };
+	return { cause: {}, games: 0, wins: 0, bodyRounds: 0, alive: 0, eligible: 0, wait: 0, ep: {}, epRounds: {}, blocked: 0, rollovers: 0, rollOpen: 0, perMap: {}, perChamp: {}, worst: [] };
 }
 const CLASSES = ['frozen', 'jiggle', 'osc', 'noprog'];
 
@@ -318,18 +318,40 @@ async function analyse(file, acc, opts) {
 				prevPos = pos;
 				prevAlive = alive;
 			}
+			const homeF = field('home', spawnRoots);
+			// A first guess at the cause, from the trace and the surroundings at the episode start.
+			const causeOf = (ep, xs) => {
+				const ts = xs.filter((x) => x.t).map((x) => x.t);
+				const tasks = new Set(ts.map((t) => t.task)), targets = new Set(ts.filter((t) => t.g >= 0).map((t) => t.g));
+				const p = xs[0].pos, s0 = byRound.get(xs[0].r);
+				const dh = homeF[p[1] * grid.w + p[0]];
+				if (tasks.has(5) && tasks.size > 1 && dh <= 4) return 'home-edge';
+				if (tasks.size > 1) return 'task-flip';
+				if (targets.size > 1) return 'target-flip';
+				if (ep.cls === 'noprog') return ep.goalD && ep.goalD[1] - ep.goalD[0] > 8 ? 'walk-away' : 'noprog';
+				const g = ts.length && ts[0].g >= 0 ? ts[0].g : -1;
+				if (g >= 0 && s0) {
+					const ks = campIdxOfGroup[g];
+					const dead = ks.filter((k) => s0.campHp[k] <= 0), live = ks.filter((k) => s0.campHp[k] > 0);
+					if (dead.length && live.length && dead.some((k) => cheb([grid.camps[k].x, grid.camps[k].y], p) <= 3)) return 'dead-camp';
+				}
+				if (s0) for (const c of s0.ch) if (c[7] && c[1] === team && c[0] !== b.index && cheb([c[3], c[4]], p) <= 1) return 'ally-adjacent';
+				if (s0) for (let k = 0; k < grid.camps.length; k++) if (s0.campHp[k] > 0 && cheb([grid.camps[k].x, grid.camps[k].y], p) <= 1 && grid.camps[k].group !== g) return 'other-camp';
+				return ts.length ? 'other' : 'no-trace';
+			};
 			// Runs of consecutive eligible rounds.
 			const flagged = new Uint8Array(seq.length);
 			const episodes = [];
 			const addEp = (i, j, cls) => {
 				for (let k = i; k <= j; k++) flagged[k] = 1;
 				const xs = seq.slice(i, j + 1);
-				const ep = { file: base, map: mapName, team: team ? 'B' : 'A', champ: b.type, idx: b.index, cls, r0: xs[0].r, r1: xs[xs.length - 1].r, len: j - i + 1,
+				const ep = { file: path.basename(path.dirname(file)).replace(/_\d+$/, '') + '/' + base, map: mapName, team: team ? 'B' : 'A', champ: b.type, idx: b.index, cls, r0: xs[0].r, r1: xs[xs.length - 1].r, len: j - i + 1,
 					moves: xs.filter((x) => x.moved).length, blockedEv: xs.filter((x) => x.o.blocked).length,
 					pos: xs[0].pos, posEnd: xs[xs.length - 1].pos, task: xs[0].t ? TASKS[xs[0].t.task] + (xs[0].t.g >= 0 ? ' g' + xs[0].t.g : '') : '?',
 					tasks: [...new Set(xs.filter((x) => x.t).map((x) => TASKS[x.t.task] + (x.t.g >= 0 ? ':' + x.t.g : '')))].slice(0, 4).join(','),
 					tiles: new Set(xs.map((x) => x.pos.join(','))).size };
 				if (xs[0].t) { const dg = goalDist(xs[0].t, xs[0].pos); const de = goalDist(xs[0].t, xs[xs.length - 1].pos); ep.goalD = [dg, de]; }
+				ep.cause = causeOf(ep, xs);
 				ep.snip = snippet(grid, xs[0].pos, byRound.get(xs[0].r), team, b.index, xs[0].t && xs[0].t.g >= 0 && grid.groups[xs[0].t.g] ? grid.groups[xs[0].t.g].tiles : null);
 				episodes.push(ep);
 			};
@@ -397,6 +419,9 @@ async function analyse(file, acc, opts) {
 				i = j + 1;
 			}
 			for (const ep of episodes) {
+				const cz = (acc.cause[ep.cause] ||= { n: 0, rounds: 0 });
+				cz.n++;
+				cz.rounds += ep.len;
 				acc.ep[ep.cls] = (acc.ep[ep.cls] || 0) + 1;
 				acc.epRounds[ep.cls] = (acc.epRounds[ep.cls] || 0) + ep.len;
 				pc.ep++;
@@ -425,6 +450,7 @@ export function report(acc, worstN = 15) {
 	lines.push(`== ${acc.games} games (won ${acc.wins}), ${acc.bodyRounds} body-rounds, alive ${acc.alive}, eligible ${acc.eligible} (${(100 * acc.eligible / Math.max(1, acc.alive)).toFixed(1)}% of alive), waiting by a respawn ${acc.wait}`);
 	lines.push(`stuck episodes ${n}, ${tot} body-rounds (${(1000 * tot / Math.max(1, acc.alive)).toFixed(2)} per 1000 alive body-rounds, ${(tot / Math.max(1, acc.games)).toFixed(1)} per game): ` +
 		CLASSES.map((c) => `${c} ${acc.ep[c] || 0}/${acc.epRounds[c] || 0}r`).join(', '));
+	lines.push('by cause (episodes/rounds): ' + Object.entries(acc.cause).sort((a, b) => b[1].rounds - a[1].rounds).map(([k, v]) => `${k} ${v.n}/${v.rounds}r`).join(', '));
 	lines.push(`movement-blocked events ${acc.blocked} (${(acc.blocked / Math.max(1, acc.games)).toFixed(2)}/game); turn rollovers ${acc.rollovers} (${(acc.rollovers / Math.max(1, acc.games)).toFixed(2)}/game, ${acc.rollOpen} in rounds 1-3)`);
 	lines.push('per map (games, episodes, stuck rounds, rollovers, blocked):');
 	for (const [m, v] of Object.entries(acc.perMap).sort((a, b) => b[1].rounds - a[1].rounds))
@@ -435,7 +461,7 @@ export function report(acc, worstN = 15) {
 			CLASSES.filter((k) => v.byClass[k]).map((k) => `${k}=${v.byClass[k]}`).join(' ') + ` roll=${v.roll} blocked=${v.blocked}`);
 	lines.push(`worst episodes:`);
 	for (const ep of acc.worst.slice(0, worstN)) {
-		lines.push(`  ${ep.file} ${ep.team} ${ep.champ} ${ep.cls} r${ep.r0}-${ep.r1} (${ep.len}) at (${ep.pos}) -> (${ep.posEnd}) moves=${ep.moves} tiles=${ep.tiles} blocked=${ep.blockedEv} task=${ep.tasks || ep.task}` +
+		lines.push(`  ${ep.file} ${ep.team} ${ep.champ} ${ep.cls} r${ep.r0}-${ep.r1} (${ep.len}) at (${ep.pos}) -> (${ep.posEnd}) moves=${ep.moves} tiles=${ep.tiles} blocked=${ep.blockedEv} cause=${ep.cause} task=${ep.tasks || ep.task}` +
 			(ep.goalD ? ` goalD ${ep.goalD[0]}->${ep.goalD[1]}` : ''));
 		for (const row of ep.snip) lines.push('      ' + row);
 	}

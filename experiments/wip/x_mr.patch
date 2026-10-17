@@ -1,6 +1,6 @@
 diff -ruN legend/src/brain.cpp _x_mr/src/brain.cpp
 --- legend/src/brain.cpp	2026-10-17 09:33:09.211370026 +0000
-+++ _x_mr/src/brain.cpp	2026-10-17 10:06:42.337605751 +0000
++++ _x_mr/src/brain.cpp	2026-10-17 10:26:05.161669883 +0000
 @@ -4,6 +4,13 @@
  #include <cmath>
  #include <cstdio>
@@ -198,7 +198,42 @@ diff -ruN legend/src/brain.cpp _x_mr/src/brain.cpp
  	{
  		task = T_TRIBUTE;
  		return go_home();
-@@ -1851,7 +1928,20 @@
+@@ -1841,6 +1918,34 @@
+ 	return 2 + std::min(2 * hd, recall + hd);
+ }
+ 
++int Brain::approach_rounds(int d_tile) const
++{
++	// Rounds until we can hit a group d_tile steps away (non-decreasing in d_tile: score_cap relies on it).
++	if (!P.math_eta)
++		return std::max(0, d_tile - 1);
++	float t = static_cast<float>(std::max(0, d_tile - kit.attack_range));
++	if (kit.dash >= 0)
++		t = std::max(0.f, t - P.dash_head_start) * P.dash_pace;
++	return static_cast<int>(t + 0.5f);
++}
++
++float Brain::score_cap(const Group& g) const
++{
++	// An upper bound on group_score(g): its value with the largest multipliers group_score can apply (the deny
++	// bonus on their half, contesting an enemy capture; shares and discounts are <= 1) over its smallest time
++	// (the walk, at least the Chebyshev distance to the nearest tile, plus the 6 capture rounds; waits, kill
++	// time, trips and penalties only add). farm() skips a group whose cap cannot beat the best score so far:
++	// the same choice, without the cost of scoring it.
++	float v = static_cast<float>(g.gems) + gold_v * static_cast<float>(g.gold);
++	if (!g.ours)
++		v *= 1.f + std::max(0.f, deny_bonus);
++	if (g.enemy_on_tile)
++		v *= std::max(1.f, P.deny_capture_mult);
++	const int lb = std::max(0, cheb(g.center, pos) - g.radius);
++	const int d = g.st == ST_REWARD ? lb : approach_rounds(lb);
++	return v / std::max(1.f, static_cast<float>(d) + 6.f);
++}
++
+ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_override) const
+ {
+ 	if (need_pair)
+@@ -1851,7 +1956,13 @@
  	const int d_tile = d_override >= 0 ? d_override : nav().group_dist(g, pos);
  	if (d_tile >= BIG)
  		return -1;
@@ -206,21 +241,14 @@ diff -ruN legend/src/brain.cpp _x_mr/src/brain.cpp
 +	// Rounds until we can hit the group. Ranged champions stop at their attack range; a dash kit covers 10 tiles
 +	// per 8-round cooldown (walk + 2-tile dash). Fitted on 1,659 engaged episodes: d-1 was exact for Ryth and Varg
 +	// and 2.2-2.3 rounds long for Cassi, Stellar (actual = -2.1 + 1.0 x predicted), Issac and Ren (0.85 x).
-+	int d_adj = std::max(0, d_tile - 1);
-+	if (P.math_eta)
-+	{
-+		float t = static_cast<float>(std::max(0, d_tile - kit.attack_range));
-+		if (kit.dash >= 0)
-+			t = std::max(0.f, t - P.dash_head_start) * P.dash_pace;
-+		d_adj = static_cast<int>(t + 0.5f);
-+	}
++	const int d_adj = approach_rounds(d_tile);
 +#ifdef XM_TRACE
 +	const int xm_d_old = std::max(0, d_tile - 1);
 +#endif
  
  	// Living allies that claim this group, and the lowest claimer index (it captures).
  	int claimers = 0, first_claimer = 99;
-@@ -1864,7 +1954,18 @@
+@@ -1864,7 +1975,18 @@
  			// Claims are seen a round late: on the group we already hold only lower-index claimers count,
  			// otherwise two allies wanting one group both yield, both switch, and repeat forever.
  			if (P.claim_tiebreak && g.id == task_group && i > W.my_index)
@@ -239,7 +267,7 @@ diff -ruN legend/src/brain.cpp _x_mr/src/brain.cpp
  			++claimers;
  			first_claimer = std::min(first_claimer, i);
  			if (g.st == ST_REWARD && i < W.my_index)
-@@ -1876,7 +1977,6 @@
+@@ -1876,7 +1998,6 @@
  			ally_dps += ally_dps_on(i, g);
  			melee_ally |= ally_melee(i);
  		}
@@ -247,7 +275,7 @@ diff -ruN legend/src/brain.cpp _x_mr/src/brain.cpp
  	const float my_dps = std::max(10.f, dps_on(g));
  	float hp_left = 0;
  	float time = 0;
-@@ -1921,20 +2021,101 @@
+@@ -1921,20 +2042,101 @@
  		auto plan = [&](float helpers_dps, bool helper_melee, float& t) {
  			const float kill = hp_left / (my_dps + helpers_dps);
  			t = static_cast<float>(d_adj + wait) + kill + 6.f;
@@ -354,7 +382,7 @@ diff -ruN legend/src/brain.cpp _x_mr/src/brain.cpp
  			if (trips > P.max_trips)
  				return false;
  			t += static_cast<float>(trips * trip_cost(g));
-@@ -1964,7 +2145,7 @@
+@@ -1964,7 +2166,7 @@
  		}
  	}
  
@@ -363,7 +391,7 @@ diff -ruN legend/src/brain.cpp _x_mr/src/brain.cpp
  	if (!g.ours)
  	{
  		const float risk = sc_risk;
-@@ -2023,6 +2204,10 @@
+@@ -2023,6 +2225,10 @@
  		else
  			value *= 0.5f;
  	}
@@ -374,7 +402,7 @@ diff -ruN legend/src/brain.cpp _x_mr/src/brain.cpp
  	return value / std::max(1.f, time);
  }
  
-@@ -2119,7 +2304,7 @@
+@@ -2119,7 +2325,7 @@
  		const Group& g = W.groups[static_cast<std::size_t>(gid)];
  		if (g.st == ST_RESPAWN && g.ready_round - round > 30)
  			continue;
@@ -383,7 +411,19 @@ diff -ruN legend/src/brain.cpp _x_mr/src/brain.cpp
  		hp_total += g.st == ST_REWARD ? 0.f : g.hp_total;
  	}
  	if (value <= 0)
-@@ -2374,6 +2559,7 @@
+@@ -2232,6 +2438,11 @@
+ 		auto consider = [&](Group& g) {
+ 			if (blacklist[static_cast<std::size_t>(g.id)] > round)
+ 				return;
++			// Groups that cannot beat the best so far are skipped unscored (exact, see score_cap). Scoring took
++			// ~60k fuel a turn on the 98x99 48-group map and the math model made each group ~23% dearer, so
++			// the loop ran down to score_fuel_floor and farm_group (up to ~29k) spilled turns into the next round.
++			if (P.score_cap && best_s > 0 && g.id != task_group && score_cap(g) <= best_s)
++				return;
+ 			int eta = 0;
+ 			bool np = false;
+ 			float s = group_score(g, eta, &np);
+@@ -2374,6 +2585,7 @@
  			}
  	});
  #endif
@@ -391,7 +431,7 @@ diff -ruN legend/src/brain.cpp _x_mr/src/brain.cpp
  	if (best != task_group)
  	{
  		task_group = best;
-@@ -2451,7 +2637,22 @@
+@@ -2451,7 +2663,22 @@
  			const bool shopper = type != CT::tavi && build_idx < build.size();
  			const bool rich = shopper && gold + static_cast<std::uint32_t>(g.gold) >= static_cast<std::uint32_t>(P.cap_recall_gold);
  			const bool hurt = hp < P.cap_recall_hp * max_hp;
@@ -415,7 +455,7 @@ diff -ruN legend/src/brain.cpp _x_mr/src/brain.cpp
  			if (rich || hurt || bag)
  			{
  				try
-@@ -2598,3 +2799,199 @@
+@@ -2598,3 +2825,199 @@
  	attack_chain_camp(g, t);
  	return true;
  }
@@ -617,7 +657,7 @@ diff -ruN legend/src/brain.cpp _x_mr/src/brain.cpp
 +#endif
 diff -ruN legend/src/brain.h _x_mr/src/brain.h
 --- legend/src/brain.h	2026-10-17 09:33:09.213173744 +0000
-+++ _x_mr/src/brain.h	2026-10-17 10:06:42.338080806 +0000
++++ _x_mr/src/brain.h	2026-10-17 10:26:05.162261872 +0000
 @@ -17,6 +17,18 @@
  	T_FLEE
  };
@@ -645,7 +685,16 @@ diff -ruN legend/src/brain.h _x_mr/src/brain.h
  	bool on_the_way(int altar) const;
  	bool shop_trip();
  	bool home_trip();
-@@ -91,6 +104,31 @@
+@@ -67,6 +80,8 @@
+ 	bool capture_group(Group& g);
+ 	bool wait_group(Group& g);
+ 	float group_score(const Group& g, int& eta, bool* need_pair = nullptr, int d_override = -1) const;
++	int approach_rounds(int d_tile) const; // rounds to attack range of a group d_tile steps away
++	float score_cap(const Group& g) const;  // upper bound on group_score(g)
+ 	bool hop_task(int gid);
+ 	bool has_crystal() const;
+ 	int tp_hop = -1, tp_hop_since = 0;
+@@ -91,6 +106,31 @@
  	mutable std::size_t item_flags_idx = static_cast<std::size_t>(-1);
  	mutable bool jungle_ok = false, durability_ok = false, monster_ok = false;
  	bool has_home = false; // Home emblem (faster recall); we never buy it, kept for the capture-recall timing
@@ -677,7 +726,7 @@ diff -ruN legend/src/brain.h _x_mr/src/brain.h
  
  	// combat helpers
  	float camp_dps() const;
-@@ -143,11 +181,13 @@
+@@ -143,11 +183,13 @@
  	bc::bitboard alert_zone;  // area an ally reported as dangerous (shared memory)
  	bool enemy_near = false;
  	int enemy_near_d = BIG; // nearest recently seen enemy, minus the rounds since we saw it (it may have closed in)
@@ -693,7 +742,7 @@ diff -ruN legend/src/brain.h _x_mr/src/brain.h
  	void update_mode();
 diff -ruN legend/src/params.h _x_mr/src/params.h
 --- legend/src/params.h	2026-10-17 09:33:09.213173744 +0000
-+++ _x_mr/src/params.h	2026-10-17 10:06:42.338171758 +0000
++++ _x_mr/src/params.h	2026-10-17 10:26:05.162341480 +0000
 @@ -20,6 +20,21 @@
  	int pair_wait_max = 18;			 // give up waiting for a partner after this many rounds
  	float target_threat_adv = 1.1f;	 // skip camps where recently seen enemies beat us (and allies there)
@@ -716,7 +765,16 @@ diff -ruN legend/src/params.h _x_mr/src/params.h
  	// Safety
  	float retreat_hp = 0.25f;		 // retreat below this health fraction (or 4 rounds of incoming camp damage)
  	float camp_hp_reserve = 0.18f;	 // keep this fraction of max health after a camp fight
-@@ -142,6 +157,20 @@
+@@ -131,6 +146,8 @@
+ 	// Fuel: farm scoring order and budget
+ 	int score_near = 20;			  // score groups within this Chebyshev distance first
+ 	int score_fuel_floor = 30000; // stop scoring farther groups below this much fuel
++	int score_cap = 1;			  // skip groups whose score bound cannot beat the best so far (same choice, less fuel;
++								  // gen16 98x99 vs _L0: scoring 1,350-1,660 fuel per group, ~60k a turn; see x_mr_NOTES)
+ 
+ 	// Turn order (set_priority, higher acts first within our team, from the next round)
+ 	int prio_idle = 2;
+@@ -142,6 +159,20 @@
  	int rest_on_spawn = 1;		// rest one turn on spawn after arriving hurt (health is restored at turn end)
  	int sticky_tribute = 1;		// finish a bank trip once started
  	int claim_tiebreak = 1;		// on our own group only lower-index claimers count

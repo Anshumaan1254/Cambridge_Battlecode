@@ -1,4 +1,5 @@
 #include "world.h"
+#include "params.h"
 
 World& world()
 {
@@ -65,6 +66,31 @@ void World::init_static()
 	}
 
 	walls_no_holes = bc::map::walls() | bc::map::altars() | enemy_spawn;
+	// 1-wide hole crossings: a hole tile with standable ground on both opposite sides is one dash (range 2)
+	// for a dash kit. The fields used to treat every hole as a wall, so routes never planned a dash and the
+	// bodies walked around (rushbait-v2 / 30x80 ladder: 62 such tiles, eight: 22, expanse: 16). Read from the
+	// packed exports in plain code: per-tile host calls on 1,800-hole maps would cost ~1M fuel.
+	dash_walls = walls;
+	if (P.dash_holes && dash_kit)
+	{
+		const auto holes_lin = bc::map::holes().export_linear_buffer();
+		const auto walls_lin = walls.export_linear_buffer();
+		auto bit = [](const std::vector<std::uint8_t>& v, int i) { return ((v[static_cast<std::size_t>(i) >> 3] >> (i & 7)) & 1) != 0; };
+		auto ground = [&](int x, int y) { return x >= 0 && y >= 0 && x < W && y < H && !bit(walls_lin, y * W + x); };
+		for (int y = 0; y < H; ++y)
+			for (int x = 0; x < W; ++x)
+			{
+				if (!bit(holes_lin, y * W + x))
+					continue;
+				static constexpr int D[4][2] = { { 1, 0 }, { 0, 1 }, { 1, 1 }, { 1, -1 } };
+				for (const auto& d : D)
+					if (ground(x - d[0], y - d[1]) && ground(x + d[0], y + d[1]))
+					{
+						dash_walls.set(vec2{ x, y }, false);
+						break;
+					}
+			}
+	}
 	groups.clear();
 	int id = 0;
 	for (const auto& g : bc::map::camp_groups())
@@ -418,3 +444,5 @@ void World::update_alive(int round)
 		}
 	}
 }
+
+const bc::bitboard& World::route_walls() const { return P.dash_holes && dash_kit ? dash_walls : walls; }

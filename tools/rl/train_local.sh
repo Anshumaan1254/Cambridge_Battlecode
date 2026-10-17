@@ -159,7 +159,7 @@ cambc build _es_best >/dev/null
 VAL="$OUT/validation.txt"
 : > "$VAL"
 for o in $(echo "$OPPS" | tr ',' ' '); do
-	python3 tools/bench.py _es_best "$o" --maps "$MAPS" --jobs "$JOBS" --out "$OUT/validate" --quiet | grep '^==' | tee -a "$VAL"
+	python3 tools/bench.py _es_best "$o" --maps "$MAPS" --jobs "$JOBS" --out "$OUT/validate" --quiet --release 2>>"$LOG" | grep '^==' | tee -a "$VAL" || true
 done
 rm -rf "$OUT/validate"
 

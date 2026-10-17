@@ -39,6 +39,7 @@ def main():
     ap.add_argument('--rounds', type=int, default=0)
     ap.add_argument('--out', default='bench_out')
     ap.add_argument('--quiet', action='store_true')
+    ap.add_argument('--release', action='store_true', help='run as on the platform (debug_block skipped), like es_train.py')
     args = ap.parse_args()
 
     maps = sorted({m for pat in args.maps.split(',') for m in glob.glob(pat)})
@@ -58,12 +59,17 @@ def main():
     cmd = ['cambc', 'run-batch', manifest, '--jobs', str(args.jobs), '--color', 'never']
     if args.rounds:
         cmd += ['--rounds', str(args.rounds)]
+    if args.release:
+        cmd.append('--release')
     build_if_stale(args.a)
     build_if_stale(args.b)
     t0 = time.time()
     p = subprocess.run(cmd, capture_output=True, text=True)
-    if p.returncode != 0 and not args.quiet:
-        sys.stderr.write(p.stderr[-2000:])
+    produced = sum(os.path.exists(st) for _, _, st in rows)
+    if (p.returncode != 0 and not args.quiet) or produced == 0:
+        # A batch that produced no statistics at all is an error even in --quiet mode (seen on Windows/MSYS).
+        sys.stderr.write(f'run-batch exit {p.returncode}, {produced}/{len(rows)} games produced statistics\n')
+        sys.stderr.write(p.stdout[-2000:] + p.stderr[-2000:])
     wins = losses = draws = 0
     win_rounds = []
     tot = {'our_gems': 0, 'their_gems': 0, 'our_deaths': 0, 'their_deaths': 0, 'our_kills': 0, 'our_gold': 0, 'their_gold': 0, 'faults': 0}

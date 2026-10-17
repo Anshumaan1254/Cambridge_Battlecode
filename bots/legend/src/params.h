@@ -20,8 +20,30 @@ struct Params
 	int pair_wait_max = 18;			 // give up waiting for a partner after this many rounds
 	float target_threat_adv = 1.1f;	 // skip camps where recently seen enemies beat us (and allies there)
 
+	// Farming model corrections (prediction audit, tools/analysis/xm_audit.mjs on 48 traced games vs _v6 and _hunt2)
+	int math_eta = 1;				 // travel = steps to attack range (ranged: 3), dash kits 10 tiles per 8 rounds
+									 // (was d-1 for all: Cassi/Stellar/Issac/Ren arrived 2.3 rounds earlier than predicted)
+	int math_taken = 1;				 // damage over a kill: camps die one by one (sequential integral), allies standing at
+									 // the group tank like claimers, the safety retreat line is the HP budget (was 1.6-2.3x high)
+	float ranged_exposure = 0.25f;	 // share of the time a lone ranged champion (range 3) is in reach of the camps it is
+									 // not hitting (per-round damage / incoming: 0.88-0.91 with 1 live camp, 0.34-0.63 with 2-4)
+	int presence_radius = 4;		 // visible allies this close to a group's centre count as tanks for the damage share
+	float dash_pace = 0.8f;		 // dash kits: rounds per tile on a walk (one 2-tile dash per 8-round cooldown: 8 rounds / 10 tiles)
+	float dash_head_start = 1.f; // ... after the first steps saved by the opening dash (refit on 789 Issac/Ren walks: travel
+								 // MAE 1.59 rounds vs 1.75 with 2 steps and 3.4 for the old d-1)
+	int math_gold = 1;				 // gold is worth less as the game nears its end (a shard pays off over the rounds left)
+	float gold_horizon = 500.f;		 // rounds left at which one gold is worth gold_value gems; linearly less below that
+									 // (+5 strength on 40-50 is ~+5% farm rate: 0.22 gem/gold needs ~500 rounds to pay)
+
 	// Safety
 	float retreat_hp = 0.25f;		 // retreat below this health fraction (or 4 rounds of incoming camp damage)
+	int finish_camp = 1;		 // below the retreat line, stay to finish the group we farm when it dies within
+								 // finish_rounds and we keep finish_hp_floor of max health (worst case: every camp in
+								 // range hits us every round) and no enemy is within finish_enemy_d
+	int capture_before_retreat = 1; // below the retreat line, still capture a reward next to us (no camp hits, no enemy near)
+	int finish_rounds = 4;
+	float finish_hp_floor = 0.08f;
+	int finish_enemy_d = 8;
 	float camp_hp_reserve = 0.18f;	 // keep this fraction of max health after a camp fight
 	float fight_margin = 1.30f;		 // engage proactively when our kill time beats theirs by this factor
 	float fight_back_margin = 0.75f; // when they can already hit us, fight back unless this outmatched
@@ -86,6 +108,9 @@ struct Params
 	int flee_stun = 1;		  // fleeing with a walk-exclusive stun: stun a melee/dash chaser that can hit us next turn
 	int step_hit_other = 1;	  // melee: after a step that leaves the target out of reach, hit another enemy in reach
 
+	int dash_holes = 1;		   // dash kits route over 1-wide hole crossings (fields treat those holes as ground; the
+							   // step waits for the dash instead of walking around), see world.cpp
+	int dash_wait_max = 4;	   // at a crossing with the dash on cooldown: wait up to this many rounds, else walk around
 	int hops_enabled = 1;	   // crystal shortcuts over hole mazes
 	int hop_min_save = 15;	   // use a teleport-crystal shortcut when it saves this many rounds
 
@@ -131,6 +156,8 @@ struct Params
 	// Fuel: farm scoring order and budget
 	int score_near = 20;			  // score groups within this Chebyshev distance first
 	int score_fuel_floor = 30000; // stop scoring farther groups below this much fuel
+	int score_cap = 1;			  // skip groups whose score bound cannot beat the best so far (same choice, less fuel;
+								  // gen16 98x99 vs _L0: scoring 1,350-1,660 fuel per group, ~60k a turn; see x_mr_NOTES)
 
 	// Turn order (set_priority, higher acts first within our team, from the next round)
 	int prio_idle = 2;
@@ -142,6 +169,20 @@ struct Params
 	int rest_on_spawn = 1;		// rest one turn on spawn after arriving hurt (health is restored at turn end)
 	int sticky_tribute = 1;		// finish a bank trip once started
 	int claim_tiebreak = 1;		// on our own group only lower-index claimers count
+	int claim_helpers = 1;		// ... but higher-index claimers there still add their damage to our kill plan
+	int home_edge_fix = 1;		// home trips also from 1-2 steps away (else a hurt body flip-flops at the spawn edge)
+
+	// Bank routes. Recall-while-capturing makes most trips spawn -> camp -> (teleport) spawn, and the bag is then
+	// banked at the altar nearest spawn; where that altar is far (30x80: 36 steps), each bank costs a long walk
+	// out and a recall back for a 22-34 gem bag. Unopposed, 14.6% of body-rounds were walks to an altar
+	// (tools/analysis/bank_audit.mjs); banking before the recall would have saved >=10 rounds on 166 of 355
+	// capture-recall-then-bank trips (tools/analysis/bank_first.mjs).
+	int bank_first = 1;			// full bag at a capture: skip the recall and bank at the nearest altar when that beats banking from spawn
+	int bank_first_margin = 2;	// ... by at least this many steps (nearest-altar walk + recall_time + margin <= spawn altar walk)
+	float bank_trip_w = 1.0f;	// bank threshold rises by this many gems per step of bank trip beyond bank_trip_free
+	int bank_trip_free = 12;	// bank trips up to this many steps keep the plain threshold
+	float bank_trip_cap = 2.0f;	// ... and the threshold never exceeds this multiple of the plain one
+	int bank_ignore_spawn = 1;	// "bank before a risky fight" ignores enemies standing on their own spawn
 
 	// Aggression
 	float steal_hp_frac = 0.55f; // need this health fraction to farm on the enemy half

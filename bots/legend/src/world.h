@@ -129,6 +129,9 @@ struct World
 	std::vector<Island> islands;
 	std::vector<Hop> hops;	 // per group
 	bc::bitboard walls_no_holes; // walls, altars and the enemy spawn (holes passable: a crystal hops them)
+	bc::bitboard dash_walls;	 // walls minus 1-wide hole crossings (a dash kit routes over them, see P.dash_holes)
+	bool dash_kit = false;		 // this body has a dash (set by Brain::init before init_static)
+	const bc::bitboard& route_walls() const; // field walls for this body: dash_walls for dash kits, else walls
 	std::vector<int> island_of; // per group: island index or -1
 	Field home; // steps from our spawn
 	int spawn_altar_d = BIG; // walking steps from our spawn to the nearest altar's approach tile

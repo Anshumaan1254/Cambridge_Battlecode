@@ -4,6 +4,13 @@
 #include <cmath>
 #include <cstdio>
 
+// Prediction audit hooks: compiled only into XM_TRACE builds and run inside debug_block (fuel paused).
+#ifdef XM_TRACE
+#define XM(stmt) debug_block({ stmt; })
+#else
+#define XM(stmt) (void)0
+#endif
+
 namespace
 {
 using I = bc::item_type;
@@ -271,6 +278,7 @@ void Brain::init()
 	ab.assign(abl.begin(), abl.end());
 	build = build_for(type);
 	auto& W = world();
+	W.dash_kit = kit.dash >= 0;
 	W.init_static();
 	W.find_islands();
 	W.init_units();
@@ -279,6 +287,22 @@ void Brain::init()
 	learner().init(W.W, W.H);
 	comms().bodies = static_cast<int>(W.allies.size());
 	inited = true;
+#ifdef LEGEND_TRACE
+	// Route analysis (tools/analysis): the static camp-group table, printed once per team (fuel-free in debug).
+	debug_block({
+		if (W.my_index == 0)
+		{
+			std::printf("M w=%d h=%d spawn=(%d,%d) team=%d\n", W.W, W.H, W.ally_spawn_c.x, W.ally_spawn_c.y, static_cast<int>(bc::detail::sdk_my_team()));
+			for (const auto& g : W.groups)
+			{
+				std::printf("G id=%d gems=%d gold=%d respawn=%d ours=%d d_ally=%d hp=%.0f tiles=", g.id, g.gems, g.gold, g.respawn, (int)g.ours, g.d_ally, g.max_hp);
+				for (auto t : g.tiles)
+					std::printf("%d,%d;", t.x, t.y);
+				std::printf("\n");
+			}
+		}
+	});
+#endif
 }
 
 void Brain::read_self()
@@ -321,6 +345,7 @@ void Brain::turn()
 	auto& C = comms();
 	if (!alive)
 	{
+		XM(xm_dead());
 		was_alive = false;
 		W.update_alive(round);
 		shop();
@@ -358,6 +383,7 @@ void Brain::turn()
 			}
 	}
 	build_danger();
+	XM(xm_pre());
 
 	if (flag(state, bc::champion_state::recalling) || flag(state, bc::champion_state::submitting_gems) ||
 		flag(state, bc::champion_state::teleporting))
@@ -367,6 +393,7 @@ void Brain::turn()
 		if (flag(state, bc::champion_state::recalling) || flag(state, bc::champion_state::submitting_gems) ||
 			flag(state, bc::champion_state::teleporting))
 		{
+			XM(xm_post());
 			last_hp = hp;
 			return;
 		}
@@ -388,6 +415,7 @@ void Brain::turn()
 		update_priority();
 		prebuild_fields();
 		C.write_self(W.my_index, -1);
+		XM(xm_post());
 		last_hp = hp;
 		return;
 	}
@@ -426,6 +454,7 @@ void Brain::turn()
 	place_ward(false);
 	update_priority();
 	prebuild_fields();
+	XM(xm_post());
 #ifdef LEGEND_TRACE
 	debug_block({
 		std::printf("T r=%d %d task=%d g=%d pos=(%d,%d) hp=%.0f gems=%u gold=%u fuel=%llu\n", round, static_cast<int>(type), task, task_group, pos.x, pos.y, hp, gems, gold,
@@ -565,6 +594,7 @@ void Brain::build_danger()
 	danger.clear();
 	camp_danger.clear();
 	enemy_near = false;
+	enemy_near_field = false;
 	enemy_near_d = BIG;
 	for (const auto& e : W.enemies)
 	{
@@ -585,7 +615,14 @@ void Brain::build_danger()
 		danger.draw_chebyshev(e.pos, static_cast<float>(reach));
 		const int ed = cheb(e.pos, pos);
 		if (ed <= 9)
+		{
 			enemy_near = true;
+			// An enemy on its own spawn heals fully every round and cannot chase a bag that stays away; on
+			// maps whose spawns touch, counting it made every body bank whatever it carried straight off its
+			// spawn (30x80: 40 bank walks of 37 steps for 22-25 gems each).
+			if (!P.bank_ignore_spawn || !W.enemy_spawn.is_set(e.pos))
+				enemy_near_field = true;
+		}
 		enemy_near_d = std::min(enemy_near_d, std::max(0, ed - age));
 	}
 	for (const auto& g : W.groups)
@@ -1169,6 +1206,8 @@ bool Brain::combat()
 	// Do not dive their spawn: it heals them and they block us.
 	if (W.enemy_spawn.is_set(tgt->pos) || cheb(tgt->pos, W.enemy_spawn_c) <= 3)
 		fight = fight && killable;
+	XM(xm_fight(adv, t_kill_us, t_kill_them, our_hp, their_hp, our_dps, their_dps, allies_near, static_cast<int>(E.size()), fight, killable, in_reach,
+		can_escape, isolated, reserve, static_cast<int>(tgt->type), d, incoming, t_die, tgt->hp, backup, str + focus * best_mod(kit) / 8.f + my_burst / 3.f));
 	engaged = fight || in_reach || nearest_enemy <= 5;
 	(void)stunners;
 
@@ -1479,7 +1518,10 @@ bool Brain::home_trip()
 	if (task == T_CAPTURE || reward_here() || W.ally_spawn.is_set(pos))
 		return false;
 	const int dh = W.dist_home(pos);
-	if (dh >= BIG || dh <= 2)
+	// Within two steps of spawn the trip is almost free, so it is not skipped there: skipping it let farm()
+	// walk a hurt champion back out, and at three steps this check sent it home again, a farm/home flip-flop
+	// that held bodies at the spawn edge for hundreds of rounds (63% of all turns on the 30x80 ladder map).
+	if (dh >= BIG || dh <= (P.home_edge_fix ? 0 : 2))
 		return false;
 	const bool can_recall = dh > P.recall_min_dist && safe_to_recall();
 	const int cost = can_recall ? static_cast<int>(bc::constants::recall_time) : dh;
@@ -1527,7 +1569,27 @@ bool Brain::safety()
 				camp_in += g.camps[i].str;
 				escape = std::max(escape, 4 - d);
 			}
-	const float threshold = std::max(P.retreat_hp * max_hp, camp_in * static_cast<float>(P.safety_v2 ? escape + 1 : 4));
+	float threshold = std::max(P.retreat_hp * max_hp, camp_in * static_cast<float>(P.safety_v2 ? escape + 1 : 4));
+	if (hp < threshold && P.finish_camp && camp_in > 0 && enemy_near_d > P.finish_enemy_d && task_group >= 0 &&
+		task_group < static_cast<int>(W.groups.size()))
+	{
+		// The group we farm is nearly dead: finishing it costs at most camp_in per round until it dies (camps
+		// die one by one, so less), then the capture is free (dead camps do not hit). Retreating instead walks
+		// home and back for the last few hits (camps never heal, but the trip costs ~2x the walk).
+		const auto& g = W.groups[static_cast<std::size_t>(task_group)];
+		if (g.st == ST_ALIVE && g.near.is_set(pos))
+		{
+			const float kill = std::ceil(g.hp_total / std::max(10.f, dps_on(g)));
+			const float left = hp - camp_in * kill;
+			if (kill <= static_cast<float>(P.finish_rounds) && left >= std::max(camp_in, P.finish_hp_floor * max_hp))
+				threshold = 0;
+		}
+	}
+	// A reward waiting next to us (or a capture under way) is safe from camps: dead camps do not hit, and the
+	// capture can recall home with the reward. Walking home first left rewards to expire (contest: 6 of 91
+	// rewards waited 46 rounds, the expiry, tools/analysis/rewards.mjs).
+	if (hp < threshold && P.capture_before_retreat && camp_in <= 0 && enemy_near_d > P.finish_enemy_d && (task == T_CAPTURE || reward_here()))
+		threshold = 0;
 	if (hp >= threshold)
 	{
 		// On spawn, health is restored only after a turn ends there: after a recall or a walk home, rest one
@@ -1593,6 +1655,21 @@ void Brain::update_mode()
 	}
 	const int ours = static_cast<int>(bc::global_submitted_gems(team::ally));
 	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
+	gold_v = P.gold_value;
+	if (P.math_gold)
+	{
+		// Gold only turns into gems through the shards it buys, and a shard pays off over the rounds left: +5
+		// strength on 40-50 is about +5% farming rate, which earns back 30 gold x gold_value = 6.6 gems in
+		// ~gold_horizon rounds. Rounds left: the leading team's time to the winning score at its average pace so
+		// far (an underestimate of its pace, so this errs toward valuing gold), capped by the round limit.
+		// In the 48 audit games 20% of all gold was earned after a team passed 800 and ~485 gold per team
+		// was never spent.
+		const int lead_g = std::max(ours, theirs);
+		float left = static_cast<float>(static_cast<int>(bc::constants::max_rounds) - round);
+		if (lead_g > 0 && round > 0)
+			left = std::min(left, static_cast<float>(static_cast<int>(bc::constants::winning_gems) - lead_g) * static_cast<float>(round) / static_cast<float>(lead_g));
+		gold_v = P.gold_value * std::clamp(left / std::max(1.f, P.gold_horizon), 0.f, 1.f);
+	}
 	if (ours - theirs >= P.lead)
 	{
 		// Ahead: protect the lead. Bank smaller bags, take only clearly winning fights.
@@ -1628,6 +1705,16 @@ bool Brain::on_the_way(int altar) const
 	return direct < BIG && via < BIG && via - direct <= 2;
 }
 
+int Brain::bank_min(int trip) const
+{
+	// Each bank costs about the walk to the altar (and back out, or a recall), whatever the bag: fewer, bigger
+	// bags when the altar is far. Short trips keep the plain threshold (risk and scoreboard rules set it).
+	if (P.bank_trip_w <= 0.f || trip >= BIG)
+		return tribute_min;
+	const int extra = static_cast<int>(P.bank_trip_w * static_cast<float>(std::max(0, trip - P.bank_trip_free)));
+	return std::min(tribute_min + extra, static_cast<int>(P.bank_trip_cap * static_cast<float>(tribute_min)));
+}
+
 bool Brain::tribute(bool force)
 {
 	if (gems == 0)
@@ -1640,20 +1727,31 @@ bool Brain::tribute(bool force)
 	const int ticks = static_cast<int>((gems + 9) / 10);
 	const bool endgame = round + dist + ticks + P.endgame_margin >= static_cast<int>(bc::constants::max_rounds);
 	const bool winning = bc::global_submitted_gems(team::ally) + gems >= bc::constants::winning_gems;
-	const bool risky = enemy_near && static_cast<int>(gems) >= P.tribute_risky;
+	const bool risky = enemy_near_field && static_cast<int>(gems) >= P.tribute_risky;
 	// Once a bank trip starts, finish it: re-deciding every turn let a passing enemy or the on-the-way test
 	// flip the choice each round and the champion oscillated in place for hundreds of rounds.
 	const bool committed = P.sticky_tribute && task == T_TRIBUTE && static_cast<int>(gems) >= 10;
-	const bool want = force || endgame || winning || risky || committed || static_cast<int>(gems) >= tribute_min || dist <= P.tribute_near ||
+	// Recall and bank at the altar next to spawn when that beats walking (and heals and shops on the way).
+	const int via_home = static_cast<int>(bc::constants::recall_time) + W.spawn_altar_d;
+	const bool recall_bank = W.dist_home(pos) > P.recall_min_dist && via_home + 2 < dist && safe_to_recall() && !endgame;
+	// A long bank trip is worth a bigger bag: the threshold rises with the cheapest way to an altar from here,
+	// so a body far from every altar keeps farming and banks when its route passes close to one.
+	const int need = bank_min(recall_bank ? via_home : dist);
+	const bool want = force || endgame || winning || risky || committed || static_cast<int>(gems) >= need || dist <= P.tribute_near ||
 		(static_cast<int>(gems) >= 10 && on_the_way(a));
 	if (!want)
 		return false;
+#ifdef LEGEND_TRACE
+	debug_block({
+		if (task != T_TRIBUTE)
+			std::printf("B r=%d %d gems=%u dist=%d need=%d via=%d rb=%d f=%d e=%d w=%d risky=%d near=%d otw=%d\n", round, static_cast<int>(type), gems, dist, need, via_home, (int)recall_bank,
+				(int)force, (int)endgame, (int)winning, (int)risky, (int)(dist <= P.tribute_near), (int)(gems >= 10 && on_the_way(a)));
+	});
+#endif
 	// A tribute cancelled this turn or last (a threat made it pointless): flee, fight or move on first.
 	if (round - tribute_cancel_round <= 2 && !endgame && !winning && !force)
 		return false;
-	// Recall and bank at the altar next to spawn when that beats walking (and heals and shops on the way).
-	const int via_home = static_cast<int>(bc::constants::recall_time) + W.spawn_altar_d;
-	if (W.dist_home(pos) > P.recall_min_dist && via_home + 2 < dist && safe_to_recall() && !endgame)
+	if (recall_bank)
 	{
 		task = T_TRIBUTE;
 		return go_home();
@@ -1841,6 +1939,34 @@ int Brain::trip_cost(const Group& g) const
 	return 2 + std::min(2 * hd, recall + hd);
 }
 
+int Brain::approach_rounds(int d_tile) const
+{
+	// Rounds until we can hit a group d_tile steps away (non-decreasing in d_tile: score_cap relies on it).
+	if (!P.math_eta)
+		return std::max(0, d_tile - 1);
+	float t = static_cast<float>(std::max(0, d_tile - kit.attack_range));
+	if (kit.dash >= 0)
+		t = std::max(0.f, t - P.dash_head_start) * P.dash_pace;
+	return static_cast<int>(t + 0.5f);
+}
+
+float Brain::score_cap(const Group& g) const
+{
+	// An upper bound on group_score(g): its value with the largest multipliers group_score can apply (the deny
+	// bonus on their half, contesting an enemy capture; shares and discounts are <= 1) over its smallest time
+	// (the walk, at least the Chebyshev distance to the nearest tile, plus the 6 capture rounds; waits, kill
+	// time, trips and penalties only add). farm() skips a group whose cap cannot beat the best score so far:
+	// the same choice, without the cost of scoring it.
+	float v = static_cast<float>(g.gems) + gold_v * static_cast<float>(g.gold);
+	if (!g.ours)
+		v *= 1.f + std::max(0.f, deny_bonus);
+	if (g.enemy_on_tile)
+		v *= std::max(1.f, P.deny_capture_mult);
+	const int lb = std::max(0, cheb(g.center, pos) - g.radius);
+	const int d = g.st == ST_REWARD ? lb : approach_rounds(lb);
+	return v / std::max(1.f, static_cast<float>(d) + 6.f);
+}
+
 float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_override) const
 {
 	if (need_pair)
@@ -1851,7 +1977,13 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 	const int d_tile = d_override >= 0 ? d_override : nav().group_dist(g, pos);
 	if (d_tile >= BIG)
 		return -1;
-	const int d_adj = std::max(0, d_tile - 1);
+	// Rounds until we can hit the group. Ranged champions stop at their attack range; a dash kit covers 10 tiles
+	// per 8-round cooldown (walk + 2-tile dash). Fitted on 1,659 engaged episodes: d-1 was exact for Ryth and Varg
+	// and 2.2-2.3 rounds long for Cassi, Stellar (actual = -2.1 + 1.0 x predicted), Issac and Ren (0.85 x).
+	const int d_adj = approach_rounds(d_tile);
+#ifdef XM_TRACE
+	const int xm_d_old = std::max(0, d_tile - 1);
+#endif
 
 	// Living allies that claim this group, and the lowest claimer index (it captures).
 	int claimers = 0, first_claimer = 99;
@@ -1864,7 +1996,18 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			// Claims are seen a round late: on the group we already hold only lower-index claimers count,
 			// otherwise two allies wanting one group both yield, both switch, and repeat forever.
 			if (P.claim_tiebreak && g.id == task_group && i > W.my_index)
+			{
+				// A higher-index claimer yields the group to us but still fights on it. Dropping its damage too
+				// made a pack that needs two bodies look impossible every other turn: the lower-index body
+				// flipped between joining (partner counted) and leaving (partner ignored) each round
+				// (route_stats: most target flip-flops in local games).
+				if (P.claim_helpers)
+				{
+					ally_dps += ally_dps_on(i, g);
+					melee_ally |= ally_melee(i);
+				}
 				continue;
+			}
 			++claimers;
 			first_claimer = std::min(first_claimer, i);
 			if (g.st == ST_REWARD && i < W.my_index)
@@ -1876,7 +2019,6 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			ally_dps += ally_dps_on(i, g);
 			melee_ally |= ally_melee(i);
 		}
-
 	const float my_dps = std::max(10.f, dps_on(g));
 	float hp_left = 0;
 	float time = 0;
@@ -1921,20 +2063,101 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 		auto plan = [&](float helpers_dps, bool helper_melee, float& t) {
 			const float kill = hp_left / (my_dps + helpers_dps);
 			t = static_cast<float>(d_adj + wait) + kill + 6.f;
+#ifdef XM_TRACE
+			if (xm_sp)
+			{
+				*xm_sp = ScoreParts{};
+				xm_sp->my_dps = my_dps, xm_sp->ally_dps = helpers_dps, xm_sp->hp_left = hp_left, xm_sp->kill = kill;
+				xm_sp->d_adj = d_adj, xm_sp->d0 = xm_d_old, xm_sp->wait = wait, xm_sp->claimers = claimers, xm_sp->melee_ally = helper_melee, xm_sp->planned = true;
+			}
+#endif
 			if (g.harmless)
 				return true;
 			// Camps hit the nearest champion: a ranged champion next to a melee ally takes almost nothing.
 			const float in = incoming_on(g);
-			const bool i_tank = !(kit.ranged && helper_melee);
-			const float my_share = i_tank ? (helper_melee && !kit.ranged ? 0.5f : 1.f) : 0.1f;
-			const float taken = in * my_share * kill;
-			const float reserve = std::max(P.camp_hp_reserve * max_hp, in * 3.f);
+#ifdef XM_TRACE
+			// The uncorrected model, logged next to the new one so both are scored on the same episodes.
+			const bool xm_tank0 = !(kit.ranged && helper_melee);
+			const float xm_share0 = xm_tank0 ? (helper_melee && !kit.ranged ? 0.5f : 1.f) : 0.1f;
+			const float xm_res0 = std::max(P.camp_hp_reserve * max_hp, in * 3.f);
+			const float xm_taken0 = in * xm_share0 * kill, xm_bf0 = std::max(1.f, max_hp - xm_res0);
+			const float xm_ex0 = xm_taken0 - std::max(0.f, hp - xm_res0);
+			const int xm_trips0 = xm_ex0 > 0 ? static_cast<int>(std::ceil(xm_ex0 / xm_bf0)) : 0;
+#endif
+			// A melee ally standing at the group (claiming it or not) is nearer to the camps than a ranged champion
+			// and takes their hits: with one in sight, Cassi and Stellar took 0.29-0.35 of the claim-only prediction.
+			bool melee_present = false;
+			if (P.math_taken)
+				for (int i = 0; i < static_cast<int>(W.allies.size()) && !melee_present; ++i)
+				{
+					const auto& a = W.allies[static_cast<std::size_t>(i)];
+					melee_present = i != W.my_index && a.alive && a.visible && cheb(a.pos, g.center) <= P.presence_radius && ally_melee(i);
+				}
+			const bool tank_melee = helper_melee || melee_present;
+			const bool i_tank = !(kit.ranged && tank_melee);
+			float my_share = i_tank ? (tank_melee && !kit.ranged ? 0.5f : 1.f) : 0.1f;
+			float taken = in * my_share * kill;
+			float reserve = std::max(P.camp_hp_reserve * max_hp, in * 3.f);
+			float seq = 1.f, in_now = in; // in_now: what reaches us in the first rounds
+			if (P.math_taken)
+			{
+				// Camps die one by one (farm_group hits the lowest health first) and each one attacks from the
+				// round after our first hit until the round it dies, t_k = health of camps 1..k / our damage.
+				// While it is our target it reaches us; before that (t < t_{k-1}) it is a bystander, which
+				// reaches a melee champion standing in the pack but a lone ranged one hitting from range 3 only
+				// part of the time (ranged_exposure). taken = sum_k str_k x (q t_{k-1} + t_k - t_{k-1} - 1).
+				// A melee champion on a pack of n equal camps takes (n+1)/(2n) of the old constant-incoming
+				// product, which overstated a pack by up to 2x.
+				const float q = kit.ranged && !tank_melee ? P.ranged_exposure : 1.f;
+				std::array<float, 8> hs{}, ss{};
+				int n = 0;
+				float raw = 0;
+				for (std::size_t i = 0; i < g.camps.size() && n < 8; ++i)
+				{
+					const float h = g.st == ST_RESPAWN ? g.camps[i].max_hp : g.hp[i];
+					if (h <= 0)
+						continue;
+					int j = n++;
+					for (; j > 0 && hs[static_cast<std::size_t>(j - 1)] > h; --j)
+						hs[static_cast<std::size_t>(j)] = hs[static_cast<std::size_t>(j - 1)], ss[static_cast<std::size_t>(j)] = ss[static_cast<std::size_t>(j - 1)];
+					hs[static_cast<std::size_t>(j)] = h, ss[static_cast<std::size_t>(j)] = g.camps[i].str;
+					raw += g.camps[i].str;
+				}
+				const float dps_all = my_dps + helpers_dps;
+				float cum = 0, num = 0;
+				for (int k = 0; k < n; ++k)
+				{
+					const float t_prev = cum / dps_all;
+					cum += hs[static_cast<std::size_t>(k)];
+					const float t_k = cum / dps_all;
+					num += ss[static_cast<std::size_t>(k)] * std::max(0.f, q * t_prev + (t_k - t_prev) - 1.f);
+				}
+				if (raw > 0 && kill > 0)
+					seq = std::min(1.f, num / (raw * kill));
+				taken = in * my_share * kill * seq;
+				// The HP budget of one trip ends where safety() sends us home: below retreat_hp, or below 4 rounds
+				// of the raw strength of the camps in reach (safety counts every live camp within 3, before
+				// emblems). The old 18% / 3 rounds reserve promised health the retreat never lets us spend.
+				const float reach = n > 0 ? ss[0] + q * (raw - ss[0]) : raw;
+				reserve = std::max(std::max(P.camp_hp_reserve, P.retreat_hp) * max_hp, reach * 4.f);
+				if (raw > 0)
+					in_now = in * reach / raw;
+			}
 			const float budget_now = std::max(0.f, hp - reserve);
 			const float budget_full = std::max(1.f, max_hp - reserve);
-			if (i_tank && budget_full < in * my_share * 5.f)
+			if (i_tank && budget_full < in_now * my_share * 5.f)
 				return false; // cannot even survive a few rounds next to it
 			const float extra = taken - budget_now;
 			const int trips = extra > 0 ? static_cast<int>(std::ceil(extra / budget_full)) : 0;
+#ifdef XM_TRACE
+			if (xm_sp)
+			{
+				xm_sp->in = in, xm_sp->share = my_share, xm_sp->taken = taken, xm_sp->budget_now = budget_now, xm_sp->budget_full = budget_full;
+				xm_sp->trips = trips;
+				xm_sp->share0 = xm_share0, xm_sp->taken0 = xm_taken0, xm_sp->trips0 = xm_trips0, xm_sp->seq = seq, xm_sp->present = melee_present;
+				xm_sp->reach = in > 0 ? in_now / in : 1.f;
+			}
+#endif
 			if (trips > P.max_trips)
 				return false;
 			t += static_cast<float>(trips * trip_cost(g));
@@ -1964,7 +2187,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 		}
 	}
 
-	float value = (static_cast<float>(g.gems) + P.gold_value * static_cast<float>(g.gold)) * share;
+	float value = (static_cast<float>(g.gems) + gold_v * static_cast<float>(g.gold)) * share;
 	if (!g.ours)
 	{
 		const float risk = sc_risk;
@@ -2023,6 +2246,10 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 		else
 			value *= 0.5f;
 	}
+#ifdef XM_TRACE
+	if (xm_sp)
+		xm_sp->time = time, xm_sp->value = value, xm_sp->score = value / std::max(1.f, time);
+#endif
 	return value / std::max(1.f, time);
 }
 
@@ -2119,7 +2346,7 @@ float Brain::island_score(int i) const
 		const Group& g = W.groups[static_cast<std::size_t>(gid)];
 		if (g.st == ST_RESPAWN && g.ready_round - round > 30)
 			continue;
-		value += static_cast<float>(g.gems) + P.gold_value * static_cast<float>(g.gold);
+		value += static_cast<float>(g.gems) + gold_v * static_cast<float>(g.gold);
 		hp_total += g.st == ST_REWARD ? 0.f : g.hp_total;
 	}
 	if (value <= 0)
@@ -2231,6 +2458,11 @@ void Brain::farm()
 		// 48-group map scoring everything every turn cost ~55k and turns spilled into the next round.
 		auto consider = [&](Group& g) {
 			if (blacklist[static_cast<std::size_t>(g.id)] > round)
+				return;
+			// Groups that cannot beat the best so far are skipped unscored (exact, see score_cap). Scoring took
+			// ~60k fuel a turn on the 98x99 48-group map and the math model made each group ~23% dearer, so
+			// the loop ran down to score_fuel_floor and farm_group (up to ~29k) spilled turns into the next round.
+			if (P.score_cap && best_s > 0 && g.id != task_group && score_cap(g) <= best_s)
 				return;
 			int eta = 0;
 			bool np = false;
@@ -2374,6 +2606,7 @@ void Brain::farm()
 			}
 	});
 #endif
+	XM(xm_decide(best));
 	if (best != task_group)
 	{
 		task_group = best;
@@ -2451,7 +2684,22 @@ bool Brain::capture_group(Group& g)
 			const bool shopper = type != CT::tavi && build_idx < build.size();
 			const bool rich = shopper && gold + static_cast<std::uint32_t>(g.gold) >= static_cast<std::uint32_t>(P.cap_recall_gold);
 			const bool hurt = hp < P.cap_recall_hp * max_hp;
-			const bool bag = static_cast<int>(gems) + g.gems >= tribute_min;
+			// Where will the bag be banked? After the recall, from spawn (spawn_altar_d steps, after the rest
+			// turn); without it, at the altar nearest this tile. When the nearest altar plus a recall home
+			// afterwards is still cheaper, bank first: tribute() walks there once the reward lands and
+			// home_trip() recalls from the altar to heal and shop.
+			const int spawn_altar = world().spawn_altar_d;
+			int adist = BIG;
+			if (P.bank_first || P.bank_trip_w > 0)
+				nearest_altar(adist);
+			const bool bank_here = P.bank_first && adist < BIG && spawn_altar < BIG &&
+				adist + static_cast<int>(bc::constants::recall_time) + P.bank_first_margin <= spawn_altar;
+			const bool bag = static_cast<int>(gems) + g.gems >= bank_min(std::min(adist, spawn_altar < BIG ? 1 + spawn_altar : BIG));
+			if (bag && bank_here && !hurt)
+			{
+				place_ward(round - ward_round > 4);
+				return true;
+			}
 			if (rich || hurt || bag)
 			{
 				try
@@ -2598,3 +2846,199 @@ bool Brain::farm_group(Group& g)
 	attack_chain_camp(g, t);
 	return true;
 }
+
+#ifdef XM_TRACE
+// ---------------------------------------------------------------------------------------------- prediction audit
+// Every function below runs inside debug_block (fuel paused) and only prints and updates xm_* state, so an
+// XM_TRACE build plays the same game as the plain build. tools/analysis/xm_audit.py joins the lines with
+// the replay.
+
+void Brain::xm_pre()
+{
+	auto& W = world();
+	if (round == init_round && W.my_index == 0)
+		for (const auto& g : W.groups)
+		{
+			int k[5] = { 0, 0, 0, 0, 0 };
+			float str_sum = 0;
+			for (const auto& c : g.camps)
+				++k[std::min(4, std::max(0, static_cast<int>(c.type)))], str_sum += c.str;
+			std::printf("GI g=%d n=%zu gems=%d gold=%d resp=%d mhp=%.0f str=%.0f wolf=%d elk=%d gem=%d gold_c=%d mono=%d ours=%d dh=%d cl=%.2f\n", g.id, g.camps.size(), g.gems, g.gold, g.respawn,
+				g.max_hp, str_sum, k[0], k[1], k[2], k[3], k[4], static_cast<int>(g.ours), g.d_home_c, g.cluster);
+		}
+	// Per-round farming check: the prediction made at the end of our previous turn against what happened since
+	// (our attack that turn, allies' attacks, then the camps' attacks at the start of this round).
+	if (xm_pg >= 0 && xm_pr == round - 1)
+	{
+		const auto& g = W.groups[static_cast<std::size_t>(xm_pg)];
+		if (g.seen_round == round)
+		{
+			const float dealt = std::max(0.f, xm_g_hp - g.hp_total);
+			const float lost = std::max(0.f, xm_my_hp - hp);
+			std::printf("FR r=%d ty=%d g=%d live=%d cl=%.2f myd=%.1f ad=%.1f claim=%d vis=%d pin=%.1f share=%.2f near=%.1f dealt=%.1f lost=%.1f clean=%d str=%.0f foc=%.0f hp=%.0f mhp=%.0f j=%d du=%d killed=%d share0=%.2f pres=%d reach=%.3f\n",
+				round, static_cast<int>(type), xm_pg, xm_p_live, g.cluster, xm_p_my, xm_p_ally, xm_p_claim, xm_p_vis, xm_p_in, xm_p_share, xm_p_near, dealt, lost,
+				static_cast<int>(xm_p_clean && enemies_within(8) == 0), str, focus, xm_my_hp, max_hp, static_cast<int>(jungle_done()), static_cast<int>(durability_done()),
+				static_cast<int>(g.hp_total <= 0), xm_p_share0, static_cast<int>(xm_p_pres), xm_p_reach);
+		}
+	}
+	xm_pg = -1;
+	// Episode bookkeeping: health lost while engaged, and the group's death.
+	if (xm_ep.g >= 0)
+	{
+		const auto& g = W.groups[static_cast<std::size_t>(xm_ep.g)];
+		if (xm_ep.engage_r >= 0 && !xm_ep.away)
+			xm_ep.lost += std::max(0.f, xm_my_hp - hp);
+		if (g.st == ST_ALIVE)
+			xm_ep.saw_alive = true;
+		if (g.seen_round == round && (g.st == ST_REWARD || (g.st == ST_ALIVE && g.hp_total <= 0)))
+			xm_close("kill");
+		else if (g.seen_round == round && g.st == ST_RESPAWN && xm_ep.saw_alive)
+			xm_close("gone");
+	}
+}
+
+void Brain::xm_decide(int best)
+{
+	auto& W = world();
+	if (best < 0 || best == xm_ep.g)
+		return;
+	if (xm_ep.g >= 0)
+		xm_close("switch");
+	const auto& g = W.groups[static_cast<std::size_t>(best)];
+	if (g.st == ST_REWARD)
+		return;
+	ScoreParts sp;
+	xm_sp = &sp;
+	int eta = 0;
+	group_score(g, eta);
+	xm_sp = nullptr;
+	xm_ep = XmEp{};
+	xm_ep.g = best;
+	xm_ep.commit_r = round;
+	xm_ep.p = sp;
+	xm_ep.g_hp_commit = g.st == ST_RESPAWN ? g.max_hp : g.hp_total;
+	xm_ep.gv = gold_v;
+	xm_ep.my_hp0 = hp;
+}
+
+void Brain::xm_close(const char* why)
+{
+	auto& W = world();
+	if (xm_ep.g < 0)
+		return;
+	const auto& g = W.groups[static_cast<std::size_t>(xm_ep.g)];
+	const auto& p = xm_ep.p;
+	std::printf("FE r=%d ty=%d g=%d why=%s n=%zu gems=%d gold=%d elk=%d mono=%d commit=%d eng=%d pk=%.1f pd=%.1f pad=%.1f pcl=%d pin=%.1f psh=%.2f ptk=%.0f pbn=%.0f pbf=%.0f ptr=%d tc=%d ptime=%.1f peta=%d pwait=%d pval=%.1f psc=%.3f plan=%d ghpc=%.0f hp0=%.0f myhp0=%.0f mhp=%.0f ak=%d atot=%d lost=%.0f trips=%d psh0=%.2f ptk0=%.0f ptr0=%d seq=%.3f pres=%d peta0=%d gv=%.3f\n",
+		round, static_cast<int>(type), xm_ep.g, why, g.camps.size(), g.gems, g.gold, static_cast<int>(g.elk), static_cast<int>(g.monolith), xm_ep.commit_r, xm_ep.engage_r, p.kill, p.my_dps,
+		p.ally_dps, p.claimers, p.in, p.share, p.taken, p.budget_now, p.budget_full, p.trips, trip_cost(g), p.time, p.d_adj, p.wait, p.value, p.score, static_cast<int>(p.planned),
+		xm_ep.g_hp_commit, xm_ep.hp0, xm_ep.my_hp0, max_hp, xm_ep.engage_r >= 0 ? round - xm_ep.engage_r : -1, round - xm_ep.commit_r, xm_ep.lost, xm_ep.trips,
+		p.share0, p.taken0, p.trips0, p.seq, static_cast<int>(p.present), p.d0, xm_ep.gv);
+	xm_ep = XmEp{};
+}
+
+void Brain::xm_dead()
+{
+	if (xm_was_alive)
+	{
+		std::printf("DTH r=%d ty=%d gems=%u task=%d g=%d\n", round, static_cast<int>(type), gems, task, task_group);
+		xm_close("death");
+	}
+	xm_was_alive = false;
+	xm_pg = -1;
+}
+
+void Brain::xm_post()
+{
+	auto& W = world();
+	xm_was_alive = true;
+	const int cur = (task == T_FARM || task == T_WAIT || task == T_CAPTURE) ? task_group : -1;
+	if (xm_ep.g >= 0 && cur >= 0 && cur != xm_ep.g)
+		xm_close("switch");
+	if (xm_ep.g >= 0 && round - xm_ep.commit_r > 400)
+		xm_close("timeout");
+	if (xm_ep.g >= 0)
+	{
+		// A heal trip: home (walk or recall) and back to the same group.
+		if (task == T_HOME || flag(state, bc::champion_state::recalling) || W.ally_spawn.is_set(pos))
+			xm_ep.away = true;
+		else if (cur == xm_ep.g && xm_ep.away)
+			xm_ep.away = false, ++xm_ep.trips;
+	}
+	if (task == T_FARM && task_group >= 0)
+	{
+		const auto& g = W.groups[static_cast<std::size_t>(task_group)];
+		bool in_range = false;
+		int live = 0;
+		float near_in = 0;
+		for (std::size_t i = 0; i < g.camps.size(); ++i)
+		{
+			if (g.hp[i] <= 0)
+				continue;
+			++live;
+			const int d = cheb(g.camps[i].pos, pos);
+			in_range |= d <= kit.attack_range && W.camp_occ.is_set(g.camps[i].pos);
+			if (d <= 3)
+			{
+				// Camps hit the nearest champion: count this camp only if no visible ally is strictly nearer.
+				bool shielded = false;
+				for (const auto& a : W.allies)
+					if (a.handle != self && a.alive && a.visible && cheb(a.pos, g.camps[i].pos) < d)
+						shielded = true;
+				if (!shielded)
+					near_in += g.camps[i].str;
+			}
+		}
+		if (in_range && g.st == ST_ALIVE && g.hp_total > 0)
+		{
+			ScoreParts sp;
+			xm_sp = &sp;
+			int eta = 0;
+			group_score(g, eta);
+			xm_sp = nullptr;
+			int vis = 0;
+			for (const auto& a : W.allies)
+				if (a.handle != self && a.alive && a.visible && cheb(a.pos, g.center) <= 4)
+					++vis;
+			xm_pg = g.id;
+			xm_pr = round;
+			xm_p_my = dps_on(g);
+			xm_p_ally = sp.ally_dps;
+			xm_p_in = incoming_on(g);
+			xm_p_share = sp.planned ? sp.share : -1.f;
+			xm_p_share0 = sp.planned ? sp.share0 : -1.f;
+			xm_p_reach = sp.reach;
+			xm_p_pres = sp.present;
+			xm_p_claim = sp.claimers;
+			xm_p_live = live;
+			xm_p_vis = vis;
+			xm_p_near = near_in;
+			xm_g_hp = g.hp_total;
+			xm_p_clean = enemies_within(8) == 0;
+			if (xm_ep.g == g.id && xm_ep.engage_r < 0)
+				xm_ep.engage_r = round, xm_ep.hp0 = g.hp_total;
+		}
+	}
+	xm_my_hp = hp;
+}
+
+void Brain::xm_fight(float adv, float tku, float tkt, float ohp, float thp, float odps, float tdps, int na, int ne, int fight, int killable, int in_reach,
+					 int can_escape, int isolated, int reserve, int tgt_type, int tgt_d, float incoming, float t_die, float tgt_hp, int backup, float my_dps)
+{
+	// Split of the estimate: allies (visible within 6) and enemies remembered but not visible now (seen in the
+	// last threat_memory rounds within 9 + age) that combat() does not count.
+	auto& W = world();
+	float a_hp = 0, a_dps = 0, m_hp = 0, m_dps = 0;
+	int m_n = 0;
+	for (const auto& a : W.allies)
+		if (a.handle != self && a.alive && a.visible && cheb(a.pos, pos) <= 6)
+			a_hp += a.hp, a_dps += a.str + a.focus * best_mod(a.kit) / 8.f + std::max(a.str, a.focus * best_mod(a.kit)) / 3.f;
+	for (const auto& e : W.enemies)
+		if (e.alive && !e.visible && e.seen_round >= 0 && round - e.seen_round <= P.threat_memory && cheb(e.pos, pos) <= 9 + (round - e.seen_round) &&
+			!W.enemy_spawn.is_set(e.pos))
+			++m_n, m_hp += e.hp, m_dps += e.str + e.focus * best_mod(e.kit) / 8.f + e.burst() / 3.f;
+	std::printf("FX r=%d ty=%d mydps=%.1f ahp=%.0f adps=%.1f mn=%d mhp=%.0f mdps=%.1f\n", round, static_cast<int>(type), my_dps, a_hp, a_dps, m_n, m_hp, m_dps);
+	std::printf("FC r=%d ty=%d x=%d y=%d hp=%.0f mhp=%.0f gems=%u adv=%.3f tku=%.2f tkt=%.2f ohp=%.0f thp=%.0f odps=%.1f tdps=%.1f na=%d ne=%d fight=%d kill=%d reach=%d esc=%d iso=%d res=%d tt=%d td=%d inc=%.0f tdie=%.1f thp1=%.0f bk=%d sc=%.3f fm=%.2f\n",
+		round, static_cast<int>(type), pos.x, pos.y, hp, max_hp, gems, adv, tku, tkt, ohp, thp, odps, tdps, na, ne, fight, killable, in_reach, can_escape, isolated, reserve, tgt_type, tgt_d,
+		incoming, t_die, tgt_hp, backup, learner().fight_scale(), fight_margin);
+}
+#endif

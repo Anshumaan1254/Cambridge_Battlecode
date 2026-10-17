@@ -1,6 +1,6 @@
-diff -ruN legend/src/brain.cpp _x_coord/src/brain.cpp
---- legend/src/brain.cpp	2026-10-17 09:33:09.211370026 +0000
-+++ _x_coord/src/brain.cpp	2026-10-17 10:19:11.998684713 +0000
+diff -ruN _L0/src/brain.cpp _x_coord_b/src/brain.cpp
+--- a/src/brain.cpp	2026-10-17 09:55:26.249386551 +0000
++++ b/src/brain.cpp	2026-10-17 10:19:56.431558925 +0000
 @@ -393,6 +393,7 @@
  	}
  
@@ -153,9 +153,9 @@ diff -ruN legend/src/brain.cpp _x_coord/src/brain.cpp
  		{
  			// Melee champions can still swing after walking.
  			if (!kit.ranged && can_attack)
-diff -ruN legend/src/brain.h _x_coord/src/brain.h
---- legend/src/brain.h	2026-10-17 09:33:09.213173744 +0000
-+++ _x_coord/src/brain.h	2026-10-17 10:07:47.066675377 +0000
+diff -ruN _L0/src/brain.h _x_coord_b/src/brain.h
+--- a/src/brain.h	2026-10-17 09:55:26.249500207 +0000
++++ b/src/brain.h	2026-10-17 10:19:56.431662929 +0000
 @@ -47,6 +47,8 @@
  	bool engaged = false;
  	int dbg_path = 0, dbg_eng = 0; // SPELL_TRACE: which decision used the turn / which engage branch
@@ -165,9 +165,9 @@ diff -ruN legend/src/brain.h _x_coord/src/brain.h
  	bool safe_to_recall() const;
  	bool altar_unsafe(int i) const;
  	void post_danger(vec2 at);
-diff -ruN legend/src/params.h _x_coord/src/params.h
---- legend/src/params.h	2026-10-17 09:33:09.213173744 +0000
-+++ _x_coord/src/params.h	2026-10-17 10:19:12.002678519 +0000
+diff -ruN _L0/src/params.h _x_coord_b/src/params.h
+--- a/src/params.h	2026-10-17 09:55:26.249978886 +0000
++++ b/src/params.h	2026-10-17 10:19:56.432519527 +0000
 @@ -143,6 +143,15 @@
  	int sticky_tribute = 1;		// finish a bank trip once started
  	int claim_tiebreak = 1;		// on our own group only lower-index claimers count

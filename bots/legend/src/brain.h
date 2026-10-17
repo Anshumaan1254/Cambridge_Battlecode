@@ -17,6 +17,18 @@ enum TaskKind : int
 	T_FLEE
 };
 
+#ifdef XM_TRACE
+// Prediction audit (XM_TRACE builds only): the parts of group_score's farming model for one group, so the
+// trace can compare predicted kill time and damage taken with what happened.
+struct ScoreParts
+{
+	float my_dps = 0, ally_dps = 0, hp_left = 0, kill = 0, in = 0, share = 0, taken = 0, budget_now = 0, budget_full = 0, time = 0, value = 0, score = 0;
+	float share0 = 0, taken0 = 0, seq = 1, reach = 1; // the uncorrected damage model, the sequential-kill factor, in_now/in
+	int trips = 0, trips0 = 0, d_adj = 0, d0 = 0, wait = 0, claimers = 0;
+	bool melee_ally = false, planned = false, present = false;
+};
+#endif
+
 class Brain
 {
 public:
@@ -33,6 +45,7 @@ private:
 	bool combat();
 	bool safety();
 	bool tribute(bool force);
+	int bank_min(int trip) const; // gems worth a bank trip of `trip` rounds (longer trips bank bigger bags)
 	bool on_the_way(int altar) const;
 	bool shop_trip();
 	bool home_trip();
@@ -67,6 +80,8 @@ private:
 	bool capture_group(Group& g);
 	bool wait_group(Group& g);
 	float group_score(const Group& g, int& eta, bool* need_pair = nullptr, int d_override = -1) const;
+	int approach_rounds(int d_tile) const; // rounds to attack range of a group d_tile steps away
+	float score_cap(const Group& g) const;  // upper bound on group_score(g)
 	bool hop_task(int gid);
 	bool has_crystal() const;
 	int tp_hop = -1, tp_hop_since = 0;
@@ -91,6 +106,31 @@ private:
 	mutable std::size_t item_flags_idx = static_cast<std::size_t>(-1);
 	mutable bool jungle_ok = false, durability_ok = false, monster_ok = false;
 	bool has_home = false; // Home emblem (faster recall); we never buy it, kept for the capture-recall timing
+#ifdef XM_TRACE
+	// Prediction audit state (all updated inside debug_block, so it costs no fuel and changes no decision).
+	mutable ScoreParts* xm_sp = nullptr;
+	struct XmEp
+	{
+		int g = -1, commit_r = 0, engage_r = -1, trips = 0, away_r = -1;
+		bool away = false, saw_alive = false;
+		float hp0 = 0, lost = 0, dealt = 0, my_hp0 = 0, g_hp_commit = 0, gv = 0;
+		ScoreParts p{};
+	} xm_ep;
+	int xm_pg = -1, xm_pr = -100; // per-round farm prediction: group and round it was made
+	float xm_p_my = 0, xm_p_ally = 0, xm_p_in = 0, xm_p_near = 0, xm_p_share = 0, xm_p_share0 = 0, xm_g_hp = 0, xm_my_hp = 0;
+	bool xm_p_pres = false;
+	float xm_p_reach = 1;
+	int xm_p_claim = 0, xm_p_live = 0, xm_p_vis = 0;
+	bool xm_p_clean = false;
+	bool xm_was_alive = true;
+	void xm_pre();
+	void xm_post();
+	void xm_decide(int best);
+	void xm_dead();
+	void xm_close(const char* why);
+	void xm_fight(float adv, float tku, float tkt, float ohp, float thp, float odps, float tdps, int na, int ne, int fight, int killable, int in_reach,
+				  int can_escape, int isolated, int reserve, int tgt_type, int tgt_d, float incoming, float t_die, float tgt_hp, int backup, float my_dps);
+#endif
 
 	// combat helpers
 	float camp_dps() const;
@@ -143,11 +183,13 @@ private:
 	bc::bitboard alert_zone;  // area an ally reported as dangerous (shared memory)
 	bool enemy_near = false;
 	int enemy_near_d = BIG; // nearest recently seen enemy, minus the rounds since we saw it (it may have closed in)
+	bool enemy_near_field = false; // enemy_near, not counting enemies standing on their own spawn
 	bool cast_area_stun_at(const Enemy& e); // area stun hitting e from up to range + radius away
 
 	// game-state modulated thresholds (recomputed each turn from P and the scoreboard)
 	float fight_margin = 1.3f, fight_back_margin = 0.75f, deny_bonus = 0.55f, enemy_half_penalty = 10.f;
 	float isolated_fight_adv = 1.6f;
+	float gold_v = 0.22f; // gem value of one gold this turn (P.gold_value scaled by the rounds left, update_mode)
 	int stance = 0;
 	int tribute_min = 34;
 	void update_mode();

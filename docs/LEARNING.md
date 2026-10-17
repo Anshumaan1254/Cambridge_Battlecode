@@ -65,12 +65,15 @@ and usually a bag. The first version mixed units (a death counted as about 6 gem
 reward by 18-36), so the bandit followed the bank cycle and could lock a stance out for the whole game.
 
 The value of the played stance gets a soft update (`q += learn_rate x (reward - q)`, an exponential moving
-average, the same idea as soft target updates in deep RL). Stances not played drift back towards their
-priors (`prior_pull`), so one unlucky window cannot rule a stance out for good. The next stance maximises
-value + UCB1 exploration bonus (`ucb_c x sqrt(ln N / (1 + plays))`) + context (deaths on our own half
-favour GROUPED, winning fights favours PUSH) + hysteresis for the current one. UCB rather than
-epsilon-greedy: a game has only ~25 windows, and exploring by optimism costs fewer bad windows than random
-exploration. One body (index 0, which runs every round even while dead) decides; the stance travels to the
+average, the same idea as soft target updates in deep RL). The next stance maximises value + context
+(deaths on our own half favour GROUPED, winning fights favours PUSH) + hysteresis for the current one.
+
+Exploration was measured, not assumed. A UCB1 bonus (`ucb_c x sqrt(ln N / (1 + plays))`) plus a drift of
+unplayed stances back to their priors (`prior_pull`) cost about 2 points over 540 games (77.6% vs 80.0%
+mean win rate on the 45-map panel; the learner switched off scored 79.4%). A game has only ~25 windows
+against one fixed opponent, so deliberately trying a worse stance costs more than it teaches; optimistic
+priors give enough exploration. Both knobs stay in the code at 0 and in the trainer's search space.
+Epsilon-greedy would be worse still for the same reason (random bad windows). One body (index 0, which runs every round even while dead) decides; the stance travels to the
 others in two spare shared-memory bits, so all bodies play the same stance.
 
 **Pain map (punishment memory).** The map is split into 6x6 cells. Pain is added where an ally dies (its

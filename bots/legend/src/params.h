@@ -89,8 +89,8 @@ struct Params
 	float kill_gems = 25.f;			 // stance reward per enemy death, in gems (bag + 60 rounds of their farming)
 	float death_gems = 45.f;		 // stance punishment per ally death, in gems (heavier: we also pay them 50 gold)
 	float reward_scale = 40.f;		 // gems per window that count as reward 1
-	float ucb_c = 0.3f;				 // exploration bonus (UCB1) for rarely played stances
-	float prior_pull = 0.1f;		 // per window, unplayed stance values drift back to their priors
+	float ucb_c = 0.f;				 // exploration bonus (UCB1); 0.3 cost ~2 points over 540 games (a game has ~25 windows)
+	float prior_pull = 0.f;			 // per window, unplayed stance values drift back to their priors (tested with ucb_c)
 	float q0_spread = 0.3f;			 // optimistic prior values per stance (SPREAD starts preferred)
 	float q0_grouped = 0.f;
 	float q0_push = -0.2f;

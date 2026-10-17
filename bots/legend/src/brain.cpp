@@ -71,6 +71,8 @@ std::vector<I> build_for(CT t)
 		case CT::stellar:
 		case CT::prism:
 		case CT::tavi:
+			if (P.squishy_hp_first)
+				rep(v, I::durability_shard_of_health, 5);
 			if (P.rich_treasure_first)
 			{
 				rep(v, I::treasure_shard_of_focus, 5);
@@ -130,6 +132,8 @@ std::vector<I> build_for(CT t)
 		case CT::vendetta:
 		case CT::vesper_vale:
 			// Splash makes strength Varg's best stat (2.2x on packs): Jungle on strength, not health.
+			if (P.squishy_hp_first)
+				rep(v, I::durability_shard_of_health, 5);
 			rep(v, I::monster_shard_of_strength, 5);
 			rep(v, I::treasure_shard_of_strength, 5);
 			rep(v, I::jungle_shard_of_strength, 5);

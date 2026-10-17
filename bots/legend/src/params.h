@@ -73,6 +73,8 @@ struct Params
 	float pair_caution = 0.f;		 // Cassi and Issac die together (both bodies, both bags): this much more advantage to fight
 	int alert_refresh = 0;			 // re-posting the same alert refreshes it for the team (a toggle bit; before, an alert
 									 // re-posted at one tile expired after its max age while the fight went on)
+	int squishy_hp_first = 0;		 // Stellar/Prism/Tavi and Varg/Vendetta/Vesper buy a Durability health emblem first (they
+									 // bought 15 damage shards first: 750-1000 max HP vs 1125-1800 for the same picks of _devci)
 	int win_bank = 0;				 // a bag that wins the game goes to the nearest altar: no capture-recall away from it, no
 									 // retreat home with it (ladder interlock: Ren recalled with 72 gems 3 steps from an altar
 									 // and lost 976-1056)

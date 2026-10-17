@@ -214,7 +214,23 @@ int Nav::group_dist(const Group& g, vec2 from, bool allow_estimate)
 	int best = BIG;
 	for (auto t : g.tiles)
 		best = std::min(best, cheb(t, from));
-	return best + best / 4;
+	best += best / 4;
+	if (P.dist_landmark)
+	{
+		// Two field reads per position, cached: group_dist runs for every group with the same `from`.
+		auto& w = world();
+		if (from.x != lm_from.x || from.y != lm_from.y)
+			lm_from = from, lm_home = w.dist_home(from), lm_away = w.dist_away(from);
+		int lb = 0;
+		if (lm_home < BIG && g.d_ally < BIG)
+			lb = std::abs(g.d_ally - lm_home);
+		if (lm_away < BIG && g.d_enemy < BIG)
+			lb = std::max(lb, std::abs(g.d_enemy - lm_away));
+		if (w.dash_kit)
+			lb = static_cast<int>(static_cast<float>(lb) * P.landmark_dash);
+		best = std::max(best, lb);
+	}
+	return best;
 }
 
 int Nav::altar_dist(int id, vec2 from, bool allow_estimate)

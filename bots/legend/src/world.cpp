@@ -177,7 +177,7 @@ void World::detect_objective()
 	// group 17,400). Gem rate = gems per respawn round; a centre group counts once for the whole map, side groups
 	// once per copy, so the share is map-wide. The sums are gathered in init_static's group loop.
 	obj_share = obj_rate_total > 0 ? obj_rate_heavy / obj_rate_total : 0;
-	obj_mode = !obj_groups.empty() && obj_share >= P.obj_share;
+	obj_mode = !obj_groups.empty() && static_cast<int>(obj_groups.size()) <= P.obj_max_groups && obj_share >= P.obj_share;
 	if (!obj_mode)
 		return;
 	std::sort(obj_groups.begin(), obj_groups.end(), [&](int a, int b) { return groups[static_cast<std::size_t>(a)].d_ally < groups[static_cast<std::size_t>(b)].d_ally; });

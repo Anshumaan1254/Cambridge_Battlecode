@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-17 20:00 UTC (session 5)**. Rule from the user: update this file and push at every step. Start with **§0000**, then **§000**, then **§00** below. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
+- Last updated: **2026-10-17 21:45 UTC (session 6)**. Rule from the user: update this file and push at every step. Start with **§00000** (session 6), then **§0000**, **§000**, **§00** below. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
 - **Two sessions are live on this branch (20:00 UTC)**: session 4 (container with `/tmp/ev/fp_*`, still running its full
   panels: `_ST`, `_rm`, `_rs3`, `_rnr` done, `_rnd` running, then `_rmx`, `_x_side`, `_rmxp`; results written into §000) and
   session 5 (§0000). Before pushing: `git pull --rebase`. Do not duplicate each other's panels: see §000 for session 4's numbers.
@@ -12,6 +12,31 @@ running or unfinished, and what to do next, so a new agent can continue without 
   is either offline (training parameters before submission) or in-match (adapting inside one game).
 
 ---
+
+## 00000. SESSION 6: CURRENT POSITION (started 2026-10-17 21:00 UTC, new container): read this first, then §0000
+
+- **Branch for session 6: `ccr-b9ffa7d9-hvk1ud`** (the harness's designated branch; it started equal to `claude/laughing-curie-3rq6hu` at 7e444b0).
+  Sessions 4-5 pushed to laughing-curie; check it for late pushes (`git fetch origin claude/laughing-curie-3rq6hu`) and merge them in.
+- New user input: `HOUSEOFCODERS_ENEMY_STRATEGY_REPORT.md` (analysis of 17 real ladder games of the shipped `legend_st`, one per official map:
+  **1 win, 16 losses**; deaths 232 vs 50; camp gems 7,938 vs 16,210; gold 39.6k vs 87k; Cassi & Issac 118 of our 232 body deaths;
+  contest 0-1000 with zero monolith damage; pilgrimage our Ren 0 gems all game; rows our first captures split; only win stampede 1080-0).
+  Summary and what was done with it: §00000.2 below.
+- Shipped build is still `legend_st`. **`bots/legend` now = session 5's stacked candidate `_rmxp`** (= `_rm` + `x_side.patch`
+  (`camp_in_fight=3`) + `x_pace.patch` (`bank_first=0`, `obj_min_hp` 4500, `obj_share` 0.7, `obj_max_groups` 8)) **+ `dist_landmark`** (below).
+  Frozen locally as `bots/_b6` (baseline of session-6 A/Bs; wasm identical to `_lbxp`).
+
+### 00000.1 Findings (session 6)
+- **Unopposed games (vs `idle`) show bodies that earn nothing for hundreds of rounds** (`tools/analysis/econ_open.mjs`: per body first capture,
+  gems/gold at r100/r200, split captures, rounds dead, longest stretch alive without earning):
+  pilgrimage Ren 0 gems / 0 gold all 814 rounds, Ryth 0 gems; rows Varg first capture r292-320 and 15 gold all game (the enemy Varg captured
+  the same 66-gem pack solo at r27 and had Monster + Power Strength by r32); ambush Ren dead 240 body-rounds to camps, Ryth first capture r555.
+- pilgrimage cause 1: `Nav::group_dist` estimates a group without a built field as straight line x 1.25. Pilgrimage's 3-4 wide hole bands make
+  the 92-gem groups a 128-150 step walk; the estimate said 41, so Ren/Ryth kept switching to them (SW trace: dnew=41, then 75 rounds of walking).
+  Fix `dist_landmark` (triangle inequality on the home and enemy-spawn init fields, cached per position). Pace (17 official maps vs idle, both sides):
+  `_rm` 579.0 -> `_lb` 583.4; `_rmxp` 579.9 -> `_lbxp` 576.2 (pilgrimage 841 -> 793). Few maps change (fields are usually built). Kept (correctness).
+- rows cause: the claimer with the lowest index captures. Varg (index 4) cleared the pack (28 rounds, 490 damage taken) and Cassi (index 2), who
+  walked in with it, took the 66 gems and 270 gold; Varg left for the next pack. Varg never gets gold, never buys items (econ_open: gold 15).
+- `_rmxp` re-check: pace 579.9 vs `_ST` 585.0; head-to-head vs `_ST` on the 17 official maps 47.1 (16/34). Not shipped on its own.
 
 ## 0000. SESSION 5: CURRENT POSITION (started 2026-10-17 19:46 UTC in a new container): read this first, then §000
 

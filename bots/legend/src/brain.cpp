@@ -1,3 +1,4 @@
+#include <map> // LEGEND_TRACE score dump (the define arrives through params.h, after this line)
 #include "brain.h"
 #include "learn.h"
 
@@ -1203,9 +1204,14 @@ bool Brain::combat()
 	float our_hp = hp, our_dps = str + focus * best_mod(kit) / 8.f + my_burst / 3.f;
 	float allies_burst = 0;
 	int allies_near = 0;
+	std::array<vec2, 8> side_pos{};
+	int side_n = 0;
+	side_pos[static_cast<std::size_t>(side_n++)] = pos;
 	for (const auto& a : W.allies)
 		if (a.handle != self && a.alive && a.visible && cheb(a.pos, pos) <= 6 && (!P.support_filter || can_support(a, E)))
 		{
+			if (side_n < static_cast<int>(side_pos.size()))
+				side_pos[static_cast<std::size_t>(side_n++)] = a.pos;
 			const float ab = std::max(a.str, a.focus * best_mod(a.kit));
 			our_hp += a.hp;
 			our_dps += P.ally_spell_dps ? a.str + a.focus * best_mod(a.kit) / 8.f + ab / 3.f : a.str * 1.2f;
@@ -1222,6 +1228,46 @@ bool Brain::combat()
 			here |= cheb(e->pos, pos) <= hit_r;
 		if (here)
 			our_hp += max_hp;
+	}
+	if (P.camp_in_fight)
+	{
+		// Awake camps hit the nearest champion within 3 every round, whichever team it is on. Ignoring them made
+		// a team still tanking a camp take an even fight against fresh arrivals (eight: C&I died at r24-27
+		// under the top wolves). Ties go to us (the camp's tie-break is turn order; assume the worse).
+		// Measured (camp_in_fight in params.h): counting the enemy's camp damage wins (we take the fights where
+		// they tank); counting ours loses (bodies back off camps and rewards and get chased anyway).
+		for (const auto& g : W.groups)
+		{
+			if (g.st != ST_ALIVE || !g.awake || g.harmless || cheb(g.center, pos) > 12)
+				continue;
+			for (std::size_t i = 0; i < g.camps.size(); ++i)
+			{
+				if (g.hp[i] <= 0 || g.camps[i].str <= 0)
+					continue;
+				const vec2 c = g.camps[i].pos;
+				int best = 4, who = -1; // -1 none, 0 me, 1 ally, 2 enemy
+				for (int k = 0; k < side_n; ++k)
+				{
+					const int dd = cheb(side_pos[static_cast<std::size_t>(k)], c);
+					if (dd < best)
+						best = dd, who = k == 0 ? 0 : 1;
+				}
+				for (auto* e : E)
+					if (cheb(e->pos, c) < best)
+						best = cheb(e->pos, c), who = 2;
+				if (who == 2)
+				{
+					if (P.camp_in_fight != 2)
+						our_dps += g.camps[i].str;
+				}
+				else if (who >= 0 && P.camp_in_fight != 3)
+				{
+					their_dps += g.camps[i].str;
+					if (who == 0)
+						incoming += g.camps[i].str;
+				}
+			}
+		}
 	}
 	const float t_kill_them = their_hp / std::max(1.f, our_dps);
 	const float t_kill_us = our_hp / std::max(1.f, their_dps);
@@ -2749,6 +2795,9 @@ void Brain::farm()
 	int best = -1, best_eta = BIG;
 	bool best_pair = false, best_team = false;
 	float best_s = 0;
+#ifdef LEGEND_TRACE
+	std::map<int, float> tr_sc;
+#endif
 	prepare_scoring();
 	{
 		// Score the current target first, then groups near us, then the rest while fuel lasts: on a
@@ -2767,6 +2816,9 @@ void Brain::farm()
 			if (s <= 0)
 				return;
 			const bool tm = sc_team;
+#ifdef LEGEND_TRACE
+			tr_sc[g.id] = s;
+#endif
 			if (g.id == task_group)
 				s *= P.hysteresis;
 			else if (P.flip_window > 0 && g.id == left_group && round - left_round <= P.flip_window)
@@ -2928,6 +2980,17 @@ void Brain::farm()
 #endif
 	if (best != task_group)
 	{
+#ifdef LEGEND_TRACE
+		debug_block({
+			if (task_group >= 0)
+			{
+				const auto& og = W.groups[static_cast<std::size_t>(task_group)];
+				std::printf("SW r=%d %d old=%d new=%d sold=%.3f snew=%.3f stold=%d dold=%d dnew=%d since=%d\n", round, static_cast<int>(type), task_group, best,
+					tr_sc.count(task_group) ? tr_sc[task_group] : -1.f, tr_sc.count(best) ? tr_sc[best] : -1.f, static_cast<int>(og.st), nav().group_dist(og, pos),
+					nav().group_dist(W.groups[static_cast<std::size_t>(best)], pos), round - task_since);
+			}
+		});
+#endif
 		if (task_group >= 0)
 			left_group = task_group, left_round = round;
 		task_group = best;
@@ -3196,6 +3259,77 @@ bool Brain::attack_chain_camp(Group& g, std::size_t idx)
 	return true;
 }
 
+bool Brain::wake_guard_hold(const Group& g)
+{
+	// Waking a camp next to an enemy force hands them the fight: the camp hits us every round until it dies
+	// and they arrive at full health (eight vs the panel: 6 of 8 lost, every time after our team woke the top
+	// wolves or the 27,3 elk at r16-17 with their 4-5 bodies 6-9 tiles away; C&I died at r24-27 at 4v5).
+	auto& W = world();
+	float ehp = 0, edps = 0;
+	int ne = 0;
+	for (const auto& e : W.enemies)
+		if (e.alive && e.seen_round >= 0 && round - e.seen_round <= P.threat_memory && !W.enemy_spawn.is_set(e.pos) &&
+			(cheb(e.pos, g.center) <= P.wake_guard_d || cheb(e.pos, pos) <= P.wake_guard_d))
+		{
+			ehp += e.hp;
+			edps += e.str + e.focus * best_mod(e.kit) / 8.f + e.burst() / 3.f;
+			++ne;
+		}
+	// Opening: enemies not seen yet still leave their spawn around round 3 and walk one tile a round, so a group
+	// they can reach before we finish it is contested even unseen (eight: the top wolves woken at r17, enemy
+	// bodies 9-10 tiles away out of sight, C&I dead at r24).
+	bool projected = false;
+	if (ne == 0 && round < P.wake_guard_open && g.d_enemy < BIG)
+	{
+		bool all_seen_far = !W.enemies.empty();
+		for (const auto& e : W.enemies)
+			all_seen_far &= !e.alive || (e.seen_round >= 0 && round - e.seen_round <= 3 && cheb(e.pos, g.center) > P.wake_guard_d + 3);
+		projected = !all_seen_far;
+	}
+	if (ne == 0 && !projected)
+	{
+		if (wg_group == g.id)
+			wg_group = -1;
+		return false;
+	}
+	float ohp = hp, odps = str + focus * best_mod(kit) / 8.f, team_camp_dps = dps_on(g);
+	for (const auto& a : W.allies)
+		if (a.handle != self && a.alive && a.visible && cheb(a.pos, g.center) <= P.wake_guard_d)
+		{
+			ohp += a.hp;
+			odps += a.str + a.focus * best_mod(a.kit) / 8.f;
+			team_camp_dps += a.str + a.focus * best_mod(a.kit) / 8.f;
+		}
+	const float kill = g.hp_total / std::max(10.f, team_camp_dps);
+	if (kill <= P.wake_guard_kill)
+		return false;
+	if (projected)
+	{
+		// Unseen: assume the whole enemy team arrives at full health when it can first reach the group.
+		// First enemy hits: their walk to the group minus their reach (4 with a spell), from round 1. Traced on
+		// eight: d_enemy 25 for the top wolves, their bodies hit ours there at r20.
+		const int arrive = g.d_enemy + 1 - P.wake_guard_reach;
+		if (static_cast<float>(round) + kill <= static_cast<float>(arrive - P.wake_guard_eta_margin) || round > arrive + 12)
+			return false;
+		// Never-seen enemies have no stats yet: count each like one of our bodies (mirror drafts).
+		const float my_dps = str + focus * best_mod(kit) / 8.f;
+		for (const auto& e : W.enemies)
+			if (e.alive)
+				ehp += std::max(e.max_hp, max_hp), edps += std::max(e.str + e.focus * best_mod(e.kit) / 8.f, my_dps);
+	}
+	// Our side after the camp: its hits over the kill time come off our health.
+	const float after = std::max(1.f, ohp - incoming_on(g) * kill);
+	const float adv = (after / std::max(1.f, edps)) / std::max(0.1f, ehp / std::max(1.f, odps));
+#ifdef LEGEND_TRACE
+	debug_block({ if (round < 40) std::printf("WA r=%d %d g=%d adv=%.2f after=%.0f ehp=%.0f edps=%.0f odps=%.0f\n", round, static_cast<int>(type), g.id, adv, after, ehp, edps, odps); });
+#endif
+	if (adv >= P.wake_guard_adv)
+		return false;
+	if (wg_group != g.id)
+		wg_group = g.id, wg_since = round;
+	return round - wg_since <= P.wake_guard_max;
+}
+
 bool Brain::farm_group(Group& g)
 {
 	auto& W = world();
@@ -3234,6 +3368,12 @@ bool Brain::farm_group(Group& g)
 				return true;
 			}
 		}
+	}
+	if (P.wake_guard && g.st == ST_ALIVE && !g.awake && !g.harmless && !obj && wake_guard_hold(g))
+	{
+		task = T_WAIT;
+		go_group(g, 4, true);
+		return true;
 	}
 	// Choose among live, visible camps in attack range: lowest health first (Varg: most neighbours for splash).
 	auto pick = [&](int range) {

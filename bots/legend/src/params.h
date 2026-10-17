@@ -233,7 +233,7 @@ struct Params
 	int race_carrier = 30;
 	int capture_reset = 1;		// an enemy seen on the group's tiles restarts the capture-recall clock (the engine resets the capture)
 	int tribute_elapsed = 1;	// handle_channel counts the tribute's remaining turns from its start, not from the carried bag
-	int bank_first = 1;			// full bag at a capture: skip the recall and bank at the nearest altar when that beats banking from spawn
+	int bank_first = 0;			// (agent pace: off, official pace 574 -> 568) full bag at a capture: skip the recall and bank at the nearest altar when that beats banking from spawn
 	int bank_first_margin = 2;	// ... by at least this many steps (nearest-altar walk + recall_time + margin <= spawn altar walk)
 	float bank_trip_w = 1.0f;	// bank threshold rises by this many gems per step of bank trip beyond bank_trip_free
 	int bank_trip_free = 12;	// bank trips up to this many steps keep the plain threshold
@@ -242,10 +242,16 @@ struct Params
 
 	// Objective maps (agent obj, session 3): the gems sit in one or a few heavy groups (stampede, contest)
 	int obj_plan = 1;			// detect objective maps at init (World::detect_objective); everything below needs it
-	float obj_min_hp = 6000.f;	// a group this heavy cannot be soloed early (elk 2,400; monolith 20,000)
-	float obj_share = 0.6f;		// ... objective map when such groups hold this share of the map's gem rate
-	int obj_min_attackers = 2;	// ... counting only groups with at least this many camps that hit back (not a lone monolith:
-								// monolith-only maps with the mode on: 105 of 152 games vs _k1/_v6/_r2/_es2, about baseline; x_obj_NOTES)
+	float obj_min_hp = 4500.f;	// a group this heavy cannot be soloed early (elk 2,400; monolith 20,000). Was 6000; 4500 admits ambush's
+								// 4,750-5,800 HP gem groups: ambush pace 840 -> 646 (agent pace)
+	float obj_share = 0.7f;		// ... objective map when such groups hold this share of the map's gem rate (was 0.6; 0.7 keeps eight 0.67,
+								// expanse 0.64, interlock 0.59 out: with 0.4 they got +26..+49 rounds slower, ambush the same -194)
+	int obj_max_groups = 8;		// ... and at most this many such groups on the whole map (both sides). ambush 6, contest 2, stampede 1; swirl and the
+								// ladder 45x30 map have 14 (every gem group is heavy there): with the mode on they got +15 rounds and 2 of 12 more losses
+	int obj_min_attackers = 2;	// ... counting only groups with at least this many camps that hit back (2 excludes a lone monolith: monolith-only
+								// maps with the mode on: 105 of 152 games vs _k1/_v6/_r2/_es2, about baseline; x_obj_NOTES). Agent pace re-tested
+								// 1: contest unopposed pace 1087 -> 905 and nothing else changes, but the held-out gold/obj pool (100 games vs
+								// _ST) went 49 -> 46 with it (noise level) and the gold maps' lone monoliths are what it turns on: left at 2
 	int obj_team = 1;			// score an objective group with the whole living team's damage once the team can
 								// clear it (obj_team_ready); the solo plan never passes (stampede: nobody touched
 								// the 360-gem group before r905; bodies chipped it one or two at a time and left it)
@@ -281,6 +287,11 @@ struct Params
 								 // until the field value drops below where it started (else A-B-A-B: the field steps back)
 	int detour_hold = 12;		 // ... for at most this many rounds
 	int stuck_reach = 1;		 // a group unreachable on foot from our side is not estimated by straight-line distance
+	int dist_landmark = 1;		 // a group without a built field is estimated at least |d_home(group) - d_home(us)| (and the same from
+								 // the enemy spawn: triangle inequality on the two init fields), not only straight line x 1.25. On
+								 // pilgrimage (3-4 wide hole bands) straight line said 41 for a 128-150 step walk: unopposed, Ren
+								 // and Ryth flipped between the far 92-gem groups all game and captured nothing (session 6)
+	float landmark_dash = 0.85f; // ... dash kits cross 1-wide holes the init fields treat as walls (pilgrimage 128 vs 150)
 	int unstick_rounds = 10;	 // a farm/capture walk stuck inside a 3x3 box this many rounds (no attack) drops its target
 	int unstick_blacklist = 30;	 // ... for this many rounds (0 rounds: off)
 	int flip_window = 12;		 // for this many rounds after leaving a target, going back to it needs ...
@@ -293,6 +304,25 @@ struct Params
 	int gank_bag = 25;			 // chase a visible carrier with at least this many gems
 	float deny_hp_frac = 0.6f;	 // contest an enemy's capture (step on its tiles) from this health fraction
 	float deny_capture_mult = 1.3f; // value multiplier for contesting an enemy's capture
+
+	// Opening / contested fights (agent side, session 4). eight (one altar, mid-map) vs the panel: we lost 6 of 8;
+	// in all 6 our team woke a heavy camp next to the enemy's path (top wolves r17 as A, elk 27,3 r16 as B) while
+	// their 4-5 bodies were 6-9 tiles away; they arrived fresh, the camp kept hitting us, C&I died at r24-27.
+	int camp_in_fight = 3;		 // combat(): awake camps hit the nearest champion within 3 each round. 3: a camp whose
+								 // nearest body is an enemy adds its strength to our DPS (they tank it: punish them);
+								 // 2: a camp hitting us or a counted ally adds to theirs; 1: both; 0: off. 56 maps vs
+								 // _ST: 3 = 56.2 (comp 61.8; panel _L0 73.2 _es2 65.2 _r2 80.4 _v6 96.4 with
+								 // wake_guard), 2 = 41.1 (backing off camps cost more than it saved), 1 = 47.3
+	int wake_guard = 0;			 // do not wake a sleeping group while a comparable enemy force is near it (eight 4/8 alone;
+								 // with camp_in_fight 3: 54.5 vs the same without it; interlock A lost vs _ST): off
+	int wake_guard_d = 9;		 // ... enemies seen (threat_memory) within this of the group or of us
+	float wake_guard_kill = 3.f; // ... unless we kill the group within this many rounds
+	float wake_guard_adv = 1.5f; // ... or our side (allies near, health after the camp's hits) beats them by this
+	int wake_guard_max = 16;	 // ... hold at most this many rounds per group, then farm anyway
+	int wake_guard_open = 0;	 // ... before this round also guard against enemies not seen yet (arrival projected from
+								 // their spawn; never-seen enemies counted like our bodies). 80: same results as 0
+	int wake_guard_reach = 4;	 // ... their first hit lands this many tiles before they reach the group
+	int wake_guard_eta_margin = 0; // ... when the group would not be dead this many rounds before they can arrive
 };
 
 inline constexpr Params P{};

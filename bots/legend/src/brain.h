@@ -84,6 +84,7 @@ private:
 	bool respond_to_alert();
 	void farm();
 	bool farm_group(Group& g);
+	bool wake_guard_hold(const Group& g);
 	bool capture_group(Group& g);
 	bool wait_group(Group& g);
 	float group_score(const Group& g, int& eta, bool* need_pair = nullptr, int d_override = -1) const;
@@ -91,6 +92,7 @@ private:
 	float score_cap(const Group& g) const;  // upper bound on group_score(g)
 	bool obj_team_ready(const Group& g, float hp_left, float& kill) const; // objective map: the team can clear g
 	int obj_gather_since = -1, obj_gather_group = -1;
+	int wg_group = -1, wg_since = -1;
 	mutable bool sc_team = false; // the last group_score used the objective team plan (the solo plan failed)
 	bool task_team = false;		  // ... for the current farm target
 	bool hop_task(int gid);

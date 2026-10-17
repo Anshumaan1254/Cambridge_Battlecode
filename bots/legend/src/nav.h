@@ -33,6 +33,8 @@ struct Nav
 	bool ensure_hop(int id);
 	// Steps to stand on a group tile (BIG if unknown/unreachable); estimate from Chebyshev when the field is missing.
 	int group_dist(const Group& g, vec2 from, bool allow_estimate = true);
+	vec2 lm_from{ -1, -1 }; // group_dist landmark cache: home / enemy-spawn field values at lm_from
+	int lm_home = BIG, lm_away = BIG;
 	int altar_dist(int id, vec2 from, bool allow_estimate = true);
 
 	// Dynamic obstacles for this turn (terrain, visible units, teleports), excluding `me`.

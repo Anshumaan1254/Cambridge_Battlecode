@@ -239,7 +239,14 @@ async function analyse(file, acc, opts) {
 		for (let i = 0; i < blocked.length; i++) blocked[i] = grid.wall[i] | grid.hole[i] | grid.altar[i] | grid.spawn[1 - team][i];
 		// Dash kits cross 1-wide hole lines (legend's dash_holes): their goal distances let them over holes.
 		const blockedDash = new Uint8Array(blocked.length);
-		for (let i = 0; i < blocked.length; i++) blockedDash[i] = grid.wall[i] | grid.altar[i] | grid.spawn[1 - team][i];
+		// As legend's dash_walls: a hole with standable ground on both opposite sides (one dash) is crossable.
+		const ground = (x, y) => x >= 0 && y >= 0 && x < grid.w && y < grid.h && !blocked[y * grid.w + x];
+		for (let i = 0; i < blocked.length; i++) {
+			blockedDash[i] = blocked[i];
+			if (!grid.hole[i]) continue;
+			const x = i % grid.w, y = (i / grid.w) | 0;
+			for (const [dx, dy] of [[1, 0], [0, 1], [1, 1], [1, -1]]) if (ground(x - dx, y - dy) && ground(x + dx, y + dy)) { blockedDash[i] = 0; break; }
+		}
 		const fieldCache = new Map();
 		let dashBody = false;
 		const field = (key, roots) => { const k = (dashBody ? 'd' : '') + key; let f = fieldCache.get(k); if (!f) fieldCache.set(k, (f = bfs(grid, dashBody ? blockedDash : blocked, roots))); return f; };

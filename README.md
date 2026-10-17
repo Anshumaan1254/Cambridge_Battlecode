@@ -35,6 +35,9 @@ What changed and why: [docs/STRATEGY.md](docs/STRATEGY.md) §1. How the bot lear
 
 ## Ready-to-submit ZIP
 
+Current: **`legend_s6`** (Oct 17, session 6): 54.5% head-to-head vs the previous ship `legend_st` (55.9% on the 17 official maps),
+fewer lost opening turns (168 -> 46 on the official maps) and no deaths to camps in unopposed official-map games.
+
 [`submissions/legend.zip`](submissions/legend.zip) is `cambc bundle legend` output (the bot's `src/` only).
 Upload it on the platform's Submissions page, or submit from the CLI with `cambc login && cambc submit legend`.
 Rebuild it after changing the bot: `cambc bundle legend --output submissions/legend.zip` (delete the old file first).

@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-17 23:05 UTC (session 6)**. Rule from the user: update this file and push at every step. Start with **§00000** (session 6), then **§0000**, **§000**, **§00** below. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
+- Last updated: **2026-10-17 23:55 UTC (session 6)**. Rule from the user: update this file and push at every step. Start with **§00000** (session 6), then **§0000**, **§000**, **§00** below. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
 - **Two sessions are live on this branch (20:00 UTC)**: session 4 (container with `/tmp/ev/fp_*`, still running its full
   panels: `_ST`, `_rm`, `_rs3`, `_rnr` done, `_rnd` running, then `_rmx`, `_x_side`, `_rmxp`; results written into §000) and
   session 5 (§0000). Before pushing: `git pull --rebase`. Do not duplicate each other's panels: see §000 for session 4's numbers.
@@ -21,7 +21,8 @@ running or unfinished, and what to do next, so a new agent can continue without 
   **1 win, 16 losses**; deaths 232 vs 50; camp gems 7,938 vs 16,210; gold 39.6k vs 87k; Cassi & Issac 118 of our 232 body deaths;
   contest 0-1000 with zero monolith damage; pilgrimage our Ren 0 gems all game; rows our first captures split; only win stampede 1080-0).
   Summary and what was done with it: §00000.2 below.
-- Shipped build is still `legend_st`. **`bots/legend` now = session 5's stacked candidate `_rmxp`** (= `_rm` + `x_side.patch`
+- **Shipped (23:55 UTC): `legend_s6`** = `submissions/legend.zip` (sha256 160fe594…, row in BUILDS.md): 54.5% vs `legend_st` on the 56 maps, 55.9 official.
+  Before that ship: **`bots/legend` = session 5's stacked candidate `_rmxp`** (= `_rm` + `x_side.patch`
   (`camp_in_fight=3`) + `x_pace.patch` (`bank_first=0`, `obj_min_hp` 4500, `obj_share` 0.7, `obj_max_groups` 8)) **+ `dist_landmark`** (below).
   Frozen locally as `bots/_b6` (baseline of session-6 A/Bs; wasm identical to `_lbxp`).
 
@@ -48,6 +49,9 @@ running or unfinished, and what to do next, so a new agent can continue without 
   / 579.6 (both): more heal trips on pilgrimage/ambush, faster stampede/swirl (per-map pace from 2 games moves +-30: noise).
 - Body time unopposed (`tools/analysis/time_use.mjs` on LEGEND_TRACE builds, 17 official maps): walk 37%, hit 27%, wait for respawn 14.5%,
   bank 11.5% (Varg 26%), capture 6%, home 2%. Session 4's pace agent: 46% of camp walking is in walks abandoned before arrival.
+- `own_plan` (each body owns one gem group, the same deterministic plan in every body): pace 576.1 (1.3/0.8) / 585.3 (1.6/0.6) vs 579.6 off;
+  rows got slower (+48). Off. Stale round after a heavy init: fixed (round re-read after `init()`).
+- Verification of the ship candidate (`_c6`): vs `_b6` 48.2 (official 50.0), **vs `_ST` 54.5 (official 55.9)**; pace 56 maps 478.2 vs `_b6` 472.7.
 - Rejected on pace (17 official maps vs idle): `build_style 3` (the ladder team's health-first builds) 606.1; draft Stellar, C&I, Varg, Ren, Ryth 584.9.
 
 ## 0000. SESSION 5: CURRENT POSITION (started 2026-10-17 19:46 UTC in a new container): read this first, then §000

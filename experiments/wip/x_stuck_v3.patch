@@ -1,0 +1,339 @@
+diff -ruN legend/src/brain.cpp _st2/src/brain.cpp
+--- legend/src/brain.cpp	2026-10-17 16:30:18.439443784 +0000
++++ _st2/src/brain.cpp	2026-10-17 16:31:47.589290403 +0000
+@@ -480,6 +480,8 @@
+ 
+ 	place_ward(false);
+ 	update_priority();
++	if (P.unstick_rounds > 0)
++		unstick();
+ 	prebuild_fields();
+ 	XM(xm_post());
+ #ifdef LEGEND_TRACE
+@@ -502,6 +504,33 @@
+ 	last_hp = hp;
+ }
+ 
++void Brain::unstick()
++{
++	// Last resort: a body walking to a camp that has not left a 3x3 box (and not attacked) for unstick_rounds
++	// gives the target up for a while. Every path to it may be held by allies or camps that do not move, or the
++	// target sits where its own tiles block it; re-planning elsewhere beats standing there.
++	auto& W = world();
++	const bool walking = task == T_FARM || task == T_CAPTURE;
++	const bool on_reward = task == T_CAPTURE && task_group >= 0 && W.groups[static_cast<std::size_t>(task_group)].mask.is_set(pos);
++	if (!walking || task_group < 0 || on_reward || last_act_round >= round - 1 || W.ally_spawn.is_set(pos) || cheb(pos, ust_anchor) > 1)
++	{
++		ust_anchor = pos;
++		ust_since = round;
++		return;
++	}
++	if (round - ust_since < P.unstick_rounds)
++		return;
++#ifdef LEGEND_TRACE
++	debug_block({ std::printf("UNSTICK r=%d %d task=%d g=%d pos=(%d,%d) since=%d\n", round, static_cast<int>(type), task, task_group, pos.x, pos.y, ust_since); });
++#endif
++	blacklist[static_cast<std::size_t>(task_group)] = round + P.unstick_blacklist;
++	task_group = -1;
++	tp_hop = -1;
++	tp_island = -1;
++	ust_anchor = pos;
++	ust_since = round;
++}
++
+ void Brain::handle_channel()
+ {
+ 	// Channels are cut short only when finishing them would cost more than the bag or our life:
+@@ -750,12 +779,24 @@
+ {
+ 	auto& N = nav();
+ 	bc::bitboard fallback;
+-	for (auto t : g.tiles)
+-		fallback.draw_chebyshev(t, static_cast<float>(stop_at));
++	// Farming a live group: the goal is reach of a camp still standing. Any group tile (dead camps included)
++	// made a tile next to a dead wolf count as arrived while its live partner stood two tiles away: on the
++	// 98x99 map, where the group field is often not built yet, bodies froze there for 30-78 rounds.
++	bool live = false;
++	if (P.stuck_live_goal && stop_at > 0 && g.st == ST_ALIVE)
++		for (std::size_t i = 0; i < g.camps.size(); ++i)
++			if (g.hp[i] > 0)
++			{
++				fallback.draw_chebyshev(g.camps[i].pos, static_cast<float>(stop_at));
++				live = true;
++			}
++	if (!live)
++		for (auto t : g.tiles)
++			fallback.draw_chebyshev(t, static_cast<float>(stop_at));
+ 	if (stop_at > 0)
+ 		fallback &= ~g.mask;
+ 	const bc::bitboard av = danger | (camp_danger & ~g.near) | alert_zone;
+-	if (N.ensure_group(g.id))
++	if (N.ensure_group(g.id, P.target_field_fuel))
+ 		return after_move(Nav::step_field(pos, N.group_fields[static_cast<std::size_t>(g.id)], stop_at, avoid ? &av : nullptr, kit.dash, can_move, fallback));
+ 	return after_move(Nav::step_to(pos, fallback, avoid ? &av : nullptr, kit.dash, can_move));
+ }
+@@ -768,7 +809,7 @@
+ 	for (auto t : W.altar_approach[static_cast<std::size_t>(id)])
+ 		fallback.set(t);
+ 	const bc::bitboard av = danger | camp_danger | alert_zone;
+-	if (N.ensure_altar(id))
++	if (N.ensure_altar(id, P.target_field_fuel))
+ 		return after_move(Nav::step_field(pos, N.altar_fields[static_cast<std::size_t>(id)], 0, &av, kit.dash, can_move, fallback));
+ 	return after_move(Nav::step_to(pos, fallback, &av, kit.dash, can_move));
+ }
+@@ -829,6 +870,7 @@
+ 	{
+ 		bc::self().attack(u);
+ 		can_attack = false;
++		last_act_round = round;
+ 		if (kit.ranged)
+ 			can_move = false;
+ 		return true;
+@@ -2660,17 +2702,31 @@
+ 			const bool tm = sc_team;
+ 			if (g.id == task_group)
+ 				s *= P.hysteresis;
++			else if (P.flip_window > 0 && g.id == left_group && round - left_round <= P.flip_window)
++				s /= P.flip_margin; // going back to a target we just left: A-B-A-B flips walk in place
+ 			if (s > best_s)
+ 				best_s = s, best = g.id, best_eta = eta, best_pair = np, best_team = tm;
+ 		};
+ 		if (task_group >= 0 && task_group < static_cast<int>(W.groups.size()))
+ 			consider(W.groups[static_cast<std::size_t>(task_group)]);
++		// Far groups stop at a higher floor so the walk keeps the fuel it needs: on the 98x99 map scoring all
++		// 70 groups left ~35k, no target field could be built (45k) and the dynamic searches that replace it
++		// (30k) were skipped, so bodies stood behind an ally or next to a dead camp. The start rotates so every
++		// far group is still scored every few turns.
++		const int ng = static_cast<int>(W.groups.size());
++		const long long far_floor = P.score_far_floor > 0 ? P.score_far_floor : P.score_fuel_floor;
++		const int off = P.score_far_floor > 0 && ng > 0 ? (round * 7) % ng : 0;
+ 		for (int pass = 0; pass < 2; ++pass)
+-			for (auto& g : W.groups)
++			for (int k = 0; k < ng; ++k)
+ 			{
++				auto& g = W.groups[static_cast<std::size_t>((k + off) % ng)];
+ 				if (g.id == task_group || (cheb(g.center, pos) <= P.score_near) != (pass == 0))
+ 					continue;
+-				if (pass == 1 && bc::fuel_remaining() < P.score_fuel_floor)
++				if (pass == 1 && bc::fuel_remaining() < far_floor)
++					break;
++				// Near groups too: on the 90x30 official map (40 groups, most within 20 tiles) scoring alone took
++				// 70-85k and the walk after it spilled into the next round every other turn.
++				if (pass == 0 && P.score_near_floor > 0 && bc::fuel_remaining() < P.score_near_floor)
+ 					break;
+ 				consider(g);
+ 			}
+@@ -2796,8 +2852,17 @@
+ 	});
+ #endif
+ 	XM(xm_decide(best));
++#ifdef STUCK_DBG
++	debug_block({
++		int cur_eta = 0;
++		const float cur_s = task_group >= 0 ? group_score(W.groups[static_cast<std::size_t>(task_group)], cur_eta) : -9.f;
++		std::printf("F r=%d %d best=%d s=%.3f eta=%d cur=%d cs=%.3f hop=%d isl=%d pos=(%d,%d) fuel=%lld start=%lld\n", round, static_cast<int>(type), best, best_s, best_eta, task_group, cur_s, tp_hop, tp_island, pos.x, pos.y, (long long)bc::fuel_remaining(), dbg_ff);
++	});
++#endif
+ 	if (best != task_group)
+ 	{
++		if (task_group >= 0)
++			left_group = task_group, left_round = round;
+ 		task_group = best;
+ 		task_since = round;
+ 	}
+@@ -3127,7 +3192,7 @@
+ 		{
+ 			bc::bitboard goal;
+ 			for (std::size_t i = 0; i < g.camps.size(); ++i)
+-				if (g.hp[i] > 0 && W.camp_occ.is_set(g.camps[i].pos))
++				if (g.hp[i] > 0 && (W.camp_occ.is_set(g.camps[i].pos) || (P.stuck_live_goal && !W.vis.is_set(g.camps[i].pos))))
+ 					goal.draw_chebyshev(g.camps[i].pos, static_cast<float>(kit.attack_range));
+ 			goal &= ~g.mask;
+ 			if (!goal.is_empty())
+diff -ruN legend/src/brain.h _st2/src/brain.h
+--- legend/src/brain.h	2026-10-17 16:30:18.440313678 +0000
++++ _st2/src/brain.h	2026-10-17 16:30:52.467325858 +0000
+@@ -208,6 +208,12 @@
+ 	float last_hp = 0;
+ 	int last_hit_round = -100;
+ 	std::vector<int> blacklist; // per group: round until which we ignore it
++	// Last-resort unstick: a walking task that stays inside a 3x3 box without attacking for unstick_rounds.
++	int last_act_round = -100;
++	vec2 ust_anchor{ -1, -1 };
++	int ust_since = 0;
++	int left_group = -1, left_round = -1000; // target we last switched away from (flip guard)
++	void unstick();
+ };
+ 
+ Brain& brain();
+diff -ruN legend/src/nav.cpp _st2/src/nav.cpp
+--- legend/src/nav.cpp	2026-10-17 14:50:54.391528027 +0000
++++ _st2/src/nav.cpp	2026-10-17 16:30:52.467535421 +0000
+@@ -13,11 +13,21 @@
+ constexpr std::array<vec2, 8> DIRS{ vec2::north, vec2::north_east, vec2::east, vec2::south_east,
+ 									vec2::south, vec2::south_west, vec2::west, vec2::north_west };
+ 
+-bool can_build(int built)
++bool can_build(int built, long long fuel_floor)
+ {
+ 	// A 100x100 field costs ~13-19k fuel; keep room for the rest of the turn.
+-	return built < 3 && bc::fuel_remaining() > 45000;
++	return built < 3 && bc::fuel_remaining() > fuel_floor;
+ }
++
++// Detour memory (one bot instance per body): a unit blocked the field's improving steps and the dynamic search
++// walked around it. The static field ignores units, so on the next tile it points straight back at the blocker.
++struct Detour
++{
++	const Field* field = nullptr;
++	int until = -1;	  // last round of the detour
++	int start_v = 0;  // field value where the detour started; below it we are past the blocker
++};
++Detour detour;
+ } // namespace
+ 
+ void Nav::init()
+@@ -27,12 +37,12 @@
+ 	altar_fields.assign(w.altars.size(), Field{});
+ }
+ 
+-bool Nav::ensure_group(int id)
++bool Nav::ensure_group(int id, long long fuel_floor)
+ {
+ 	auto& fld = group_fields[static_cast<std::size_t>(id)];
+ 	if (fld.ready)
+ 		return true;
+-	if (!can_build(built_this_turn))
++	if (!can_build(built_this_turn, fuel_floor))
+ 		return false;
+ 	auto& w = world();
+ 	bc::bitboard visited;
+@@ -42,12 +52,12 @@
+ 	return true;
+ }
+ 
+-bool Nav::ensure_altar(int id)
++bool Nav::ensure_altar(int id, long long fuel_floor)
+ {
+ 	auto& fld = altar_fields[static_cast<std::size_t>(id)];
+ 	if (fld.ready)
+ 		return true;
+-	if (!can_build(built_this_turn))
++	if (!can_build(built_this_turn, fuel_floor))
+ 		return false;
+ 	auto& w = world();
+ 	bc::bitboard roots, visited;
+@@ -198,6 +208,9 @@
+ 		return fld.get(from);
+ 	if (!allow_estimate)
+ 		return BIG;
++	// Walled-off (island) groups: unreachable on foot from anywhere our spawn reaches.
++	if (P.stuck_reach && g.d_ally >= BIG && world().home_reach.is_set(from))
++		return BIG;
+ 	int best = BIG;
+ 	for (auto t : g.tiles)
+ 		best = std::min(best, cheb(t, from));
+@@ -290,6 +303,19 @@
+ 	}
+ 	if (!can_move)
+ 		return moved;
++	const int rnd = static_cast<int>(bc::round_number());
++	if (P.stuck_detour && detour.field == &field)
++	{
++		// Still going around a blocker: keep following the dynamic search until the field value drops below
++		// where the detour started (past the blocker), or the hold expires.
++		if (rnd <= detour.until && here >= detour.start_v && !fallback_goals.is_empty() && bc::fuel_remaining() > 30000)
++		{
++			if (step_to(pos, fallback_goals, avoid, -1, true))
++				return true;
++		}
++		if (rnd > detour.until || here < detour.start_v)
++			detour.field = nullptr;
++	}
+ 	auto& me = bc::self();
+ 	// Rank improving neighbours: prefer lower field value, then not-avoided.
+ 	std::array<std::pair<int, vec2>, 8> cand{};
+@@ -346,7 +372,16 @@
+ 	}
+ 	// Units block every improving step: route around them with a dynamic search.
+ 	if (!fallback_goals.is_empty() && bc::fuel_remaining() > 30000)
+-		return step_to(pos, fallback_goals, avoid, -1, true) || moved;
++	{
++		const int start_v = here;
++		if (step_to(pos, fallback_goals, avoid, -1, true))
++		{
++			if (P.stuck_detour && (detour.field != &field || rnd > detour.until))
++				detour = { &field, rnd + P.detour_hold, start_v };
++			return true;
++		}
++		return moved;
++	}
+ 	return moved;
+ }
+ 
+@@ -368,8 +403,21 @@
+ 	{
+ 		bc::bitboard walls2 = blocked | (*avoid & ~g);
+ 		walls2.set(pos, false);
+-		field.compute_to(walls2, g, dest, visited);
+-		ok = field.get(pos) != UNREACH;
++		// Every neighbour in danger (or blocked): the avoiding search cannot reach us and would expand the whole
++		// map for nothing (~30k fuel on 98x99); go straight to the plain search.
++		bool open = !P.stuck_avoid_skip;
++		for (auto d : DIRS)
++		{
++			if (open)
++				break;
++			const vec2 p = pos + d;
++			open = bc::map::is_in_bounds(p) && !walls2.is_set(p);
++		}
++		if (open)
++		{
++			field.compute_to(walls2, g, dest, visited);
++			ok = field.get(pos) != UNREACH;
++		}
+ 	}
+ 	if (!ok)
+ 	{
+diff -ruN legend/src/nav.h _st2/src/nav.h
+--- legend/src/nav.h	2026-10-17 14:50:54.391528027 +0000
++++ _st2/src/nav.h	2026-10-17 16:30:52.467695565 +0000
+@@ -13,8 +13,8 @@
+ 	void init();
+ 	void new_turn() { built_this_turn = 0; }
+ 	// Build the field if it is missing and the turn budget allows; returns true when available.
+-	bool ensure_group(int id);
+-	bool ensure_altar(int id);
++	bool ensure_group(int id, long long fuel_floor = 45000);
++	bool ensure_altar(int id, long long fuel_floor = 45000);
+ 	// Crystal shortcuts: a resumable scan of the map (local copies of the home field and terrain) collects
+ 	// launch -> land pairs within crystal range that save many walking steps from our spawn; each group then
+ 	// takes the best pair by its own walking field. Spread over turns with spare fuel.
+diff -ruN legend/src/params.h _st2/src/params.h
+--- legend/src/params.h	2026-10-17 16:30:18.440716109 +0000
++++ _st2/src/params.h	2026-10-17 16:30:52.467888016 +0000
+@@ -244,6 +244,24 @@
+ 	int obj_open_margin = 4;	// ... (enemy spawn less than this many steps farther than ours; contest: the opening
+ 								// fights at the central gold triples decided the game, 6 of our deaths by r59 vs _r2)
+ 
++	// Stuck champions (tools/analysis/stuck.mjs; experiments/wip/x_stuck_NOTES.md)
++	int stuck_live_goal = 1;	 // farming without the group's field: walk to tiles in range of live camps, not of any
++								 // group tile (a tile next to a dead camp counted as arrived: frozen 30-78 rounds on gen16)
++	int stuck_avoid_skip = 1;	 // step_to: skip the danger-avoiding search when every neighbour is in danger (it cannot
++								 // succeed; it cost a full-map search, ~30k fuel, and froze bodies when fuel ran low)
++	int target_field_fuel = 32000; // build the current target's field from this much fuel (other fields need 45000): a
++								 // per-turn dynamic search to it costs about as much (big maps: scoring left ~36-41k)
++	int stuck_detour = 1;		 // after a unit blocks the field's step and the dynamic search detours, keep the detour
++								 // until the field value drops below where it started (else A-B-A-B: the field steps back)
++	int detour_hold = 12;		 // ... for at most this many rounds
++	int stuck_reach = 1;		 // a group unreachable on foot from our side is not estimated by straight-line distance
++	int unstick_rounds = 10;	 // a farm/capture walk stuck inside a 3x3 box this many rounds (no attack) drops its target
++	int unstick_blacklist = 30;	 // ... for this many rounds (0 rounds: off)
++	int flip_window = 12;		 // for this many rounds after leaving a target, going back to it needs ...
++	float flip_margin = 1.5f;	 // ... this factor more score (on top of hysteresis): stops A-B-A-B target flips
++	int score_near_floor = 38000; // stop scoring near groups below this much fuel (0: never); start rotates too
++	int score_far_floor = 55000; // stop scoring far groups below this much fuel, rotating the start (0: score_fuel_floor)
++
+ 	// Aggression
+ 	float steal_hp_frac = 0.55f; // need this health fraction to farm on the enemy half
+ 	int gank_bag = 25;			 // chase a visible carrier with at least this many gems

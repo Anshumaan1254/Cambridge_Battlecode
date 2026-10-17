@@ -15,21 +15,25 @@ running or unfinished, and what to do next, so a new agent can continue without 
 ### Where we are
 - New container again: everything local was rebuilt (toolchain by hand, `make_sparring.sh`, `_L0` = 25bed8d, `_L1`, `_f1`,
   `_es2`, `_k1..3`). Recreate with §00 "How to resume".
-- **`bots/legend` = `_es2`, shipped** (`submissions/legend.zip`, sha256 8d738c54…, archived as
-  `history/legend_es2_20261017.zip`, row in `submissions/BUILDS.md`): `_L1` + `dash_holes`, `finish_camp`,
-  `capture_before_retreat` + the 8 consistent ES params. Fight-rule switches (`stay_rule`, `stay_veto`, `flee_recall`) are
-  **off** (see table). New switches, all **off** until they win an A/B: `win_bank`, `support_filter`, `pair_caution`,
-  `alert_refresh` (from the user's uploaded ladder audit `analysis.md`, 40 real games, 5 wins).
+- **`bots/legend` = `legend_c3`, shipped** (`submissions/legend.zip`, sha256 ee4d5aa1…, `history/legend_c3_20261017.zip`,
+  rows in `submissions/BUILDS.md`). Three builds were shipped this session, each pushed as soon as it won:
+  1. `legend_es2`: `_L1` + `dash_holes`, `finish_camp`, `capture_before_retreat` + the 8 consistent ES params (67.0% vs `_L0`).
+  2. `legend_sf`: + `support_filter` (allies count as fight support only when above the retreat line and within 6 of an
+     enemy: the audit's "phantom support") + `win_bank` (56.2% head-to-head, deaths -16%).
+  3. `legend_c3`: + cast before walking (`cast_en_route`, `cast_near_target`, agent `cast`) + objective-map plan (`obj_*`,
+     agent `obj`; fires only on stampede-type maps) (54.5% head-to-head, 65.6% on objective maps, 91% vs `_v6`/`_devci`).
+- Off (measured): `stay_rule`/`stay_veto`/`flee_recall` (fewer deaths, lower win rate), `pair_caution` (neutral),
+  `alert_refresh` (neutral), `squishy_hp_first` (40.2%: rejected), forced Ryth 4th pick at team size 4 (noise).
 - **The 17 official maps (`maps/comp/`) are the real ladder pool**: always report them separately
   (`/tmp/ev/sum.py DIR...`, a 20-line script: all-map and comp-only win rates and deaths per bench dir).
 
-### Results (56 maps, both sides, 112 games per cell, win %; comp = official maps only, 34 games)
-| Build | vs `_L0` | `_L1` | `_r2` | `_v6` | `_hunt2` | `_devci` | head-to-head | deaths |
-|---|---|---|---|---|---|---|---|---|
-| **`_es2` = legend now** | **67.0** (comp 64.7) | 53.6 | **78.6** (comp 82.4) | 83.9 | **93.8** | 80.4 | — | vs `_r2` 1376-1920 |
-| `_k1` = `_es2` + stay_rule + stay_veto + flee_recall | 58.9 (comp 52.9) | 59.8 | 67.0 (70.6) | 86.6 | 86.6 | 83.9 | 49.1 vs `_es2` | **fewer**: 1301 vs 1504 head-to-head |
-| `_k2` = `_k1` without stay_veto | | | 73.2 | 83.6 | | | 41.1 vs `_es2` | |
-| `_k3` = `_k2` + farm_monolith 0 | | | 73.2 | 83.9 | | | 45.5 vs `_es2` | |
+### Results (56 maps, both sides, 112 games per cell, win %; official = `maps/comp` only, 34 games)
+| Build | vs `_L0` | `_r2` | `_v6` | `_devci` | `_hunt2` | head-to-head vs previous | deaths |
+|---|---|---|---|---|---|---|---|
+| `legend_es2` | 67.0 (official 64.7) | 78.6 (82.4) | 83.9 | 80.4 | 93.8 | 49.1 vs `_k1` | vs `_devci` 1468 |
+| `legend_sf` | 68.8 (67.6) | 80.4 (85.3) | 86.6 (88.2) | 85.7 (91.2) | 94.6 | 56.2 | 1131 |
+| **`legend_c3` (now)** | 60.7 (61.8) | 79.5 (73.5) | **91.1** (97.1) | **90.2** (91.2) | **99.1** | 54.5 (objective maps 65.6) | **796** |
+| `_k1` = es2 + stay rules | 58.9 | 67.0 | 86.6 | 83.9 | 86.6 | 49.1 vs es2 | |
 
 ### Findings this session
 - Official maps where we still lose even to our own older code (from `_k1` benches): `interlock` (team size 4: lost all 4
@@ -43,17 +47,16 @@ running or unfinished, and what to do next, so a new agent can continue without 
   vector (fixed: `best_params.json` = best evaluated, `latest_params.json` = last update).
 
 ### In progress
-| Task | Who / where | State |
+| Task | Where | State |
 |---|---|---|
-| A/B of `_st` (stuck patch, filtered: `experiments/wip/x_stuck_v2.patch`), `_a1` win_bank, `_a2` support_filter, `_a3` pair_caution 0.3, `_a4` alert_refresh (all on the `_k1` base) vs `_k1`, `_r2`, `_v6` | `/tmp/ev/e3.sh`, `e4.sh` | running |
-| Objective maps (stampede, contest, monolith, elkring, rows): map plan from camp geometry, take/contest the big group | Opus agent `obj`, `bots/_x_obj`, deliverables `experiments/wip/x_obj.patch` + `_NOTES.md` | running |
-| Cast before walking (Stellar casts 34.7/game vs the enemy's 59.1 on the ladder) | Sonnet agent `cast`, `bots/_x_cast` | running |
-| ES on the user's machine | user | **re-run `tools/rl/train_local.sh` on the pushed build**: it now trains on the official + ladder maps and 32 params |
+| Stuck-navigation patch rebased on `legend_c3` (`experiments/wip/x_stuck_v3.patch`, `bots/_st2`), `alert_refresh`, stay rules, all vs legend/_r2/_v6/_devci + `maps/stuck` | `/tmp/ev/e10.sh` | running |
+| ES on the user's machine | user | **re-run `tools/rl/train_local.sh` on the pushed build**: now trains on the official + ladder maps, 33 params (support_reach, stay_margin, pair_caution, finish_rounds, bank_trip_w, ... added; best_params.json = best evaluated vector) |
 
 ### Tasks left (in order)
-1. Merge the switches that win (re-check each on top of the new legend), then `x_obj`, `x_cast`; rebuild the zip after each win.
-2. Interlock / team-size-4 draft check (Varg vs Ryth 4th pick), eight opening, collision banking.
-3. Pre-match map plan (beyond objective maps), danger-weighted paths, coordination (narrow version).
+1. Merge what wins from e10; rebuild the zip after each win.
+2. Opening fights / side asymmetry: contest (side A loses 0-1000 vs `_r2`, the mirror side wins 1000-0; decided at the gold
+   triples by the central bushes), collision side B (bags never banked), eight. interlock is still the weakest official map.
+3. Pre-match map plan beyond stampede-type maps; danger-weighted paths; coordination (narrow version).
 
 ### How to resume if the processes are gone
 - `pip install cambc==2.2.5 && cambc init --yes .`; toolchain by hand (§3 gotchas); `tools/make_sparring.sh`;

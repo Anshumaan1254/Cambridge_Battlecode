@@ -86,6 +86,8 @@ const ZERO = () => ({
 	kills: 0, killHitters: 0, soloKills: 0, multiRounds: 0, focusedRounds: 0, hits: 0,
 	episodes: 0, epWon: 0, epLost: 0, epEven: 0, epIdleNear: 0, epIdleNearLost: 0, epOutnum: 0, epOutnumLost: 0, epOutnumGlobalOk: 0,
 	epDiff: 0, epDiffOutnum: 0, epDiffEven: 0, epDiffMore: 0, epN_outnum: 0, epN_even: 0, epN_more: 0, epSolo: 0, epSoloLost: 0,
+	idleAllies: 0, idleD6: 0, idleD8: 0, idleD10: 0, idleLowHp: 0, idleFarming: 0, idleChannel: 0, idleCloser: 0, idleAway: 0, idleBag: 0,
+	victimHit: 0, victimHitAlone: 0, fastDeath: 0,
 	walkouts: 0, walkoutsAlone: 0, aloneDied: 0, groupDied: 0, walkoutsDeficit: 0, walkoutsDeficitAlone: 0,
 	aliveRounds: 0, loneRounds: 0, fightBodyRounds: 0, fightOutnum: 0,
 });
@@ -116,6 +118,8 @@ async function analyse(file) {
 
 	// Pass 1: hits (with live positions), deaths with their killing step.
 	const hits = []; // {r, a, v, at}
+	const campHits = []; // {r, a}
+	const chans = []; // {r, a, k}
 	const deaths = []; // {r, who, at, bag, by, primary}
 	let curR = -1, live = {};
 	const startState = (r) => {
@@ -139,6 +143,7 @@ async function analyse(file) {
 		if (e.who === undefined) continue;
 		const w = e.who;
 		if (e.k === 'Move' && live[w]) { live[w].pos = e.to; continue; }
+		if (e.k === 'Recall' || e.k === 'Submit gems' || e.k === 'Teleport channel') chans.push({ r: e.r, a: w, k: e.k });
 		if (e.k === 'Cast ability') {
 			const kind = KIT[type[w]]?.[e.slot];
 			if (kind === 'dash' && e.to && live[w]) live[w].pos = e.to;
@@ -149,6 +154,8 @@ async function analyse(file) {
 					hits.push({ r: e.r, a: w, v: +v, at: c.pos.slice(), apos: live[w]?.pos?.slice(), single: rad === 0 });
 			continue;
 		}
+		if (e.k === 'Attack' && e.to && !Object.entries(live).some(([v, c]) => team[v] !== team[w] && c.alive && c.pos[0] === e.to[0] && c.pos[1] === e.to[1]))
+			campHits.push({ r: e.r, a: w });
 		if (e.k === 'Attack' && e.to) {
 			for (const [v, c] of Object.entries(live))
 				if (team[v] !== team[w] && c.alive && c.pos[0] === e.to[0] && c.pos[1] === e.to[1])
@@ -188,7 +195,24 @@ async function analyse(file) {
 		const joined = near10.some((c) => hitsBy(c[0], x.r - 3, x.r));
 		if (joined) s.joinedDeaths++;
 		if (!near6.length) { s.alone6++; s.alone6Bag += x.bag; s.alone6Cost += cost; }
-		if (near10.length && !joined) { s.nearNoJoin++; s.nearNoJoinCost += cost; }
+		if (near10.length && !joined) {
+			s.nearNoJoin++; s.nearNoJoinCost += cost;
+			for (const c of near10) {
+				s.idleAllies++;
+				const dd = dist(c);
+				if (dd <= 6) s.idleD6++; else if (dd <= 8) s.idleD8++; else s.idleD10++;
+				if (c[5] < 0.5 * c[6]) s.idleLowHp++;
+				if (c[8] >= 20) s.idleBag++;
+				if (campHits.some((h) => h.a === c[0] && h.r >= x.r - 3 && h.r <= x.r)) s.idleFarming++;
+				if (chans.some((h) => h.a === c[0] && h.r >= x.r - 5 && h.r <= x.r)) s.idleChannel++;
+				const p4 = pos(x.r - 4, c[0]);
+				if (p4) { if (cheb(p4, x.at) > dd) s.idleCloser++; else if (cheb(p4, x.at) < dd) s.idleAway++; }
+			}
+		}
+		const vh = hitsBy(x.who, x.r - 3, x.r);
+		if (vh) { s.victimHit++; if (!near6.length) s.victimHitAlone++; }
+		const firstHit = hits.filter((h) => h.v === x.who && h.r >= x.r - 10 && h.r <= x.r).map((h) => h.r);
+		if (firstHit.length && x.r - Math.min(...firstHit) <= 2) s.fastDeath++;
 		// Local numbers: bodies within 6 of the death (victim and partner count as ours).
 		const oursLocal = 1 + near6.length + (p >= 0 && pos(x.r - 1, p) && cheb(pos(x.r - 1, p), x.at) <= 6 ? 1 : 0);
 		const theirsLocal = foes.filter((c) => dist(c) <= 6).length;
@@ -319,6 +343,8 @@ function report(label, a) {
 	console.log(`   deaths/game ${pd(a.deaths)} (linked ${pd(a.linked)}, by camps ${pd(a.campDeaths)}, by champions ${pd(a.champDeaths)}); bag lost/game ${pd(a.bagLost)}; death cost/game ${pd(a.cost)} gem-eq`);
 	console.log(`   champ deaths: alone6 ${pc(a.alone6, cd)} (bag ${pd(a.alone6Bag)}/g, cost ${pd(a.alone6Cost)}/g) | near<=10 no-join ${pc(a.nearNoJoin, cd)} (cost ${pd(a.nearNoJoinCost)}/g) | ` +
 		`ally joined ${pc(a.joinedDeaths, cd)} | outnumbered locally, not globally ${pc(a.outnumLocal, cd)} (cost ${pd(a.outnumLocalCost)}/g) | abandoned ${pc(a.abandoned, cd)} (cost ${pd(a.abandonedCost)}/g) | carriers 20+ ${pc(a.carrier20, cd)}`);
+	const ia = Math.max(1, a.idleAllies);
+	console.log(`   no-join idle allies ${a.idleAllies}: d<=6 ${pc(a.idleD6, ia)} 7-8 ${pc(a.idleD8, ia)} 9-10 ${pc(a.idleD10, ia)} | hp<50% ${pc(a.idleLowHp, ia)} bag20+ ${pc(a.idleBag, ia)} hitting camps ${pc(a.idleFarming, ia)} channel ${pc(a.idleChannel, ia)} | moved closer ${pc(a.idleCloser, ia)} away ${pc(a.idleAway, ia)} | victim hit back ${pc(a.victimHit, cd)} (alone ${pc(a.victimHitAlone, a.alone6)}) | dead<=2r after first hit ${pc(a.fastDeath, cd)}`);
 	console.log(`   kills/game ${pd(a.kills)}, hitters/kill ${(a.killHitters / Math.max(1, a.kills)).toFixed(2)}, solo kills ${pc(a.soloKills, a.kills)} | multi-hitter rounds/game ${pd(a.multiRounds)}, focused ${pc(a.focusedRounds, a.multiRounds)} | hits/game ${pd(a.hits)}`);
 	console.log(`   fights/game ${pd(a.episodes)}: won ${pc(a.epWon, a.episodes)} lost ${pc(a.epLost, a.episodes)} | net kills/fight ${(a.epDiff / Math.max(1, a.episodes)).toFixed(3)} | ` +
 		`we fewer ${pc(a.epN_outnum, a.episodes)} (net ${(a.epDiffOutnum / Math.max(1, a.epN_outnum)).toFixed(2)}, lost ${pc(a.epOutnumLost, a.epN_outnum)}, team not outnumbered ${pc(a.epOutnumGlobalOk, a.epN_outnum)}) ` +

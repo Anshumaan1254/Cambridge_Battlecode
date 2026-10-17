@@ -67,7 +67,8 @@ function makeMap(E, R) {
   const clearAround = (x, y, r) => { for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if (inb(x + dx, y + dy) && at(x + dx, y + dy) !== 0) return false; return true; };
 
   const camps = [];
-  const placeGroup = (type, n, where) => {
+  const placeGroup = (type, n, where, extra = []) => {
+    n = Math.max(n, 1 + extra.length);
     const pr = wherePred[where] ?? wherePred.any;
     const p = randHalfTile(2000, (x, y) => clearAround(x, y, 2) && pr(x, y));
     if (!p) return false;
@@ -79,13 +80,14 @@ function makeMap(E, R) {
       const nx = cx + dx, ny = cy + dy;
       if (inb(nx, ny) && at(nx, ny) === 0 && inHalfA(sym, w, h, nx, ny) && !cells.some(([a, b]) => a === nx && b === ny)) cells.push([nx, ny]);
     }
-    for (const [x, y] of cells) { setBoth(x, y, 5); camps.push([type, x, y]); }
+    if (cells.length < n) return false;
+    cells.forEach(([x, y], i) => { setBoth(x, y, 5); camps.push([i === 0 ? type : (extra[i - 1] ?? type), x, y]); });
     for (const [x, y] of cells) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (inb(x + dx, y + dy) && at(x + dx, y + dy) === 0) setBoth(x + dx, y + dy, 7);
     return true;
   };
   for (const gr of R.groups)
     for (let i = 0; i < (gr.count ?? 1); i++)
-      if (!placeGroup(gr.type, gr.n ?? 1, gr.where ?? 'any')) return null;
+      if (!placeGroup(gr.type, gr.n ?? 1, gr.where ?? 'any', gr.with ?? [])) return null;
 
   const nAltar = R.altars ?? 2;
   const altars = [];
@@ -176,6 +178,13 @@ const recipes = [
     groups: [{ type: CAMP.gem, n: 1, count: 2, where: 'mid' }, { type: CAMP.wolf, n: 2, count: 1, where: 'mid' }, { type: CAMP.elk, n: 1, where: 'far' }, gold(4, 1, 'any'), gold(2, 2, 'any')] },
   { name: 'ctrl_scarce_58x58_V_c5', w: 58, h: 58, sym: V, champs: 5,
     groups: [{ type: CAMP.gem, n: 1, count: 2, where: 'home' }, { type: CAMP.wolf, n: 1, count: 2, where: 'mid' }, { type: CAMP.monolith, where: 'center' }, gold(5, 1, 'any'), gold(2, 2, 'any')] },
+  // Harder: the only gem source is a monolith fused with elks (one group: every camp must die before the capture).
+  { name: 'gold_monoEE_40x40_R_c3', w: 40, h: 40, sym: R, champs: 3,
+    groups: [{ type: CAMP.monolith, where: 'center', with: [CAMP.elk, CAMP.elk] }, gold(3, 1, 'home'), gold(2, 2, 'mid'), gold(1, 3, 'any')] },
+  { name: 'gold_monoE_52x52_H_c4', w: 52, h: 52, sym: H, champs: 4,
+    groups: [{ type: CAMP.monolith, where: 'center', with: [CAMP.elk] }, gold(4, 1, 'home'), gold(2, 2, 'mid'), gold(2, 3, 'any')] },
+  { name: 'gold_monoEE_68x68_V_c5', w: 68, h: 68, sym: V, champs: 5, walls: 0.07,
+    groups: [{ type: CAMP.monolith, where: 'center', with: [CAMP.elk, CAMP.elk] }, gold(5, 1, 'home'), gold(3, 2, 'mid'), gold(3, 3, 'any')] },
 ];
 
 const E = await loadEngine();

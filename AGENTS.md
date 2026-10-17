@@ -251,7 +251,7 @@ All on the 45-map pool (27 generated + 12 ladder + 6 official), both sides: 90 g
 |---|---|---|---|---|---|---|---|---|
 | `_r2` (round 3) | — | 74.4 | 88.9 | 94.4 | 63.3 | 87.8 | 56.7 | 77.6 |
 | `_x_econ` (economy patch) | **60.0** | 74.4 | 90.0 | 92.2 | 73.3 | 83.3 | 61.1 | **79.1** |
-| `_x_spell` (spells patch) | running | | | | | | | |
+| `_x_spell` (spells patch) | **54.4** | 75.6 | 88.9 | 90.0 | 81.1 | 91.1 | 63.3 | **81.7** |
 | `_x_combo` (econ + spells) | queued | | | | | | | |
 
 **Earlier (39-map pool, the first rewrite):**

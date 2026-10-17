@@ -3,69 +3,92 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-17, session 3**. Start with **§00** below. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
+- Last updated: **2026-10-17 17:10 UTC** (session 3). Start with **§00** below. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
 - Competition: Cambridge Battlecode 2026a (CAMBC), 12 Oct to 18 Nov 2026. C++ bot compiled to wasm.
 - The submitted bot cannot be changed after submission and keeps nothing between matches. All "learning"
   is either offline (training parameters before submission) or in-match (adapting inside one game).
 
 ---
 
-## 00. CURRENT POSITION (session 3, 2026-10-17 from 15:30 UTC): read this first
+## 00. CURRENT POSITION (written 2026-10-17 17:10 UTC, session 3): read this first
 
-### Where we are
-- New container again: everything local was rebuilt (toolchain by hand, `make_sparring.sh`, `_L0` = 25bed8d, `_L1`, `_f1`,
-  `_es2`, `_k1..3`). Recreate with §00 "How to resume".
-- **`bots/legend` = `legend_st`, shipped** (`submissions/legend.zip`, sha256 8129b632…, `history/legend_st_20261017.zip`,
-  rows in `submissions/BUILDS.md`). Four builds were shipped this session, each pushed as soon as it won:
-  1. `legend_es2`: `_L1` + `dash_holes`, `finish_camp`, `capture_before_retreat` + the 8 consistent ES params (67.0% vs `_L0`).
-  2. `legend_sf`: + `support_filter` (allies count as fight support only when above the retreat line and within 6 of an
-     enemy: the audit's "phantom support") + `win_bank` (56.2% head-to-head, deaths -16%).
-  3. `legend_c3`: + cast before walking (`cast_en_route`, `cast_near_target`, agent `cast`) + objective-map plan (`obj_*`,
-     agent `obj`; fires only on stampede-type maps) (54.5% head-to-head, 65.6% on objective maps, 91% vs `_v6`/`_devci`).
-  4. `legend_st`: + the stuck-navigation fixes (`x_stuck_v3.patch`): 56-57% head-to-head on 228 games, 70.5% vs `_L0`.
-- Agent `side` (Opus) works on `bots/_C3` (= `legend_c3`): its patch must be rebased onto `legend_st` before merging.
-- Off (measured): `stay_rule`/`stay_veto`/`flee_recall` (fewer deaths, lower win rate), `pair_caution` (neutral),
-  `alert_refresh` (neutral), `squishy_hp_first` (40.2%: rejected), forced Ryth 4th pick at team size 4 (noise).
-- **The 17 official maps (`maps/comp/`) are the real ladder pool**: always report them separately
-  (`/tmp/ev/sum.py DIR...`, a 20-line script: all-map and comp-only win rates and deaths per bench dir).
+Branch `claude/laughing-curie-3rq6hu` (no PR unless the user asks). Everything below is committed and pushed unless it says
+"local". Local bots (`bots/_*`) and `/tmp/ev/` are lost when the container restarts: see "How to resume" at the end.
 
-### Results (56 maps, both sides, 112 games per cell, win %; official = `maps/comp` only, 34 games)
-| Build | vs `_L0` | `_r2` | `_v6` | `_devci` | `_hunt2` | head-to-head vs previous | deaths |
-|---|---|---|---|---|---|---|---|
-| `legend_es2` | 67.0 (official 64.7) | 78.6 (82.4) | 83.9 | 80.4 | 93.8 | 49.1 vs `_k1` | vs `_devci` 1468 |
-| `legend_sf` | 68.8 (67.6) | 80.4 (85.3) | 86.6 (88.2) | 85.7 (91.2) | 94.6 | 56.2 | 1131 |
-| `legend_c3` | 60.7 (61.8) | 79.5 (73.5) | **91.1** (97.1) | **90.2** (91.2) | **99.1** | 54.5 (objective maps 65.6) | **796** |
-| **`legend_st` (now)** | **70.5** | 74.1 (67.6) | 86.6 (88.2) | **94.6** (94.1) | 97.3 | 56.2 (held-out 57.0) | 864 |
-| `_k1` = es2 + stay rules | 58.9 | 67.0 | 86.6 | 83.9 | 86.6 | 49.1 vs es2 | |
+### 1. Current position
+- **Shipped build: `legend_st`** = `submissions/legend.zip` (sha256 8129b632…, copy in `submissions/history/legend_st_20261017.zip`,
+  row in `submissions/BUILDS.md`). `bots/legend/src` = that build plus two inert switches added later
+  (`cast_route_enemy_d`, `cast_route_from`, both 0 = no effect). Rebuild the zip at the next ship anyway.
+- Four builds were shipped this session, each pushed as soon as it beat the previous one:
 
-### Findings this session
-- Official maps where we still lose even to our own older code (from `_k1` benches): `interlock` (team size 4: lost all 4
-  games vs `_r2`/`_es2`), `rushbait-v2`, `collision` side B (bags never banked: both altars on the midline, bodies die on
-  the way; side A wins), `eight` side A (opening fight at the centre wolves, then snowball: their items 12-14 vs our 3-6),
-  `stampede`/`contest` (objective maps: all gems come from one big fused group / the monolith; 360 gems per stampede capture).
-- Ladder audit (`analysis.md`, uploaded): we collect half the gems of top teams (21k vs 40k over 40 games) and die twice as
-  often (645 vs 331 body deaths); stampede lost 0-1080 with a 27-7 kill lead; interlock 976-1056 with Ren recalling a
-  winning 72-gem bag 3 steps from an altar (→ `win_bank`); phantom support (→ `support_filter`); C&I linked deaths
-  (→ `pair_caution`); re-posted alerts never refresh (→ `alert_refresh`, toggle bit 7 of byte 2); ES saved an unevaluated
-  vector (fixed: `best_params.json` = best evaluated, `latest_params.json` = last update).
+| # | Build | What was added | Key numbers (56 maps, both sides, 112 games per cell, win %) |
+|---|---|---|---|
+| 1 | `legend_es2` | `_L1` (maths + route) + `dash_holes`, `finish_camp`, `capture_before_retreat` + the 8 consistent ES params from the user's RL run | vs `_L0` (old ladder build) 67.0, `_r2` 78.6, `_v6` 83.9, `_devci` 80.4, `_hunt2` 93.8 |
+| 2 | `legend_sf` | + `support_filter` (an ally counts as fight support only above the retreat line and within 6 of an enemy: the audit's "phantom support") + `win_bank` (a game-winning bag goes straight to the nearest altar) | 56.2 head-to-head vs #1; `_L0` 68.8, `_r2` 80.4, `_v6` 86.6, `_devci` 85.7, `_hunt2` 94.6; deaths -16% |
+| 3 | `legend_c3` | + cast before walking (`cast_en_route`, `cast_near_target`; Sonnet agent `cast`) + objective-map plan (`obj_*`; Opus agent `obj`; fires only on stampede-type maps where gems sit in one heavy multi-camp group) | 54.5 head-to-head vs #2, 65.6 on objective maps; `_L0` 60.7, `_r2` 79.5, `_v6` 91.1, `_devci` 90.2, `_hunt2` 99.1 |
+| 4 | **`legend_st` (now)** | + stuck-navigation fixes (`experiments/wip/x_stuck_v3.patch`, from the session-2 `stuck` agent, rebased) | 56.2 head-to-head vs #3 (56 maps), 57.0 on 50 held-out maps (gold, gold2, obj), 56.2 on `maps/stuck`; `_L0` 70.5, `_es2` 59.8, `_r2` 74.1, `_v6` 86.6, `_devci` 94.6, `_hunt2` 97.3; 0 faults; 18 lost turns on gen16 |
 
-### In progress
-| Task | Where | State |
-|---|---|---|
-| Stuck-navigation patch rebased on `legend_c3` (`experiments/wip/x_stuck_v3.patch`, `bots/_st2`), `alert_refresh`, stay rules, all vs legend/_r2/_v6/_devci + `maps/stuck` | `/tmp/ev/e10.sh` | running |
-| ES on the user's machine | user | **re-run `tools/rl/train_local.sh` on the pushed build**: now trains on the official + ladder maps, 33 params (support_reach, stay_margin, pair_caution, finish_rounds, bank_trip_w, ... added; best_params.json = best evaluated vector) |
+- Unopposed pace on the 17 official maps (vs `idle`): `_L0` 685 rounds to 1000 gems → `legend_st` **585** (-15%).
+  Slow maps: contest 1132, pilgrimage 945 (worse than `_L0`'s 851), ambush 849, stampede 727, rushbait-v2 724.
+- Measured and kept **off**: `stay_rule`/`stay_veto`/`flee_recall` (the user's fight rule: fewer deaths but 45.5% head-to-head
+  on the current build), `pair_caution` 0.3 (neutral), `alert_refresh` (neutral: 49.1 head-to-head), `squishy_hp_first`
+  (health emblem first for Stellar/Varg: 40.2%, rejected), forced Ryth as 4th pick at team size 4 (noise), `farm_monolith=0`
+  (45.5 vs `_es2`).
+- Tooling done: `es_train.py` now saves `best_params.json` = best *evaluated* vector (+ `best_meta.json`) and
+  `latest_params.json` = last update, keeps failed batches; `train_local.sh` trains on `maps/comp` + `maps/ladder` only;
+  `tools/rl/space.json` has 33 params (added `support_reach`, `stay_margin`, `stay_support_r`, `pair_caution`,
+  `finish_rounds`, `bank_trip_w`; widened `join_min_rounds`, `fight_learn_rate`).
+- **The 17 official maps (`maps/comp/`) are the real ladder pool**: report them separately. `/tmp/ev/sum.py DIR...` prints
+  all-map and comp-only win rates (local; recreate: it loads each `*_A/B.json` with `tools/bench.py`'s `load_stats`).
 
-### Tasks left (in order)
-1. Merge what wins from e10; rebuild the zip after each win.
-2. Opening fights / side asymmetry: contest (side A loses 0-1000 vs `_r2`, the mirror side wins 1000-0; decided at the gold
-   triples by the central bushes), collision side B (bags never banked), eight. interlock is still the weakest official map.
-3. Pre-match map plan beyond stampede-type maps; danger-weighted paths; coordination (narrow version).
+### 2. Findings (this session)
+- Uploaded ladder audit (`analysis.md`, 40 real games of `_L0`, 5 wins): we collect half the camp gems of top teams
+  (21k vs 40k) and die twice as often (645 vs 331). Concrete cases and what was done:
+  - stampede lost 0-1080 with a 27-7 kill lead: nobody planned the 360-gem group (no single body can clear it) → `obj_*` plan (merged).
+  - interlock 976-1056, Ren recalled a winning 72-gem bag 3 steps from an altar → `win_bank` (merged).
+  - phantom support (allies at 11 HP counted as backup) → `support_filter` (merged, the biggest single win).
+  - Stellar casts 34.7 vs 59.1 per game → cast before walking (merged; Stellar +11 casts per game).
+  - re-posted alerts never refresh → `alert_refresh` (bit 7 of byte 2 toggles; neutral, off).
+  - ES saved an unevaluated vector → fixed.
+- Per-official-map results of `legend_st` (14 games each vs `legend_c3`, `_r2`, `_v6`, `_devci`, `_L0`, `_es2`, `_hunt2`):
+  weakest **eight 7/14**, then monolith 9/14, collision, pilgrimage, elkring, corners, rows, rushbait-v2 10/14.
+- **eight is a knife-edge opening map**: with both cast switches on we lost 6/6 vs `_es2`/`_r2`/`_L0`; with both off we won 6/6;
+  either alone 2-3/6; casting only from r150 3/6. One early centre fight decides it, so any timing change flips whole games.
+  Not treated as a systematic cast flaw (the full panel favours the cast patch).
+- Side asymmetry: contest, collision and eight flip with the side we play (e.g. collision side B loses 22-1016 to `_v6`
+  while side A wins 1106-66: team B's bodies keep trying to bank at the midline altars and die on the way).
+- `bank_first` (from the route patch) **slows** pilgrimage by ~120 rounds and is slightly slower overall
+  (29 real maps vs `idle`: 583 rounds with it, 574 without).
+
+### 3. In progress (at 17:10 UTC)
+| Task | Who / where | Progress | Left to do |
+|---|---|---|---|
+| **`bank_first=0` A/B** (variant `bots/_pA` = legend with `bank_first=0`) | `/tmp/ev/e12.sh` (local), log `/tmp/ev/e12.log` | done so far: vs legend **50.9**, `_r2` **83.0** (legend 74.1), `_v6` **89.3** (86.6), `_devci` 92.9 (94.6), `_L0` **72.3** (70.5): mean of the 4 panel opponents 84.4 vs 81.5 | the script was re-running legend vs `_r2`/`_v6`/`_devci` as a determinism check (got 74.1 vs `_r2`, identical to before). **Next: set `bank_first = 0` in legend (comment with these numbers), rebuild zip, BUILDS row, push** |
+| **Side asymmetry / opening fights** (contest, collision side B, eight, interlock) | Opus agent `side`, copy `bots/_x_side` from `bots/_C3` (= `legend_c3`, frozen), outputs `/tmp/side/`, deliverables `experiments/wip/x_side.patch` + `x_side_NOTES.md` | started ~16:35; so far it added `tools/mapgen/swap_sides.mjs` (uncommitted, its own); no report yet | read its report; its patch is cut against `_C3`, **rebase onto current legend** (`legend_st`) before testing; merge only if it wins on the official maps and is not worse on the 56-map pool |
+| ES on the user's machine | the user | not started on the new build | the user re-runs `tools/rl/train_local.sh` on the pushed build; when the archive comes back, apply `best_params.json` to a copy (`tools/variant.sh`), panel it, bake in only what wins (last time only the 8 params that moved consistently won) |
+
+### 4. Tasks left (in order)
+1. Ship `bank_first=0` (see above), then merge `x_side` if it wins.
+2. eight / contest / collision side B / pilgrimage pace (if `side` does not fix them). For pilgrimage: why bank trips are slow
+   on a 65-tall map with the gems far from spawn (route_stats.mjs / bank_audit.mjs with a `LEGEND_TRACE` build).
+3. Pre-match map plan beyond stampede-type maps (decide team knobs at init from map features); danger-weighted paths;
+   coordination (narrow version: the measured top failure "help does not come"; `_c1` lost, `support_filter` helped).
+4. After each ship: tell the user to re-run ES on the new build (ES must train the final code).
+5. Ideas still untried (§7.5): camp parking, altar locks on enemy altars, capture-overlap tribute, Home emblem.
+6. Highest-value outside help to ask the user for: (a) the 8 ladder fixture replays named in `analysis.md` §4 (stampede,
+   contest, interlock, packs, eight, expanse, swirl) to test against real behaviour; (b) permission to build the public
+   top-team bot clones (Tarot Club repo) as sparring opponents: every opponent we have is our own code family.
 
 ### How to resume if the processes are gone
-- `pip install cambc==2.2.5 && cambc init --yes .`; toolchain by hand (§3 gotchas); `tools/make_sparring.sh`;
+- `pip install cambc==2.2.5 && cambc init --yes .`; fetch the toolchain by hand (§3 gotchas: wasi-sdk-33, cmake 3.31.8,
+  ninja 1.12.1 into `/root/.cache/cambc/` with `curl --cacert /root/.ccr/ca-bundle.crt`); `tools/make_sparring.sh`;
   `tools/snapshot.sh _L0 25bed8d`.
-- `_es2` = legend now. `_k1` = legend with `stay_rule=1 stay_veto=1 flee_recall=1`. `_L1` = legend with
-  `dash_holes=0 finish_camp=0 capture_before_retreat=0` and the 8 ES params at their old values (see BUILDS row).
+- `_es2` = `git show <legend_es2 commit>` or legend with `support_filter=0 win_bank=0 cast_en_route=0 cast_near_target=0 obj_plan=0`
+  minus the stuck patch (easiest: unzip `submissions/history/legend_es2_20261017.zip` into `bots/_es2/`; same for
+  `_sf`, `_C3` = `legend_c3`, `legend_st`). `_L1` = `bots/_es2` with `dash_holes=0 finish_camp=0 capture_before_retreat=0`
+  and the 8 ES params at their old values.
+- Benches: `python3 tools/bench.py A B --maps 'maps/*.map26a,maps/ladder/*.map26a,maps/comp/*.map26a' --jobs 4 --out DIR --quiet`
+  (~50 s per 112 games with 4 free CPUs).
 
 ---
 

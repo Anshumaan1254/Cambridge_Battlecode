@@ -1,7 +1,8 @@
 # Session 3 (2026-10-17, from ~15:30 UTC): read this block first; it overrides the older text below
 
 - New container: sparring panel rebuilt (`_base _v6 _r2 _hunt _hunt2 _devci`, `_L0` = 25bed8d, `_L1`, `_f1`, `_es2`).
-- **Baseline for every A/B now: `bots/_k1`** = current `bots/legend` + the 8 consistent ES params (deny_bonus 0.043,
+- **(from ~18:00 UTC) Baseline: `bots/_C3`** = frozen copy of the shipped `legend_c3`; copies with `SRC=bots/_C3 tools/variant.sh _x_NAME`,
+  patches `cd bots && diff -ruN _C3/src _x_NAME/src`. Earlier baseline (agents `obj`, `cast`): `bots/_k1` = current `bots/legend` + the 8 consistent ES params (deny_bonus 0.043,
   cap_recall_hp 0.61, q0_push -0.718, fight_learn_rate 0.235, cornered_margin 0.634, isolated_fight_adv 1.428,
   target_threat_adv 1.305, fight_back_margin 0.873). Read-only. Make your copy with
   `SRC=bots/_k1 tools/variant.sh _x_NAME` (then edit `bots/_x_NAME/src`). Patches: `cd bots && diff -ruN _k1/src _x_NAME/src`.

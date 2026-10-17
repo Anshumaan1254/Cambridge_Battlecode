@@ -90,4 +90,23 @@ python3 tools/bench.py _x_pace _ST --maps 'maps/*.map26a,maps/ladder/*.map26a,ma
 ```
 
 ## Head-to-head (final candidate `_x_paceH`, 56 maps, 112 games per cell)
-(table below is filled in when the panel finished)
+| Opponent | win % all 56 maps | official 17 maps | `_ST` reference (AGENTS session 3/4) |
+|---|---|---|---|
+| `_ST` | 51.8 (58/112) | 52.9 (18/34) | - |
+| `_L0` | 71.4 | 70.6 | 70.5 |
+| `_es2` | 58.9 | 67.6 | 59.8 |
+| `_r2` | 83.9 | 85.3 | 74.1 |
+| `_v6` | 90.2 | 94.1 | 88.4 |
+| `_devci` | 92.9 | 94.1 | 94.6 |
+- Mean of the five panel opponents 79.5 vs 77.5 for `_ST`; deaths 1177-1161 vs `_ST`; 0 faults in all six runs.
+- The earlier candidate with `obj_min_attackers` 1 and no `obj_max_groups` (`_x_paceF`): vs `_ST` 53.6 (official 55.9), `_r2` 82.1, `_v6` 90.2, `_L0` 72.3, `_es2` 55.4, `_devci` 94.6.
+  On the four maps whose objective-mode decision it changed (ambush, swirl, contest, ladder 45x30; 6 opponents, 48 games per bot) it won 41 vs 43 for `_ST`:
+  ambush 12/12 vs 11/12, contest 11 vs 10, swirl 9 vs 11, ladder 45x30 9 vs 11. The swirl and 45x30 losses are why `obj_max_groups` exists.
+- Held-out (`maps/gold,gold2,obj`, 100 games): `_x_paceH` vs `_ST` 49.0; with `obj_min_attackers` 1: 46.0; vs `_r2` 89 for both `_ST` and the `obj_min_attackers` 1 build.
+
+## Recommendation
+- Merge `x_pace.patch` (three switch changes plus the `SW` trace line): official-map pace -17 rounds (-2.9%), ambush -178, pilgrimage -123, rushbait-v2 -48,
+  head-to-head 51.8 vs `_ST` on 56 maps and 52.9 on the official 17, panel mean +2, 0 faults, no new rollovers. The gain is modest because no walking-side
+  change survived the noise (+-30 rounds on single maps, +-4 on the 56-map mean).
+- Optional: `obj_min_attackers=1` for contest pace (-182 there); held-out head-to-head does not support it.
+- Re-run ES after the merge (`bank_first`, the objective thresholds and `join_*` are not in `tools/rl/space.json`, so ES is unaffected).

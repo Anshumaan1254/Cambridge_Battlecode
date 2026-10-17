@@ -57,6 +57,12 @@ struct Params
 	float isolated_flee_adv = 1.1f;	 // alone and weaker than this: walk away as soon as they are in sight
 	int flee_dist = 7;				 // ... when the nearest enemy is this close
 	float reserve_margin = 0.5f;	 // half the team dead: extra advantage needed to fight
+	int stay_rule = 1;				 // stay in a fight when our health > the enemies' worst damage until the target dies, with
+									 // no other enemy within stay_support_r of the target (the user's rule, session 2)
+	int stay_veto = 1;				 // ... and skip fights where that worst damage could kill us, while we can still escape
+	int stay_support_r = 10;
+	float stay_margin = 1.1f;
+	int flee_recall = 1;			 // fleeing out of reach: recall when no enemy can interrupt it (safe_to_recall)
 	int deficit_defend = 1;			 // this many more enemies alive than allies: defensive play
 	int deficit_escort = 2;			 // ... this many: a respawned champion waits on spawn for the next ally
 	int escort_wait = 15;			 // max rounds to wait on spawn for an escort

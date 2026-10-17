@@ -1203,6 +1203,23 @@ bool Brain::combat()
 		fight = false;
 	if (fight && isolated && !killable && adv < isolated_fight_adv && can_escape)
 		fight = false;
+	// The user's rule (session 2): stay and keep hitting only when our own health outlasts the most the enemies
+	// here can deal before the target dies (every visible enemy hitting us every round, spells included) and no
+	// other enemy is near the target to support it; when they could kill us first, do not start it while we can
+	// still get away (when we cannot, the cornered rule above trades instead of handing a dash/ranged chaser
+	// free hits).
+	if (P.stay_rule)
+	{
+		int support = 0;
+		for (const auto& e : W.enemies)
+			if (e.alive && e.seen_round >= 0 && round - e.seen_round <= P.threat_memory && &e != tgt && cheb(e.pos, tgt->pos) <= P.stay_support_r)
+				++support;
+		const float worst = their_dps * (std::ceil(tgt->hp / std::max(1.f, our_dps)) + 1.f);
+		if (support == 0 && hp > worst * P.stay_margin && d <= my_reach + 2)
+			fight = true;
+		else if (P.stay_veto && fight && !killable && can_escape && hp <= worst)
+			fight = false;
+	}
 	// Do not dive their spawn: it heals them and they block us.
 	if (W.enemy_spawn.is_set(tgt->pos) || cheb(tgt->pos, W.enemy_spawn_c) <= 3)
 		fight = fight && killable;
@@ -1262,6 +1279,17 @@ bool Brain::combat()
 				}
 			}
 		}
+		if (P.flee_recall && W.dist_home(pos) > P.recall_min_dist && safe_to_recall())
+		{
+			try
+			{
+				bc::self().recall();
+				return true;
+			}
+			catch (...)
+			{
+			}
+		}
 		if (go_home_step(true))
 		{
 			// Melee champions can still swing after walking.
@@ -1282,6 +1310,17 @@ bool Brain::combat()
 	{
 		post_danger(tgt->pos);
 		task = T_FLEE;
+		if (P.flee_recall && W.dist_home(pos) > P.recall_min_dist && safe_to_recall())
+		{
+			try
+			{
+				bc::self().recall();
+				return true;
+			}
+			catch (...)
+			{
+			}
+		}
 		if (go_home_step(true))
 			return true;
 		if (W.ally_spawn.is_set(pos))

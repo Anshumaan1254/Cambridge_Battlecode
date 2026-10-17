@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: 2026-10-17, ~14:30 UTC (session 2, part 2). Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
+- Last updated: 2026-10-17, ~15:00 UTC (session 2, part 2). Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
 - Competition: Cambridge Battlecode 2026a (CAMBC), 12 Oct to 18 Nov 2026. C++ bot compiled to wasm.
 - The submitted bot cannot be changed after submission and keeps nothing between matches. All "learning"
   is either offline (training parameters before submission) or in-match (adapting inside one game).
@@ -38,7 +38,8 @@ copies and `/tmp/<agent>/` outputs were still there at 13:45).
 | Retreating from a camp that is almost dead | **fix under test**: `finish_camp` (stay when the group dies within 4 rounds and we keep 8% HP in the worst case, no enemy within 8) |
 | Not dashing over 1-tile holes | **cause found, fix under test**: every route field treated holes as walls, so routes never planned a dash. `dash_holes`: dash kits build fields where 1-wide hole crossings are ground (`World::dash_walls`), and wait up to `dash_wait_max` rounds at the crossing for the dash. Crossings exist on rushbait-v2 (62 tiles), eight (22), expanse (16), ambush (42) |
 | Use emblems / gold (only Ren seemed to) | **measured: not a bug in our local games**: on `contest` every legend champion owns 4-6 emblems except Cassi & Issac (1 emblem + shards each: they earned ~270 gold each and died 17 times). If ladder replays show otherwise, the ladder build may be an old zip |
-| Use recall better | open (route patch's bank-first is merged; recall policy to revisit after the panel) |
+| Use recall better | **measured: already good locally** (`tools/analysis/home_walks.mjs` on `_L1` vs `_r2`/`_v6`: 34 recalls per game vs their 30; walks home from 10+ tiles 0.5 per game, ~4 rounds a recall would save). Added `flee_recall`: fleeing out of reach, recall when no enemy can interrupt it |
+| **The user's fight rule (message 8)**: stay and keep hitting only if our health is more than the enemy's max damage and no enemy support is near; otherwise retreat or (better) recall; fleeing dash/ranged chasers can get us killed | **implemented, under test**: `stay_rule` (stay when our own HP > every visible enemy's damage per round x rounds until the target dies + 1, x `stay_margin` 1.1, and no other enemy within `stay_support_r` 10 of the target), `stay_veto` (skip fights that worst damage could kill us in, while escape is possible; when it is not, the existing cornered rule trades), `flee_recall`. `finish_camp` already follows the same rule for camps (worst-case damage, no enemy within 8). Variants `_s1` (all), `_s2` (no veto) vs `_f1` |
 | Optimal (danger/reward-weighted) paths | open; partly covered by camp scoring (risk, pain map, threat); route fields are still shortest-walk |
 | Stuck, walking the same path again and again | `stuck` agent resumed (its detector: 75 episodes per game; top causes target-flip 505, home-edge 351 (fixed by the merged `home_edge_fix`), walk-away 238, task-flip 248 over 360 games) |
 | Coordination between champions | coord agent's best variant (`coord_joint` + `coord_flee_ally`) rebased onto legend as `bots/_c1`, under test. Its measurements are in §0b |

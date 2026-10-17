@@ -74,9 +74,11 @@ bots/probe-rules/   scripted rule probe for maps/zz_test (capture/tribute/recall
 bots/probe-fuel/    fuel cost of SDK helpers
 maps/               generated test maps (gen*), zz_test probe map
 maps/ladder/        12 real ladder maps rebuilt from replays (tools/replay/extract_map.mjs)
+maps/comp/          6 official competition maps (SDK 2.1.6 map pool; the ones not already in maps/ladder)
 tools/replay/       replay decoder, readable match report, map extractor, ASCII map view, map features
 tools/rl/           offline RL: evolution-strategies trainer (es_train.py), search space, apply_params.py
 tools/draft_tournament.py  composition round robins (forced drafts, same code) -> draft table
+tools/draft_model.py       map-aware draft model from a tournament (nearest training maps) -> draft_table.h
 tools/panel.sh      one summary line per sparring opponent
 tools/bench.py      parallel A-vs-B benchmark with summary (comma-separated map globs)
 tools/suite.sh      bench against the sparring panel

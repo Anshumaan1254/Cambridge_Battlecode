@@ -108,6 +108,10 @@ The maths audit above already found the formula is biased but its chosen fights 
 | `route_stats.mjs`, `route_audit.mjs` | time shares, walking per gem, oscillation, duplicate walks, ordering regret, coverage (`LEGEND_TRACE` builds) |
 | `bank_audit.mjs`, `bank_first.mjs` | banking time split; capture-recall versus bank-first |
 | `tools/ml/benchsum.py` | summary of bench.py output directories |
+| `tools/ml/run_games.py` | runs a chosen list of single-side games (one at a time), bench.py naming |
+| `tools/ml/parse_logs.mjs` | turns `XML_LOG` fight logs (one line per `combat()` evaluation) into a labelled CSV: did this body die / did an enemy within 6 die in the next 12 rounds |
+| `tools/ml/train.py` | compares fight-outcome predictors (the formula vs learned models) with game-level cross-validation |
+| `tools/ml/explore.py` | off-policy (contextual-bandit) analysis of `XML_EXPLORE` data: the logging bot multiplies its fight advantage by exp(u), u ~ U(-0.7, 0.7), to measure what bolder or more careful fighting would earn: epsilon-style exploration done offline, not in submitted games |
 
 ---
 

@@ -27,7 +27,7 @@ RESUME=0
 VALIDATE_ONLY=0
 SKIP_SETUP=0
 OPPS="_v6,_hunt,_hunt2,_devci,_r2,_self"
-MAPS="maps/*.map26a,maps/ladder/*.map26a,maps/comp/*.map26a,maps/gold/*.map26a"
+MAPS="maps/comp/*.map26a,maps/ladder/*.map26a"  # official pool + real past ladder maps: what the ladder plays
 CAMBC_VERSION="2.2.5"
 
 while [ $# -gt 0 ]; do

@@ -1,6 +1,7 @@
 // Team talk over the 8-byte shared memory.
 // Bytes 0-5: one per body: bits 0-6 = claimed group id + 1 (0 = none); bit 7 of bytes 0-1 = team stance
 //            (written only by the stance leader, body 0; see learn.h).
+// Bit 7 of byte 2: flips on every alert post (refresh, P.alert_refresh).
 // Bytes 6-7: team alert: bits 0-13 tile index (y * W + x), bits 14-15 kind.
 #pragma once
 #include "common.h"
@@ -22,6 +23,7 @@ struct Comms
 	vec2 alert_pos{ -1, -1 };
 	int alert_round = -1000;		// round we first saw the current alert value
 	std::uint16_t last_raw = 0;
+	int last_toggle = 0;
 
 	void read(int round);
 	void write_self(int index, int group);

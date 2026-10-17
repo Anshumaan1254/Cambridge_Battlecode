@@ -69,6 +69,8 @@ struct Params
 									 // full-health Cassi died with Issac at 11 HP counted as backup)
 	int support_reach = 6;
 	float pair_caution = 0.f;		 // Cassi and Issac die together (both bodies, both bags): this much more advantage to fight
+	int alert_refresh = 0;			 // re-posting the same alert refreshes it for the team (a toggle bit; before, an alert
+									 // re-posted at one tile expired after its max age while the fight went on)
 	int win_bank = 0;				 // a bag that wins the game goes to the nearest altar: no capture-recall away from it, no
 									 // retreat home with it (ladder interlock: Ren recalled with 72 gems 3 steps from an altar
 									 // and lost 976-1056)

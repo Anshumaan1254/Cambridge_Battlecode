@@ -1,4 +1,5 @@
 #include "comms.h"
+#include "params.h"
 
 Comms& comms()
 {
@@ -17,9 +18,13 @@ void Comms::read(int round)
 	}
 	stance = ((b[0] >> 7) & 1) | (((b[1] >> 7) & 1) << 1);
 	const std::uint16_t raw = static_cast<std::uint16_t>(b[6] | (b[7] << 8));
-	if (raw != last_raw)
+	// Bit 7 of byte 2 flips on every post: re-posting the same alert (a fight still going on at one tile)
+	// refreshes it for the team instead of letting it expire (P.alert_refresh).
+	const int toggle = P.alert_refresh ? (b[2] >> 7) & 1 : 0;
+	if (raw != last_raw || toggle != last_toggle)
 	{
 		last_raw = raw;
+		last_toggle = toggle;
 		alert_round = round;
 		alert_kind = raw >> 14;
 		const int tile = raw & 0x3FFF;
@@ -57,6 +62,12 @@ void Comms::post(int kind, vec2 tile, int round)
 	const std::uint16_t raw = static_cast<std::uint16_t>((kind << 14) | (idx & 0x3FFF));
 	std::array<std::uint8_t, 2> b{ static_cast<std::uint8_t>(raw & 0xFF), static_cast<std::uint8_t>(raw >> 8) };
 	bc::shared_memory.write(6, std::span<std::uint8_t>{ b });
+	if (P.alert_refresh)
+	{
+		const std::uint8_t old = bc::shared_memory[2];
+		bc::shared_memory[2] = static_cast<std::uint8_t>(old ^ 0x80);
+		last_toggle = (old >> 7) ^ 1;
+	}
 	last_raw = raw;
 	alert_kind = kind;
 	alert_pos = tile;

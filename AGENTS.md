@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: 2026-10-17, ~15:00 UTC (session 2, part 2). Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
+- Last updated: 2026-10-17, ~15:40 UTC (session 2, part 2). Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
 - Competition: Cambridge Battlecode 2026a (CAMBC), 12 Oct to 18 Nov 2026. C++ bot compiled to wasm.
 - The submitted bot cannot be changed after submission and keeps nothing between matches. All "learning"
   is either offline (training parameters before submission) or in-match (adapting inside one game).
@@ -43,6 +43,8 @@ copies and `/tmp/<agent>/` outputs were still there at 13:45).
 | Optimal (danger/reward-weighted) paths | open; partly covered by camp scoring (risk, pain map, threat); route fields are still shortest-walk |
 | Stuck, walking the same path again and again | `stuck` agent resumed (its detector: 75 episodes per game; top causes target-flip 505, home-edge 351 (fixed by the merged `home_edge_fix`), walk-away 238, task-flip 248 over 360 games) |
 | **Gold-only maps / tiebreak** (`gold` agent, finished 15:10 UTC) | **built, not merged** (`experiments/wip/x_gold.patch`, applies to current legend; `x_gold_NOTES.md`). Scarcity detector is on only for `contest` and its ladder copy among the 56 maps (`monolith` 5.6, `rows` 5.0, `elkring` 3.0 gems/round outside monoliths: legend finishes them at 1000 gems). Scarce pool (`maps/gold` + `maps/gold2` + `contest`, 74 games) vs `_f1`: everything on 35.1%, without the team monolith call 47.3%, + holding big bags on spawn 45.9%, without Treasure-first 47.3%. Vs `_v6` the variant won 93.2% where `_f1` won 89.2%. Why nothing moves: the side that wins early fights snowballs to 1000 gems late (r1100-1990); ~15% of games reach r2000 and ~1% are decided on gold. The team monolith call reaches the monolith from ~r300 but the gathered team gets picked off |
+| **Gold-rush strategy on gold-only maps** (message 9): gold as fast as possible, melee on near clusters, ranged clear near then far ones, kill lone enemies we can surround or catch (kills are tiebreak 3); **never rely on the monolith** (message 10) | Sonnet agent `rush` building it on `_x_gold2` (`bots/_x_rush`, deliverables `experiments/wip/x_rush.patch`, `x_rush_NOTES.md`); tested on `maps/gold` + `maps/gold2` + `contest` vs `_f1`, `_v6`, `_r2`. Separately, `farm_monolith` switch added to legend (default 1); `_nomono` (= `_f1`, monolith never farmed) queued on the 56 maps and the monolith maps |
+| `_f1` (the three fixes) on the 56 maps | vs `_L1` 57.1, `_r2` 59.8 (`_L1` 72.3), `_v6` 77.7 (`_L1` 86.6), `_devci` 87.5 (`_L1` 83.0): wins head-to-head but loses ground vs `_r2`/`_v6`; ablations `_ab_dash`, `_ab_fin`, `_ab_cap` (each = `_f1` minus one fix) queued vs `_r2`, `_v6` |
 | Coordination between champions | coord agent's best variant (`coord_joint` + `coord_flee_ally`) rebased onto legend as `bots/_c1`, under test. Its measurements are in §0b |
 | A strategy decided before the match from the map | open (next after the panel results) |
 | Keep this file updated | ongoing |

@@ -11,6 +11,7 @@ struct Params
 	float hysteresis = 1.15f;		 // keep current task unless a new one beats it by this factor
 	float join_bonus = 1.25f;		 // bonus for joining an ally on a camp that needs two bodies
 	int max_wait = 18;				 // rounds we are willing to wait for a respawn on arrival
+	int farm_monolith = 1;			 // 0: never farm a monolith group (20,000 HP, 200 strength; the user: do not rely on it for gems)
 	int max_trips = 5;				 // heal trips we accept to finish one camp group (camps never heal)
 	float join_min_rounds = 14.f;	 // join an ally's group when it alone needs more rounds than this
 	int max_join = 1;				 // extra bodies allowed on one (non-monolith) group

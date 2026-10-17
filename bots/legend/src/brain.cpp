@@ -2013,6 +2013,8 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 	auto& W = world();
 	auto& C = comms();
 	eta = BIG;
+	if (g.monolith && !P.farm_monolith)
+		return -1;
 	const int d_tile = d_override >= 0 ? d_override : nav().group_dist(g, pos);
 	if (d_tile >= BIG)
 		return -1;

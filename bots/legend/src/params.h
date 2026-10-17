@@ -75,6 +75,16 @@ struct Params
 	int cap_recall_gold = 90;     // ... or gold after the capture reaches this (shopping),
 								  // ... or the bag after the capture reaches tribute_min
 	int hold_spells_near_enemies = 1; // no spells on camps while enemies are near (keep burst for them)
+	// ... "near" means a recently seen enemy within this many tiles (minus the rounds since we saw it). Measured
+	// on 24 ladder games: with the nearest enemy 7-9 tiles away a fight followed within the 8-round cooldown
+	// only 13% of the time while farming (28% overall), at 5-6 tiles 51-63%: casting on the camp is the better
+	// bet beyond 6. Was 9 (enemy_near).
+	int hold_spell_dist = 6;  // damage spells
+	int hold_cc_dist = 7;	  // stuns (worth more in a fight: they deny a turn)
+	// Spell timing in fights (one cast per turn, 8-round cooldowns: a ready spell not cast is lost value)
+	int melee_aoe_stun = 1;	  // melee area stunners (Ryth) stun from range 2..range+radius instead of walking in first
+	int flee_stun = 1;		  // fleeing with a walk-exclusive stun: stun a melee/dash chaser that can hit us next turn
+	int step_hit_other = 1;	  // melee: after a step that leaves the target out of reach, hit another enemy in reach
 
 	int hops_enabled = 1;	   // crystal shortcuts over hole mazes
 	int hop_min_save = 15;	   // use a teleport-crystal shortcut when it saves this many rounds

@@ -392,19 +392,36 @@ void Brain::turn()
 		return;
 	}
 
+	dbg_path = 0, dbg_eng = 0, dbg_hit_other = false;
 	bool acted = combat();
+	if (acted)
+		dbg_path = task == T_FIGHT ? 1 : 2;
+	if (!acted && (acted = safety()))
+		dbg_path = 3;
+	if (!acted && (acted = tribute(false)))
+		dbg_path = 4;
+	if (!acted && (acted = home_trip()))
+		dbg_path = 5;
+	if (!acted && (acted = shop_trip()))
+		dbg_path = 6;
+	if (!acted && (acted = respond_to_alert()))
+		dbg_path = 7;
 	if (!acted)
-		acted = safety();
-	if (!acted)
-		acted = tribute(false);
-	if (!acted)
-		acted = home_trip();
-	if (!acted)
-		acted = shop_trip();
-	if (!acted)
-		acted = respond_to_alert();
-	if (!acted)
-		farm();
+		farm(), dbg_path = 8;
+#ifdef SPELL_TRACE
+	debug_block({
+		auto& WW = world();
+		int nd = 99, nt = -1, nsp = 0;
+		for (const auto& e : WW.enemies)
+			if (e.alive && e.visible && cheb(e.pos, pos) < nd)
+				nd = cheb(e.pos, pos), nt = static_cast<int>(e.type), nsp = WW.enemy_spawn.is_set(e.pos) ? 1 : 0;
+		const bool spell_ready = (kit.dmg >= 0 && cd[static_cast<std::size_t>(kit.dmg)] <= 0) || (kit.cc >= 0 && cd[static_cast<std::size_t>(kit.cc)] <= 0) ||
+			(kit.aoe >= 0 && cd[static_cast<std::size_t>(kit.aoe)] <= 0);
+		if ((spell_ready && nd <= 4) || dbg_eng == 7 || dbg_eng == 17 || dbg_eng == 8 || dbg_hit_other)
+			std::printf("SP r=%d ch=%d path=%d eng=%d task=%d nd=%d nt=%d nsp=%d cast=%d mv=%d atk=%d hp=%.0f/%.0f cd=%d,%d near=%d hito=%d\n", round, static_cast<int>(type), dbg_path, dbg_eng, task, nd, nt, nsp,
+				static_cast<int>(cast_done), static_cast<int>(!can_move), static_cast<int>(!can_attack), hp, max_hp, cd[0], cd[1], static_cast<int>(enemy_near), static_cast<int>(dbg_hit_other));
+	});
+#endif
 
 	place_ward(false);
 	update_priority();
@@ -548,6 +565,7 @@ void Brain::build_danger()
 	danger.clear();
 	camp_danger.clear();
 	enemy_near = false;
+	enemy_near_d = BIG;
 	for (const auto& e : W.enemies)
 	{
 		if (!e.alive || e.seen_round < 0)
@@ -565,8 +583,10 @@ void Brain::build_danger()
 			reach = std::max(reach, 4);
 		reach += age;
 		danger.draw_chebyshev(e.pos, static_cast<float>(reach));
-		if (cheb(e.pos, pos) <= 9)
+		const int ed = cheb(e.pos, pos);
+		if (ed <= 9)
 			enemy_near = true;
+		enemy_near_d = std::min(enemy_near_d, std::max(0, ed - age));
 	}
 	for (const auto& g : W.groups)
 		if (g.st == ST_ALIVE && g.awake && g.hp_total > 0 && !g.harmless && cheb(g.center, pos) <= 10)
@@ -821,6 +841,33 @@ bool Brain::cast_self(int slot)
 	{
 	}
 	return false;
+}
+
+bool Brain::cast_area_stun_at(const Enemy& e)
+{
+	// Aim at a tile within cast range and within the radius of the target (reach = range + radius); prefer
+	// the aim that also catches more enemies (Marcella cannot be stunned), then the target's own tile.
+	if (kit.aoe < 0 || !ready(kit.aoe))
+		return false;
+	const int range = static_cast<int>(kit.aoe_range), rad = static_cast<int>(kit.aoe_radius);
+	if (cheb(pos, e.pos) > range + rad)
+		return false;
+	const auto& W = world();
+	vec2 best{ -1, -1 };
+	int best_n = 0;
+	for (int dy = -rad; dy <= rad; ++dy)
+		for (int dx = -rad; dx <= rad; ++dx)
+		{
+			const vec2 c{ e.pos.x + dx, e.pos.y + dy };
+			if (cheb(pos, c) > range || !bc::map::is_in_bounds(c))
+				continue;
+			int n = 0;
+			for (const auto& o : W.enemies)
+				n += o.alive && o.visible && o.type != CT::marcella && cheb(o.pos, c) <= rad;
+			if (n > best_n || (n == best_n && dx == 0 && dy == 0))
+				best_n = n, best = c;
+		}
+	return best_n > 0 && cast_ground(kit.aoe, best);
 }
 
 float Brain::camp_dps() const
@@ -1146,6 +1193,36 @@ bool Brain::combat()
 				cast_unit_champ(kit.cc, *e->ch);
 				break;
 			}
+		// A walk-exclusive stun (Ren, Ryth, Tavi, Prism) costs our step, but against a chaser whose basic attack
+		// still reaches us after that step (melee step + hit, dash + hit, or ranged at 2) the step gains nothing:
+		// it follows and hits. The stun denies that turn (this round's if it has not acted yet, else the next),
+		// deals damage, and the walk resumes next turn. Traced: 245 flee turns with such a stun ready in 3 games,
+		// none cast. Not near home: there the step to the healing spawn is worth more.
+		if (P.flee_stun && !cast_done && W.dist_home(pos) > 2 && ((kit.cc >= 0 && kit.cc_excl && ready(kit.cc)) || (kit.aoe_stuns && ready(kit.aoe))))
+		{
+			Enemy* chaser_e = nullptr;
+			int best_d = BIG;
+			for (auto* e : E)
+			{
+				if (!e->ch || e->type == CT::marcella)
+					continue;
+				const int dd = cheb(pos, e->pos);
+				const int hit_reach = e->kit.attack_range + (e->kit.ranged ? 0 : 1) + (e->ready(e->kit.dash) ? 2 : 0);
+				if (dd + 1 <= hit_reach && dd < best_d)
+					best_d = dd, chaser_e = e;
+			}
+			if (chaser_e)
+			{
+				const bool cc_ok = kit.cc >= 0 && kit.cc_excl && best_d <= static_cast<int>(kit.cc_range) && cast_unit_champ(kit.cc, *chaser_e->ch);
+				if (cc_ok || (kit.aoe_stuns && ready(kit.aoe) && cast_area_stun_at(*chaser_e)))
+				{
+					dbg_eng = 8;
+					if (!kit.ranged && can_attack && best_d <= kit.attack_range)
+						attack_unit(*chaser_e->ch);
+					return true;
+				}
+			}
+		}
 		if (go_home_step(true))
 		{
 			// Melee champions can still swing after walking.
@@ -1212,27 +1289,59 @@ bool Brain::engage(Enemy& e)
 		{
 			const bool spell_now = d <= 4 && (ready(kit.cc) || ready(kit.dmg) || ready(kit.aoe));
 			if (d <= kit.attack_range + 2 && ready(kit.dash))
-				step(goal, false, true);
+				step(goal, false, true), dbg_eng = 2;
 			else if (spell_now)
 			{
+				dbg_eng = 3;
 				if (!cast_unit_champ(kit.cc, ec) && !cast_unit_champ(kit.dmg, ec))
 					cast_ground(kit.aoe, e.pos);
 				return true;
 			}
 			else
-				step(goal, false, true);
+				step(goal, false, true), dbg_eng = 4;
 		}
 		else
 		{
-			if (d == 2 || !(d <= 4 && (ready(kit.cc) || ready(kit.dmg))))
-				step(goal, false, true);
+			// Area stun (Ryth: walk-exclusive, radius 1): cast it before walking in. Walking first makes it
+			// uncastable this turn, and next turn it competes with the attack reset (one cast per turn); stunning
+			// now lands it a turn earlier and next turn is step + attack + reset + attack. The old check below only
+			// knew single-target stuns: Ryth walked in with the stun ready in 279 fight turns of 3 traced games.
+			if (P.melee_aoe_stun && kit.aoe_stuns && d >= 2 && ready(kit.aoe) && e.type != CT::marcella && cast_area_stun_at(e))
+				dbg_eng = 7;
+			else if (d == 2 || !(d <= 4 && (ready(kit.cc) || ready(kit.dmg))))
+				step(goal, false, true), dbg_eng = 5;
 			else if (!cast_unit_champ(kit.cc, ec))
-				cast_unit_champ(kit.dmg, ec);
+				cast_unit_champ(kit.dmg, ec), dbg_eng = 6;
+			else
+				dbg_eng = 6;
 		}
 		d = cheb(pos, e.pos);
+		// Melee can still swing after walking: when the step leaves the target out of reach, hit an enemy that is
+		// in reach instead of wasting the attack (traced: Ryth ending next to Issac without swinging).
+		if (P.step_hit_other && !kit.ranged && d > kit.attack_range && can_attack)
+		{
+			auto& W = world();
+			for (auto& o : W.enemies)
+			{
+				if (&o == &e || !o.ch || !o.alive || !o.visible || cheb(pos, o.pos) > kit.attack_range || W.enemy_spawn.is_set(o.pos))
+					continue;
+				if (o.type == CT::ren && hp <= 2.5f * bc::constants::passive_abilities::ren_retaliation_focus_ratio * o.focus && o.hp > str)
+					continue;
+				if (attack_unit(*o.ch))
+				{
+					dbg_hit_other = true;
+					std::int32_t alive_flag = 1;
+					bc::detail::sdk_champion_is_alive(o.handle, &alive_flag);
+					if (alive_flag && !cast_done && ready(kit.reset) && cast_self(kit.reset))
+						attack_unit(*o.ch);
+				}
+				break;
+			}
+		}
 	}
 	if (d <= kit.attack_range)
 	{
+		dbg_eng += 10;
 		const bool want_stun = e.channeling || e.kit.ranged == false;
 		if (want_stun)
 			cast_unit_champ(kit.cc, ec);
@@ -2446,8 +2555,10 @@ bool Brain::farm_group(Group& g)
 		}
 		return best;
 	};
-	const bool save_cc = enemy_near;
-	const bool hold_spells = enemy_near && P.hold_spells_near_enemies; // keep burst for the fight that is coming
+	// Keep burst for a fight only when one is likely within the cooldown: an unused ready spell is lost value
+	// (8-round cooldowns), and an enemy 7-9 tiles away led to a fight within 8 rounds only 13% of the time.
+	const bool save_cc = enemy_near_d <= P.hold_cc_dist;
+	const bool hold_spells = enemy_near_d <= P.hold_spell_dist && P.hold_spells_near_enemies;
 	std::size_t t = pick(kit.attack_range);
 	if (t == g.camps.size())
 	{

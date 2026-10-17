@@ -15,8 +15,8 @@ running or unfinished, and what to do next, so a new agent can continue without 
 | Item | State |
 |---|---|
 | Bot | `bots/legend/src` (C++). Ready-to-upload bundle: `submissions/legend.zip` (rebuild after every change, section 3) |
-| Current legend | = `_r2` (fuel fixes, review fixes, reworked learner) + exploration off + refreshed draft values + **the economy patch** (`experiments/patches/x_econ.patch`, merged Oct 17). Build log with every submitted zip: `submissions/BUILDS.md`; older zips in `submissions/history/` |
-| Strength (45-map panel, 90 games per cell) | economy patch on `_r2`: 60% head-to-head vs `_r2`, panel mean 79.1% (vs `_r2` 77.6%). Promoted legend vs `_v6` (12 ladder maps): 17/24, 0 faults, 1.8 lost turns per game. Full numbers in section 5 |
+| Current legend | = `_r2` (fuel fixes, review fixes, reworked learner) + exploration off + refreshed draft values + **the economy and spells patches** (`experiments/patches/x_econ.patch`, `x_spell.patch`, merged Oct 17). Build log with every submitted zip: `submissions/BUILDS.md`; older zips in `submissions/history/` |
+| Strength (45-map panel, 90 games per cell) | economy + spells on `_r2`: panel mean **85.2%** (vs `_r2` 77.6%), 57.8% head-to-head vs `_r2`. Promoted legend vs `_v6` (18 maps): 26/36, 0 faults, 2.6 lost turns per game. Full numbers in section 5 |
 | In flight | (1) Full-panel A/B of two finished prototypes, economy and spells, saved as patches in `experiments/patches/` (section 6). (2) A workflow building three more prototypes: decision maths, routes, ML fight model (local only, `bots/_x_math`, `bots/_x_route`, `bots/_x_ml`). (3) The parameter trainer (ES) has to be re-run on the final code (it died after 4 of 10 generations when the container restarted) |
 | Next | Merge the prototypes that win, re-run ES, re-validate, rebuild the zip, update README/STRATEGY tables, commit, push (section 8) |
 
@@ -252,7 +252,7 @@ All on the 45-map pool (27 generated + 12 ladder + 6 official), both sides: 90 g
 | `_r2` (round 3) | — | 74.4 | 88.9 | 94.4 | 63.3 | 87.8 | 56.7 | 77.6 |
 | `_x_econ` (economy patch) | **60.0** | 74.4 | 90.0 | 92.2 | 73.3 | 83.3 | 61.1 | **79.1** |
 | `_x_spell` (spells patch) | **54.4** | 75.6 | 88.9 | 90.0 | 81.1 | 91.1 | 63.3 | **81.7** |
-| `_x_combo` (econ + spells) | queued | | | | | | | |
+| `_x_combo` (econ + spells, **now legend**) | **57.8** | 77.8 | 94.4 | 98.9 | 75.6 | 90.0 | 74.4 | **85.2** (vs `_x_econ` 46.7%, vs `_x_spell` 55.6% head-to-head) |
 
 **Earlier (39-map pool, the first rewrite):**
 - The old bot (v5) won 88% vs the starter bot, 42% vs `_hunt`, 28% vs `_hunt2` and 14% vs `_devci`.
@@ -330,11 +330,9 @@ cloned read-only to `/home/user/fhl-08/tarot-club-cambc2026` in this container):
 
 ## 7. Unimplemented / open work (by priority)
 
-1. **Decide on the prototypes**:
-   - finish the econ, spell and combined panels;
-   - merge the winners into `bots/_dev` and `bots/legend` (patches in `experiments/patches/`);
-   - re-run the 6-opponent panel; keep a change only if the 5-6-opponent mean improves by more than ~3
-     points, or the gem margin improves clearly with no regression.
+1. **Done: the economy and spells prototypes are merged** into `bots/legend` and `bots/_dev` (panel mean
+   85.2% vs 77.6%). Keep the rule for later prototypes: merge a change only if the 5-6-opponent mean improves
+   by more than ~3 points, or the gem margin improves clearly with no regression.
 2. **Maths, route and ML prototypes**: a Workflow is building them now (`bots/_x_math`, `bots/_x_route`,
    `bots/_x_ml`, local only). The workflow script is
    `.../workflows/scripts/legend-decision-upgrade-*.js` in the session dir; if it is lost, the brief for each

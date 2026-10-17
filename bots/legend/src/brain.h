@@ -45,6 +45,8 @@ private:
 	int tribute_cancel_round = -1000;
 	bool W_dist_home_ok() const;
 	bool engaged = false;
+	int dbg_path = 0, dbg_eng = 0; // SPELL_TRACE: which decision used the turn / which engage branch
+	bool dbg_hit_other = false;	   // SPELL_TRACE: the melee step-then-hit-another-enemy branch swung
 	bool safe_to_recall() const;
 	bool altar_unsafe(int i) const;
 	void post_danger(vec2 at);
@@ -140,6 +142,8 @@ private:
 	bc::bitboard camp_danger; // tiles in range of awake camps
 	bc::bitboard alert_zone;  // area an ally reported as dangerous (shared memory)
 	bool enemy_near = false;
+	int enemy_near_d = BIG; // nearest recently seen enemy, minus the rounds since we saw it (it may have closed in)
+	bool cast_area_stun_at(const Enemy& e); // area stun hitting e from up to range + radius away
 
 	// game-state modulated thresholds (recomputed each turn from P and the scoreboard)
 	float fight_margin = 1.3f, fight_back_margin = 0.75f, deny_bonus = 0.55f, enemy_half_penalty = 10.f;

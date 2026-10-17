@@ -39,13 +39,17 @@ struct Comp
 	std::array<double, 3> base; // tournament value at team size 3, 4, 5
 };
 
-// Values: win rate in the composition round robin (tools/draft_tournament.py: 5 drafts, 39 maps x 2 sides,
-// 780 games, same bot code), split by team size 3 / 4 / 5. "meta" (Ren, Stellar, Cassi & Issac, Ryth, Varg)
-// had the best mean and the best worst case; the ladder's strongest team drafts it too. Our old draft
-// (Varg, Tavi, Stellar, Ren, Ryth) came last. Cassi & Issac is two bodies for one pick: +33% farmers at 3.
-const std::array<Comp, 5> COMPS{ {
-	{ "meta", { D::ren, D::stellar, D::cassi_and_issac, D::ryth, D::varg }, { 0.54, 0.53, 0.58 } },
-	{ "metaV", { D::ren, D::stellar, D::cassi_and_issac, D::varg, D::ryth }, { 0.54, 0.54, 0.58 } },
+// Values: win rate in the composition round robin (tools/draft_tournament.py, same bot code, forced drafts),
+// split by team size 3 / 4 / 5. October 17 run: 8 drafts, 45 maps (12 real ladder, 6 official, 27 generated)
+// x 2 sides, 2,520 games. Ren, Stellar, Cassi & Issac (+ Varg, Ryth) had the best mean and worst case; at team
+// size 4 Varg as the fourth pick beat Ryth (0.626 vs 0.610). Vendetta, C&I, Varg, Stellar, Ren was level at
+// size 5. Willow- and Vesper-based drafts finished last. Older drafts keep their earlier values (5-draft run).
+// A per-map nearest-neighbour model (tools/draft_model.py) did not beat this team-size choice in
+// leave-one-map-out validation against the strong drafts, so it is not shipped (draft_table.h absent).
+const std::array<Comp, 6> COMPS{ {
+	{ "meta", { D::ren, D::stellar, D::cassi_and_issac, D::ryth, D::varg }, { 0.603, 0.610, 0.556 } },
+	{ "metaV", { D::ren, D::stellar, D::cassi_and_issac, D::varg, D::ryth }, { 0.603, 0.626, 0.565 } },
+	{ "vci", { D::vendetta, D::cassi_and_issac, D::varg, D::stellar, D::ren }, { 0.516, 0.599, 0.565 } },
 	{ "ciS", { D::stellar, D::cassi_and_issac, D::varg, D::tavi, D::ren }, { 0.46, 0.46, 0.55 } },
 	{ "ciY", { D::stellar, D::cassi_and_issac, D::varg, D::ryth, D::tavi }, { 0.46, 0.49, 0.51 } },
 	{ "cur", { D::varg, D::tavi, D::stellar, D::ren, D::ryth }, { 0.50, 0.48, 0.36 } },

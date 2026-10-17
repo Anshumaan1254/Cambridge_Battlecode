@@ -33,6 +33,7 @@ def main():
     ap.add_argument('--k', type=int, default=5)
     ap.add_argument('--prior', type=float, default=3.0, help='weight of the team-size average, in neighbours')
     ap.add_argument('--gd', type=float, default=0.5, help='weight of the gem margin in the per-map score')
+    ap.add_argument('--vs', help='score maps only against these compositions (comma list): the realistic field')
     ap.add_argument('--emit')
     args = ap.parse_args()
     res = json.load(open(args.result))
@@ -45,6 +46,24 @@ def main():
         print('no features for', missing)
     wr = {m: [res['per_map'][m].get(c, 0) / n_games for c in comps] for m in maps}
     gd = {m: [res.get('per_map_gd', {}).get(m, {}).get(c, 0) / n_games / 1000.0 for c in comps] for m in maps}
+    if args.vs:
+        # Re-score from the run's per-game statistics, counting only games against the given compositions
+        # (a composition's own mirror is not played, so it is scored against the rest of the set).
+        import glob, os, collections
+        vs = set(args.vs.split(','))
+        W = collections.Counter(); G = collections.Counter(); GD = collections.Counter()
+        for f in glob.glob(os.path.join(os.path.dirname(os.path.abspath(args.result)), '*__*__*_[AB].json')):
+            a, b, rest = os.path.basename(f)[:-5].split('__')
+            mn, side = rest[:-2], rest[-1]
+            d = json.load(open(f))
+            gems = {t['team']: int(t['submittedGems']) for t in d['teams']}
+            ta, tb = ('teamA', 'teamB') if side == 'A' else ('teamB', 'teamA')
+            o = d['match']['outcome']
+            for me, opp, tm, to in ((a, b, ta, tb), (b, a, tb, ta)):
+                if opp in vs:
+                    G[(mn, me)] += 1; W[(mn, me)] += o == tm; GD[(mn, me)] += gems[tm] - gems[to]
+        wr = {m: [W[(m, c)] / max(1, G[(m, c)]) for c in comps] for m in maps}
+        gd = {m: [GD[(m, c)] / max(1, G[(m, c)]) / 1000.0 for c in comps] for m in maps}
     score = {m: [(1 - args.gd) * wr[m][i] + args.gd * (0.5 + 0.5 * max(-1.0, min(1.0, gd[m][i]))) for i in range(len(comps))] for m in maps}
     team = {m: int(feats[m]['team']) for m in maps}
     X = {m: vec(feats[m]) for m in maps}

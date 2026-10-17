@@ -132,8 +132,11 @@ function bfs(grid, blocked, roots) {
 function parseTrace(text) {
 	const turns = {};
 	let any = false;
+	const groups = [];
 	for (let line of text.split('\n')) {
 		line = line.replace(/\x00/g, '').trim();
+		const gm = line.match(/^G id=(\d+) .*tiles=(.*)$/);
+		if (gm) { groups[+gm[1]] = gm[2].split(';').filter(Boolean).map((q) => q.split(',').map(Number)); continue; }
 		const m = line.match(/^T r=(\d+) (\d+) task=(\d+) g=(-?\d+) pos=\((-?\d+),(-?\d+)\)/);
 		if (m) {
 			any = true;
@@ -141,6 +144,7 @@ function parseTrace(text) {
 			(turns[type] ||= {})[+m[1]] = { task: +m[3], g: +m[4], pos: [+m[5], +m[6]] };
 		}
 	}
+	if (any && groups.length) turns.__groups = groups;
 	return any ? turns : null;
 }
 
@@ -224,6 +228,12 @@ async function analyse(file, acc, opts) {
 	for (const team of teams) {
 		const text = (() => { try { return unwrapReplay(raw, team ? 'team-b.stdout' : 'team-a.stdout').toString('latin1'); } catch { return ''; } })();
 		const trace = parseTrace(text);
+		// The bot's own group table (route trace "G" lines) beats the map-file order when present.
+		const tgroups = trace && trace.__groups ? trace.__groups.map((tiles, id) => ({ id, tiles })) : grid.groups;
+		const posCamp = new Map(grid.camps.map((c, k) => [c.x + ',' + c.y, k]));
+		const tCamps = tgroups.map((g) => (g ? g.tiles.map((t) => posCamp.get(t[0] + ',' + t[1])).filter((k) => k !== undefined) : []));
+		const tLive = (g, s) => tCamps[g].some((k) => s.campHp[k] > 0);
+		const tReward = (g, s) => tgroups[g].tiles.some((t) => { const r = tileGroup.get(t[0] + ',' + t[1]); return r !== undefined && s.gr[r]; });
 		// Static walking fields (walls, holes, altars, the enemy spawn blocked, as the bot's own fields).
 		const blocked = new Uint8Array(grid.w * grid.h);
 		for (let i = 0; i < blocked.length; i++) blocked[i] = grid.wall[i] | grid.hole[i] | grid.altar[i] | grid.spawn[1 - team][i];
@@ -240,7 +250,7 @@ async function analyse(file, acc, opts) {
 			if (!t) return null;
 			const tk = TASKS[t.task];
 			const i = p[1] * grid.w + p[0];
-			if ((tk === 'farm' || tk === 'capture' || tk === 'wait') && t.g >= 0 && grid.groups[t.g]) return field('g' + t.g, grid.groups[t.g].tiles)[i];
+			if ((tk === 'farm' || tk === 'capture' || tk === 'wait') && t.g >= 0 && tgroups[t.g]) return field('g' + t.g, tgroups[t.g].tiles)[i];
 			if (tk === 'home') return field('home', spawnRoots)[i];
 			if (tk === 'tribute') return field('altar', altarRoots)[i];
 			return null;
@@ -303,7 +313,7 @@ async function analyse(file, acc, opts) {
 				// Waiting next to a respawning group (by design) is not stuck.
 				let wait = false;
 				if (alive && !o.act) {
-					if (t && t.task === 3 && t.g >= 0 && grid.groups[t.g] && !groupLive(t.g, s) && !s.gr[t.g]) wait = true;
+					if (t && t.task === 3 && t.g >= 0 && tgroups[t.g] && !tLive(t.g, s) && !tReward(t.g, s)) wait = true;
 					if (!t) for (const g of grid.groups) {
 						if (!g.tiles.some((q) => cheb(q, pos) <= 2)) continue;
 						if (!groupLive(g.id, s) && !s.gr[g.id]) { wait = true; break; }
@@ -326,14 +336,21 @@ async function analyse(file, acc, opts) {
 				const p = xs[0].pos, s0 = byRound.get(xs[0].r);
 				const dh = homeF[p[1] * grid.w + p[0]];
 				if (tasks.has(5) && tasks.size > 1 && dh <= 4) return 'home-edge';
-				if (tasks.size > 1) return 'task-flip';
-				if (targets.size > 1) return 'target-flip';
+				// Flips: the task or target changes back and forth (A-B-A), not a single re-plan.
+				let tsw = 0, gsw = 0;
+				for (let k = 1; k < ts.length; k++) {
+					if (ts[k].task !== ts[k - 1].task) tsw++;
+					else if (ts[k].g !== ts[k - 1].g && ts[k].g >= 0 && ts[k - 1].g >= 0) gsw++;
+				}
+				if (tasks.size > 1 && tsw >= 3) return 'task-flip';
+				if (targets.size > 1 && gsw >= 3) return 'target-flip';
 				if (ep.cls === 'noprog') return ep.goalD && ep.goalD[1] - ep.goalD[0] > 8 ? 'walk-away' : 'noprog';
 				const g = ts.length && ts[0].g >= 0 ? ts[0].g : -1;
 				if (g >= 0 && s0) {
-					const ks = campIdxOfGroup[g];
+					const ks = tCamps[g] || [];
 					const dead = ks.filter((k) => s0.campHp[k] <= 0), live = ks.filter((k) => s0.campHp[k] > 0);
-					if (dead.length && live.length && dead.some((k) => cheb([grid.camps[k].x, grid.camps[k].y], p) <= 3)) return 'dead-camp';
+					const near = (k) => xs.some((x) => cheb([grid.camps[k].x, grid.camps[k].y], x.pos) <= 3);
+					if (dead.length && live.length && dead.some(near)) return 'dead-camp';
 				}
 				if (s0) for (const c of s0.ch) if (c[7] && c[1] === team && c[0] !== b.index && cheb([c[3], c[4]], p) <= 1) return 'ally-adjacent';
 				if (s0) for (let k = 0; k < grid.camps.length; k++) if (s0.campHp[k] > 0 && cheb([grid.camps[k].x, grid.camps[k].y], p) <= 1 && grid.camps[k].group !== g) return 'other-camp';
@@ -352,7 +369,7 @@ async function analyse(file, acc, opts) {
 					tiles: new Set(xs.map((x) => x.pos.join(','))).size };
 				if (xs[0].t) { const dg = goalDist(xs[0].t, xs[0].pos); const de = goalDist(xs[0].t, xs[xs.length - 1].pos); ep.goalD = [dg, de]; }
 				ep.cause = causeOf(ep, xs);
-				ep.snip = snippet(grid, xs[0].pos, byRound.get(xs[0].r), team, b.index, xs[0].t && xs[0].t.g >= 0 && grid.groups[xs[0].t.g] ? grid.groups[xs[0].t.g].tiles : null);
+				ep.snip = snippet(grid, xs[0].pos, byRound.get(xs[0].r), team, b.index, xs[0].t && xs[0].t.g >= 0 && tgroups[xs[0].t.g] ? tgroups[xs[0].t.g].tiles : null);
 				episodes.push(ep);
 			};
 			let i = 0;

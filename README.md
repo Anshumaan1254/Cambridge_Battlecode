@@ -12,21 +12,23 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Results (local, 39 maps × both sides = 78 games per row)
+## Results (local, 56 maps × both sides = 112 games per row; session 3, Oct 17)
 
-The 39 maps are the 12 real ladder maps extracted from our ladder replays (`maps/ladder/`) plus 27
-generated ones. "Hunter" opponents are aggressive archetypes built on the current code with the drafts the
-top ladder teams use; the old bot (v5, what was on the ladder) loses most games to them, as it did on
-the ladder (17 of 20 scrims lost).
+The 56 maps are the 17 official ladder maps (`maps/comp/`, the real pool), 12 real ladder maps rebuilt from replays
+(`maps/ladder/`) and 27 generated ones. Opponents are frozen past versions of this bot and aggressive archetypes with
+the top ladder teams' drafts (`tools/make_sparring.sh`). Official-map-only rates in brackets.
 
-| Opponent | old bot (v5) | `legend` now |
+| Opponent | `legend` (submitted on the ladder Oct 17, `_L0`) | `legend` now (`legend_c3`) |
 |---|---|---|
-| starter bot (`bots/starter-cpp`) | 88% | **100%** |
-| old bot v5 (`tools/snapshot.sh _base 6bb913e`) | — | **81%** |
-| pack-opening hunter (`_hunt`) | 42% | **87%** |
-| aggressive Cassi & Issac hunter (`_hunt2`) | 28% | **82%** |
-| current code with a Stellar/C&I draft (`_devci`) | 14% | **55%** |
-| unopposed: rounds to 1,000 gems | 574 | **500** |
+| the Oct 17 ladder build (`_L0`) | — | **60.7%** (61.8) |
+| `_r2` (commit 4a3920d) | 60.0% | **79.5%** (73.5) |
+| `_v6` (first rewrite) | 73.3% | **91.1%** (97.1) |
+| aggressive Stellar/C&I draft (`_devci`) | 76.7% | **90.2%** (91.2) |
+| aggressive C&I hunter (`_hunt2`) | 95.6% | **99.1%** (100) |
+
+These opponents are all our own code family. The user's audit of 40 real ladder games of `_L0` (5 wins) found we
+collect half the gems of the top teams and die twice as often; the session-3 changes target exactly that (deaths
+against `_devci` fell from 1,784 to 796 per 112 games). Build-by-build numbers: [`submissions/BUILDS.md`](submissions/BUILDS.md).
 
 What changed and why: [docs/STRATEGY.md](docs/STRATEGY.md) §1. How the bot learns:
 [docs/LEARNING.md](docs/LEARNING.md).

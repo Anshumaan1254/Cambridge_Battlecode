@@ -43,7 +43,7 @@ python3 tools/rl/es_train.py --space tools/rl/space.json \
 python3 tools/rl/apply_params.py tune_out/es/best_params.json   # bake the learned values in
 ```
 
-`tools/rl/space.json` lists the 32 trained parameters and their ranges. Learner hyperparameters are
+`tools/rl/space.json` lists the 33 trained parameters and their ranges. Learner hyperparameters are
 in the space too, so training can also decide how much the in-match learners should be trusted (for
 example `pain_w = 0` switches the pain map off).
 
@@ -72,7 +72,7 @@ The sparring panel is built from three older commits, so the clone must have the
 | 2. SDK and maps | `cambc init .` (C++) if `sdk/cpp` is missing, then `cambc maps pull` for the current official maps. Offline, it trains on the committed maps. |
 | 3. Opponents | `tools/make_sparring.sh` rebuilds the sparring panel (`_base`, `_v6`, `_r2`, `_hunt`, `_hunt2`, `_devci`). It also freezes the bot being trained into `bots/_self`, a self-play opponent. |
 | 4. Build and smoke test | Builds `legend` and plays one 300-round game against `_v6`, so a broken toolchain fails here, not after an hour. |
-| 5. Training | `tools/rl/es_train.py` on `tools/rl/space.json` (32 parameters). Each finished generation is saved to `tune_out/es/`. |
+| 5. Training | `tools/rl/es_train.py` on `tools/rl/space.json` (33 parameters). Each finished generation is saved to `tune_out/es/`. |
 | 6. Validation | Copies the bot to `bots/_es_best`, writes `best_params.json` into its `params.h`, and plays it against every opponent on every map, both sides. One `==` line per opponent goes to `tune_out/es/validation.txt`. |
 | 7. Archive | Writes `rl_results_<date>_<commit>.tar.gz` in the repo root. |
 

@@ -66,16 +66,18 @@ struct Params
 	int stay_support_r = 10;
 	float stay_margin = 1.1f;
 	int flee_recall = 0;			 // fleeing out of reach: recall when no enemy can interrupt it (safe_to_recall)
-	int support_filter = 0;			 // a visible ally counts in the fight only when it can help: health above the retreat
+	int support_filter = 1;			 // a visible ally counts in the fight only when it can help: health above the retreat
 									 // line and within support_reach of an enemy here (ladder audit: 'phantom support', a
 									 // full-health Cassi died with Issac at 11 HP counted as backup)
-	int support_reach = 6;
+	int support_reach = 6;			 // A/B on legend (56 maps, 112 games): 55.4% head-to-head, vs _L0 68.8 (67.0), _r2 80.4 (78.6),
+									 // _v6 86.6 (83.9), _devci 85.7 (80.4), _hunt2 94.6 (93.8); deaths -16%
 	float pair_caution = 0.f;		 // Cassi and Issac die together (both bodies, both bags): this much more advantage to fight
-	int alert_refresh = 0;			 // re-posting the same alert refreshes it for the team (a toggle bit; before, an alert
+									 // (0.3 measured neutral: 63.4 vs _r2 against 67.0, 87.5 vs _v6 against 86.6)
+	int alert_refresh = 0;			 // (A/B neutral: 50.9% head-to-head, +2.6 vs _r2) re-posting the same alert refreshes it for the team (a toggle bit; before, an alert
 									 // re-posted at one tile expired after its max age while the fight went on)
-	int squishy_hp_first = 0;		 // Stellar/Prism/Tavi and Varg/Vendetta/Vesper buy a Durability health emblem first (they
+	int squishy_hp_first = 0;		 // (A/B: 40.2% head-to-head, -8 vs _devci: rejected) Stellar/Prism/Tavi and Varg/Vendetta/Vesper buy a Durability health emblem first (they
 									 // bought 15 damage shards first: 750-1000 max HP vs 1125-1800 for the same picks of _devci)
-	int win_bank = 0;				 // a bag that wins the game goes to the nearest altar: no capture-recall away from it, no
+	int win_bank = 1;				 // A/B: neutral (50.0% vs base; 56.2 vs 55.4 with support_filter)				 // a bag that wins the game goes to the nearest altar: no capture-recall away from it, no
 									 // retreat home with it (ladder interlock: Ren recalled with 72 gems 3 steps from an altar
 									 // and lost 976-1056)
 	int deficit_defend = 1;			 // this many more enemies alive than allies: defensive play

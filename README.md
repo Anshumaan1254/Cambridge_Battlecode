@@ -5,6 +5,7 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 
 | Read this | For |
 |---|---|
+| [AGENTS.md](AGENTS.md) | **handoff context for AI agents**: status, everything done and measured, setbacks, open work, next steps |
 | [docs/STRATEGY.md](docs/STRATEGY.md) | how the game is won, hidden techniques, traps, the meta and its counters, the final strategy |
 | [docs/ENGINE_FACTS.md](docs/ENGINE_FACTS.md) | every rule we verified on the real engine (with evidence) and fuel costs |
 | [docs/HLD.md](docs/HLD.md) | architecture: modules, turn pipeline, data model, navigation, comms, fuel budget |
@@ -48,7 +49,9 @@ tools/suite.sh legend                              # vs the sparring panel (buil
 cambc submit legend                                # needs `cambc login`
 ```
 
-Sparring opponents are generated, not committed:
+Sparring opponents are generated, not committed. `tools/make_sparring.sh` rebuilds the whole current panel
+(`_base`, `_v6`, `_r2`, `_hunt`, `_hunt2`, `_devci`) from commits, identical to the bots behind the result tables.
+The individual recipes:
 
 ```bash
 tools/snapshot.sh _base 6bb913e                    # old bot (v5), what was on the ladder on Oct 16
@@ -84,6 +87,9 @@ tools/bench.py      parallel A-vs-B benchmark with summary (comma-separated map 
 tools/suite.sh      bench against the sparring panel
 tools/tune.py       self-play parameter tuner
 tools/variant.sh    build a parameter/define variant of legend
+tools/make_sparring.sh  recreate the sparring panel from commits
+tools/analysis/     item-value model, spell usage, decision-formula audit, bag/recall risk, route time use
+experiments/patches/  unmerged prototypes as patches (economy, spells), see AGENTS.md
 tools/snapshot.sh   freeze a past commit of legend as an opponent
 tools/analyze_match.py  report from a match statistics JSON (local or ladder)
 tools/trace_stats.py    task-time breakdown from LEGEND_TRACE builds

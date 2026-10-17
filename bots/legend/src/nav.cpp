@@ -13,11 +13,21 @@ namespace
 constexpr std::array<vec2, 8> DIRS{ vec2::north, vec2::north_east, vec2::east, vec2::south_east,
 									vec2::south, vec2::south_west, vec2::west, vec2::north_west };
 
-bool can_build(int built)
+bool can_build(int built, long long fuel_floor)
 {
 	// A 100x100 field costs ~13-19k fuel; keep room for the rest of the turn.
-	return built < 3 && bc::fuel_remaining() > 45000;
+	return built < 3 && bc::fuel_remaining() > fuel_floor;
 }
+
+// Detour memory (one bot instance per body): a unit blocked the field's improving steps and the dynamic search
+// walked around it. The static field ignores units, so on the next tile it points straight back at the blocker.
+struct Detour
+{
+	const Field* field = nullptr;
+	int until = -1;	  // last round of the detour
+	int start_v = 0;  // field value where the detour started; below it we are past the blocker
+};
+Detour detour;
 } // namespace
 
 void Nav::init()
@@ -27,12 +37,12 @@ void Nav::init()
 	altar_fields.assign(w.altars.size(), Field{});
 }
 
-bool Nav::ensure_group(int id)
+bool Nav::ensure_group(int id, long long fuel_floor)
 {
 	auto& fld = group_fields[static_cast<std::size_t>(id)];
 	if (fld.ready)
 		return true;
-	if (!can_build(built_this_turn))
+	if (!can_build(built_this_turn, fuel_floor))
 		return false;
 	auto& w = world();
 	bc::bitboard visited;
@@ -42,12 +52,12 @@ bool Nav::ensure_group(int id)
 	return true;
 }
 
-bool Nav::ensure_altar(int id)
+bool Nav::ensure_altar(int id, long long fuel_floor)
 {
 	auto& fld = altar_fields[static_cast<std::size_t>(id)];
 	if (fld.ready)
 		return true;
-	if (!can_build(built_this_turn))
+	if (!can_build(built_this_turn, fuel_floor))
 		return false;
 	auto& w = world();
 	bc::bitboard roots, visited;
@@ -198,6 +208,9 @@ int Nav::group_dist(const Group& g, vec2 from, bool allow_estimate)
 		return fld.get(from);
 	if (!allow_estimate)
 		return BIG;
+	// Walled-off (island) groups: unreachable on foot from anywhere our spawn reaches.
+	if (P.stuck_reach && g.d_ally >= BIG && world().home_reach.is_set(from))
+		return BIG;
 	int best = BIG;
 	for (auto t : g.tiles)
 		best = std::min(best, cheb(t, from));
@@ -290,6 +303,19 @@ bool Nav::step_field(vec2& pos, const Field& field, int stop_at, const bc::bitbo
 	}
 	if (!can_move)
 		return moved;
+	const int rnd = static_cast<int>(bc::round_number());
+	if (P.stuck_detour && detour.field == &field)
+	{
+		// Still going around a blocker: keep following the dynamic search until the field value drops below
+		// where the detour started (past the blocker), or the hold expires.
+		if (rnd <= detour.until && here >= detour.start_v && !fallback_goals.is_empty() && bc::fuel_remaining() > 30000)
+		{
+			if (step_to(pos, fallback_goals, avoid, -1, true))
+				return true;
+		}
+		if (rnd > detour.until || here < detour.start_v)
+			detour.field = nullptr;
+	}
 	auto& me = bc::self();
 	// Rank improving neighbours: prefer lower field value, then not-avoided.
 	std::array<std::pair<int, vec2>, 8> cand{};
@@ -346,7 +372,16 @@ bool Nav::step_field(vec2& pos, const Field& field, int stop_at, const bc::bitbo
 	}
 	// Units block every improving step: route around them with a dynamic search.
 	if (!fallback_goals.is_empty() && bc::fuel_remaining() > 30000)
-		return step_to(pos, fallback_goals, avoid, -1, true) || moved;
+	{
+		const int start_v = here;
+		if (step_to(pos, fallback_goals, avoid, -1, true))
+		{
+			if (P.stuck_detour && (detour.field != &field || rnd > detour.until))
+				detour = { &field, rnd + P.detour_hold, start_v };
+			return true;
+		}
+		return moved;
+	}
 	return moved;
 }
 
@@ -368,8 +403,21 @@ bool Nav::step_to(vec2& pos, const bc::bitboard& goals, const bc::bitboard* avoi
 	{
 		bc::bitboard walls2 = blocked | (*avoid & ~g);
 		walls2.set(pos, false);
-		field.compute_to(walls2, g, dest, visited);
-		ok = field.get(pos) != UNREACH;
+		// Every neighbour in danger (or blocked): the avoiding search cannot reach us and would expand the whole
+		// map for nothing (~30k fuel on 98x99); go straight to the plain search.
+		bool open = !P.stuck_avoid_skip;
+		for (auto d : DIRS)
+		{
+			if (open)
+				break;
+			const vec2 p = pos + d;
+			open = bc::map::is_in_bounds(p) && !walls2.is_set(p);
+		}
+		if (open)
+		{
+			field.compute_to(walls2, g, dest, visited);
+			ok = field.get(pos) != UNREACH;
+		}
 	}
 	if (!ok)
 	{

@@ -15,13 +15,15 @@ running or unfinished, and what to do next, so a new agent can continue without 
 ### Where we are
 - New container again: everything local was rebuilt (toolchain by hand, `make_sparring.sh`, `_L0` = 25bed8d, `_L1`, `_f1`,
   `_es2`, `_k1..3`). Recreate with §00 "How to resume".
-- **`bots/legend` = `legend_c3`, shipped** (`submissions/legend.zip`, sha256 ee4d5aa1…, `history/legend_c3_20261017.zip`,
-  rows in `submissions/BUILDS.md`). Three builds were shipped this session, each pushed as soon as it won:
+- **`bots/legend` = `legend_st`, shipped** (`submissions/legend.zip`, sha256 8129b632…, `history/legend_st_20261017.zip`,
+  rows in `submissions/BUILDS.md`). Four builds were shipped this session, each pushed as soon as it won:
   1. `legend_es2`: `_L1` + `dash_holes`, `finish_camp`, `capture_before_retreat` + the 8 consistent ES params (67.0% vs `_L0`).
   2. `legend_sf`: + `support_filter` (allies count as fight support only when above the retreat line and within 6 of an
      enemy: the audit's "phantom support") + `win_bank` (56.2% head-to-head, deaths -16%).
   3. `legend_c3`: + cast before walking (`cast_en_route`, `cast_near_target`, agent `cast`) + objective-map plan (`obj_*`,
      agent `obj`; fires only on stampede-type maps) (54.5% head-to-head, 65.6% on objective maps, 91% vs `_v6`/`_devci`).
+  4. `legend_st`: + the stuck-navigation fixes (`x_stuck_v3.patch`): 56-57% head-to-head on 228 games, 70.5% vs `_L0`.
+- Agent `side` (Opus) works on `bots/_C3` (= `legend_c3`): its patch must be rebased onto `legend_st` before merging.
 - Off (measured): `stay_rule`/`stay_veto`/`flee_recall` (fewer deaths, lower win rate), `pair_caution` (neutral),
   `alert_refresh` (neutral), `squishy_hp_first` (40.2%: rejected), forced Ryth 4th pick at team size 4 (noise).
 - **The 17 official maps (`maps/comp/`) are the real ladder pool**: always report them separately
@@ -32,7 +34,8 @@ running or unfinished, and what to do next, so a new agent can continue without 
 |---|---|---|---|---|---|---|---|
 | `legend_es2` | 67.0 (official 64.7) | 78.6 (82.4) | 83.9 | 80.4 | 93.8 | 49.1 vs `_k1` | vs `_devci` 1468 |
 | `legend_sf` | 68.8 (67.6) | 80.4 (85.3) | 86.6 (88.2) | 85.7 (91.2) | 94.6 | 56.2 | 1131 |
-| **`legend_c3` (now)** | 60.7 (61.8) | 79.5 (73.5) | **91.1** (97.1) | **90.2** (91.2) | **99.1** | 54.5 (objective maps 65.6) | **796** |
+| `legend_c3` | 60.7 (61.8) | 79.5 (73.5) | **91.1** (97.1) | **90.2** (91.2) | **99.1** | 54.5 (objective maps 65.6) | **796** |
+| **`legend_st` (now)** | **70.5** | 74.1 (67.6) | 86.6 (88.2) | **94.6** (94.1) | 97.3 | 56.2 (held-out 57.0) | 864 |
 | `_k1` = es2 + stay rules | 58.9 | 67.0 | 86.6 | 83.9 | 86.6 | 49.1 vs es2 | |
 
 ### Findings this session

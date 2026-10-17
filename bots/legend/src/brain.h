@@ -208,6 +208,12 @@ private:
 	float last_hp = 0;
 	int last_hit_round = -100;
 	std::vector<int> blacklist; // per group: round until which we ignore it
+	// Last-resort unstick: a walking task that stays inside a 3x3 box without attacking for unstick_rounds.
+	int last_act_round = -100;
+	vec2 ust_anchor{ -1, -1 };
+	int ust_since = 0;
+	int left_group = -1, left_round = -1000; // target we last switched away from (flip guard)
+	void unstick();
 };
 
 Brain& brain();

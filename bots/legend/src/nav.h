@@ -13,8 +13,8 @@ struct Nav
 	void init();
 	void new_turn() { built_this_turn = 0; }
 	// Build the field if it is missing and the turn budget allows; returns true when available.
-	bool ensure_group(int id);
-	bool ensure_altar(int id);
+	bool ensure_group(int id, long long fuel_floor = 45000);
+	bool ensure_altar(int id, long long fuel_floor = 45000);
 	// Crystal shortcuts: a resumable scan of the map (local copies of the home field and terrain) collects
 	// launch -> land pairs within crystal range that save many walking steps from our spawn; each group then
 	// takes the best pair by its own walking field. Spread over turns with spare fuel.

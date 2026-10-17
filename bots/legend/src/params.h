@@ -244,6 +244,24 @@ struct Params
 	int obj_open_margin = 4;	// ... (enemy spawn less than this many steps farther than ours; contest: the opening
 								// fights at the central gold triples decided the game, 6 of our deaths by r59 vs _r2)
 
+	// Stuck champions (tools/analysis/stuck.mjs; experiments/wip/x_stuck_NOTES.md)
+	int stuck_live_goal = 1;	 // farming without the group's field: walk to tiles in range of live camps, not of any
+								 // group tile (a tile next to a dead camp counted as arrived: frozen 30-78 rounds on gen16)
+	int stuck_avoid_skip = 1;	 // step_to: skip the danger-avoiding search when every neighbour is in danger (it cannot
+								 // succeed; it cost a full-map search, ~30k fuel, and froze bodies when fuel ran low)
+	int target_field_fuel = 32000; // build the current target's field from this much fuel (other fields need 45000): a
+								 // per-turn dynamic search to it costs about as much (big maps: scoring left ~36-41k)
+	int stuck_detour = 1;		 // after a unit blocks the field's step and the dynamic search detours, keep the detour
+								 // until the field value drops below where it started (else A-B-A-B: the field steps back)
+	int detour_hold = 12;		 // ... for at most this many rounds
+	int stuck_reach = 1;		 // a group unreachable on foot from our side is not estimated by straight-line distance
+	int unstick_rounds = 10;	 // a farm/capture walk stuck inside a 3x3 box this many rounds (no attack) drops its target
+	int unstick_blacklist = 30;	 // ... for this many rounds (0 rounds: off)
+	int flip_window = 12;		 // for this many rounds after leaving a target, going back to it needs ...
+	float flip_margin = 1.5f;	 // ... this factor more score (on top of hysteresis): stops A-B-A-B target flips
+	int score_near_floor = 38000; // stop scoring near groups below this much fuel (0: never); start rotates too
+	int score_far_floor = 55000; // stop scoring far groups below this much fuel, rotating the start (0: score_fuel_floor)
+
 	// Aggression
 	float steal_hp_frac = 0.55f; // need this health fraction to farm on the enemy half
 	int gank_bag = 25;			 // chase a visible carrier with at least this many gems

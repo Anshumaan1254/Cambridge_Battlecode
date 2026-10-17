@@ -480,6 +480,8 @@ void Brain::turn()
 
 	place_ward(false);
 	update_priority();
+	if (P.unstick_rounds > 0)
+		unstick();
 	prebuild_fields();
 	XM(xm_post());
 #ifdef LEGEND_TRACE
@@ -500,6 +502,33 @@ void Brain::turn()
 #endif
 	C.write_self(W.my_index, (task == T_FARM || task == T_CAPTURE || task == T_WAIT) ? task_group : -1);
 	last_hp = hp;
+}
+
+void Brain::unstick()
+{
+	// Last resort: a body walking to a camp that has not left a 3x3 box (and not attacked) for unstick_rounds
+	// gives the target up for a while. Every path to it may be held by allies or camps that do not move, or the
+	// target sits where its own tiles block it; re-planning elsewhere beats standing there.
+	auto& W = world();
+	const bool walking = task == T_FARM || task == T_CAPTURE;
+	const bool on_reward = task == T_CAPTURE && task_group >= 0 && W.groups[static_cast<std::size_t>(task_group)].mask.is_set(pos);
+	if (!walking || task_group < 0 || on_reward || last_act_round >= round - 1 || W.ally_spawn.is_set(pos) || cheb(pos, ust_anchor) > 1)
+	{
+		ust_anchor = pos;
+		ust_since = round;
+		return;
+	}
+	if (round - ust_since < P.unstick_rounds)
+		return;
+#ifdef LEGEND_TRACE
+	debug_block({ std::printf("UNSTICK r=%d %d task=%d g=%d pos=(%d,%d) since=%d\n", round, static_cast<int>(type), task, task_group, pos.x, pos.y, ust_since); });
+#endif
+	blacklist[static_cast<std::size_t>(task_group)] = round + P.unstick_blacklist;
+	task_group = -1;
+	tp_hop = -1;
+	tp_island = -1;
+	ust_anchor = pos;
+	ust_since = round;
 }
 
 void Brain::handle_channel()
@@ -750,12 +779,24 @@ bool Brain::go_group(Group& g, int stop_at, bool avoid)
 {
 	auto& N = nav();
 	bc::bitboard fallback;
-	for (auto t : g.tiles)
-		fallback.draw_chebyshev(t, static_cast<float>(stop_at));
+	// Farming a live group: the goal is reach of a camp still standing. Any group tile (dead camps included)
+	// made a tile next to a dead wolf count as arrived while its live partner stood two tiles away: on the
+	// 98x99 map, where the group field is often not built yet, bodies froze there for 30-78 rounds.
+	bool live = false;
+	if (P.stuck_live_goal && stop_at > 0 && g.st == ST_ALIVE)
+		for (std::size_t i = 0; i < g.camps.size(); ++i)
+			if (g.hp[i] > 0)
+			{
+				fallback.draw_chebyshev(g.camps[i].pos, static_cast<float>(stop_at));
+				live = true;
+			}
+	if (!live)
+		for (auto t : g.tiles)
+			fallback.draw_chebyshev(t, static_cast<float>(stop_at));
 	if (stop_at > 0)
 		fallback &= ~g.mask;
 	const bc::bitboard av = danger | (camp_danger & ~g.near) | alert_zone;
-	if (N.ensure_group(g.id))
+	if (N.ensure_group(g.id, P.target_field_fuel))
 		return after_move(Nav::step_field(pos, N.group_fields[static_cast<std::size_t>(g.id)], stop_at, avoid ? &av : nullptr, kit.dash, can_move, fallback));
 	return after_move(Nav::step_to(pos, fallback, avoid ? &av : nullptr, kit.dash, can_move));
 }
@@ -768,7 +809,7 @@ bool Brain::go_altar(int id)
 	for (auto t : W.altar_approach[static_cast<std::size_t>(id)])
 		fallback.set(t);
 	const bc::bitboard av = danger | camp_danger | alert_zone;
-	if (N.ensure_altar(id))
+	if (N.ensure_altar(id, P.target_field_fuel))
 		return after_move(Nav::step_field(pos, N.altar_fields[static_cast<std::size_t>(id)], 0, &av, kit.dash, can_move, fallback));
 	return after_move(Nav::step_to(pos, fallback, &av, kit.dash, can_move));
 }
@@ -829,6 +870,7 @@ bool Brain::attack_unit(const bc::unit& u)
 	{
 		bc::self().attack(u);
 		can_attack = false;
+		last_act_round = round;
 		if (kit.ranged)
 			can_move = false;
 		return true;
@@ -2660,17 +2702,31 @@ void Brain::farm()
 			const bool tm = sc_team;
 			if (g.id == task_group)
 				s *= P.hysteresis;
+			else if (P.flip_window > 0 && g.id == left_group && round - left_round <= P.flip_window)
+				s /= P.flip_margin; // going back to a target we just left: A-B-A-B flips walk in place
 			if (s > best_s)
 				best_s = s, best = g.id, best_eta = eta, best_pair = np, best_team = tm;
 		};
 		if (task_group >= 0 && task_group < static_cast<int>(W.groups.size()))
 			consider(W.groups[static_cast<std::size_t>(task_group)]);
+		// Far groups stop at a higher floor so the walk keeps the fuel it needs: on the 98x99 map scoring all
+		// 70 groups left ~35k, no target field could be built (45k) and the dynamic searches that replace it
+		// (30k) were skipped, so bodies stood behind an ally or next to a dead camp. The start rotates so every
+		// far group is still scored every few turns.
+		const int ng = static_cast<int>(W.groups.size());
+		const long long far_floor = P.score_far_floor > 0 ? P.score_far_floor : P.score_fuel_floor;
+		const int off = P.score_far_floor > 0 && ng > 0 ? (round * 7) % ng : 0;
 		for (int pass = 0; pass < 2; ++pass)
-			for (auto& g : W.groups)
+			for (int k = 0; k < ng; ++k)
 			{
+				auto& g = W.groups[static_cast<std::size_t>((k + off) % ng)];
 				if (g.id == task_group || (cheb(g.center, pos) <= P.score_near) != (pass == 0))
 					continue;
-				if (pass == 1 && bc::fuel_remaining() < P.score_fuel_floor)
+				if (pass == 1 && bc::fuel_remaining() < far_floor)
+					break;
+				// Near groups too: on the 90x30 official map (40 groups, most within 20 tiles) scoring alone took
+				// 70-85k and the walk after it spilled into the next round every other turn.
+				if (pass == 0 && P.score_near_floor > 0 && bc::fuel_remaining() < P.score_near_floor)
 					break;
 				consider(g);
 			}
@@ -2796,8 +2852,17 @@ void Brain::farm()
 	});
 #endif
 	XM(xm_decide(best));
+#ifdef STUCK_DBG
+	debug_block({
+		int cur_eta = 0;
+		const float cur_s = task_group >= 0 ? group_score(W.groups[static_cast<std::size_t>(task_group)], cur_eta) : -9.f;
+		std::printf("F r=%d %d best=%d s=%.3f eta=%d cur=%d cs=%.3f hop=%d isl=%d pos=(%d,%d) fuel=%lld start=%lld\n", round, static_cast<int>(type), best, best_s, best_eta, task_group, cur_s, tp_hop, tp_island, pos.x, pos.y, (long long)bc::fuel_remaining(), dbg_ff);
+	});
+#endif
 	if (best != task_group)
 	{
+		if (task_group >= 0)
+			left_group = task_group, left_round = round;
 		task_group = best;
 		task_since = round;
 	}
@@ -3127,7 +3192,7 @@ bool Brain::farm_group(Group& g)
 		{
 			bc::bitboard goal;
 			for (std::size_t i = 0; i < g.camps.size(); ++i)
-				if (g.hp[i] > 0 && W.camp_occ.is_set(g.camps[i].pos))
+				if (g.hp[i] > 0 && (W.camp_occ.is_set(g.camps[i].pos) || (P.stuck_live_goal && !W.vis.is_set(g.camps[i].pos))))
 					goal.draw_chebyshev(g.camps[i].pos, static_cast<float>(kit.attack_range));
 			goal &= ~g.mask;
 			if (!goal.is_empty())

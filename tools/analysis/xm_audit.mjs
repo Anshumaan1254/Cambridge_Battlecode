@@ -127,7 +127,9 @@ for (const f of files) {
 		fightRows.push({ game, r: o.r, ty: o.ty, first, fight: o.fight, adv: o.adv, tku: o.tku, tkt: o.tkt, ohp: o.ohp, thp: o.thp, odps: o.odps, tdps: o.tdps, na: o.na, ne: o.ne, kill: o.kill, reach: o.reach,
 			esc: o.esc, iso: o.iso, sc: o.sc, fm: o.fm, mydps: o.mydps, ahp: o.ahp, adps: o.adps, mn: o.mn, mhp: o.mhp, mdps: o.mdps, rOurs: ours.length, rTheirs: theirs.length,
 			allyD: ours.filter((c) => c[0] !== me[0]).map((c) => [Math.max(Math.abs(c[3] - mx), Math.abs(c[4] - my)), c[5]]),
-			enemyD: theirs.map((c) => [Math.max(Math.abs(c[3] - mx), Math.abs(c[4] - my)), c[5]]), hp0o: hp0.o, hp0t: hp0.t, lostO: lost.o, lostT: lost.t, deadO: dead.o, deadT: dead.t, campO: campDmg.o, campT: campDmg.t, meDead, tgtDead, hp: o.hp, mhp: o.mhp, inc: o.inc, tdie: o.tdie });
+			enemyD: theirs.map((c) => [Math.max(Math.abs(c[3] - mx), Math.abs(c[4] - my)), c[5]]),
+			allyE: ours.filter((c) => c[0] !== me[0]).map((c) => [Math.min(...theirs.map((t) => Math.max(Math.abs(c[3] - t[3]), Math.abs(c[4] - t[4])))), c[5]]),
+			meE: Math.min(...theirs.map((t) => Math.max(Math.abs(mx - t[3]), Math.abs(my - t[4])))), hp0o: hp0.o, hp0t: hp0.t, lostO: lost.o, lostT: lost.t, deadO: dead.o, deadT: dead.t, campO: campDmg.o, campT: campDmg.t, meDead, tgtDead, hp: o.hp, mhp: o.mhp, inc: o.inc, tdie: o.tdie });
 		void anyFight;
 	}
 }

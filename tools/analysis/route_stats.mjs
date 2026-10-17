@@ -102,7 +102,7 @@ function newAcc() {
 	return {
 		games: 0, bodyRounds: 0, dead: 0, alive: 0, cat: {}, steps: 0, farmSteps: 0, gems: 0, gold: 0, banked: 0, captures: 0,
 		dupRounds: 0, walkRounds: 0, crossPairs: 0, crossSave: 0, abandoned: 0, abandonedSteps: 0, segments: 0,
-		walkProgress: 0, walkMeasured: 0, walkNoTarget: 0, osc: {}, oscTurns: 0, turns: 0, crossNear: 0, crossNearSave: 0,
+		abWhy: {}, walkProgress: 0, walkMeasured: 0, walkNoTarget: 0, osc: {}, oscTurns: 0, turns: 0, crossNear: 0, crossNearSave: 0,
 		pairs: 0, regretPairs: 0, regretSteps: 0, chainWalk: 0, firstWalk: 0, nextWalk: [], winRound: [], longWalkSteps: 0,
 	};
 }
@@ -232,6 +232,18 @@ async function analyse(file, acc) {
 			if (s.minD >= 3 && i + 1 < segs.length && segs[i + 1].start - s.end <= 2 && segs[i + 1].g !== s.g) {
 				acc.abandoned++;
 				acc.abandonedSteps += s.steps;
+				// Why: an ally took it, the group died (killed by someone), or a plain re-score.
+				let why = 'rescore';
+				for (const o of bodies) {
+					if (o.index === b.index) continue;
+					const tt = (tr.turns[o.type] || {});
+					for (let r = s.end; r <= s.end + 1; r++) if (tt[r] && tt[r].g === s.g && tt[r].task >= 1 && tt[r].task <= 3) why = 'ally-took';
+				}
+				if (why === 'rescore' && galive(s.g, s.start) && !galive(s.g, s.end + 1)) why = 'died';
+				const nx = segs[i + 1];
+				const useful = gd(nx.g, s.p0) - gd(nx.g, s.lastPos); // progress toward the next target anyway
+				const w = (acc.abWhy[why] ||= { n: 0, steps: 0, useful: 0 });
+				w.n++; w.steps += s.steps; w.useful += Math.max(0, Math.min(s.steps, useful));
 			}
 			if (s.d0 > 20) acc.longWalkSteps += Math.min(s.steps, s.d0);
 		}
@@ -341,6 +353,7 @@ console.log(`oscillating turns (A-B-A-B task/target): ${acc.oscTurns} of ${acc.t
 console.log(`target segments ${acc.segments}; abandoned before arrival then switched: ${acc.abandoned} (${acc.abandonedSteps} steps = ${(100 * acc.abandonedSteps / Math.max(1, acc.farmSteps)).toFixed(1)}% of camp walking)`);
 const nw = acc.nextWalk.slice().sort((a, b) => a - b);
 const q = (f) => nw.length ? nw[Math.min(nw.length - 1, Math.floor(f * nw.length))] : 0;
+console.log('  abandon reasons (n, steps, steps that still progressed toward the next target): ' + Object.entries(acc.abWhy).map(([k, v]) => `${k}: ${v.n} ${v.steps} ${v.useful}`).join(' | '));
 console.log(`consecutive farm targets: ${acc.pairs} pairs; walk to the first ${(acc.firstWalk / Math.max(1, acc.pairs)).toFixed(1)}, A->B walk mean ${(acc.chainWalk / Math.max(1, acc.pairs)).toFixed(1)} median ${q(0.5)} p90 ${q(0.9)}`);
 console.log(`2-opt order regret (B alive at decision, B-first saves >=5): ${acc.regretPairs} pairs (${(100 * acc.regretPairs / Math.max(1, acc.pairs)).toFixed(1)}%), ${acc.regretSteps} steps (${(100 * acc.regretSteps / Math.max(1, acc.farmSteps)).toFixed(1)}% of camp walking)`);
 if (acc.winRound.length) console.log(`wins ${acc.winRound.length}, mean win round ${(acc.winRound.reduce((a, b) => a + b, 0) / acc.winRound.length).toFixed(0)}`);

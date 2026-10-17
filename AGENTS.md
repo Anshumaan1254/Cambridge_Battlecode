@@ -747,6 +747,10 @@ cloned read-only to `/home/user/fhl-08/tarot-club-cambc2026` in this container):
 | Nearest-map draft model | no gain against strong drafts (noise) | no table shipped |
 | Treasure-first builds for Ren/Stellar | worse than Treasure second (19/24 vs 21/24) | `rich_treasure_first = 0` in the econ patch |
 | Hop scan v1 | read bit-packed exports as bytes and overran fuel (bodies lost 13-14 of their first 40 turns) | fixed in 4a3920d |
+| Health emblem first for Stellar/Varg kits (`squishy_hp_first`, session 3) | 40.2% head-to-head vs the ES build, -8 vs `_devci`, -7 vs `_r2`: damage first wins; the HP gap is fixed better by `support_filter` (fewer bad fights) | `squishy_hp_first = 0` |
+| The user's fight rule (`stay_rule` + `stay_veto` + `flee_recall`, session 3) | fewer deaths but lower win rate: 49.1% vs `_es2`, 45.5% vs `legend_st`; without `stay_veto` 41.1% | switches kept, off |
+| Extra fight margin for Cassi & Issac (`pair_caution` 0.3) / re-posted alert refresh (`alert_refresh`) | neutral (63.4 vs 67.0 vs `_r2`; 49.1% head-to-head) | off |
+| Ryth instead of Varg as 4th pick at team size 4 | 53.1% head-to-head on 16 size-4 maps, mixed vs the panel: noise | draft unchanged |
 | Process handling | `pkill -f` killed our shell; a pattern-based wait deadlocked; container restarts killed ES at generation 4; session limits cut two workflows | see the gotchas in §3 |
 
 ---

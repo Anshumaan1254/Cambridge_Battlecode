@@ -48,15 +48,29 @@ for (const f of files) {
 		continue;
 	}
 	const game = path.basename(f, '.repl26a');
-	const lines = text.split('\n').filter((l) => /^(FR|FE|FC|GI|DTH) /.test(l)).map(parse);
+	const lines = text.split('\n').filter((l) => /^(FR|FE|FC|FX|GI|DTH) /.test(l)).map(parse);
+	// FX (printed just before its FC line) splits the fight estimate: own dps, allies, remembered enemies.
+	const fx = new Map();
+	for (const o of lines) if (o.k === 'FX') fx.set(`${o.r}:${o.ty}`, o);
 	for (const o of lines) {
 		o.game = game;
+		if (o.k === 'FX') continue;
+		if (o.k === 'FC') Object.assign(o, fx.get(`${o.r}:${o.ty}`) ? { ...fx.get(`${o.r}:${o.ty}`), k: 'FC' } : {});
 		({ FR, FE, FC, GI, DTH })[o.k].push(o);
 	}
 	if (!FIGHTS) continue;
 	// ---- fight outcomes from the replay
 	const d = await decode(unwrapReplay(buf), { every: 1 });
 	const byR = new Map(d.rounds.map((r) => [r.r, r]));
+	// Camp attacks per round (to tile), with the camp's strength by type: wolf 20, elk 60, monolith 200 (GI lines).
+	const CSTR = { wolf: 20, elk: 60, monolith: 200 };
+	const campHits = new Map();
+	for (const e of d.events)
+		if (e.k === 'Attack' && e.camp !== undefined && e.to) {
+			const t = d.meta.camps?.[e.camp]?.type;
+			const key = `${e.r}:${e.to[0]},${e.to[1]}`;
+			campHits.set(key, (campHits.get(key) || 0) + (CSTR[t] || 0));
+		}
 	// Spawn boxes: positions of each team in the first snapshot (+-2)
 	const r0 = d.rounds[0];
 	const spawn = [[], []];
@@ -81,7 +95,7 @@ for (const f of files) {
 		const ids = (arr) => new Set(arr.map((c) => c[0]));
 		const oi = ids(ours), ti = ids(theirs);
 		// Health lost and deaths over the horizon (a death counts the health it had left).
-		const lost = { o: 0, t: 0 }, dead = { o: 0, t: 0 }, hp0 = { o: 0, t: 0 };
+		const lost = { o: 0, t: 0 }, dead = { o: 0, t: 0 }, hp0 = { o: 0, t: 0 }, campDmg = { o: 0, t: 0 };
 		for (const c of ours) hp0.o += c[5];
 		for (const c of theirs) hp0.t += c[5];
 		let meDead = false, tgtDead = false;
@@ -106,10 +120,14 @@ for (const f of files) {
 					if (dl > 0) lost[k] += dl;
 				}
 				hpPrev.set(c[0], c[5]);
+				const ch = campHits.get(`${r}:${c[3]},${c[4]}`);
+				if (ch && c[7]) campDmg[k] += ch;
 			}
 		}
 		fightRows.push({ game, r: o.r, ty: o.ty, first, fight: o.fight, adv: o.adv, tku: o.tku, tkt: o.tkt, ohp: o.ohp, thp: o.thp, odps: o.odps, tdps: o.tdps, na: o.na, ne: o.ne, kill: o.kill, reach: o.reach,
-			esc: o.esc, iso: o.iso, sc: o.sc, fm: o.fm, rOurs: ours.length, rTheirs: theirs.length, hp0o: hp0.o, hp0t: hp0.t, lostO: lost.o, lostT: lost.t, deadO: dead.o, deadT: dead.t, meDead, tgtDead, hp: o.hp, mhp: o.mhp, inc: o.inc, tdie: o.tdie });
+			esc: o.esc, iso: o.iso, sc: o.sc, fm: o.fm, mydps: o.mydps, ahp: o.ahp, adps: o.adps, mn: o.mn, mhp: o.mhp, mdps: o.mdps, rOurs: ours.length, rTheirs: theirs.length,
+			allyD: ours.filter((c) => c[0] !== me[0]).map((c) => [Math.max(Math.abs(c[3] - mx), Math.abs(c[4] - my)), c[5]]),
+			enemyD: theirs.map((c) => [Math.max(Math.abs(c[3] - mx), Math.abs(c[4] - my)), c[5]]), hp0o: hp0.o, hp0t: hp0.t, lostO: lost.o, lostT: lost.t, deadO: dead.o, deadT: dead.t, campO: campDmg.o, campT: campDmg.t, meDead, tgtDead, hp: o.hp, mhp: o.mhp, inc: o.inc, tdie: o.tdie });
 		void anyFight;
 	}
 }

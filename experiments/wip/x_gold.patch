@@ -1,0 +1,304 @@
+diff -ruN legend/src/brain.cpp _x_gold/src/brain.cpp
+--- legend/src/brain.cpp	2026-10-17 09:33:09.211370026 +0000
++++ _x_gold/src/brain.cpp	2026-10-17 10:20:58.610694148 +0000
+@@ -269,9 +269,33 @@
+ 	kit = kit_of(me);
+ 	const auto abl = me.abilities();
+ 	ab.assign(abl.begin(), abl.end());
+-	build = build_for(type);
+ 	auto& W = world();
+ 	W.init_static();
++	detect_scarcity();
++	build = build_for(type);
++	if (tb_scarce && P.tb_treasure)
++	{
++		// Earned gold is the second tiebreaker and spending does not reduce it: Treasure (+20% on every gold gain,
++		// captures and kill gold) first. Move the build's Treasure block to the front, or open with one.
++		std::size_t k = 0;
++		while (k < build.size() && build[k] != I::treasure_shard_of_focus && build[k] != I::treasure_shard_of_health &&
++			build[k] != I::treasure_shard_of_strength)
++			++k;
++		I t = I::treasure_shard_of_health;
++		if (k < build.size())
++		{
++			t = build[k];
++			std::size_t e = k;
++			while (e < build.size() && build[e] == t && e - k < 5)
++				++e;
++			build.erase(build.begin() + static_cast<std::ptrdiff_t>(k), build.begin() + static_cast<std::ptrdiff_t>(e));
++		}
++		else if (type == CT::stellar || type == CT::prism || type == CT::tavi)
++			t = I::treasure_shard_of_focus;
++		else if (type == CT::varg || type == CT::vendetta || type == CT::vesper_vale)
++			t = I::treasure_shard_of_strength;
++		build.insert(build.begin(), 5, t);
++	}
+ 	W.find_islands();
+ 	W.init_units();
+ 	blacklist.assign(W.groups.size(), -1);
+@@ -351,7 +375,8 @@
+ 				L.on_enemy_killed_near(e.pos, round);
+ 		// A visible enemy tributing a bag (or recalling with one) is an opportunity for the whole team.
+ 		for (const auto& e : W.enemies)
+-			if (e.visible && e.alive && (e.tributing || (e.recalling && e.gems >= 20)) && e.gems >= 10 && !W.enemy_spawn.is_set(e.pos))
++			if (e.visible && e.alive && !W.enemy_spawn.is_set(e.pos) &&
++				(((e.tributing || (e.recalling && e.gems >= 20)) && e.gems >= 10) || (tb_scarce && static_cast<int>(e.gems) >= P.tb_hunt_bag)))
+ 			{
+ 				C.post(AL_OPPORTUNITY, e.pos, round);
+ 				break;
+@@ -1160,7 +1185,7 @@
+ 		fight = true; // fleeing a same-speed chaser hands it free hits: trade instead
+ 	else if (tgt->channeling && adv >= 0.9f)
+ 		fight = true;
+-	if (fight && !killable && can_escape && (hp < 0.25f * max_hp || (static_cast<int>(gems) >= P.bag_caution && adv < 1.5f)))
++	if (fight && !killable && can_escape && (hp < 0.25f * max_hp || (static_cast<int>(gems) >= bag_caution && adv < 1.5f)))
+ 		fight = false;
+ 	if (fight && reserve && !(killable && adv >= 1.f) && adv < fight_margin + P.reserve_margin && can_escape)
+ 		fight = false;
+@@ -1549,8 +1574,28 @@
+ 	return go_home();
+ }
+ 
++void Brain::detect_scarcity()
++{
++	// Gem supply our team can realistically bank: the theoretical rate of the non-monolith gem groups nearer our
++	// spawn (each respawns every `respawn` rounds) times tb_eff. Monoliths (20,000 health, 200 strength) are left
++	// out: they fall only to a whole, well-equipped team, so a map whose gems come from them alone is decided by
++	// whoever takes them, and otherwise by the tiebreakers.
++	auto& W = world();
++	tb_rate = 0.f;
++	for (const auto& g : W.groups)
++		if (g.ours && !g.monolith && g.gems > 0 && g.respawn > 0)
++			tb_rate += static_cast<float>(g.gems) / static_cast<float>(g.respawn);
++	const float reach = P.tb_eff * tb_rate * static_cast<float>(bc::constants::max_rounds);
++	tb_scarce = P.tb_enabled && reach < static_cast<float>(bc::constants::winning_gems);
++#ifdef GOLD_TRACE
++	debug_block({ std::printf("TB init rate=%.2f reach=%.0f scarce=%d\n", static_cast<double>(tb_rate), static_cast<double>(reach), static_cast<int>(tb_scarce)); });
++#endif
++}
++
+ void Brain::update_mode()
+ {
++	gold_value = P.gold_value;
++	bag_caution = P.bag_caution;
+ 	fight_margin = P.fight_margin;
+ 	fight_back_margin = P.fight_back_margin;
+ 	deny_bonus = P.deny_bonus;
+@@ -1607,6 +1652,57 @@
+ 		deny_bonus += 0.6f;
+ 		enemy_half_penalty *= 0.4f;
+ 	}
++
++	// Tiebreak-aware economy. Lexicographic: banked gems, then gold earned, then kills, then team B.
++	tb_lead = ours - theirs;
++	tb_phase = 0;
++	const bool was_deciding = tb_decides;
++	tb_decides = tb_scarce;
++	const int max_r = static_cast<int>(bc::constants::max_rounds);
++	if (P.tb_enabled && !tb_decides && round >= P.tb_dyn_from && round < max_r)
++	{
++		const float left = static_cast<float>(max_r - round), r = static_cast<float>(std::max(1, round));
++		const float po = static_cast<float>(ours) * (1.f + left / r), pt = static_cast<float>(theirs) * (1.f + left / r);
++		tb_decides = std::max(po, pt) < P.tb_dyn_frac * static_cast<float>(bc::constants::winning_gems);
++	}
++	if (tb_scarce)
++	{
++		// Every banked gem outranks all the gold: bank any bag at once, and do not risk a bag in fights.
++		gold_value = P.tb_gold_value;
++		tribute_min = std::min(tribute_min, P.tb_tribute_min);
++		bag_caution = std::min(bag_caution, P.tb_bag_caution);
++	}
++	if (tb_decides && round >= max_r - P.tb_endgame)
++	{
++		if (tb_lead > 0)
++		{
++			// Ahead on gems: only their gems can change the result. Keep the team alive and at home; no
++			// optional fights (each of our deaths is also 50 earned gold and a kill for them).
++			tb_phase = 1;
++			fight_margin += 0.4f;
++			isolated_fight_adv += 0.4f;
++			enemy_half_penalty *= 3.f;
++			deny_bonus *= 0.5f;
++		}
++		else if (tb_lead == 0)
++			tb_phase = 2; // tied: gold earned decides; play the normal (gold-farming) game
++		else
++		{
++			// Behind on gems: gold cannot win any more. All-in for gems: their camps, carriers and captures.
++			tb_phase = 3;
++			gold_value = P.tb_behind_gold_value;
++			fight_margin = std::max(0.9f, fight_margin - 0.3f);
++			fight_back_margin = std::max(0.55f, fight_back_margin - 0.15f);
++			deny_bonus += 0.6f;
++			enemy_half_penalty *= 0.4f;
++		}
++	}
++#ifdef GOLD_TRACE
++	if (tb_decides != was_deciding)
++		debug_block({ std::printf("TB r=%d decides=%d scarce=%d ours=%d theirs=%d\n", round, static_cast<int>(tb_decides), static_cast<int>(tb_scarce), ours, theirs); });
++#else
++	(void)was_deciding;
++#endif
+ }
+ 
+ bool Brain::on_the_way(int altar) const
+@@ -1905,10 +2001,11 @@
+ 		hp_left = g.hp_total;
+ 		break;
+ 	}
++	const bool team_mono = g.monolith && g.ours && tb_scarce && P.tb_mono_team;
+ 	if (g.st != ST_REWARD)
+ 	{
+ 		eta = d_adj;
+-		if (claimers)
++		if (claimers && !team_mono)
+ 		{
+ 			// Join only packs too heavy for one body; never a third body except on a monolith.
+ 			const float solo_rounds = hp_left / std::max(10.f, ally_dps);
+@@ -1940,7 +2037,48 @@
+ 			t += static_cast<float>(trips * trip_cost(g));
+ 			return true;
+ 		};
+-		if (!plan(ally_dps, melee_ally, time))
++		if (team_mono)
++		{
++			// The whole team on our monolith. Legend's solo test (one body clears it within max_trips heal trips,
++			// others join after) first passed at r780-1200 on the gold maps. As a team: every living body's damage,
++			// and the team's health above each body's retreat line (safety(): 4 rounds of raw camp damage) as the
++			// tank budget; the monolith hits the nearest champion, tanks rotate out and come back. Gather outside
++			// its range until enough bodies claim it, then wake it together.
++			if (claimers >= 4)
++				return -1;
++			const float line = 4.f * g.dps;
++			auto usable = [&](float mhp) { return std::max(0.f, mhp - std::max(P.retreat_hp * mhp, line)); };
++			const float my_base = bc::champion_designs[static_cast<std::size_t>(type)].base_stats().base_health;
++			const float hgrow = max_hp / std::max(1.f, my_base);
++			float tdps = 0, budget = usable(max_hp);
++			int alive_n = 1;
++			for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 6; ++i)
++			{
++				const auto& a = W.allies[static_cast<std::size_t>(i)];
++				if (i == W.my_index || !a.alive)
++					continue;
++				tdps += ally_dps_on(i, g);
++				const float mhp = a.visible ? a.max_hp : bc::champion_designs[static_cast<std::size_t>(a.type)].base_stats().base_health * hgrow;
++				budget += usable(mhp);
++				++alive_n;
++			}
++			const int need = std::min(P.tb_mono_min, static_cast<int>(W.allies.size()));
++			if (alive_n < need && !claimers)
++				return -1;
++			const float kill = hp_left / (my_dps + tdps);
++			const float rot = std::max(1.f, incoming_on(g)) * kill / std::max(1.f, budget);
++			if (rot > 1.f + static_cast<float>(P.tb_mono_trips))
++				return -1;
++			time = static_cast<float>(d_adj + wait) + kill + 6.f + (rot > 1.f ? std::ceil(rot - 1.f) * static_cast<float>(trip_cost(g)) : 0.f);
++			share = 1.f;
++			if (claimers + 1 < need && !g.awake)
++			{
++				time += P.pair_wait;
++				if (need_pair)
++					*need_pair = true;
++			}
++		}
++		else if (!plan(ally_dps, melee_ally, time))
+ 		{
+ 			// Too heavy for us (and the bodies already on it). Plan it as a pair: claim it, wait outside camp
+ 			// range for the best-suited ally, then kill it together (elk pairs, wolf packs early in the game).
+@@ -1964,7 +2102,7 @@
+ 		}
+ 	}
+ 
+-	float value = (static_cast<float>(g.gems) + P.gold_value * static_cast<float>(g.gold)) * share;
++	float value = (static_cast<float>(g.gems) + gold_value * static_cast<float>(g.gold)) * share;
+ 	if (!g.ours)
+ 	{
+ 		const float risk = sc_risk;
+@@ -2019,7 +2157,7 @@
+ 		// An enemy capturing a reward: any of our bodies on any tile of the group resets their capture (it
+ 		// completes 6 rounds after they leave, and they get nothing). Healthy, it is a steal; hurt, avoid.
+ 		if (g.st == ST_REWARD && hp >= P.deny_hp_frac * max_hp)
+-			value *= P.deny_capture_mult;
++			value *= tb_scarce && g.gems > 0 ? P.tb_deny_mult : P.deny_capture_mult;
+ 		else
+ 			value *= 0.5f;
+ 	}
+@@ -2119,7 +2257,7 @@
+ 		const Group& g = W.groups[static_cast<std::size_t>(gid)];
+ 		if (g.st == ST_RESPAWN && g.ready_round - round > 30)
+ 			continue;
+-		value += static_cast<float>(g.gems) + P.gold_value * static_cast<float>(g.gold);
++		value += static_cast<float>(g.gems) + gold_value * static_cast<float>(g.gold);
+ 		hp_total += g.st == ST_REWARD ? 0.f : g.hp_total;
+ 	}
+ 	if (value <= 0)
+@@ -2393,7 +2531,7 @@
+ 		// claimer and both farm it); give up after pair_wait_max rounds.
+ 		if (pair_group != g.id)
+ 			pair_group = g.id, pair_since = round;
+-		if (round - pair_since > P.pair_wait_max)
++		if (round - pair_since > (g.monolith && tb_scarce ? P.tb_mono_wait : P.pair_wait_max))
+ 		{
+ 			blacklist[static_cast<std::size_t>(g.id)] = round + 30;
+ 			pair_group = -1;
+diff -ruN legend/src/brain.h _x_gold/src/brain.h
+--- legend/src/brain.h	2026-10-17 09:33:09.213173744 +0000
++++ _x_gold/src/brain.h	2026-10-17 10:07:44.115100882 +0000
+@@ -152,6 +152,17 @@
+ 	int tribute_min = 34;
+ 	void update_mode();
+ 
++	// Tiebreak-aware economy (params tb_*): scarce = the map's gem supply cannot reach winning_gems by max_rounds
++	// (static, from the camp groups at init); tb_decides = projected banked totals of both teams stay below it
++	// (static scarcity, or the dynamic projection late in the game). gold_value replaces P.gold_value in scoring.
++	bool tb_scarce = false, tb_decides = false;
++	float tb_rate = 0.f;		 // non-monolith gems per round on our half (theoretical)
++	int tb_lead = 0;			 // banked gems: ours - theirs
++	int tb_phase = 0;			 // 0 none, 1 endgame ahead, 2 endgame tied, 3 endgame behind
++	float gold_value = 0.22f;
++	int bag_caution = 40;
++	void detect_scarcity();
++
+ 	// memory
+ 	int task = T_NONE, task_group = -1, task_since = 0;
+ 	int ward_round = -100;
+diff -ruN legend/src/params.h _x_gold/src/params.h
+--- legend/src/params.h	2026-10-17 09:33:09.213173744 +0000
++++ _x_gold/src/params.h	2026-10-17 10:20:58.618703996 +0000
+@@ -148,6 +148,36 @@
+ 	int gank_bag = 25;			 // chase a visible carrier with at least this many gems
+ 	float deny_hp_frac = 0.6f;	 // contest an enemy's capture (step on its tiles) from this health fraction
+ 	float deny_capture_mult = 1.3f; // value multiplier for contesting an enemy's capture
++
++	// Tiebreak-aware economy (gem-scarce maps). At the round limit the engine ranks: banked gems, then gold EARNED
++	// over the game (statistics earnedGold: captures and 50 per kill, with the Treasure / Vesper +20%; spending does
++	// not reduce it), then kills, then team B wins. One banked gem beats any amount of gold.
++	int tb_enabled = 1;			  // master switch (0 = legend behaviour everywhere)
++	// Static detection at init: "scarce" when our half's non-monolith gem supply (sum of gems / respawn rounds over
++	// the groups nearer our spawn, monolith groups excluded) times tb_eff times max_rounds stays below winning_gems.
++	// tb_eff = share of that theoretical rate a team actually banks: legend's finish rounds on the 45-map panel give
++	// 0.27-0.39 (isl_40x40 2.54 gems/round -> r1037, gen00 2.71 -> r1101, lad_30x30 3.00 -> r863, packs 4.26 -> r759).
++	// With 0.3 only the monolith-only ladder map (lad_50x50_R_c5_65bb75, rate 0) triggers among the 45 panel maps.
++	float tb_eff = 0.3f;
++	// Dynamic check: from this round, also count as a tiebreak game when neither team's projected banked total
++	// (banked + banked-per-round so far x rounds left) reaches tb_dyn_frac x winning_gems by max_rounds.
++	int tb_dyn_from = 1300;
++	float tb_dyn_frac = 0.9f;
++	int tb_tribute_min = 1;		  // scarce maps: bank any bag (every banked gem is decisive; a death throws the bag away)
++	int tb_bag_caution = 20;	  // scarce maps: carrying this many gems, avoid even fights we can escape (was bag_caution)
++	int tb_treasure = 1;		  // scarce maps: Treasure emblem first (earned gold +20%: clusters 35 -> 42, kills 50 -> 60)
++	int tb_endgame = 250;		  // last rounds of a tiebreak game: ahead on gems protect, behind go all-in for gems
++	float tb_gold_value = 0.22f;  // gold value in group scoring on scarce maps (normal: gold_value)
++	float tb_behind_gold_value = 0.05f; // ... in the endgame when behind on gems (only gems can still win)
++	int tb_hunt_bag = 30;		  // scarce maps: a visible enemy carrying this many gems is posted as an opportunity
++	float tb_deny_mult = 3.0f;	  // scarce maps: value multiplier for stepping on an enemy's gem capture (monolith: 200)
++	// Team monolith (scarce maps): plan it with the damage of every living ally, not one body's solo plan (legend
++	// took its first monolith at r780-1200 on the gold maps: a body must solo it in 5 heal trips before claiming it),
++	// gather outside its range until tb_mono_min bodies claim it, then wake it together.
++	int tb_mono_team = 1;
++	int tb_mono_min = 3;		  // bodies to gather (all living bodies when fewer)
++	int tb_mono_wait = 40;		  // rounds to wait for them before giving up (then blacklisted for 30 rounds)
++	int tb_mono_trips = 1;		  // team heal rotations accepted (damage taken / the team's health above the retreat lines)
+ };
+ 
+ inline constexpr Params P{};

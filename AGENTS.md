@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: 2026-10-17, ~10:30 UTC (session 2). Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
+- Last updated: 2026-10-17, ~10:45 UTC (session 2). Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
 - Competition: Cambridge Battlecode 2026a (CAMBC), 12 Oct to 18 Nov 2026. C++ bot compiled to wasm.
 - The submitted bot cannot be changed after submission and keeps nothing between matches. All "learning"
   is either offline (training parameters before submission) or in-match (adapting inside one game).
@@ -62,6 +62,46 @@ saved. Recreated in session 2:
 | `coord` (Opus) | team coordination: measure the failures first (deaths alone, allies not joining, split damage), then fix the costly ones (focus fire, engage protocol, buddies, sectors) | `_x_coord` | `x_coord.patch`, `x_coord_NOTES.md`, `tools/analysis/coord_audit.mjs` |
 | `ml` (Sonnet) | ML fight model: logging build, data, formula vs logistic / tree / boosted trees / MLP; export only if it clearly wins | `_x_ml`, `_x_ml_log` | `x_ml_NOTES.md` (+ `x_ml.patch` only if it wins) |
 | `docs` (Haiku) | **done**: `docs/LEARNING.md` §1 "Training on your own machine", README "Train the bot yourself". Its review of the script found 3 issues, fixed: PATH on macOS / with `--skip-setup`, the printed map count included `zz_test`, `apply_params.py` could only write into legend (now `--bot NAME`) | none | docs |
+
+**Session 2 log: what has been done, in order** (all committed and pushed unless marked local):
+
+| Time (UTC) | Step | Result |
+|---|---|---|
+| 09:45 | New container: `pip install cambc` (2.2.5), `cambc init`, toolchain by hand, `make_sparring.sh` | builds work; `cambc.toml` → 2.2.5 |
+| 09:50 | Legend panel on engine 2.2.5 (540 games) | unchanged: mean 85.1 (table above) |
+| 09:50 | Tiebreak rules read from the engine binary (`strings /usr/local/bin/cambc`) | gems → gold earned → kills → team B (§2) |
+| 09:55 | `tools/rl/train_local.sh` written and tested end to end (1 generation, 6 games, validation, archive) | works; commit 0809d36 |
+| 09:55 | Portability and parallel-safety fixes: `variant.sh` / `es_train.py` without GNU `sed -i`; `bench.py` rebuilds only stale bots; `panel.sh` `PANEL_JOBS`; ES space 29 → 27 params | verified: the new `variant.sh` builds `_hunt` byte-identical to the old one |
+| 10:00 | `bots/_L0` frozen; `experiments/wip/AGENT_RULES.md`; six subagents launched | see the table above |
+| 10:25 | Docs agent done; its script review found 3 issues, fixed (PATH on macOS / `--skip-setup`, map count, `apply_params.py --bot`) | commit after 0809d36 |
+| 10:20-10:45 | Agents' work-in-progress committed as it appeared: `tools/analysis/gold_stats.py`, `coord_audit.mjs`, `coord_trace.mjs`, `stuck.mjs`; `tools/mapgen/goldmaps.mjs`, `stuck_maps.mjs`; 14 maps in `maps/gold/`, 8 in `maps/stuck/`; every agent's `x_*_NOTES.md` | in the repo |
+| 10:45 | Snapshots of the agents' bot copies: `experiments/wip/x_gold.patch`, `x_stuck.patch`, `x_coord.patch`, `x_mr.patch` (= legend + math + route as built by `mr`, before its review fixes) | unfinished code: the agents overwrite these with their final versions |
+
+**Early findings from the agents** (10:45 UTC; details and updates in each `experiments/wip/x_*_NOTES.md`):
+- **Coordination (`coord`)**, measured on 360 games of `_L0` vs `_r2`, `_v6`, `_devci` and itself:
+  - Vision is **not** shared across the team (56% of alive-ally turns had an ally hidden); bushes hide allies too.
+  - The costliest failure is **help that does not come**: 39% of our champion deaths had an ally within 10 tiles that
+    did not hit anyone in the 3 rounds before (155 gem-equivalent per game; 244 in lost games). Most of those allies
+    (57%) were within 6 tiles and healthy; they saw the fight, counted no ally near themselves, and declined or fled.
+  - Next: lone deaths while fleeing (29% of deaths had no ally within 6; 54 of 59 deaths with no ally within 10 were
+    fleeing). Locally outnumbered fights lose (net −0.17 kills per fight; −0.77 in lost games).
+  - Not problems: focus fire (81% of multi-hitter rounds on one target, same as the opponents), abandonment (6%),
+    walking out of spawn alone.
+  - Cause: each body judges a fight only with allies within 6 of itself.
+- **Gold / tiebreak (`gold`)**:
+  - `earnedGold` = every gold gain (captures and 50 per kill, both with Treasure/Vesper +20%); spending does not lower it.
+  - Camp rewards (gems / gold / respawn rounds): gem cluster 24 / 0 / 50, gold cluster 0 / 35 / 50, wolf 22 / 90 / 40,
+    elk 36 / 160 / 60, monolith 200 / 300 / 150; fused monolith groups pay more (monolith + gem cluster 448 / 600).
+  - One real map is gem-scarce already: ladder `lad_50x50_R_c5_65bb75` (monoliths are its only gems).
+  - Legend on the 14 gold maps: 85.7% mean vs `_r2`/`_v6`/`_hunt2`/`_devci`; games still mostly end at 1000 gems late
+    (r1100-1990) because the side that wins early fights snowballs and farms the monoliths; the first monolith
+    capture comes late (r780-1200, a body must solo-plan it first); one loss 600-600 on gold earned.
+- **Stuck (`stuck`)**: detector built (frozen / jiggle / oscillation / no-progress episodes, blocked moves, rollovers,
+  9x9 views of the worst episodes) and 8 stress maps; root causes being traced.
+- **Maths + route (`mr`)**: both prototypes rebuilt on the current legend (route merged by hand as planned) and combined
+  into `_x_mr`; review and panels running.
+- **ML (`ml`)**: logging build verified identical to legend (same results on 90-game panels, byte-identical statistics);
+  data collection running.
 
 **Merge plan** (coordinator): `mr` first, then `stuck`, `gold`, `coord`, `ml`. Each on top of the previous merge, a
 45-map panel after each, kept only if it wins (§7.1 rule), then a `submissions/BUILDS.md` row and a new zip.
@@ -165,6 +205,11 @@ The maths audit above already found the formula is biased but its chosen fights 
 | `xm_econ.mjs` | bags lost at death, bag-size histograms, recall reliability |
 | `route_stats.mjs`, `route_audit.mjs` | time shares, walking per gem, oscillation, duplicate walks, ordering regret, coverage (`LEGEND_TRACE` builds) |
 | `bank_audit.mjs`, `bank_first.mjs` | banking time split; capture-recall versus bank-first |
+| `gold_stats.py` (session 2) | per bench directory: how each game was decided (gems, gold earned, kills, team B), banked gems, earned gold, kills, deaths |
+| `coord_audit.mjs` (session 2) | coordination failures from replays, both sides: deaths alone / help did not come / outnumbered / abandoned, focus fire, fights by local numbers, walk-outs (`--split` won vs lost games) |
+| `coord_trace.mjs` (session 2) | joins the audit's death categories with `COORD_TRACE` decision lines: why an idle ally did not help |
+| `stuck.mjs` (session 2) | stuck episodes (frozen, jiggle, oscillation, no progress), blocked moves, rollovers, 9x9 views of the worst episodes |
+| `tools/mapgen/goldmaps.mjs`, `stuck_maps.mjs` (session 2) | gem-scarce test maps (`maps/gold/`), navigation stress maps (`maps/stuck/`) |
 | `tools/ml/benchsum.py` | summary of bench.py output directories |
 | `tools/ml/run_games.py` | runs a chosen list of single-side games (one at a time), bench.py naming |
 | `tools/ml/parse_logs.mjs` | turns `XML_LOG` fight logs (one line per `combat()` evaluation) into a labelled CSV: did this body die / did an enemy within 6 die in the next 12 rounds |
@@ -253,6 +298,7 @@ rm -f submissions/legend.zip && cambc bundle legend --output submissions/legend.
 | `bots/_*` | **git-ignored** local bots: sparring opponents, prototypes, variants. Recreate the panel with `tools/make_sparring.sh` |
 | `experiments/patches/` | the finished prototypes as patches against `_r2` (apply on legend: `cd bots/X && patch -p1 --no-backup-if-mismatch < ../../experiments/patches/x_econ.patch`) |
 | `maps/*.map26a` | 27 generated maps. `maps/ladder/`: 12 real ladder maps rebuilt from replays. `maps/comp/`: 6 official maps (SDK 2.1.6 pool, from the public Tarot Club repo; the other 3 official maps duplicate ladder ones) |
+| `maps/gold/`, `maps/stuck/` | session 2 test maps: 14 gem-scarce maps (gems only from monoliths/elks, gold everywhere; 2 controls) and 8 navigation stress maps. **Not in the 45-map panel** (panel them separately) |
 | `tools/bench.py`, `tools/panel.sh` | A-vs-B on every map, both sides, in parallel; one summary line per opponent |
 | `tools/variant.sh`, `tools/snapshot.sh` | build a param/define variant (`SRC=bots/X tools/variant.sh NAME key=val --define "M v"`); freeze a past commit as a bot |
 | `tools/replay/decode.mjs` | replay decoder using the engine's own wasm: per-round state + events (`{rollovers: true}` keeps fuel rollovers); `report.py`, `extract_map.mjs`, `mapinfo.mjs`, `mapfeatures.mjs` |
@@ -365,6 +411,12 @@ Varg as the 4th pick now beats Ryth.
 **Commit 564785f: stance exploration off** (measured −2 points; section 5).
 
 **Analysis tools** (commits 5cf8001 to e751b1b): `tools/analysis/*` (see section 3).
+
+**Session 2 (Oct 17, commits from 0809d36): tooling, no bot change yet.**
+- `tools/rl/train_local.sh`: one-command ES training on the user's machine (§0b).
+- Portable variant builders, stale-only rebuilds in `bench.py`, `PANEL_JOBS`, `apply_params.py --bot`.
+- New analysis tools and test maps from the session-2 agents (§0b log): `gold_stats.py`, `coord_audit.mjs`,
+  `coord_trace.mjs`, `stuck.mjs`, `goldmaps.mjs`, `stuck_maps.mjs`, `maps/gold/`, `maps/stuck/`.
 
 ---
 

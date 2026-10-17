@@ -1,0 +1,186 @@
+diff -ruN legend/src/brain.cpp _x_coord/src/brain.cpp
+--- legend/src/brain.cpp	2026-10-17 09:33:09.211370026 +0000
++++ _x_coord/src/brain.cpp	2026-10-17 10:19:11.998684713 +0000
+@@ -393,6 +393,7 @@
+ 	}
+ 
+ 	dbg_path = 0, dbg_eng = 0, dbg_hit_other = false;
++	dbg_adv = 0, dbg_E = 0, dbg_an = 0, dbg_bk = 0, dbg_fight = 0, dbg_reach = 0, dbg_nd = 99;
+ 	bool acted = combat();
+ 	if (acted)
+ 		dbg_path = task == T_FIGHT ? 1 : 2;
+@@ -423,6 +424,20 @@
+ 	});
+ #endif
+ 
++#ifdef COORD_TRACE
++	debug_block({
++		auto& WW = world();
++		int nd = 99;
++		for (const auto& e : WW.enemies)
++			if (e.alive && e.seen_round >= round - 2)
++				nd = std::min(nd, cheb(e.pos, pos));
++		const auto& CC = comms();
++		const int ad = CC.fresh(round, 6) ? cheb(CC.alert_pos, pos) : 99;
++		if (nd <= 12 || ad <= 12)
++			std::printf("CT r=%d i=%d ch=%d pos=%d,%d hp=%.2f gems=%u path=%d task=%d E=%d nd=%d adv=%.2f an=%d bk=%d fight=%d reach=%d alert=%d ad=%d\n", round, WW.my_index, static_cast<int>(type), pos.x, pos.y,
++				hp / max_hp, gems, dbg_path, task, dbg_E, nd, dbg_adv, dbg_an, dbg_bk, dbg_fight, dbg_reach, CC.fresh(round, 6) ? CC.alert_kind : 0, ad);
++	});
++#endif
+ 	place_ward(false);
+ 	update_priority();
+ 	prebuild_fields();
+@@ -1045,15 +1060,39 @@
+ 	float our_hp = hp, our_dps = str + focus * best_mod(kit) / 8.f + my_burst / 3.f;
+ 	float allies_burst = 0;
+ 	int allies_near = 0;
+-	for (const auto& a : W.allies)
+-		if (a.handle != self && a.alive && a.visible && cheb(a.pos, pos) <= 6)
+-		{
+-			const float ab = std::max(a.str, a.focus * best_mod(a.kit));
+-			our_hp += a.hp;
+-			our_dps += P.ally_spell_dps ? a.str + a.focus * best_mod(a.kit) / 8.f + ab / 3.f : a.str * 1.2f;
+-			allies_burst += a.str;
+-			++allies_near;
+-		}
++	// Allies in this fight. Before: visible allies within 6 of us. Coordination (x_coord):
++	// * coord_ally_mem: an ally seen in the last few rounds is still there (bushes hide allies from each other:
++	//   traced bodies flipped fight/flee every other round as a 3-tile ally blinked in and out of sight);
++	// * coord_joint: an ally already next to one of these enemies is in the same fight even when it is farther
++	//   than 6 from us. 39% of our champion deaths had a healthy ally within 10 that never hit anyone; traced, the
++	//   most common reason was that ally computing the fight alone (no ally within 6 of it) and walking away.
++	std::array<bool, 8> in_fight{};
++	for (std::size_t i = 0; i < W.allies.size() && i < in_fight.size(); ++i)
++	{
++		const auto& a = W.allies[i];
++		if (a.handle == self || !a.alive)
++			continue;
++		const bool known = a.visible || (P.coord_ally_mem > 0 && a.seen_round >= 0 && round - a.seen_round <= P.coord_ally_mem);
++		if (!known)
++			continue;
++		const int da = cheb(a.pos, pos);
++		bool here = da <= 6;
++		if (!here && P.coord_joint && da <= P.coord_joint_max)
++			for (auto* e : E)
++				if (cheb(a.pos, e->pos) <= P.coord_joint_r)
++				{
++					here = true;
++					break;
++				}
++		if (!here)
++			continue;
++		in_fight[i] = true;
++		const float ab = std::max(a.str, a.focus * best_mod(a.kit));
++		our_hp += a.hp;
++		our_dps += P.ally_spell_dps ? a.str + a.focus * best_mod(a.kit) / 8.f + ab / 3.f : a.str * 1.2f;
++		allies_burst += a.str;
++		++allies_near;
++	}
+ 	if (W.ally_spawn.is_set(pos) && P.spawn_heal_bonus)
+ 	{
+ 		// We heal fully next round on spawn, but only while the fight stays here: stepping off spawn to
+@@ -1084,10 +1123,11 @@
+ 				++dead_allies;
+ 				continue;
+ 			}
+-			if (a.handle == self || (a.visible && cheb(a.pos, pos) <= 6))
++			if (a.handle == self || (i < static_cast<int>(in_fight.size()) && in_fight[static_cast<std::size_t>(i)]))
+ 				continue;
+ 			const int cg = i < 6 ? C.claim[static_cast<std::size_t>(i)] : -1;
+-			const vec2 at = a.visible ? a.pos : (cg >= 0 && cg < static_cast<int>(W.groups.size()) ? W.groups[static_cast<std::size_t>(cg)].center : vec2{ -100, -100 });
++			const bool known = a.visible || (P.coord_ally_mem > 0 && a.seen_round >= 0 && round - a.seen_round <= P.coord_ally_mem);
++			const vec2 at = known ? a.pos : (cg >= 0 && cg < static_cast<int>(W.groups.size()) ? W.groups[static_cast<std::size_t>(cg)].center : vec2{ -100, -100 });
+ 			if (cheb(at, pos) <= P.backup_radius)
+ 				++backup;
+ 		}
+@@ -1171,6 +1211,7 @@
+ 		fight = fight && killable;
+ 	engaged = fight || in_reach || nearest_enemy <= 5;
+ 	(void)stunners;
++	dbg_adv = adv, dbg_E = static_cast<int>(E.size()), dbg_an = allies_near, dbg_bk = backup, dbg_fight = fight, dbg_reach = in_reach;
+ 
+ 	// Early warning: an outnumbering group is visible; allies keep away from it.
+ 	if (!fight && E.size() >= 3 && adv < 1.f)
+@@ -1186,6 +1227,10 @@
+ 	{
+ 		post_danger(tgt->pos);
+ 		task = T_FLEE;
++		// coord_flee_rally: call for help where we are (allies within the rally radius walk in and judge the
++		// fight with us counted). Never over a fresh enemy-tribute opportunity.
++		if (P.coord_flee_rally && !(comms().fresh(round, 6) && comms().alert_kind == AL_OPPORTUNITY))
++			comms().post(AL_RALLY, pos, round);
+ 		// A stun on the closest melee chaser buys a free step (only stuns that still let us walk).
+ 		for (auto* e : E)
+ 			if (e->ch && !kit.cc_excl && (!e->kit.ranged || e->ready(e->kit.dash)) && cheb(pos, e->pos) <= static_cast<int>(kit.cc_range) && ready(kit.cc))
+@@ -1223,7 +1268,39 @@
+ 				}
+ 			}
+ 		}
+-		if (go_home_step(true))
++		// coord_flee_ally: flee towards a healthy ally that is farther from these enemies than we are and nearer
++		// than home: the chaser then meets two of us (traced: 43% of our champion deaths came while fleeing,
++		// usually towards home with an ally a few tiles to the side).
++		bool fled = false;
++		if (P.coord_flee_ally && !W.ally_spawn.is_set(pos))
++		{
++			int best_i = -1, best_d = BIG;
++			for (std::size_t i = 0; i < W.allies.size(); ++i)
++			{
++				const auto& a = W.allies[i];
++				if (a.handle == self || !a.alive || a.hp < 0.5f * a.max_hp)
++					continue;
++				if (!a.visible && !(P.coord_ally_mem > 0 && a.seen_round >= 0 && round - a.seen_round <= P.coord_ally_mem))
++					continue;
++				const int da = cheb(a.pos, pos);
++				if (da < 2 || da > P.coord_flee_ally_max || da >= dh)
++					continue;
++				int ae = BIG;
++				for (auto* e : E)
++					ae = std::min(ae, cheb(a.pos, e->pos));
++				if (ae <= nearest_enemy)
++					continue;
++				if (da < best_d)
++					best_d = da, best_i = static_cast<int>(i);
++			}
++			if (best_i >= 0)
++			{
++				bc::bitboard goal;
++				goal.draw_chebyshev(W.allies[static_cast<std::size_t>(best_i)].pos, 1.f);
++				fled = step(goal, true, true);
++			}
++		}
++		if (fled || go_home_step(true))
+ 		{
+ 			// Melee champions can still swing after walking.
+ 			if (!kit.ranged && can_attack)
+diff -ruN legend/src/brain.h _x_coord/src/brain.h
+--- legend/src/brain.h	2026-10-17 09:33:09.213173744 +0000
++++ _x_coord/src/brain.h	2026-10-17 10:07:47.066675377 +0000
+@@ -47,6 +47,8 @@
+ 	bool engaged = false;
+ 	int dbg_path = 0, dbg_eng = 0; // SPELL_TRACE: which decision used the turn / which engage branch
+ 	bool dbg_hit_other = false;	   // SPELL_TRACE: the melee step-then-hit-another-enemy branch swung
++	float dbg_adv = 0;			   // COORD_TRACE: last combat() estimate
++	int dbg_E = 0, dbg_an = 0, dbg_bk = 0, dbg_fight = 0, dbg_reach = 0, dbg_nd = 99;
+ 	bool safe_to_recall() const;
+ 	bool altar_unsafe(int i) const;
+ 	void post_danger(vec2 at);
+diff -ruN legend/src/params.h _x_coord/src/params.h
+--- legend/src/params.h	2026-10-17 09:33:09.213173744 +0000
++++ _x_coord/src/params.h	2026-10-17 10:19:12.002678519 +0000
+@@ -143,6 +143,15 @@
+ 	int sticky_tribute = 1;		// finish a bank trip once started
+ 	int claim_tiebreak = 1;		// on our own group only lower-index claimers count
+ 
++	// Team coordination (x_coord; tools/analysis/coord_audit.mjs, coord_trace.mjs)
++	int coord_ally_mem = 2;	   // an ally seen this many rounds ago still counts at its last position (0: visible only)
++	int coord_joint = 1;	   // allies next to the enemies we see count in our fight estimate and as backup
++	int coord_joint_r = 3;	   // ... "next to": within this of one of the enemies
++	int coord_joint_max = 9;   // ... and within this of us
++	int coord_flee_ally = 1;   // flee towards a healthy ally (farther from the enemies, nearer than home) instead of home
++	int coord_flee_ally_max = 8; // ... within this many tiles
++	int coord_flee_rally = 0;  // fleeing in their reach: post a rally at our position (allies within 9 come)
++
+ 	// Aggression
+ 	float steal_hp_frac = 0.55f; // need this health fraction to farm on the enemy half
+ 	int gank_bag = 25;			 // chase a visible carrier with at least this many gems

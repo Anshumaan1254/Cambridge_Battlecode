@@ -4,12 +4,13 @@
 // reachable. Symmetric and connectivity-checked like gen.mjs; every map is encoded by the engine's own
 // MapBuilder (VerifyIntegrity).
 //
-// Usage: node tools/mapgen/goldmaps.mjs [outDir=maps/gold] [seed=7]
+// Usage: node tools/mapgen/goldmaps.mjs [outDir=maps/gold] [seed=7] [suffix='']
+// (another seed with a suffix, e.g. `maps/gold2 11 _s11`, gives a second pool of the same recipes)
 import fs from 'node:fs';
 import path from 'node:path';
 import { loadEngine, Builder, SYM, CAMP } from './engine.mjs';
 
-const [outDir = 'maps/gold', seedArg = '7'] = process.argv.slice(2);
+const [outDir = 'maps/gold', seedArg = '7', suffix = ''] = process.argv.slice(2);
 let seed = Number(seedArg) >>> 0 || 7;
 const rnd = () => { seed ^= seed << 13; seed >>>= 0; seed ^= seed >>> 17; seed ^= seed << 5; seed >>>= 0; return seed / 4294967296; };
 const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
@@ -194,8 +195,8 @@ for (const r of recipes) {
   let m = null, tries = 0;
   while (!m && tries++ < 400) m = makeMap(E, r);
   if (!m) { console.log('FAILED', r.name); continue; }
-  fs.writeFileSync(path.join(outDir, r.name + '.map26a'), m.bytes);
-  index.push({ name: r.name, w: r.w, h: r.h, sym: r.sym, champs: r.champs, altars: m.altars, tries });
+  fs.writeFileSync(path.join(outDir, r.name + suffix + '.map26a'), m.bytes);
+  index.push({ name: r.name + suffix, w: r.w, h: r.h, sym: r.sym, champs: r.champs, altars: m.altars, tries });
   console.log('wrote', r.name, 'after', tries, 'tries');
 }
 fs.writeFileSync(path.join(outDir, 'index.json'), JSON.stringify(index, null, 1));

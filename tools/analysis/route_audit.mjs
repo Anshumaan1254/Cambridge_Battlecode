@@ -11,6 +11,8 @@
 //   the walk to it, whether a nearer live group nobody of ours targeted was skipped (and by how much),
 //   whether the target was still respawning, and what a one-step lookahead would have changed: the best
 //   follow-up group after the chosen one, against the best (g1, g2) pair by combined gems per round.
+//   The lookahead model is crude (a fixed 8 rounds of work per group, kill time and danger ignored): it
+//   shows how often a pair-wise choice differs, not what it would gain in a game.
 // Per game it also reports group coverage: gem-weighted rounds that live, untouched groups waited with no
 // body of ours within 3 tiles (unfarmed supply), split by our half / their half.
 import fs from 'node:fs';
@@ -91,7 +93,7 @@ function parseTrace(text) {
 	return { groups, turns };
 }
 
-const acc = { games: 0, decisions: 0, walk: 0, longDec: 0, longWalk: 0, skipped: 0, skippedSteps: 0, skippedLong: 0, respawnTarget: 0,
+const acc = { games: 0, decisions: 0, captureDec: 0, walk: 0, longDec: 0, longWalk: 0, skipped: 0, skippedSteps: 0, skippedLong: 0, respawnTarget: 0,
 	noneNear: 0, la: 0, laChange: 0, laGain: 0, laD12: 0, laD12best: 0, cover: [0, 0], coverAll: [0, 0], depleted: 0, depletedRounds: 0, roundsAll: 0 };
 
 async function analyse(file) {
@@ -157,7 +159,8 @@ async function analyse(file) {
 				acc.decisions++; gDec++;
 				acc.walk += d0;
 				const st = gstate(g, r - 1);
-				if (st === 0) acc.respawnTarget++;
+				if (st === 0 && tk !== 'capture') acc.respawnTarget++;
+				if (tk === 'capture') acc.captureDec++;
 				let dn = 1 << 20, gn = -1;
 				for (const h of G) if (h.id !== g && !taken.has(h.id) && gstate(h.id, r - 1) > 0 && gd(h.id, p0) < dn) dn = gd(h.id, p0), gn = h.id;
 				if (gn >= 0 && dn + 5 < d0) {
@@ -225,7 +228,7 @@ for (const f of files) {
 }
 const n = Math.max(1, acc.decisions);
 console.log(`\n== ${acc.games} games, ${acc.decisions} target decisions, mean walk ${(acc.walk / n).toFixed(1)} steps`);
-console.log(`target was still respawning (wait on arrival): ${acc.respawnTarget} (${(100 * acc.respawnTarget / n).toFixed(1)}%)`);
+console.log(`capture targets (reward waiting): ${acc.captureDec} (${(100 * acc.captureDec / n).toFixed(1)}%); farm/wait target still respawning (wait on arrival): ${acc.respawnTarget} (${(100 * acc.respawnTarget / n).toFixed(1)}%)`);
 console.log(`long walks (>20 steps): ${acc.longDec} decisions (${(100 * acc.longDec / n).toFixed(1)}%), ${acc.longWalk} steps (${(100 * acc.longWalk / Math.max(1, acc.walk)).toFixed(1)}% of target walking)`);
 console.log(`nearer live group nobody targeted skipped by >5 steps: ${acc.skipped} (${(100 * acc.skipped / n).toFixed(1)}%), ${acc.skippedSteps} extra steps; of them long walks ${acc.skippedLong}`);
 console.log(`no live untargeted group within 20 steps at decision: ${acc.noneNear} (${(100 * acc.noneNear / n).toFixed(1)}%)`);

@@ -37,7 +37,7 @@ const cheb = (a, b) => Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]));
 const CI = new Set(['Cassi', 'Issac']);
 const T = { games: 0, wins: 0, ci_games: 0, pd: 0, pd_won: 0, pd_lost: 0, gems: 0, deadR: 0, bodyR: 0, solo: 0, otherDeaths: 0, enemyPd: 0 };
 const bump = (o, k, v = 1) => (o[k] = (o[k] || 0) + v);
-const split = { trig_act: {}, other_act: {}, dist: {}, trig_hp: {}, other_hp: {}, bagger: {}, trig_champ: {}, trig_ne: {}, other_ne: {}, by: {}, pair_act: {} };
+const split = { trig_act: {}, other_act: {}, dist: {}, trig_hp: {}, other_hp: {}, bagger: {}, trig_champ: {}, trig_ne: {}, trig_na: {}, other_ne: {}, by: {}, pair_act: {} };
 const rows = [];
 for (const f of files.sort()) {
   const base = path.basename(f, '.repl26a');
@@ -124,6 +124,7 @@ for (const f of files.sort()) {
     bump(split.bagger, oth[8] > trig[8] ? 'other bag bigger' : trig[8] > oth[8] ? 'trigger bag bigger' : 'equal');
     bump(split.trig_champ, d.meta.bodies[trig[0]].type);
     bump(split.trig_ne, String(Math.min(3, near(trig, 1 - us))) + (near(trig, 1 - us) >= 3 ? '+' : ''));
+    bump(split.trig_na, String(Math.min(3, near(trig, us))) + (near(trig, us) >= 3 ? '+' : ''));
     bump(split.other_ne, String(Math.min(3, near(oth, 1 - us))) + (near(oth, 1 - us) >= 3 ? '+' : ''));
     bump(split.by, by);
     bump(split.pair_act, `${ta}/${oa}`);

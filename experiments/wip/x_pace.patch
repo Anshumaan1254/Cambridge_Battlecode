@@ -1,0 +1,95 @@
+diff -ruN _ST/src/brain.cpp _x_pace/src/brain.cpp
+--- _ST/src/brain.cpp	2026-10-17 17:35:31.321356991 +0000
++++ _x_pace/src/brain.cpp	2026-10-17 18:51:54.300705550 +0000
+@@ -1,3 +1,6 @@
++#ifdef LEGEND_TRACE
++#include <map>
++#endif
+ #include "brain.h"
+ #include "learn.h"
+ 
+@@ -2682,6 +2685,9 @@
+ 	int best = -1, best_eta = BIG;
+ 	bool best_pair = false, best_team = false;
+ 	float best_s = 0;
++#ifdef LEGEND_TRACE
++	std::map<int, float> tr_sc;
++#endif
+ 	prepare_scoring();
+ 	{
+ 		// Score the current target first, then groups near us, then the rest while fuel lasts: on a
+@@ -2700,6 +2706,9 @@
+ 			if (s <= 0)
+ 				return;
+ 			const bool tm = sc_team;
++#ifdef LEGEND_TRACE
++			tr_sc[g.id] = s;
++#endif
+ 			if (g.id == task_group)
+ 				s *= P.hysteresis;
+ 			else if (P.flip_window > 0 && g.id == left_group && round - left_round <= P.flip_window)
+@@ -2861,6 +2870,17 @@
+ #endif
+ 	if (best != task_group)
+ 	{
++#ifdef LEGEND_TRACE
++		debug_block({
++			if (task_group >= 0)
++			{
++				const auto& og = W.groups[static_cast<std::size_t>(task_group)];
++				std::printf("SW r=%d %d old=%d new=%d sold=%.3f snew=%.3f stold=%d dold=%d dnew=%d since=%d\n", round, static_cast<int>(type), task_group, best,
++					tr_sc.count(task_group) ? tr_sc[task_group] : -1.f, tr_sc.count(best) ? tr_sc[best] : -1.f, static_cast<int>(og.st), nav().group_dist(og, pos),
++					nav().group_dist(W.groups[static_cast<std::size_t>(best)], pos), round - task_since);
++			}
++		});
++#endif
+ 		if (task_group >= 0)
+ 			left_group = task_group, left_round = round;
+ 		task_group = best;
+diff -ruN _ST/src/params.h _x_pace/src/params.h
+--- _ST/src/params.h	2026-10-17 17:35:31.321846415 +0000
++++ _x_pace/src/params.h	2026-10-17 18:53:56.004696450 +0000
+@@ -212,7 +212,10 @@
+ 	// out and a recall back for a 22-34 gem bag. Unopposed, 14.6% of body-rounds were walks to an altar
+ 	// (tools/analysis/bank_audit.mjs); banking before the recall would have saved >=10 rounds on 166 of 355
+ 	// capture-recall-then-bank trips (tools/analysis/bank_first.mjs).
+-	int bank_first = 1;			// full bag at a capture: skip the recall and bank at the nearest altar when that beats banking from spawn
++	int bank_first = 0;			// full bag at a capture: skip the recall and bank at the nearest altar when that beats banking from spawn.
++								// OFF (agent pace): unopposed pace on 56 maps 472.7 -> 469.7 with it off (official 17: 574.3 -> 567.6; pilgrimage -123,
++								// rushbait-v2 -48, interlock -19; ambush/monolith/collision +16..+24 are map noise). A rule that also compares the
++								// walk from each altar to the next camp (bank_first 2, rejected) did not beat plain off: 472.3 vs 469.7.
+ 	int bank_first_margin = 2;	// ... by at least this many steps (nearest-altar walk + recall_time + margin <= spawn altar walk)
+ 	float bank_trip_w = 1.0f;	// bank threshold rises by this many gems per step of bank trip beyond bank_trip_free
+ 	int bank_trip_free = 12;	// bank trips up to this many steps keep the plain threshold
+@@ -221,10 +224,15 @@
+ 
+ 	// Objective maps (agent obj, session 3): the gems sit in one or a few heavy groups (stampede, contest)
+ 	int obj_plan = 1;			// detect objective maps at init (World::detect_objective); everything below needs it
+-	float obj_min_hp = 6000.f;	// a group this heavy cannot be soloed early (elk 2,400; monolith 20,000)
+-	float obj_share = 0.6f;		// ... objective map when such groups hold this share of the map's gem rate
+-	int obj_min_attackers = 2;	// ... counting only groups with at least this many camps that hit back (not a lone monolith:
+-								// monolith-only maps with the mode on: 105 of 152 games vs _k1/_v6/_r2/_es2, about baseline; x_obj_NOTES)
++	float obj_min_hp = 4500.f;	// a group this heavy cannot be soloed early (elk 2,400; monolith 20,000). Was 6000; 4500 admits ambush's
++								// 4,750-5,800 HP gem groups: ambush pace 840 -> 646 (agent pace)
++	float obj_share = 0.7f;		// ... objective map when such groups hold this share of the map's gem rate (was 0.6; 0.7 keeps eight 0.67,
++								// expanse 0.64, interlock 0.59 out: with 0.4 they got +26..+49 rounds slower, ambush the same -194)
++	int obj_max_groups = 8;		// ... and at most this many such groups on the whole map (both sides). ambush 6, contest 2, stampede 1; swirl and the
++								// ladder 45x30 map have 14 (every gem group is heavy there): with the mode on they got +15 rounds and 2 of 12 more losses
++	int obj_min_attackers = 1;	// ... counting only groups with at least this many camps that hit back (2 excluded a lone monolith: monolith-only
++								// maps with the mode on: 105 of 152 games vs _k1/_v6/_r2/_es2, about baseline; x_obj_NOTES). With 1 the mode
++								// turns on for contest: unopposed pace 1087 -> 905 (agent pace; nothing else changes)
+ 	int obj_team = 1;			// score an objective group with the whole living team's damage once the team can
+ 								// clear it (obj_team_ready); the solo plan never passes (stampede: nobody touched
+ 								// the 360-gem group before r905; bodies chipped it one or two at a time and left it)
+diff -ruN _ST/src/world.cpp _x_pace/src/world.cpp
+--- _ST/src/world.cpp	2026-10-17 17:35:31.321901767 +0000
++++ _x_pace/src/world.cpp	2026-10-17 18:53:56.000674622 +0000
+@@ -159,7 +159,7 @@
+ 	// group 17,400). Gem rate = gems per respawn round; a centre group counts once for the whole map, side groups
+ 	// once per copy, so the share is map-wide. The sums are gathered in init_static's group loop.
+ 	obj_share = obj_rate_total > 0 ? obj_rate_heavy / obj_rate_total : 0;
+-	obj_mode = !obj_groups.empty() && obj_share >= P.obj_share;
++	obj_mode = !obj_groups.empty() && static_cast<int>(obj_groups.size()) <= P.obj_max_groups && obj_share >= P.obj_share;
+ 	if (!obj_mode)
+ 		return;
+ 	std::sort(obj_groups.begin(), obj_groups.end(), [&](int a, int b) { return groups[static_cast<std::size_t>(a)].d_ally < groups[static_cast<std::size_t>(b)].d_ally; });

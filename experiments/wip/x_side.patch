@@ -1,0 +1,204 @@
+diff -ruN _ST/src/brain.cpp _x_side/src/brain.cpp
+--- _ST/src/brain.cpp	2026-10-17 17:35:31.321356991 +0000
++++ _x_side/src/brain.cpp	2026-10-17 18:48:58.992718964 +0000
+@@ -1176,9 +1176,14 @@
+ 	float our_hp = hp, our_dps = str + focus * best_mod(kit) / 8.f + my_burst / 3.f;
+ 	float allies_burst = 0;
+ 	int allies_near = 0;
++	std::array<vec2, 8> side_pos{};
++	int side_n = 0;
++	side_pos[static_cast<std::size_t>(side_n++)] = pos;
+ 	for (const auto& a : W.allies)
+ 		if (a.handle != self && a.alive && a.visible && cheb(a.pos, pos) <= 6 && (!P.support_filter || can_support(a, E)))
+ 		{
++			if (side_n < static_cast<int>(side_pos.size()))
++				side_pos[static_cast<std::size_t>(side_n++)] = a.pos;
+ 			const float ab = std::max(a.str, a.focus * best_mod(a.kit));
+ 			our_hp += a.hp;
+ 			our_dps += P.ally_spell_dps ? a.str + a.focus * best_mod(a.kit) / 8.f + ab / 3.f : a.str * 1.2f;
+@@ -1196,6 +1201,46 @@
+ 		if (here)
+ 			our_hp += max_hp;
+ 	}
++	if (P.camp_in_fight)
++	{
++		// Awake camps hit the nearest champion within 3 every round, whichever team it is on. Ignoring them made
++		// a team still tanking a camp take an even fight against fresh arrivals (eight: C&I died at r24-27
++		// under the top wolves). Ties go to us (the camp's tie-break is turn order; assume the worse).
++		// Measured (camp_in_fight in params.h): counting the enemy's camp damage wins (we take the fights where
++		// they tank); counting ours loses (bodies back off camps and rewards and get chased anyway).
++		for (const auto& g : W.groups)
++		{
++			if (g.st != ST_ALIVE || !g.awake || g.harmless || cheb(g.center, pos) > 12)
++				continue;
++			for (std::size_t i = 0; i < g.camps.size(); ++i)
++			{
++				if (g.hp[i] <= 0 || g.camps[i].str <= 0)
++					continue;
++				const vec2 c = g.camps[i].pos;
++				int best = 4, who = -1; // -1 none, 0 me, 1 ally, 2 enemy
++				for (int k = 0; k < side_n; ++k)
++				{
++					const int dd = cheb(side_pos[static_cast<std::size_t>(k)], c);
++					if (dd < best)
++						best = dd, who = k == 0 ? 0 : 1;
++				}
++				for (auto* e : E)
++					if (cheb(e->pos, c) < best)
++						best = cheb(e->pos, c), who = 2;
++				if (who == 2)
++				{
++					if (P.camp_in_fight != 2)
++						our_dps += g.camps[i].str;
++				}
++				else if (who >= 0 && P.camp_in_fight != 3)
++				{
++					their_dps += g.camps[i].str;
++					if (who == 0)
++						incoming += g.camps[i].str;
++				}
++			}
++		}
++	}
+ 	const float t_kill_them = their_hp / std::max(1.f, our_dps);
+ 	const float t_kill_us = our_hp / std::max(1.f, their_dps);
+ 	// Learned calibration: bodies that died after choosing fights trust their estimate less.
+@@ -3125,6 +3170,77 @@
+ 	return true;
+ }
+ 
++bool Brain::wake_guard_hold(const Group& g)
++{
++	// Waking a camp next to an enemy force hands them the fight: the camp hits us every round until it dies
++	// and they arrive at full health (eight vs the panel: 6 of 8 lost, every time after our team woke the top
++	// wolves or the 27,3 elk at r16-17 with their 4-5 bodies 6-9 tiles away; C&I died at r24-27 at 4v5).
++	auto& W = world();
++	float ehp = 0, edps = 0;
++	int ne = 0;
++	for (const auto& e : W.enemies)
++		if (e.alive && e.seen_round >= 0 && round - e.seen_round <= P.threat_memory && !W.enemy_spawn.is_set(e.pos) &&
++			(cheb(e.pos, g.center) <= P.wake_guard_d || cheb(e.pos, pos) <= P.wake_guard_d))
++		{
++			ehp += e.hp;
++			edps += e.str + e.focus * best_mod(e.kit) / 8.f + e.burst() / 3.f;
++			++ne;
++		}
++	// Opening: enemies not seen yet still leave their spawn around round 3 and walk one tile a round, so a group
++	// they can reach before we finish it is contested even unseen (eight: the top wolves woken at r17, enemy
++	// bodies 9-10 tiles away out of sight, C&I dead at r24).
++	bool projected = false;
++	if (ne == 0 && round < P.wake_guard_open && g.d_enemy < BIG)
++	{
++		bool all_seen_far = !W.enemies.empty();
++		for (const auto& e : W.enemies)
++			all_seen_far &= !e.alive || (e.seen_round >= 0 && round - e.seen_round <= 3 && cheb(e.pos, g.center) > P.wake_guard_d + 3);
++		projected = !all_seen_far;
++	}
++	if (ne == 0 && !projected)
++	{
++		if (wg_group == g.id)
++			wg_group = -1;
++		return false;
++	}
++	float ohp = hp, odps = str + focus * best_mod(kit) / 8.f, team_camp_dps = dps_on(g);
++	for (const auto& a : W.allies)
++		if (a.handle != self && a.alive && a.visible && cheb(a.pos, g.center) <= P.wake_guard_d)
++		{
++			ohp += a.hp;
++			odps += a.str + a.focus * best_mod(a.kit) / 8.f;
++			team_camp_dps += a.str + a.focus * best_mod(a.kit) / 8.f;
++		}
++	const float kill = g.hp_total / std::max(10.f, team_camp_dps);
++	if (kill <= P.wake_guard_kill)
++		return false;
++	if (projected)
++	{
++		// Unseen: assume the whole enemy team arrives at full health when it can first reach the group.
++		// First enemy hits: their walk to the group minus their reach (4 with a spell), from round 1. Traced on
++		// eight: d_enemy 25 for the top wolves, their bodies hit ours there at r20.
++		const int arrive = g.d_enemy + 1 - P.wake_guard_reach;
++		if (static_cast<float>(round) + kill <= static_cast<float>(arrive - P.wake_guard_eta_margin) || round > arrive + 12)
++			return false;
++		// Never-seen enemies have no stats yet: count each like one of our bodies (mirror drafts).
++		const float my_dps = str + focus * best_mod(kit) / 8.f;
++		for (const auto& e : W.enemies)
++			if (e.alive)
++				ehp += std::max(e.max_hp, max_hp), edps += std::max(e.str + e.focus * best_mod(e.kit) / 8.f, my_dps);
++	}
++	// Our side after the camp: its hits over the kill time come off our health.
++	const float after = std::max(1.f, ohp - incoming_on(g) * kill);
++	const float adv = (after / std::max(1.f, edps)) / std::max(0.1f, ehp / std::max(1.f, odps));
++#ifdef LEGEND_TRACE
++	debug_block({ if (round < 40) std::printf("WA r=%d %d g=%d adv=%.2f after=%.0f ehp=%.0f edps=%.0f odps=%.0f\n", round, static_cast<int>(type), g.id, adv, after, ehp, edps, odps); });
++#endif
++	if (adv >= P.wake_guard_adv)
++		return false;
++	if (wg_group != g.id)
++		wg_group = g.id, wg_since = round;
++	return round - wg_since <= P.wake_guard_max;
++}
++
+ bool Brain::farm_group(Group& g)
+ {
+ 	auto& W = world();
+@@ -3164,6 +3280,12 @@
+ 			}
+ 		}
+ 	}
++	if (P.wake_guard && g.st == ST_ALIVE && !g.awake && !g.harmless && !obj && wake_guard_hold(g))
++	{
++		task = T_WAIT;
++		go_group(g, 4, true);
++		return true;
++	}
+ 	// Choose among live, visible camps in attack range: lowest health first (Varg: most neighbours for splash).
+ 	auto pick = [&](int range) {
+ 		std::size_t best = g.camps.size();
+diff -ruN _ST/src/brain.h _x_side/src/brain.h
+--- _ST/src/brain.h	2026-10-17 17:35:31.321449950 +0000
++++ _x_side/src/brain.h	2026-10-17 18:48:11.870299812 +0000
+@@ -79,6 +79,7 @@
+ 	bool respond_to_alert();
+ 	void farm();
+ 	bool farm_group(Group& g);
++	bool wake_guard_hold(const Group& g);
+ 	bool capture_group(Group& g);
+ 	bool wait_group(Group& g);
+ 	float group_score(const Group& g, int& eta, bool* need_pair = nullptr, int d_override = -1) const;
+@@ -86,6 +87,7 @@
+ 	float score_cap(const Group& g) const;  // upper bound on group_score(g)
+ 	bool obj_team_ready(const Group& g, float hp_left, float& kill) const; // objective map: the team can clear g
+ 	int obj_gather_since = -1, obj_gather_group = -1;
++	int wg_group = -1, wg_since = -1;
+ 	mutable bool sc_team = false; // the last group_score used the objective team plan (the solo plan failed)
+ 	bool task_team = false;		  // ... for the current farm target
+ 	bool hop_task(int gid);
+diff -ruN _ST/src/params.h _x_side/src/params.h
+--- _ST/src/params.h	2026-10-17 17:35:31.321846415 +0000
++++ _x_side/src/params.h	2026-10-17 18:48:11.901601633 +0000
+@@ -272,6 +272,25 @@
+ 	int gank_bag = 25;			 // chase a visible carrier with at least this many gems
+ 	float deny_hp_frac = 0.6f;	 // contest an enemy's capture (step on its tiles) from this health fraction
+ 	float deny_capture_mult = 1.3f; // value multiplier for contesting an enemy's capture
++
++	// Opening / contested fights (agent side, session 4). eight (one altar, mid-map) vs the panel: we lost 6 of 8;
++	// in all 6 our team woke a heavy camp next to the enemy's path (top wolves r17 as A, elk 27,3 r16 as B) while
++	// their 4-5 bodies were 6-9 tiles away; they arrived fresh, the camp kept hitting us, C&I died at r24-27.
++	int camp_in_fight = 3;		 // combat(): awake camps hit the nearest champion within 3 each round. 3: a camp whose
++								 // nearest body is an enemy adds its strength to our DPS (they tank it: punish them);
++								 // 2: a camp hitting us or a counted ally adds to theirs; 1: both; 0: off. 56 maps vs
++								 // _ST: 3 = 56.2 (comp 61.8; panel _L0 73.2 _es2 65.2 _r2 80.4 _v6 96.4 with
++								 // wake_guard), 2 = 41.1 (backing off camps cost more than it saved), 1 = 47.3
++	int wake_guard = 0;			 // do not wake a sleeping group while a comparable enemy force is near it (eight 4/8 alone;
++								 // with camp_in_fight 3: 54.5 vs the same without it; interlock A lost vs _ST): off
++	int wake_guard_d = 9;		 // ... enemies seen (threat_memory) within this of the group or of us
++	float wake_guard_kill = 3.f; // ... unless we kill the group within this many rounds
++	float wake_guard_adv = 1.5f; // ... or our side (allies near, health after the camp's hits) beats them by this
++	int wake_guard_max = 16;	 // ... hold at most this many rounds per group, then farm anyway
++	int wake_guard_open = 0;	 // ... before this round also guard against enemies not seen yet (arrival projected from
++								 // their spawn; never-seen enemies counted like our bodies). 80: same results as 0
++	int wake_guard_reach = 4;	 // ... their first hit lands this many tiles before they reach the group
++	int wake_guard_eta_margin = 0; // ... when the group would not be dead this many rounds before they can arrive
+ };
+ 
+ inline constexpr Params P{};

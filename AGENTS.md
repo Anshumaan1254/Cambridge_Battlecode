@@ -23,6 +23,7 @@ running or unfinished, and what to do next, so a new agent can continue without 
 | Full panels `_rmxp` then `_rmx` (vs `_ST _L0 _es2 _r2 _v6 _c3`, 1,272 games each, 2 jobs, ~45 min each) | `/tmp/ev/e1.sh`, log `/tmp/ev/e1.log`, results `/tmp/ev/fp_<bot>/` (`python3 tools/sum.py DIR`) | compare with `_ST` (mean 73.4, official 67.6) and `_rm` (72.3 / 72.3); ship the best that beats `_ST` |
 | Agent `race` (Opus): close gem-race endgame (late banking, race hysteresis, endgame denial) | copy `bots/_x_race`, outputs `/tmp/race/`, deliverables `experiments/wip/x_race.patch` + `x_race_NOTES.md` | merge if it beats `_rm` (acceptance in AGENT_RULES.md) |
 | Agent `probe` (Sonnet): engine rules (stun vs tribute, altar lock, simultaneous tributes, tribute timing at 1000, Home emblem) | `bots/_x_probe`, `maps/probe5/`, deliverables: section in `docs/ENGINE_FACTS.md`, `experiments/wip/x_probe_NOTES.md` | fix legend code that relies on a wrong assumption |
+| Agent `pair` (Opus): Cassi & Issac joint deaths (audit P0: 31% of body-rounds dead, 163 paired deaths); owns comms bit 7 of bytes 2-5 | copy `bots/_x_pair`, outputs `/tmp/pair/`, deliverables `experiments/wip/x_pair.patch` + `x_pair_NOTES.md` | merge if it beats `_rm` |
 
 - Plan: (1) full panels of `_rmxp` then `_rmx` (the panels session 4 had queued; `_rnr`/`_rnd` ablations only if needed), ship the best
   build that beats `_ST`; (2) agents on the unstarted tasks of §000.4 (gem-race endgame, engine probes, walk waste, audit items).

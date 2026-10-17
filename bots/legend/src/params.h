@@ -130,6 +130,13 @@ struct Params
 	int melee_aoe_stun = 1;	  // melee area stunners (Ryth) stun from range 2..range+radius instead of walking in first
 	int flee_stun = 1;		  // fleeing with a walk-exclusive stun: stun a melee/dash chaser that can hit us next turn
 	int step_hit_other = 1;	  // melee: after a step that leaves the target out of reach, hit another enemy in reach
+	// Cast before walking (session 3, agent cast). Damage spells are walk-exclusive, so a turn spent walking past a
+	// camp wastes the cooldown. Traced on 3 comp games: Stellar/Cassi had a ready damage spell, a live camp of
+	// another group 4 tiles away, and walked on in ~150 turns (only the task group's camps were ever cast on).
+	int cast_en_route = 1;	  // 0 off; 1 farming bodies cast dmg / non-stun area spells on a camp (of one of our groups, not the
+							  // task group) exactly 4 tiles away instead of walking that turn; 2 also stuns that do damage
+	int cast_near_target = 1; // fighting: the chosen target is out of spell range but another enemy is within 4: cast on that one
+							  // instead of walking toward the target (path1/eng4 in the trace: 41 turns in 3 games)
 
 	int dash_holes = 1;		   // dash kits route over 1-wide hole crossings (fields treat those holes as ground; the
 							   // step waits for the dash instead of walking around), see world.cpp
@@ -206,6 +213,36 @@ struct Params
 	int bank_trip_free = 12;	// bank trips up to this many steps keep the plain threshold
 	float bank_trip_cap = 2.0f;	// ... and the threshold never exceeds this multiple of the plain one
 	int bank_ignore_spawn = 1;	// "bank before a risky fight" ignores enemies standing on their own spawn
+
+	// Objective maps (agent obj, session 3): the gems sit in one or a few heavy groups (stampede, contest)
+	int obj_plan = 1;			// detect objective maps at init (World::detect_objective); everything below needs it
+	float obj_min_hp = 6000.f;	// a group this heavy cannot be soloed early (elk 2,400; monolith 20,000)
+	float obj_share = 0.6f;		// ... objective map when such groups hold this share of the map's gem rate
+	int obj_min_attackers = 2;	// ... counting only groups with at least this many camps that hit back (not a lone monolith:
+								// monolith-only maps with the mode on: 105 of 152 games vs _k1/_v6/_r2/_es2, about baseline; x_obj_NOTES)
+	int obj_team = 1;			// score an objective group with the whole living team's damage once the team can
+								// clear it (obj_team_ready); the solo plan never passes (stampede: nobody touched
+								// the 360-gem group before r905; bodies chipped it one or two at a time and left it)
+	float obj_clear_max = 40.f;	// ... team clear time (rounds) at most this
+	float obj_absorb = 0.6f;	// ... and the camp damage it takes at most this share of the team's usable health
+	int obj_team_attackers = 1;	// ... only on groups with at least this many camps that hit back (2: not a lone monolith)
+	int obj_min_bodies = 3;		// ... with at least this many bodies alive
+	int obj_dead_max = 1;		// ... and at most this many dead
+	float obj_value_share = 0.5f; // value credited to each body for the team plan
+	int obj_gather = 3;			// wait just outside camp range until this many bodies are at the objective
+	int obj_gather_r = 6;		// ... counted within this distance of the group's tiles
+	int obj_gather_max = 30;	// ... for at most this many rounds
+	float obj_solo_rounds = 8.f; // no gathering when we kill what is left alone within this many rounds
+	float obj_go_hp = 0.8f;		// heal at home first when heading for the objective below this health fraction
+	int obj_go_far = 12;		// ... from farther than this
+	int obj_max_wait = 18;		// rounds we wait on arrival for an objective group's respawn (max_wait elsewhere)
+	int obj_commit = 200;		// extra rounds before giving up on an objective target (the kill alone takes 20-40)
+	int obj_attackers_first = 1; // on an objective group hit the camps that hit back first (elks before gem clusters)
+	int obj_shield = 1;			// safety: an objective camp with a visible ally strictly nearer to it does not hit us
+	int obj_shield_enemy_d = 8;	// ... only while no enemy is within this distance
+	int obj_open_rounds = 0;	// objective map opening: before this round skip gold groups that are not clearly ours
+	int obj_open_margin = 4;	// ... (enemy spawn less than this many steps farther than ours; contest: the opening
+								// fights at the central gold triples decided the game, 6 of our deaths by r59 vs _r2)
 
 	// Aggression
 	float steal_hp_frac = 0.55f; // need this health fraction to farm on the enemy half

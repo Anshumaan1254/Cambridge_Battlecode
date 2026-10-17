@@ -84,6 +84,10 @@ private:
 	float group_score(const Group& g, int& eta, bool* need_pair = nullptr, int d_override = -1) const;
 	int approach_rounds(int d_tile) const; // rounds to attack range of a group d_tile steps away
 	float score_cap(const Group& g) const;  // upper bound on group_score(g)
+	bool obj_team_ready(const Group& g, float hp_left, float& kill) const; // objective map: the team can clear g
+	int obj_gather_since = -1, obj_gather_group = -1;
+	mutable bool sc_team = false; // the last group_score used the objective team plan (the solo plan failed)
+	bool task_team = false;		  // ... for the current farm target
 	bool hop_task(int gid);
 	bool has_crystal() const;
 	int tp_hop = -1, tp_hop_since = 0;
@@ -140,6 +144,8 @@ private:
 	bool attack_unit(const bc::unit& u);
 	bool attack_chain_camp(Group& g, std::size_t idx);
 	bool spells_on_camp(Group& g, std::size_t idx, bool save_cc);
+	bool cast_en_route();
+	bool cast_on_nearer(const Enemy& skip);
 	bool engage(Enemy& e);
 	bool cast_unit_camp(int slot, const bc::camp& c);
 	bool cast_unit_champ(int slot, const bc::champion& c);

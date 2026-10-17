@@ -136,9 +136,35 @@ void World::init_static()
 		for (auto t : G.tiles)
 			G.radius = std::max(G.radius, cheb(t, G.center));
 		G.update_cluster();
+		if (P.obj_plan && G.gems > 0)
+		{
+			// Objective-map detector input (see detect_objective), gathered here to keep init fuel flat.
+			const float rate = static_cast<float>(G.gems) / static_cast<float>(std::max(1, G.respawn));
+			obj_rate_total += rate;
+			if (G.max_hp >= P.obj_min_hp && G.d_ally < BIG && G.attackers >= P.obj_min_attackers)
+			{
+				obj_rate_heavy += rate;
+				obj_groups.push_back(G.id);
+			}
+		}
 		groups.push_back(std::move(G));
 	}
 	hops.assign(groups.size(), Hop{});
+	detect_objective();
+}
+
+void World::detect_objective()
+{
+	// Heavy = too much health for one body to clear in a few trips (elk 2,400, monolith 20,000; stampede's fused
+	// group 17,400). Gem rate = gems per respawn round; a centre group counts once for the whole map, side groups
+	// once per copy, so the share is map-wide. The sums are gathered in init_static's group loop.
+	obj_share = obj_rate_total > 0 ? obj_rate_heavy / obj_rate_total : 0;
+	obj_mode = !obj_groups.empty() && obj_share >= P.obj_share;
+	if (!obj_mode)
+		return;
+	std::sort(obj_groups.begin(), obj_groups.end(), [&](int a, int b) { return groups[static_cast<std::size_t>(a)].d_ally < groups[static_cast<std::size_t>(b)].d_ally; });
+	for (int id : obj_groups)
+		groups[static_cast<std::size_t>(id)].objective = true;
 }
 
 void World::find_islands()

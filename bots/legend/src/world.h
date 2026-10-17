@@ -38,6 +38,7 @@ struct Group
 	int d_home_c = BIG; // walking steps from our spawn to the centre (static; trip costs read it every turn)
 	int radius = 0;		// Chebyshev reach of the tiles from the centre
 	bool ours = true;
+	bool objective = false; // objective map (P.obj_plan): one of the few heavy groups that hold most of the gems
 
 	// Dynamic memory
 	GroupState st = ST_ALIVE; // every group starts alive
@@ -133,6 +134,13 @@ struct World
 	bool dash_kit = false;		 // this body has a dash (set by Brain::init before init_static)
 	const bc::bitboard& route_walls() const; // field walls for this body: dash_walls for dash kits, else walls
 	std::vector<int> island_of; // per group: island index or -1
+	// Objective map (P.obj_plan): the gem supply sits in one or a few heavy groups (stampede: one fused 2 gem
+	// clusters + 6 elks group pays 360 gems; contest: two monoliths). Decided once at init from camp geometry.
+	bool obj_mode = false;
+	float obj_share = 0;		 // share of the map's gem rate (gems / respawn) held by heavy groups
+	float obj_rate_total = 0, obj_rate_heavy = 0;
+	std::vector<int> obj_groups; // heavy gem groups, nearest to our spawn first
+	void detect_objective();
 	Field home; // steps from our spawn
 	int spawn_altar_d = BIG; // walking steps from our spawn to the nearest altar's approach tile
 	bc::bitboard home_reach; // tiles reachable on foot from our spawn

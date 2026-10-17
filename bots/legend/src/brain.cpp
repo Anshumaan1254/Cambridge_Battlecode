@@ -492,7 +492,7 @@ void Brain::handle_channel()
 	bool cancel = false;
 	if (recalling && threat_close && !world().ally_spawn.is_set(pos))
 		cancel = true; // they will hit us before it completes: act instead of standing still
-	if (tributing)
+	if (tributing && !(P.win_bank && wins_with(static_cast<int>(gems))))
 	{
 		const int left = std::max(1, static_cast<int>((gems + 9) / 10) - 1);
 		if (incoming * static_cast<float>(left + 1) >= hp || (stunner_close && gems >= 20 && threat_close))
@@ -1032,6 +1032,21 @@ void Brain::place_ward(bool force)
 
 // ---------------------------------------------------------------------------------------------- champion combat
 
+bool Brain::wins_with(int bag) const
+{
+	return static_cast<int>(bc::global_submitted_gems(team::ally)) + bag >= static_cast<int>(bc::constants::winning_gems);
+}
+
+bool Brain::can_support(const Ally& a, const std::vector<Enemy*>& E) const
+{
+	if (a.hp < P.retreat_hp * a.max_hp)
+		return false; // it is walking home, not fighting
+	for (const auto* e : E)
+		if (cheb(a.pos, e->pos) <= P.support_reach)
+			return true;
+	return false;
+}
+
 bool Brain::combat()
 {
 	auto& W = world();
@@ -1083,7 +1098,7 @@ bool Brain::combat()
 	float allies_burst = 0;
 	int allies_near = 0;
 	for (const auto& a : W.allies)
-		if (a.handle != self && a.alive && a.visible && cheb(a.pos, pos) <= 6)
+		if (a.handle != self && a.alive && a.visible && cheb(a.pos, pos) <= 6 && (!P.support_filter || can_support(a, E)))
 		{
 			const float ab = std::max(a.str, a.focus * best_mod(a.kit));
 			our_hp += a.hp;
@@ -1220,6 +1235,9 @@ bool Brain::combat()
 		else if (P.stay_veto && fight && !killable && can_escape && hp <= worst)
 			fight = false;
 	}
+	// A bag that wins the game is worth more than any fight we can walk away from.
+	if (fight && P.win_bank && !killable && can_escape && gems > 0 && wins_with(static_cast<int>(gems)))
+		fight = false;
 	// Do not dive their spawn: it heals them and they block us.
 	if (W.enemy_spawn.is_set(tgt->pos) || cheb(tgt->pos, W.enemy_spawn_c) <= 3)
 		fight = fight && killable;
@@ -1629,6 +1647,8 @@ bool Brain::safety()
 	// rewards waited 46 rounds, the expiry, tools/analysis/rewards.mjs).
 	if (hp < threshold && P.capture_before_retreat && camp_in <= 0 && enemy_near_d > P.finish_enemy_d && (task == T_CAPTURE || reward_here()))
 		threshold = 0;
+	if (hp < threshold && P.win_bank && camp_in <= 0 && enemy_near_d > P.finish_enemy_d && gems > 0 && wins_with(static_cast<int>(gems)))
+		threshold = 0; // the bag wins the game: tribute() banks it before anything else
 	if (hp >= threshold)
 	{
 		// On spawn, health is restored only after a turn ends there: after a recall or a walk home, rest one
@@ -1722,6 +1742,11 @@ void Brain::update_mode()
 		fight_back_margin = std::max(0.55f, fight_back_margin - 0.15f);
 		deny_bonus += 0.6f;
 		enemy_half_penalty *= 0.4f;
+	}
+	if (type == CT::cassi || type == CT::issac)
+	{
+		fight_margin += P.pair_caution;
+		isolated_fight_adv += P.pair_caution;
 	}
 }
 
@@ -2731,8 +2756,15 @@ bool Brain::capture_group(Group& g)
 			// home_trip() recalls from the altar to heal and shop.
 			const int spawn_altar = world().spawn_altar_d;
 			int adist = BIG;
-			if (P.bank_first || P.bank_trip_w > 0)
+			if (P.bank_first || P.bank_trip_w > 0 || P.win_bank)
 				nearest_altar(adist);
+			// A bag that wins the game: bank it at the nearest altar unless the recall route is faster.
+			if (P.win_bank && adist < BIG && wins_with(static_cast<int>(gems) + g.gems) &&
+				(spawn_altar >= BIG || adist <= recall_t + 1 + spawn_altar))
+			{
+				place_ward(round - ward_round > 4);
+				return true;
+			}
 			const bool bank_here = P.bank_first && adist < BIG && spawn_altar < BIG &&
 				adist + static_cast<int>(bc::constants::recall_time) + P.bank_first_margin <= spawn_altar;
 			const bool bag = static_cast<int>(gems) + g.gems >= bank_min(std::min(adist, spawn_altar < BIG ? 1 + spawn_altar : BIG));

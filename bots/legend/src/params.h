@@ -64,6 +64,14 @@ struct Params
 	int stay_support_r = 10;
 	float stay_margin = 1.1f;
 	int flee_recall = 1;			 // fleeing out of reach: recall when no enemy can interrupt it (safe_to_recall)
+	int support_filter = 0;			 // a visible ally counts in the fight only when it can help: health above the retreat
+									 // line and within support_reach of an enemy here (ladder audit: 'phantom support', a
+									 // full-health Cassi died with Issac at 11 HP counted as backup)
+	int support_reach = 6;
+	float pair_caution = 0.f;		 // Cassi and Issac die together (both bodies, both bags): this much more advantage to fight
+	int win_bank = 0;				 // a bag that wins the game goes to the nearest altar: no capture-recall away from it, no
+									 // retreat home with it (ladder interlock: Ren recalled with 72 gems 3 steps from an altar
+									 // and lost 976-1056)
 	int deficit_defend = 1;			 // this many more enemies alive than allies: defensive play
 	int deficit_escort = 2;			 // ... this many: a respawned champion waits on spawn for the next ally
 	int escort_wait = 15;			 // max rounds to wait on spawn for an escort

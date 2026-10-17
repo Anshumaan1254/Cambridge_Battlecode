@@ -20,7 +20,10 @@ and every candidate of a generation plays the same maps and opponents (common ra
 usage:
   python3 tools/rl/es_train.py --space tools/rl/space.json --opponents _base,starter-cpp \
       --maps 'maps/ladder/*.map26a' --gens 12 --pop 6 --maps-per-gen 8 [--resume]
-Outputs tune_out/es/: log.txt, history.json, best_params.json (apply with tools/rl/apply_params.py).
+Outputs tune_out/es/: log.txt, history.json, best_params.json (the vector that was evaluated with the highest
+mean-policy reward so far), best_meta.json (its gen, reward, winrate, maps, commit) and latest_params.json (the
+final updated theta, never evaluated during training). Validate best_params.json; apply it with
+tools/rl/apply_params.py.
 """
 import argparse, glob, json, math, os, random, re, shutil, subprocess, sys, time
 
@@ -32,6 +35,15 @@ OUT = os.path.join(ROOT, 'tune_out', 'es')
 
 def sh(cmd, **kw):
     return subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=ROOT, **kw)
+
+
+def git_commit():
+    """Short hash of the commit being trained, recorded once at start in the log and history ('unknown' without git)."""
+    try:
+        r = sh('git rev-parse --short HEAD')
+        return r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else 'unknown'
+    except OSError:
+        return 'unknown'
 
 
 def read_defaults():
@@ -123,8 +135,10 @@ def game_reward(stats_path, us):
     return r, win, loss
 
 
-def evaluate(cands, opponents, maps, run_dir, jobs):
-    """Every candidate plays every (map, opponent) on both sides. Returns mean reward per candidate."""
+def evaluate(cands, opponents, maps, run_dir, jobs, fail_tag):
+    """Every candidate plays every (map, opponent) on both sides. Returns (mean reward per candidate, win rate per
+    candidate, stats). A batch with missing statistics or a failed run-batch is moved to tune_out/es/failed/<fail_tag>_<n>
+    for inspection; a clean batch is deleted."""
     os.makedirs(run_dir, exist_ok=True)
     manifest = os.path.join(run_dir, 'manifest.txt')
     rows = []
@@ -139,21 +153,35 @@ def evaluate(cands, opponents, maps, run_dir, jobs):
                         rp = os.path.join(run_dir, f'{ci}_{mn}_{o}_{side}.repl26a')
                         f.write(f'{ROOT}/bots/{a} {ROOT}/bots/{b} {os.path.abspath(m)} {rp} --statistics {st} --json\n')
                         rows.append((ci, st, 'teamA' if side == 'A' else 'teamB'))
-    sh(f'cambc run-batch {manifest} --jobs {jobs} --color never --release')
+    res = sh(f'cambc run-batch {manifest} --jobs {jobs} --color never --release')
     rewards = [[] for _ in cands]
     wins = [0] * len(cands)
     games = [0] * len(cands)
+    missing = 0
     for ci, st, us in rows:
-        if not os.path.exists(st):
-            rewards[ci].append(-1.5)  # crash / timeout counts as a heavy loss
+        try:
+            r, w, _ = game_reward(st, us)
+        except (OSError, ValueError, KeyError, TypeError):
+            # no statistics file (crash / timeout) or one that does not parse: counts as a heavy loss
+            rewards[ci].append(-1.5)
             games[ci] += 1
+            missing += 1
             continue
-        r, w, _ = game_reward(st, us)
         rewards[ci].append(r)
         wins[ci] += w
         games[ci] += 1
-    shutil.rmtree(run_dir, ignore_errors=True)
-    return [float(np.mean(r)) for r in rewards], [w / max(1, g) for w, g in zip(wins, games)]
+    kept = ''
+    if missing or res.returncode != 0:
+        k = 0
+        while os.path.exists(os.path.join(OUT, 'failed', f'{fail_tag}_{k}')):
+            k += 1
+        kept = os.path.join(OUT, 'failed', f'{fail_tag}_{k}')
+        os.makedirs(os.path.dirname(kept), exist_ok=True)
+        shutil.move(run_dir, kept)
+    else:
+        shutil.rmtree(run_dir, ignore_errors=True)
+    stats = {'total': len(rows), 'missing': missing, 'rc': res.returncode, 'kept': kept}
+    return [float(np.mean(r)) for r in rewards], [w / max(1, g) for w, g in zip(wins, games)], stats
 
 
 def centered_ranks(x):
@@ -201,10 +229,15 @@ def main():
     if args.resume and os.path.exists(hist_path):
         history = json.load(open(hist_path))
         theta = np.array(history[-1]['theta'])
+    # best_params.json = the vector that was evaluated with the highest mean-policy reward so far. On resume it is
+    # recovered from the history (records written before this rule have no eval_params and do not count).
+    best = max((h for h in history if 'eval_params' in h), key=lambda h: h['mean_reward'], default=None)
+    best_reward = best['mean_reward'] if best else -math.inf
+    commit = git_commit()
     # Adam-style moments for a stable step
     m_t = np.zeros_like(theta)
     v_t = np.zeros_like(theta)
-    say(f'start: {len(space.keys)} params, {len(maps_all)} maps, opponents {opponents}, theta0={space.values(theta)}')
+    say(f'start: commit {commit}, {len(space.keys)} params, {len(maps_all)} maps, opponents {opponents}, theta0={space.values(theta)}')
     for gen in range(len(history), len(history) + args.gens):
         maps = rng.sample(maps_all, min(args.maps_per_gen, len(maps_all)))
         eps = nrng.standard_normal((args.pop, len(theta)))
@@ -217,11 +250,16 @@ def main():
                 make_variant(name, space.values(z))
                 cands.append(z)
                 names.append(name)
-        # The current mean is evaluated too (it is what we would ship).
-        make_variant('_es_mean', space.values(theta))
+        # The current mean is evaluated too (it is what we would ship). eval_params are exactly the values it was
+        # built and played with, before this generation's update; only these may become best_params.json.
+        eval_params = space.values(theta)
+        make_variant('_es_mean', eval_params)
         names.append('_es_mean')
         t0 = time.time()
-        rewards, winrates = evaluate(names, opponents, maps, os.path.join(OUT, f'gen{gen}'), args.jobs)
+        rewards, winrates, stats = evaluate(names, opponents, maps, os.path.join(OUT, f'gen{gen}'), args.jobs, str(gen))
+        if stats['missing'] or stats['rc']:
+            say(f'WARNING gen {gen}: {stats["missing"]} of {stats["total"]} games produced no statistics '
+                f'(run-batch exit code {stats["rc"]}); batch kept in {stats["kept"]}')
         mean_reward, mean_wr = rewards[-1], winrates[-1]
         rs = np.array(rewards[:-1])
         shaped = centered_ranks(rs)
@@ -235,14 +273,24 @@ def main():
         step = args.lr * (m_t / (1 - b1 ** (gen + 1))) / (np.sqrt(v_t / (1 - b2 ** (gen + 1))) + 1e-8) * args.sigma
         theta = np.clip(theta + step, -1, 1)
         best_i = int(np.argmax(rs))
-        rec = {'gen': gen, 'maps': [os.path.basename(m) for m in maps], 'mean_reward': mean_reward, 'mean_winrate': mean_wr,
-               'best_cand_reward': float(rs[best_i]), 'pop_rewards': [float(x) for x in rs], 'theta': theta.tolist(),
-               'params': space.values(theta), 'secs': round(time.time() - t0)}
+        is_best = mean_reward > best_reward
+        rec = {'gen': gen, 'commit': commit, 'maps': [os.path.basename(m) for m in maps], 'mean_reward': mean_reward,
+               'mean_winrate': mean_wr, 'best_cand_reward': float(rs[best_i]), 'pop_rewards': [float(x) for x in rs],
+               'theta': theta.tolist(), 'params': space.values(theta), 'eval_params': eval_params, 'is_best': is_best,
+               'missing_games': stats['missing'], 'secs': round(time.time() - t0)}
         history.append(rec)
         json.dump(history, open(hist_path, 'w'), indent=1)
-        json.dump(space.values(theta), open(os.path.join(OUT, 'best_params.json'), 'w'), indent=1)
+        # latest_params.json: the updated theta after this generation (not evaluated yet; the next generation's mean).
+        json.dump(space.values(theta), open(os.path.join(OUT, 'latest_params.json'), 'w'), indent=1)
+        if is_best:
+            best_reward = mean_reward
+            json.dump(eval_params, open(os.path.join(OUT, 'best_params.json'), 'w'), indent=1)
+            json.dump({'gen': gen, 'reward': mean_reward, 'winrate': mean_wr, 'maps': rec['maps'], 'commit': commit},
+                      open(os.path.join(OUT, 'best_meta.json'), 'w'), indent=1)
         say(f'gen {gen}: mean-policy reward {mean_reward:+.3f} winrate {mean_wr:.2f} | pop best {rs[best_i]:+.3f} worst {rs.min():+.3f} | {rec["secs"]}s')
         say(f'   theta -> {space.values(theta)}')
+        if is_best:
+            say(f'   new best: gen {gen} evaluated at reward {mean_reward:+.3f}, written to best_params.json')
     for n in [f'_es{i}' for i in range(2 * args.pop)] + ['_es_mean']:
         shutil.rmtree(os.path.join(ROOT, 'bots', n), ignore_errors=True)
     say('done')

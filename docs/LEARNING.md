@@ -81,7 +81,10 @@ The archive holds:
 - `meta.txt`: commit, branch, cambc version, host, CPUs, options, start and end time, and how many files
   in `bots/legend/src` were uncommitted. A non-zero count means local edits were trained, so the commit
   alone does not identify the bot.
-- `console.txt`, `validation.txt`, `log.txt`, `history.json` and `best_params.json`.
+- `console.txt`, `validation.txt`, `log.txt`, `history.json`, `best_params.json` and `best_meta.json`, plus `latest_params.json`.
+  `best_params.json` is the vector that was actually played in training with the highest mean reward so far
+  (`best_meta.json` says which generation, its reward, win rate and maps); `latest_params.json` is the final updated
+  vector, which was never played, so only `best_params.json` is validated and should be the one you judge.
 - Any official maps the repo does not have yet (untracked `.map26a` files), so the next round can test on them.
 
 **Options.**
@@ -108,8 +111,8 @@ skipped), about 2 to 7 min on 4 cores.
 
 - Training starts from the current values in `bots/legend/src/params.h`, so a `git pull` that changes them
   changes the starting point.
-- A run without `--resume` moves the previous `history.json`, `best_params.json` and `log.txt` into
-  `tune_out/es/previous_<timestamp>/`.
+- A run without `--resume` moves the previous `history.json`, `best_params.json`, `best_meta.json`,
+  `latest_params.json` and `log.txt` into `tune_out/es/previous_<timestamp>/`.
 - `--resume` adds `--gens` generations to the saved ones, so after an interruption pass the number still
   missing. Ctrl-C is safe: every finished generation is saved.
 - Each generation's reward moves with the 8 maps it sampled. Judge a run on the validation table and the

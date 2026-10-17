@@ -132,7 +132,7 @@ if [ "$VALIDATE_ONLY" = 0 ]; then
 	if [ "$RESUME" = 0 ] && [ -f "$OUT/history.json" ]; then
 		stamp=$(date '+%Y%m%d_%H%M%S')
 		mkdir -p "$OUT/previous_$stamp"
-		mv "$OUT"/history.json "$OUT"/best_params.json "$OUT"/log.txt "$OUT/previous_$stamp/" 2>/dev/null || true
+		mv "$OUT"/history.json "$OUT"/best_params.json "$OUT"/best_meta.json "$OUT"/latest_params.json "$OUT"/log.txt "$OUT/previous_$stamp/" 2>/dev/null || true
 		say "previous run moved to $OUT/previous_$stamp (use --resume to continue it instead)"
 	fi
 	python3 tools/rl/es_train.py --space tools/rl/space.json --opponents "$OPPS" --maps "$MAPS" \
@@ -144,6 +144,9 @@ fi
 #    Each ES generation sees only 8 maps, so its reward moves with the sample; this fixed panel is what counts.
 # -------------------------------------------------------------------------------------------------------------
 [ -f "$OUT/best_params.json" ] || { echo "no $OUT/best_params.json: training did not finish a generation" >&2; exit 1; }
+# Only best_params.json (the evaluated vector with the highest training reward) is validated here. latest_params.json
+# (the final updated theta, never played in training) is not: validating it too would double this step (2-7 min more).
+# To check it by hand: cp -r bots/legend bots/_es_latest && python3 tools/rl/apply_params.py $OUT/latest_params.json --bot _es_latest
 say "step 6/7: validation panel of best_params.json (this takes a while: 90+ games per opponent)"
 rm -rf bots/_es_best && mkdir -p bots/_es_best && cp -r bots/legend/src bots/_es_best/ && cp bots/legend/.gitignore bots/_es_best/
 python3 - "$OUT/best_params.json" bots/_es_best/src/params.h <<'EOF'
@@ -170,7 +173,7 @@ echo "finished $(date -u '+%Y-%m-%dT%H:%M:%SZ')" >> "$OUT/meta.txt"
 new_maps=$(git ls-files --others --exclude-standard -- 'maps/*.map26a' 2>/dev/null || true)
 ARCHIVE="rl_results_$(date '+%Y%m%d_%H%M')_$COMMIT.tar.gz"
 files="$OUT/meta.txt $OUT/console.txt $OUT/validation.txt"
-for f in log.txt history.json best_params.json; do [ -f "$OUT/$f" ] && files="$files $OUT/$f"; done
+for f in log.txt history.json best_params.json best_meta.json latest_params.json; do [ -f "$OUT/$f" ] && files="$files $OUT/$f"; done
 # shellcheck disable=SC2086
 tar czf "$ARCHIVE" $files $new_maps
 say "step 7/7: done. Send back: $ROOT/$ARCHIVE"

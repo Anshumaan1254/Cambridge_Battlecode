@@ -43,6 +43,8 @@ private:
 
 	// decisions (each returns true when it used the turn)
 	bool combat();
+	bool wins_with(int bag) const;
+	bool can_support(const Ally& a, const std::vector<Enemy*>& E) const;
 	bool safety();
 	bool tribute(bool force);
 	int bank_min(int trip) const; // gems worth a bank trip of `trip` rounds (longer trips bank bigger bags)

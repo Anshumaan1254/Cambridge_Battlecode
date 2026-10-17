@@ -3,59 +3,117 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-17 (session 4)**. Start with **§000**, then **§00** below. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
+- Last updated: **2026-10-17 19:30 UTC (session 4)**. Start with **§000**, then **§00** below. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
 - Competition: Cambridge Battlecode 2026a (CAMBC), 12 Oct to 18 Nov 2026. C++ bot compiled to wasm.
 - The submitted bot cannot be changed after submission and keeps nothing between matches. All "learning"
   is either offline (training parameters before submission) or in-match (adapting inside one game).
 
 ---
 
-## 000. SESSION 4 (from 2026-10-17 17:25 UTC, new container): read this first, then §00
+## 000. SESSION 4: CURRENT POSITION (written 2026-10-17 19:30 UTC): read this first, then §00
 
-- Setup redone (§00 "How to resume"); full git history fetched (`git fetch --unshallow`: `make_sparring.sh` needs old commits).
-  Frozen baseline **`bots/_ST`** = current legend before session 4 (= shipped `legend_st` + 2 inert switches).
-- The user's audit is now in the repo: `docs/LADDER_AUDIT.md` (40 ladder games of `_L0`). Already done from it in session 3:
-  phantom support, win bank, cast before walking, objective plan, ES best-vector fix. Left: opening fuel, channel
-  bookkeeping, capture resets, danger detours, opening income on eight, pair risk, contest/monolith objective.
-- `bank_first=0` decision: held-out pool 49.0 head-to-head (100 games), official-map pace 578 vs 585 but mixed
-  (pilgrimage -122, rushbait -48; monolith +24, collision +19, ambush +16, elkring +14). **Not shipped**; agent `pace` makes it route-aware.
-- `tools/sum.py [--maps] DIR...` (committed): all-map / official-map win rates per bench dir (replaces `/tmp/ev/sum.py`).
-- Agents running: **`side`** (Opus): official-map opening/side losses (collision side B, eight, contest, interlock);
-  **`pace`** (Sonnet): unopposed pace on slow official maps + route-aware bank_first. Rules: `experiments/wip/AGENT_RULES.md` (session-4 block).
-- Coordinator (main session), in `bots/legend` (not shipped yet):
-  - **Opening fuel**: init used up to ~320k fuel against the 200k first turn; 84 lost turns in rounds 1-6 over the 17
-    official maps (team A vs idle). **Memory allocation is what costs fuel**: an unreserved vector doubled a loop
-    (altar approach 36k -> 17k with `reserve`), exporting a 100x100 distance field cost ~25k, the dash-hole scan over every
-    tile cost 87k on lanes. Fixed: hole scan over hole tiles only, reserves, altar approach from one packed walls export,
-    `altar_contested` lazy (`World::contested`), `find_islands` deferred to a later turn (`defer_islands`). 84 -> 28 lost turns.
-  - **But** the first A/B of the fuel fix alone (`_fu` vs `_ST`, 56 maps) was **40.2 (comp 35.3)**, contest 0-1000 both sides
-    (unopposed it plays normally). Hypothesis: bodies used to start together at round 3; now light-init bodies leave
-    earlier than heavy ones and the team arrives staggered. Testing `start_round=3` (hold until round 3) and `defer_islands=0`.
-  - New switches (on in legend, under test): `capture_reset` (enemy on the group restarts the capture-recall clock),
-    `tribute_elapsed` (channel bookkeeping), `danger_detour` (step_field routes around danger instead of stepping in).
-  - **Start timing flips mirror games**: `start_round=3` 54.5 vs `_ST` (comp 52.9); `start_round=2` without the new
-    mechanics 44.6 (comp 32.4), with them (`_w2d`) 50.9 (comp 50.0). Both are synchronized starts, so what matters is
-    who reaches contested points first relative to the opponent family, which is chaotic. Panel (`_L0 _es2 _r2 _v6`,
-    56 maps) mean: `_ST` 72.8 (comp 72.1), `start_round=3` 73.7, `_w2d` 75.9 (comp 75.0). Legend default `start_round=2`.
-  - **The user's request (message, session 4): "fight for the gems and win by gems, situationally, not hard-coded"**:
-    - Measured (`tools/analysis/gem_race.py`, 336 games of `_ST` vs `_L0 _es2 _r2 _v6`): losses are fight losses that
-      cost gems (lost games vs `_r2`: collected 903 vs 1156, gems lost at death 145 vs 76, kills 8.6 vs 14), not a
-      gold-over-gems preference. 12 of 77 losses ended with banked + carried >= 1000 (gen02 968 + 88, gen19 990 + 48):
-      close races where the last bag (7 tribute turns for 66 gems) landed too late.
-    - `team_bank`: a 6-bit team sum of carried gems in the claim bytes' bit 6 (exact: each body adds the change of its
-      own min(10, bag/10)); `wins_with` counts the others' bags, so every carrier banks when the team's bags win.
-      Hidden allies' bags cannot be read (rc 97), hence the shared sum. Result: neutral (45.5 vs `_w2d`, 51.0 held-out,
-      panel mean 76.1 vs 75.9): the remaining "winning bag" losses are timing, not bodies ignoring the win.
-    - `race_mode`: every 25 rounds each body samples both banked totals; the last ~200 rounds give each team's rate
-      and projected finish (ours counts the team's carried bags). Behind by > 40 rounds: gold worth 0.3 of its value
-      (it cannot pay back in time); and if our fights go well (enemy deaths + 2 >= ours, not outnumbered now): contest
-      their gems (deny bonus +0.5, enemy-half penalty x0.5, fight bar -0.15, enemy carriers with 30+ gems posted as
-      opportunities). Result (`_rm`): 54.5 vs `_tb`, held-out 47.0; panel mean 75.2 (comp **79.4** vs 75.0).
-    - `_rm` (everything) vs `_ST` 54.5 (comp 52.9), held-out 53.4; but vs `_c3` 44.6 (`_ST` had 56.2): over the 5
-      opponents incl. `_c3` the mean is 69.1 vs `_ST` 69.5. **Not shipped**: the differences are inside mirror noise.
-  - **Evaluation change**: `tools/fullpanel.sh BOT` = 6 opponents (`_L0 _es2 _r2 _v6 _c3 _ST`) x 106 maps (56 + 50
-    held-out) = 1,272 games per bot. Running (`/tmp/ev/e9.sh`): `_ST`, `_rm`, `_rs3` (start_round=3), `_rnr`
-    (race_mode=0), `_rnd` (danger_detour=0). Decide the ship from it.
+Branch `claude/laughing-curie-3rq6hu` (no PR unless the user asks). Session 4 started 17:25 UTC in a **new container**
+(everything local from session 3 was gone). Everything below is committed and pushed unless marked "local".
+Local bots (`bots/_*`) and `/tmp/ev/` are lost when the container restarts: see "How to resume" at the end of this section.
+
+### 1. Current position
+- **Shipped build is still `legend_st`** = `submissions/legend.zip` (unchanged this session; row in `submissions/BUILDS.md`).
+  Frozen locally as `bots/_ST` (= `legend_st` + 2 inert switches; the baseline of every session-4 A/B).
+- **`bots/legend/src` (committed, NOT shipped)** = `_ST` + everything below (= local frozen copy `bots/_rm`):
+  opening-fuel fix, `start_round=2`, `capture_reset`, `tribute_elapsed`, `danger_detour`, `team_bank`, `race_mode`.
+  The side agent's `camp_in_fight` is **not** in legend yet (in `experiments/wip/x_side.patch`; tested as `bots/_rmx` = legend + it).
+  The pace agent's switches are **not** in legend yet (`experiments/wip/x_pace.patch`, cut against `_ST`).
+- Ship rule this session (the user: "when a better bot is made, push it first, then continue"): ship only what beats
+  `_ST` on the **full panel** (`tools/fullpanel.sh`: 6 opponents x 106 maps = 1,272 games), not on single 112-game cells
+  (mirror-family matches are chaotic: one cell has a standard deviation of ~5 points).
+- User inputs this session: `docs/LADDER_AUDIT.md` (external audit of 40 ladder games of `_L0`, analysed: see §00 and below);
+  request "fight for the gems and win by gems, situationally, not hard-coded" (answered by `team_bank` + `race_mode`, below);
+  use Opus subagents only for important work, Sonnet/Haiku otherwise, keep AGENTS.md updated, push often.
+
+### 2. Findings (session 4)
+- **`bank_first=0` alone**: held-out pool 49.0 head-to-head vs `_ST` (100 games); official-map pace 578 vs 585 but mixed
+  (pilgrimage -122, rushbait-v2 -48; monolith +24, collision +19, ambush +16, elkring +14). Not shipped alone (it is part of the pace patch).
+- **Opening fuel (in legend)**: init used up to ~320k fuel against the 200k first turn; 84 lost turns in rounds 1-6 over the
+  17 official maps (team A vs idle). **Memory allocation is what costs fuel** in this engine: an unreserved vector doubled a loop
+  (altar approach 36k -> 17k with `reserve`), exporting a 100x100 distance field cost ~25k, the dash-hole scan over every tile
+  cost 87k on lanes, `find_islands` ~47k on 100x100. Fixed: hole scan over hole tiles only, reserves, altar approach from one
+  packed walls export (bit layout verified), `World::contested()` lazy, `find_islands` deferred to `prebuild_fields`
+  (`defer_islands`). 84 -> 28 lost turns. Remaining cost is ~2.4k fuel per camp group (allocations), lanes still 1 lost turn per body.
+- **Start timing flips mirror games**: bodies staggered (light-init bodies from round 1, heavy ones from round 2): 40.2 vs `_ST`
+  (official 35.3, contest 0-1000 both sides; unopposed it plays normally). `start_round=3`: 54.5 (official 52.9);
+  `start_round=2` without the new mechanics 44.6 (official 32.4), with them 50.9 (official 50.0). Both are synchronized starts,
+  so what matters is who reaches contested points first relative to our own code family: chaotic, says little about real opponents.
+- **Gem race (the user's request)**, measured with `tools/analysis/gem_race.py` on 336 games of `_ST` vs `_L0 _es2 _r2 _v6`:
+  - our losses are **fight losses that cost gems**, not gold preferred over gems: lost games vs `_r2`: collected 903 vs 1156,
+    gems lost at death 145 vs 76, kills 8.6 vs 14, gold 3,872 vs 5,669;
+  - 12 of 77 losses ended with banked + carried >= 1000 (gen02 968 + 88 carried, gen19 990 + 48, gen13 982 + 44): close races
+    where the last bag landed too late (a 66-gem tribute takes 7 turns), not bodies ignoring the win;
+  - hidden allies' bags cannot be read (`sdk_champion_gems` rc 97 when not visible), hence a shared sum.
+- **`team_bank` (in legend)**: 6-bit team sum of carried gems in bit 6 of the claim bytes 0-5 (claims use bits 0-5 when the map has
+  <= 62 groups; each body adds the change of its own min(10, bag/10), so the sum is exact; verified in a game). `wins_with()` counts
+  the others' bags, so every carrier banks when the team's bags win. Neutral: 45.5 vs `_w2d` (56 maps), 51.0 held-out, panel mean 76.1 vs 75.9.
+- **`race_mode` (in legend)**: every 25 rounds each body samples both teams' banked totals; the last ~200 rounds give each rate and
+  projected finish (ours counts the team's carried bags). Behind by > 40 rounds: gold worth 0.3 of its value (cannot pay back in time);
+  and if our fights go well (enemy deaths + 2 >= ours, not outnumbered now) contest their gems: deny bonus +0.5, enemy-half
+  penalty x0.5, fight bar -0.15, enemy carriers with 30+ gems posted as opportunities. 54.5 vs `_tb` (56 maps), 47.0 held-out;
+  56-map panel mean 75.2 but **official maps 79.4 vs 75.0**. The state flickers between 1 and 2 early (no hysteresis yet).
+- `capture_reset`, `tribute_elapsed` (audit P2 bookkeeping) and `danger_detour` (audit P1: `step_field` routes around danger
+  with the avoiding search when every improving step is dangerous and we stand outside it): together +6 head-to-head
+  (`_w2d` 50.9 vs `_w2` 44.6), `danger_detour` carries it.
+- **Agent `side` (Opus, done 19:10 UTC)**, `experiments/wip/x_side_NOTES.md`:
+  - eight: in all 6 losses we woke a heavy camp at r16-17 while 4-5 enemies were 6-9 tiles away; `combat()` never counted camp damage.
+  - collision side B is geometry, not team letter (on side-swapped maps the top spawn always wins, even `_ST` vs itself):
+    a mirror artifact. monolith side A loses either way (team-letter effect). No fix for either.
+  - **`camp_in_fight=3`** (a camp whose nearest body is an enemy adds its strength to our DPS): 56.2 vs `_ST` (official 61.8),
+    eight 2/8 -> 7/10, held-out 53.0; panel `_L0` 71.4, `_es2` 63.4, `_r2` 75.9, `_v6` 92.0, `_devci` 94.6, but `_c3` 49.1 (`_ST` 56.2).
+    `wake_guard` built, off (lost 45.5 head-to-head as an addition). Rejected: `camp_kill`, `tank_alert`, `engage_parity`.
+- **Agent `pace` (Sonnet, notes final, may still be finishing)**, `experiments/wip/x_pace_NOTES.md`:
+  - official-map pace 585 -> **568**: `bank_first` 0, `obj_min_hp` 4500, `obj_share` 0.7, new `obj_max_groups` 8 (the objective
+    plan now fires on ambush: 820 -> 642; pilgrimage 900 -> 777); `obj_min_attackers` kept 2 (1 = contest 1087 -> 905 but 46.0 on
+    the monolith-heavy held-out pool, and the user said do not rely on the monolith).
+  - ~45% of camp walking is in walks abandoned before arrival (an ally took the target or a rescore): ~11% of body-rounds wasted;
+    join rule and hysteresis did not fix it; a shared assignment would, but shared memory is full.
+  - its head-to-head table is at the end of its notes; read it before merging.
+
+### 3. In progress (at 19:30 UTC)
+| Task | Where | Progress | Left to do |
+|---|---|---|---|
+| **Full panels** (decide what ships) | `/tmp/ev/e9.sh` (log `/tmp/ev/e9.log`) then `/tmp/ev/e10.sh` (`e10.log`); results in `/tmp/ev/fp_<bot>/`, summary `python3 tools/sum.py /tmp/ev/fp_<bot>` | `_ST` done: vs `_L0` 72.6, `_es2` 65.6, `_r2` 81.1, `_v6` 91.0, `_c3` 56.6 (mean **73.4**). `_rm` (= legend) partial: `_L0` 75.0 (official 73.5), `_es2` 64.2 (73.5), `_r2` 88.7 (88.2). Queued: rest of `_rm`, `_rs3` (`start_round=3`), `_rnr` (`race_mode=0`), `_rnd` (`danger_detour=0`), then `_rmx` (legend + `camp_in_fight`), `_x_side` (`_ST` + `camp_in_fight`). ~5 min per opponent cell | read all panels; pick the best combination (all-map mean, official-map mean, no cell much worse than `_ST`); if it beats `_ST`: apply to `bots/legend`, rebuild the zip, BUILDS row, push (**ship first, then continue**) |
+| **Merge the pace patch** | `experiments/wip/x_pace.patch` (against `_ST`) | agent finished its notes | apply onto the winning build (params only + `obj_max_groups` code + `LEGEND_TRACE` `SW` line), full panel it; keep only if not worse; pace check: `python3 tools/bench.py BOT idle --maps 'maps/comp/*.map26a'` |
+| ES on the user's machine | the user | not run on any session-4 build | after the next ship, ask the user to re-run `tools/rl/train_local.sh` on the pushed build |
+
+### 4. Tasks left (in order)
+1. Finish the full panels above, ship the best build (zip, `submissions/history/`, BUILDS row, README table), push.
+2. Merge the pace patch on top (full panel), ship again if it wins.
+3. `race_mode` refinements: hysteresis on the race state; close-endgame banking (when both teams near 1000, bank smaller bags
+   earlier so the last tribute lands first: the remaining "winning bag" losses are timing); measure race-state frequency per map.
+4. Contest (official monolith map): pace 1087 is the slowest official map; `obj_min_attackers=1` gives 905 but loses on the
+   monolith pool. The untested gold-rush patch for gem-scarce maps is `experiments/wip/x_rush_wip.patch` (from session 2, see the note below).
+5. Walk waste (~11% of body-rounds, pace notes): a shared assignment needs comms space; bit 7 of bytes 2-5 is free when
+   `alert_refresh` stays off (4 bits).
+6. Audit items still open (`docs/LADDER_AUDIT.md`): Cassi & Issac pair risk (pair status bits), opening income on eight
+   (partly fixed by `camp_in_fight`), helper credit in `group_score`, probe on the deploy engine whether a stun cancels a tribute
+   (`ENGINE_FACTS.md` says only death; the code assumes stun too).
+7. Ask the user for: real ladder replays of the new build (best signal: all our sparring bots are our own code family), and permission to
+   build public top-team bots (Tarot Club repo) as sparring opponents (was blocked as untrusted code in session 1).
+
+### 5. Tools added this session
+- `tools/sum.py [--maps] DIR...`: all-map and official-map (`maps/comp`) win rates per bench dir, per official map with `--maps`.
+- `tools/fullpanel.sh BOT [OUT] [OPPS...]`: 6 opponents x 106 maps (56-map pool + `maps/gold,gold2,obj`), 212 games per opponent.
+- `tools/analysis/gem_race.py [--comp] [--lost] [--games] DIR...`: gems collected / banked / lost at death, gold, kills, monster damage, rounds to 250/500/750.
+- From the agents: `tools/analysis/side_deaths.mjs` (deaths per map and side), `tools/mapgen/swap_sides.mjs` (side-swapped map copies),
+  `tools/analysis/route_stats_p.mjs`, `tools/pace/*` (pace pool, per-map pace diff, body timelines, target-switch causes, captures).
+- Fuel probing: build a copy with `debug_block` printf of `bc::fuel_remaining()` at checkpoints, run `cambc run BOT idle --map M --rounds 3 -o DIR`,
+  read the team stdout from the replay with `unwrapReplay(raw, 'team-a.stdout')` (`tools/replay/decode.mjs`).
+
+### 6. How to resume (new container)
+- `pip install cambc==2.2.5 && cambc init --yes .`; toolchain by hand into `/root/.cache/cambc/` with `curl --cacert /root/.ccr/ca-bundle.crt`
+  (wasi-sdk-33 renamed from `wasi-sdk-33.0-x86_64-linux`, cmake-3.31.8-linux-x86_64, ninja 1.12.1 into `ninja-1.12.1-linux-x86_64/`).
+- `git fetch --unshallow origin` (the clone is shallow; snapshots need old commits), then `tools/make_sparring.sh`, `tools/snapshot.sh _L0 25bed8d`.
+- Frozen builds from zips: `for z in es2 c3 st; do mkdir -p bots/_$z && (cd bots/_$z && python3 -c "import zipfile,sys;zipfile.ZipFile(sys.argv[1]).extractall('.')" ../../submissions/history/legend_${z}_20261017.zip) && cp bots/legend/.gitignore bots/_$z/; done`
+  (`_ST` = `_st` plus the 2 inert switches: either works as the baseline). `_rm` = current `bots/legend`.
+- Variants: `SRC=bots/X tools/variant.sh NAME key=val ...`; patches: `cd bots/NAME && patch -p1 --no-backup-if-mismatch < ../../experiments/wip/x_*.patch`.
+- Gotchas: never `pkill -f`; long runs via `nohup script &`; the remote branch can move (an old session pushed twice): `git pull --rebase` before pushing.
 
 ### Note from the session-2 container (19:20 UTC): stopped, nothing running there
 

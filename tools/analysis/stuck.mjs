@@ -237,8 +237,12 @@ async function analyse(file, acc, opts) {
 		// Static walking fields (walls, holes, altars, the enemy spawn blocked, as the bot's own fields).
 		const blocked = new Uint8Array(grid.w * grid.h);
 		for (let i = 0; i < blocked.length; i++) blocked[i] = grid.wall[i] | grid.hole[i] | grid.altar[i] | grid.spawn[1 - team][i];
+		// Dash kits cross 1-wide hole lines (legend's dash_holes): their goal distances let them over holes.
+		const blockedDash = new Uint8Array(blocked.length);
+		for (let i = 0; i < blocked.length; i++) blockedDash[i] = grid.wall[i] | grid.altar[i] | grid.spawn[1 - team][i];
 		const fieldCache = new Map();
-		const field = (key, roots) => { let f = fieldCache.get(key); if (!f) fieldCache.set(key, (f = bfs(grid, blocked, roots))); return f; };
+		let dashBody = false;
+		const field = (key, roots) => { const k = (dashBody ? 'd' : '') + key; let f = fieldCache.get(k); if (!f) fieldCache.set(k, (f = bfs(grid, dashBody ? blockedDash : blocked, roots))); return f; };
 		const spawnRoots = [];
 		for (let i = 0; i < blocked.length; i++) if (grid.spawn[team][i]) spawnRoots.push([i % grid.w, (i / grid.w) | 0]);
 		const altarRoots = [];
@@ -266,6 +270,7 @@ async function analyse(file, acc, opts) {
 		const gameEp = { n: 0, rounds: 0 };
 		for (const b of bodies) {
 			const T = trace ? trace[b.type] || {} : null;
+			dashBody = ['Ren', 'Issac', 'Vendetta', 'VesperVale'].includes(b.type);
 			const pc = (acc.perChamp[b.type] ||= { bodyRounds: 0, ep: 0, rounds: 0, roll: 0, blocked: 0, byClass: {} });
 			// Build the per-round series.
 			const seq = [];

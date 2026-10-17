@@ -74,7 +74,7 @@ saved. Recreated in session 2:
 | 09:55 | Portability and parallel-safety fixes: `variant.sh` / `es_train.py` without GNU `sed -i`; `bench.py` rebuilds only stale bots; `panel.sh` `PANEL_JOBS`; ES space 29 → 27 params | verified: the new `variant.sh` builds `_hunt` byte-identical to the old one |
 | 10:00 | `bots/_L0` frozen; `experiments/wip/AGENT_RULES.md`; six subagents launched | see the table above |
 | 10:25 | Docs agent done; its script review found 3 issues, fixed (PATH on macOS / `--skip-setup`, map count, `apply_params.py --bot`) | commit after 0809d36 |
-| 10:20-10:45 | Agents' work-in-progress committed as it appeared: `tools/analysis/gold_stats.py`, `coord_audit.mjs`, `coord_trace.mjs`, `stuck.mjs`; `tools/mapgen/goldmaps.mjs`, `stuck_maps.mjs`; 14 maps in `maps/gold/`, 8 in `maps/stuck/`; every agent's `x_*_NOTES.md` | in the repo |
+| 10:20-10:45 | Agents' work-in-progress committed as it appeared: `tools/analysis/gold_stats.py`, `coord_audit.mjs`, `coord_trace.mjs`, `stuck.mjs`; `tools/mapgen/goldmaps.mjs`, `stuck_maps.mjs`; 14 maps in `maps/gold/` (+24 hold-out in `maps/gold2/`), 8 in `maps/stuck/`; every agent's `x_*_NOTES.md` | in the repo |
 | 10:45 | Snapshots of the agents' bot copies: `experiments/wip/x_gold.patch`, `x_stuck.patch`, `x_coord.patch`, `x_mr.patch` (= legend + math + route as built by `mr`, before its review fixes) | unfinished code: the agents overwrite these with their final versions |
 
 **Early findings from the agents** (10:45 UTC; details and updates in each `experiments/wip/x_*_NOTES.md`):
@@ -298,7 +298,7 @@ rm -f submissions/legend.zip && cambc bundle legend --output submissions/legend.
 | `bots/_*` | **git-ignored** local bots: sparring opponents, prototypes, variants. Recreate the panel with `tools/make_sparring.sh` |
 | `experiments/patches/` | the finished prototypes as patches against `_r2` (apply on legend: `cd bots/X && patch -p1 --no-backup-if-mismatch < ../../experiments/patches/x_econ.patch`) |
 | `maps/*.map26a` | 27 generated maps. `maps/ladder/`: 12 real ladder maps rebuilt from replays. `maps/comp/`: 6 official maps (SDK 2.1.6 pool, from the public Tarot Club repo; the other 3 official maps duplicate ladder ones) |
-| `maps/gold/`, `maps/stuck/` | session 2 test maps: 14 gem-scarce maps (gems only from monoliths/elks, gold everywhere; 2 controls) and 8 navigation stress maps. **Not in the 45-map panel** (panel them separately) |
+| `maps/gold/`, `maps/gold2/`, `maps/stuck/` | session 2 test maps: 14 gem-scarce maps (`maps/gold2/`: the same 12 gold layouts with seeds 11 and 23, 24 maps, a hold-out set) (gems only from monoliths/elks, gold everywhere; 2 controls) and 8 navigation stress maps. **Not in the 45-map panel** (panel them separately) |
 | `tools/bench.py`, `tools/panel.sh` | A-vs-B on every map, both sides, in parallel; one summary line per opponent |
 | `tools/variant.sh`, `tools/snapshot.sh` | build a param/define variant (`SRC=bots/X tools/variant.sh NAME key=val --define "M v"`); freeze a past commit as a bot |
 | `tools/replay/decode.mjs` | replay decoder using the engine's own wasm: per-round state + events (`{rollovers: true}` keeps fuel rollovers); `report.py`, `extract_map.mjs`, `mapinfo.mjs`, `mapfeatures.mjs` |

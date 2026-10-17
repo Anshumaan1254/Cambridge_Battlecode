@@ -2,7 +2,26 @@
 
 Base: `bots/_ST` (= shipped `legend_st`). Copy: `bots/_x_side` (+ variants `_x_side_cf`, `_x_side_wg`).
 Patch: `experiments/wip/x_side.patch` (`cd bots && diff -ruN _ST/src _x_side/src`). Outputs: `/tmp/side/` (local).
-Work in progress: this file is updated as results come in.
+**Final (recommended for merge): `bots/_x_side` = `_ST` + `camp_in_fight` 3; `wake_guard` code present but off.**
+
+## Final A/B (`_x_side` = `_xs_off0`, identical code)
+| Pool | vs `_ST` | `_L0` | `_es2` | `_r2` | `_v6` | `_devci` | `_c3` |
+|---|---|---|---|---|---|---|---|
+| 56 maps, `_ST` reference | - | 70.5 | 59.8 | 74.1 | 86.6-88.4 | 94.6-96.4 | 56.2 |
+| 56 maps, `_x_side` | **56.2** | 71.4 | 63.4 | 75.9 | 92.0 | 94.6 | 49.1 |
+| official 17, `_ST` (this run) | - | 64.7 | 64.7 | 67.6 | 91.2 | | 50.0 |
+| official 17, `_x_side` | **61.8** | 70.6 | 73.5 | 67.6 | 91.2 | 94.1 | 47.1 |
+| held-out 50 (gold, gold2, obj) | 53.0 | | 78.0 (`_ST` 72.0) | | | | |
+- Panel mean of 6 (`_L0 _es2 _r2 _v6 _devci _c3`): 74.4 vs `_ST` 74.2 (`_c3` cell -7, the others 0 to +5).
+- 0 faults; gen16 lost turns 18 per game (= `_ST`). Fuel: one loop over awake groups within 12 inside `combat()`.
+- With `wake_guard` 1 (`_xs_off`): vs `_ST` 57.1 (comp 58.8), `_L0` 73.2, `_es2` 65.2, `_r2` 80.4, `_v6` 96.4, `_devci` 92.0,
+  `_c3` 50.0 (mean 76.2); held-out vs `_ST` 54.0, vs `_es2` 76.0; but 45.5 head-to-head vs `_x_side`. Off by default.
+
+## Reproduce
+- `SRC=bots/_ST tools/variant.sh _x_side && cd bots/_x_side && patch -p1 < ../../experiments/wip/x_side.patch && cambc build _x_side`
+- `python3 tools/bench.py _x_side _ST --maps 'maps/*.map26a,maps/ladder/*.map26a,maps/comp/*.map26a' --jobs 2 --out DIR --quiet`
+- Swapped maps: `for m in maps/comp/*.map26a; do node tools/mapgen/swap_sides.mjs $m OUT/$(basename $m .map26a)-sw.map26a; done`
+- Deaths per map and side: `node tools/analysis/side_deaths.mjs --maps eight,collision --list DIR`
 
 ## Baseline (`_ST`, 17 official maps, both sides, 34 games per opponent)
 - vs `_v6` 91.2, `_es2` 64.7, `_L0` 64.7, `_r2` 67.6 (mean of es2/L0/r2: 65.7).
@@ -21,9 +40,9 @@ Work in progress: this file is updated as results come in.
   C&I die at r33. Same pattern for the opponents (whoever is B loses its C&I against `_r2`/`_L0`).
 
 ## Changes (switches in params.h)
-- `camp_in_fight` (1): in `combat()`, every awake camp within 3 of a body hits the nearest champion (ties counted against
+- `camp_in_fight` (final default 3; first tested as 1): in `combat()`, every awake camp within 3 of a body hits the nearest champion (ties counted against
   us): its strength is added to the enemy DPS (and to `incoming` when it is us) or to ours when an enemy is nearest.
-- `wake_guard` (1): `farm_group()` does not wake a sleeping, harmful group while enemies seen in the last
+- `wake_guard` (final default 0; first tested as 1): `farm_group()` does not wake a sleeping, harmful group while enemies seen in the last
   `threat_memory` rounds stand within `wake_guard_d` 9 of it (or of us), unless we kill it within `wake_guard_kill` 3
   rounds or our side (health after the camp's hits) beats them by `wake_guard_adv` 1.5; it holds at range 4 for at most
   `wake_guard_max` 16 rounds per group.
@@ -64,6 +83,18 @@ Work in progress: this file is updated as results come in.
   the patch ships wake_guard off (simpler; switch kept).
 - `camp_kill` (a camp's hit on the target this round counts toward `killable`): vs `_xs_off0` 50.9, vs `_ST` 56.2:
   neutral, not kept (code not in the patch).
+
+## Rejected tries (56 maps, 112 games)
+- `tank_alert` (post an OPPORTUNITY alert on a visible enemy tanking an awake camp of 800+ health, so the team converges):
+  vs `_x_side` 50.9, vs `_ST` 49.1 (comp 47.1). Not kept.
+- `engage_parity` (do not step into the target's reach in a round our team leads: it would act after us and hit first):
+  vs `_x_side` 50.9 (comp 41.2), vs `_ST` 44.6 (comp 41.2), more deaths (1184-928). Not kept.
+- `camp_in_fight` 1/2 and `camp_kill`: above.
+
+## Per official map and side, `_ST` (vs `_v6 _es2 _L0 _r2`) | final `_x_side` (vs `_ST _es2 _L0 _r2 _v6`): wins, deaths us-them per game
+- eight A 1/4 35.5-28.3 | 4/5 33.6-31.4; eight B 1/4 33.8-30.0 | 3/5 25.8-35.8
+- corners A 2/4 | 5/5; rushbait-v2 A 1/4 | 3/5; stampede A 3/4 | 5/5; swirl B 3/4 | 5/5; elkring B 2/4 | 3/5
+- unchanged: collision B 2/4 | 2/5, rows B 1/4 | 1/5, monolith A 1/4 | 1/5, contest B 3/4 | 3/5; pilgrimage B 3/4 | 2/5
 
 ## Side asymmetry (swapped maps, `/tmp/side/swapmaps`, `_ST` vs `_r2`, `_es2`, `_L0`, `_ST`)
 - **collision is geometry, not the team letter**: the top spawn wins. Original: as A (top) 4/4, as B (bottom) 2/4; swapped:

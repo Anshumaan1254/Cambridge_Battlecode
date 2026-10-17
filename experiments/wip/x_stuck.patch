@@ -1,16 +1,16 @@
-diff -ruN legend/src/brain.cpp _x_stuck/src/brain.cpp
---- legend/src/brain.cpp	2026-10-17 09:33:09.211370026 +0000
-+++ _x_stuck/src/brain.cpp	2026-10-17 10:21:43.014708612 +0000
-@@ -425,6 +425,8 @@
+diff -ruN legend/src/brain.cpp _x_stuck2/src/brain.cpp
+--- a/src/brain.cpp	2026-10-17 14:10:55.404531571 +0000
++++ b/src/brain.cpp	2026-10-17 14:14:27.593975603 +0000
+@@ -453,6 +453,8 @@
  
  	place_ward(false);
  	update_priority();
 +	if (P.unstick_rounds > 0)
 +		unstick();
  	prebuild_fields();
+ 	XM(xm_post());
  #ifdef LEGEND_TRACE
- 	debug_block({
-@@ -436,6 +438,33 @@
+@@ -465,6 +467,33 @@
  	last_hp = hp;
  }
  
@@ -44,7 +44,7 @@ diff -ruN legend/src/brain.cpp _x_stuck/src/brain.cpp
  void Brain::handle_channel()
  {
  	// Channels are cut short only when finishing them would cost more than the bag or our life:
-@@ -676,12 +705,24 @@
+@@ -713,12 +742,24 @@
  {
  	auto& N = nav();
  	bc::bitboard fallback;
@@ -72,7 +72,7 @@ diff -ruN legend/src/brain.cpp _x_stuck/src/brain.cpp
  		return after_move(Nav::step_field(pos, N.group_fields[static_cast<std::size_t>(g.id)], stop_at, avoid ? &av : nullptr, kit.dash, can_move, fallback));
  	return after_move(Nav::step_to(pos, fallback, avoid ? &av : nullptr, kit.dash, can_move));
  }
-@@ -694,7 +735,7 @@
+@@ -731,7 +772,7 @@
  	for (auto t : W.altar_approach[static_cast<std::size_t>(id)])
  		fallback.set(t);
  	const bc::bitboard av = danger | camp_danger | alert_zone;
@@ -81,7 +81,7 @@ diff -ruN legend/src/brain.cpp _x_stuck/src/brain.cpp
  		return after_move(Nav::step_field(pos, N.altar_fields[static_cast<std::size_t>(id)], 0, &av, kit.dash, can_move, fallback));
  	return after_move(Nav::step_to(pos, fallback, &av, kit.dash, can_move));
  }
-@@ -755,6 +796,7 @@
+@@ -792,6 +833,7 @@
  	{
  		bc::self().attack(u);
  		can_attack = false;
@@ -89,7 +89,85 @@ diff -ruN legend/src/brain.cpp _x_stuck/src/brain.cpp
  		if (kit.ranged)
  			can_move = false;
  		return true;
-@@ -2244,12 +2286,20 @@
+@@ -1203,23 +1245,6 @@
+ 		fight = false;
+ 	if (fight && isolated && !killable && adv < isolated_fight_adv && can_escape)
+ 		fight = false;
+-	// The user's rule (session 2): stay and keep hitting only when our own health outlasts the most the enemies
+-	// here can deal before the target dies (every visible enemy hitting us every round, spells included) and no
+-	// other enemy is near the target to support it; when they could kill us first, do not start it while we can
+-	// still get away (when we cannot, the cornered rule above trades instead of handing a dash/ranged chaser
+-	// free hits).
+-	if (P.stay_rule)
+-	{
+-		int support = 0;
+-		for (const auto& e : W.enemies)
+-			if (e.alive && e.seen_round >= 0 && round - e.seen_round <= P.threat_memory && &e != tgt && cheb(e.pos, tgt->pos) <= P.stay_support_r)
+-				++support;
+-		const float worst = their_dps * (std::ceil(tgt->hp / std::max(1.f, our_dps)) + 1.f);
+-		if (support == 0 && hp > worst * P.stay_margin && d <= my_reach + 2)
+-			fight = true;
+-		else if (P.stay_veto && fight && !killable && can_escape && hp <= worst)
+-			fight = false;
+-	}
+ 	// Do not dive their spawn: it heals them and they block us.
+ 	if (W.enemy_spawn.is_set(tgt->pos) || cheb(tgt->pos, W.enemy_spawn_c) <= 3)
+ 		fight = fight && killable;
+@@ -1279,17 +1304,6 @@
+ 				}
+ 			}
+ 		}
+-		if (P.flee_recall && W.dist_home(pos) > P.recall_min_dist && safe_to_recall())
+-		{
+-			try
+-			{
+-				bc::self().recall();
+-				return true;
+-			}
+-			catch (...)
+-			{
+-			}
+-		}
+ 		if (go_home_step(true))
+ 		{
+ 			// Melee champions can still swing after walking.
+@@ -1310,17 +1324,6 @@
+ 	{
+ 		post_danger(tgt->pos);
+ 		task = T_FLEE;
+-		if (P.flee_recall && W.dist_home(pos) > P.recall_min_dist && safe_to_recall())
+-		{
+-			try
+-			{
+-				bc::self().recall();
+-				return true;
+-			}
+-			catch (...)
+-			{
+-			}
+-		}
+ 		if (go_home_step(true))
+ 			return true;
+ 		if (W.ally_spawn.is_set(pos))
+@@ -2454,6 +2457,10 @@
+ void Brain::farm()
+ {
+ 	auto& W = world();
++#ifdef STUCK_DBG
++	long long dbg_ff = 0;
++	debug_block({ dbg_ff = bc::fuel_remaining(); });
++#endif
+ 	if (P.style == 1 || round < P.deathball_until)
+ 	{
+ 		int leader = -1;
+@@ -2510,17 +2517,31 @@
+ 				return;
+ 			if (g.id == task_group)
+ 				s *= P.hysteresis;
++			else if (P.flip_window > 0 && g.id == left_group && round - left_round <= P.flip_window)
++				s /= P.flip_margin; // going back to a target we just left: A-B-A-B flips walk in place
+ 			if (s > best_s)
+ 				best_s = s, best = g.id, best_eta = eta, best_pair = np;
  		};
  		if (task_group >= 0 && task_group < static_cast<int>(W.groups.size()))
  			consider(W.groups[static_cast<std::size_t>(task_group)]);
@@ -104,15 +182,37 @@ diff -ruN legend/src/brain.cpp _x_stuck/src/brain.cpp
 -			for (auto& g : W.groups)
 +			for (int k = 0; k < ng; ++k)
  			{
-+				auto& g = W.groups[static_cast<std::size_t>(pass == 1 ? (k + off) % ng : k)];
++				auto& g = W.groups[static_cast<std::size_t>((k + off) % ng)];
  				if (g.id == task_group || (cheb(g.center, pos) <= P.score_near) != (pass == 0))
  					continue;
 -				if (pass == 1 && bc::fuel_remaining() < P.score_fuel_floor)
 +				if (pass == 1 && bc::fuel_remaining() < far_floor)
++					break;
++				// Near groups too: on the 90x30 official map (40 groups, most within 20 tiles) scoring alone took
++				// 70-85k and the walk after it spilled into the next round every other turn.
++				if (pass == 0 && P.score_near_floor > 0 && bc::fuel_remaining() < P.score_near_floor)
  					break;
  				consider(g);
  			}
-@@ -2569,7 +2619,7 @@
+@@ -2646,8 +2667,17 @@
+ 	});
+ #endif
+ 	XM(xm_decide(best));
++#ifdef STUCK_DBG
++	debug_block({
++		int cur_eta = 0;
++		const float cur_s = task_group >= 0 ? group_score(W.groups[static_cast<std::size_t>(task_group)], cur_eta) : -9.f;
++		std::printf("F r=%d %d best=%d s=%.3f eta=%d cur=%d cs=%.3f hop=%d isl=%d pos=(%d,%d) fuel=%lld start=%lld\n", round, static_cast<int>(type), best, best_s, best_eta, task_group, cur_s, tp_hop, tp_island, pos.x, pos.y, (long long)bc::fuel_remaining(), dbg_ff);
++	});
++#endif
+ 	if (best != task_group)
+ 	{
++		if (task_group >= 0)
++			left_group = task_group, left_round = round;
+ 		task_group = best;
+ 		task_since = round;
+ 	}
+@@ -2856,7 +2886,7 @@
  		{
  			bc::bitboard goal;
  			for (std::size_t i = 0; i < g.camps.size(); ++i)
@@ -121,10 +221,10 @@ diff -ruN legend/src/brain.cpp _x_stuck/src/brain.cpp
  					goal.draw_chebyshev(g.camps[i].pos, static_cast<float>(kit.attack_range));
  			goal &= ~g.mask;
  			if (!goal.is_empty())
-diff -ruN legend/src/brain.h _x_stuck/src/brain.h
---- legend/src/brain.h	2026-10-17 09:33:09.213173744 +0000
-+++ _x_stuck/src/brain.h	2026-10-17 10:21:43.002703838 +0000
-@@ -158,6 +158,11 @@
+diff -ruN legend/src/brain.h _x_stuck2/src/brain.h
+--- a/src/brain.h	2026-10-17 13:46:35.998039061 +0000
++++ b/src/brain.h	2026-10-17 13:58:50.048457698 +0000
+@@ -200,6 +200,12 @@
  	float last_hp = 0;
  	int last_hit_round = -100;
  	std::vector<int> blacklist; // per group: round until which we ignore it
@@ -132,13 +232,14 @@ diff -ruN legend/src/brain.h _x_stuck/src/brain.h
 +	int last_act_round = -100;
 +	vec2 ust_anchor{ -1, -1 };
 +	int ust_since = 0;
++	int left_group = -1, left_round = -1000; // target we last switched away from (flip guard)
 +	void unstick();
  };
  
  Brain& brain();
-diff -ruN legend/src/nav.cpp _x_stuck/src/nav.cpp
---- legend/src/nav.cpp	2026-10-17 09:33:09.213173744 +0000
-+++ _x_stuck/src/nav.cpp	2026-10-17 10:12:08.682664259 +0000
+diff -ruN legend/src/nav.cpp _x_stuck2/src/nav.cpp
+--- a/src/nav.cpp	2026-10-17 13:50:36.612471883 +0000
++++ b/src/nav.cpp	2026-10-17 13:54:47.778770902 +0000
 @@ -13,11 +13,21 @@
  constexpr std::array<vec2, 8> DIRS{ vec2::north, vec2::north_east, vec2::east, vec2::south_east,
  									vec2::south, vec2::south_west, vec2::west, vec2::north_west };
@@ -223,7 +324,7 @@ diff -ruN legend/src/nav.cpp _x_stuck/src/nav.cpp
  	auto& me = bc::self();
  	// Rank improving neighbours: prefer lower field value, then not-avoided.
  	std::array<std::pair<int, vec2>, 8> cand{};
-@@ -322,7 +348,16 @@
+@@ -346,7 +372,16 @@
  	}
  	// Units block every improving step: route around them with a dynamic search.
  	if (!fallback_goals.is_empty() && bc::fuel_remaining() > 30000)
@@ -241,7 +342,7 @@ diff -ruN legend/src/nav.cpp _x_stuck/src/nav.cpp
  	return moved;
  }
  
-@@ -344,8 +379,21 @@
+@@ -368,8 +403,21 @@
  	{
  		bc::bitboard walls2 = blocked | (*avoid & ~g);
  		walls2.set(pos, false);
@@ -265,9 +366,9 @@ diff -ruN legend/src/nav.cpp _x_stuck/src/nav.cpp
  	}
  	if (!ok)
  	{
-diff -ruN legend/src/nav.h _x_stuck/src/nav.h
---- legend/src/nav.h	2026-10-17 09:33:09.213173744 +0000
-+++ _x_stuck/src/nav.h	2026-10-17 10:12:08.678676163 +0000
+diff -ruN legend/src/nav.h _x_stuck2/src/nav.h
+--- a/src/nav.h	2026-10-17 13:46:36.000436854 +0000
++++ b/src/nav.h	2026-10-17 13:54:47.779027521 +0000
 @@ -13,8 +13,8 @@
  	void init();
  	void new_turn() { built_this_turn = 0; }
@@ -279,12 +380,25 @@ diff -ruN legend/src/nav.h _x_stuck/src/nav.h
  	// Crystal shortcuts: a resumable scan of the map (local copies of the home field and terrain) collects
  	// launch -> land pairs within crystal range that save many walking steps from our spawn; each group then
  	// takes the best pair by its own walking field. Spread over turns with spare fuel.
-diff -ruN legend/src/params.h _x_stuck/src/params.h
---- legend/src/params.h	2026-10-17 09:33:09.213173744 +0000
-+++ _x_stuck/src/params.h	2026-10-17 10:21:43.022684387 +0000
-@@ -143,6 +143,21 @@
- 	int sticky_tribute = 1;		// finish a bank trip once started
- 	int claim_tiebreak = 1;		// on our own group only lower-index claimers count
+diff -ruN legend/src/params.h _x_stuck2/src/params.h
+--- a/src/params.h	2026-10-17 14:10:24.036463961 +0000
++++ b/src/params.h	2026-10-17 14:14:27.704598201 +0000
+@@ -57,12 +57,6 @@
+ 	float isolated_flee_adv = 1.1f;	 // alone and weaker than this: walk away as soon as they are in sight
+ 	int flee_dist = 7;				 // ... when the nearest enemy is this close
+ 	float reserve_margin = 0.5f;	 // half the team dead: extra advantage needed to fight
+-	int stay_rule = 1;				 // stay in a fight when our health > the enemies' worst damage until the target dies, with
+-									 // no other enemy within stay_support_r of the target (the user's rule, session 2)
+-	int stay_veto = 1;				 // ... and skip fights where that worst damage could kill us, while we can still escape
+-	int stay_support_r = 10;
+-	float stay_margin = 1.1f;
+-	int flee_recall = 1;			 // fleeing out of reach: recall when no enemy can interrupt it (safe_to_recall)
+ 	int deficit_defend = 1;			 // this many more enemies alive than allies: defensive play
+ 	int deficit_escort = 2;			 // ... this many: a respawned champion waits on spawn for the next ally
+ 	int escort_wait = 15;			 // max rounds to wait on spawn for an escort
+@@ -190,6 +184,24 @@
+ 	float bank_trip_cap = 2.0f;	// ... and the threshold never exceeds this multiple of the plain one
+ 	int bank_ignore_spawn = 1;	// "bank before a risky fight" ignores enemies standing on their own spawn
  
 +	// Stuck champions (tools/analysis/stuck.mjs; experiments/wip/x_stuck_NOTES.md)
 +	int stuck_live_goal = 1;	 // farming without the group's field: walk to tiles in range of live camps, not of any
@@ -299,6 +413,9 @@ diff -ruN legend/src/params.h _x_stuck/src/params.h
 +	int stuck_reach = 1;		 // a group unreachable on foot from our side is not estimated by straight-line distance
 +	int unstick_rounds = 10;	 // a farm/capture walk stuck inside a 3x3 box this many rounds (no attack) drops its target
 +	int unstick_blacklist = 30;	 // ... for this many rounds (0 rounds: off)
++	int flip_window = 12;		 // for this many rounds after leaving a target, going back to it needs ...
++	float flip_margin = 1.5f;	 // ... this factor more score (on top of hysteresis): stops A-B-A-B target flips
++	int score_near_floor = 38000; // stop scoring near groups below this much fuel (0: never); start rotates too
 +	int score_far_floor = 55000; // stop scoring far groups below this much fuel, rotating the start (0: score_fuel_floor)
 +
  	// Aggression

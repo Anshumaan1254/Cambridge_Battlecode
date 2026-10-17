@@ -3,12 +3,21 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-17 19:45 UTC (session 4)**. Rule from the user: update this file and push at every step. Start with **§000**, then **§00** below. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
+- Last updated: **2026-10-17 20:00 UTC (session 5)**. Rule from the user: update this file and push at every step. Start with **§0000**, then **§000**, then **§00** below. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
 - Competition: Cambridge Battlecode 2026a (CAMBC), 12 Oct to 18 Nov 2026. C++ bot compiled to wasm.
 - The submitted bot cannot be changed after submission and keeps nothing between matches. All "learning"
   is either offline (training parameters before submission) or in-match (adapting inside one game).
 
 ---
+
+## 0000. SESSION 5: CURRENT POSITION (started 2026-10-17 19:46 UTC in a new container): read this first, then §000
+
+- Session 4 stopped pushing at 19:45 UTC with its full panels half done; its container (and `/tmp/ev/`, `bots/_*`) is not here.
+  Session 5 rebuilt everything (toolchain, sparring panel, `_L0 _ST _rm _es2 _c3 _st`, `_x_side`, `_rmx`, `_rmxp`) with
+  `/tmp/ev/setup.sh` (local; the recipe is §000 "How to resume" plus `_ST` = `tools/snapshot.sh _ST cd4e2aa`, `_rm` = snapshot of HEAD).
+- Shipped build is still `legend_st`. Agent rules for this session: top block of `experiments/wip/AGENT_RULES.md` (baseline `bots/_rm`).
+- Plan: (1) full panels of `_rmxp` then `_rmx` (the panels session 4 had queued; `_rnr`/`_rnd` ablations only if needed), ship the best
+  build that beats `_ST`; (2) agents on the unstarted tasks of §000.4 (gem-race endgame, engine probes, walk waste, audit items).
 
 ## 000. SESSION 4: CURRENT POSITION (written 2026-10-17 19:20 UTC, updated at every step): read this first, then §00
 

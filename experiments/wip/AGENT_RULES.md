@@ -1,3 +1,19 @@
+# Session 5 (2026-10-17, from ~19:50 UTC, new container): read this block first; it overrides everything below
+
+- Baseline: **`bots/_rm`** = frozen copy of current `bots/legend` (commit d6aa4ef: `_ST` + opening fuel fix, `start_round=2`,
+  `capture_reset`, `tribute_elapsed`, `danger_detour`, `team_bank`, `race_mode`). Read-only.
+  Make your copy with `SRC=bots/_rm tools/variant.sh _x_NAME` (then edit `bots/_x_NAME/src`).
+  Patch: `cd bots && diff -ruN _rm/src _x_NAME/src > ../experiments/wip/x_NAME.patch`.
+- Other read-only bots, built: `_ST` (shipped `legend_st` + 2 inert switches), `_L0 _es2 _c3 _st _r2 _v6 _hunt _hunt2 _devci _base`,
+  `_rmx` (= `_rm` + `x_side.patch`, `camp_in_fight=3`), `_rmxp` (= `_rmx` + `x_pace.patch`), `_x_side` (= `_ST` + side), `idle`.
+- Reference numbers (full panel, 106 maps, 212 games per cell): `_ST`: `_L0` 72.6, `_es2` 65.6, `_r2` 81.1, `_v6` 91.0, `_c3` 56.6
+  (mean 73.4, official 67.6). `_rm`: `_L0` 75.0, `_es2` 64.2, `_r2` 88.7, `_v6` 89.2, `_c3` 44.3 (mean 72.3, official 72.3), vs `_ST` 53.3.
+- CPU: 4 cores; the coordinator runs full panels with 2 jobs. Use `--jobs 2` and your own `--out /tmp/<name>/...`.
+- Acceptance: head-to-head vs `_rm` > 50 on the 56 maps **and** on the official 17, mean over `_ST _L0 _es2 _r2 _v6 _c3` not lower,
+  0 faults, no new fuel rollovers. Confirm small gains on the held-out pool (`maps/gold,gold2,obj`).
+- Same rules as below otherwise: never commit/push/checkout/stash/reset, never `pkill -f`/`pgrep -f`/`killall`, never edit
+  `bots/legend` or others' bots, keep `experiments/wip/x_NAME.patch` and `x_NAME_NOTES.md` current as you go.
+
 # Session 4 (2026-10-17, new container): read this block first; it overrides everything below
 
 - Baseline: **`bots/_ST`** = frozen copy of current `bots/legend` (= shipped `legend_st` + 2 inert switches). Read-only.

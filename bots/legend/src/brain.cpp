@@ -284,12 +284,17 @@ void Brain::init()
 	auto& W = world();
 	W.dash_kit = kit.dash >= 0;
 	W.init_static();
-	W.find_islands();
+	// Islands are searched later (prebuild_fields): ~47k fuel on 100x100 maps, not needed in the opening rounds.
+	W.island_of.assign(W.groups.size(), -1);
+	W.islands_pending = true;
+	if (!P.defer_islands)
+		W.islands_pending = false, W.find_islands();
 	W.init_units();
 	blacklist.assign(W.groups.size(), -1);
 	nav().init();
 	learner().init(W.W, W.H);
 	comms().bodies = static_cast<int>(W.allies.size());
+	comms().bag_on = P.team_bank && W.groups.size() <= 62;
 	inited = true;
 #ifdef LEGEND_TRACE
 	// Route analysis (tools/analysis): the static camp-group table, printed once per team (fuel-free in debug).
@@ -347,6 +352,11 @@ void Brain::turn()
 	if (!inited)
 		init();
 	read_self();
+	if (alive && round < P.start_round)
+	{
+		prebuild_fields();
+		return;
+	}
 	auto& C = comms();
 	if (!alive)
 	{
@@ -355,6 +365,7 @@ void Brain::turn()
 		W.update_alive(round);
 		shop();
 		C.read(round);
+		C.write_bag(0);
 		C.write_self(W.my_index, -1);
 		learner().tick(round, W.my_index == 0, false);
 		if (W.my_index == 0)
@@ -364,6 +375,7 @@ void Brain::turn()
 	}
 	W.perceive(pos);
 	C.read(round);
+	C.write_bag(static_cast<int>(gems));
 	{
 		// Learning signals: champion damage marks a painful place; an enemy dying near us relieves it.
 		auto& L = learner();
@@ -381,7 +393,8 @@ void Brain::turn()
 				L.on_enemy_killed_near(e.pos, round);
 		// A visible enemy tributing a bag (or recalling with one) is an opportunity for the whole team.
 		for (const auto& e : W.enemies)
-			if (e.visible && e.alive && (e.tributing || (e.recalling && e.gems >= 20)) && e.gems >= 10 && !W.enemy_spawn.is_set(e.pos))
+			if (e.visible && e.alive && (e.tributing || (e.recalling && e.gems >= 20) || (race_state == 1 && static_cast<int>(e.gems) >= P.race_carrier)) && e.gems >= 10 &&
+				!W.enemy_spawn.is_set(e.pos))
 			{
 				C.post(AL_OPPORTUNITY, e.pos, round);
 				break;
@@ -560,7 +573,11 @@ void Brain::handle_channel()
 		cancel = true; // they will hit us before it completes: act instead of standing still
 	if (tributing && !(P.win_bank && wins_with(static_cast<int>(gems))))
 	{
-		const int left = std::max(1, static_cast<int>((gems + 9) / 10) - 1);
+		// Turns still stuck in the channel: the bag stays carried until it lands, so counting from the bag gave
+		// the full duration on every turn (the audit's channel-bookkeeping finding); count from the start instead.
+		int left = std::max(1, static_cast<int>((gems + 9) / 10) - 1);
+		if (P.tribute_elapsed && round - tribute_start <= tribute_ticks)
+			left = std::max(1, tribute_ticks - (round - tribute_start));
 		if (incoming * static_cast<float>(left + 1) >= hp || (stunner_close && gems >= 20 && threat_close))
 			cancel = true;
 	}
@@ -830,6 +847,12 @@ void Brain::prebuild_fields()
 		auto& W = world();
 		if (static_cast<int>(bc::round_number()) != round)
 			return;
+		if (W.islands_pending && round > init_round && bc::fuel_remaining() >= 90000)
+		{
+			W.islands_pending = false;
+			W.find_islands();
+			return;
+		}
 		if (P.hops_enabled && round >= init_round + 3)
 		{
 			nav().hop_scan_step(22000, round);
@@ -1113,7 +1136,11 @@ void Brain::place_ward(bool force)
 
 bool Brain::wins_with(int bag) const
 {
-	return static_cast<int>(bc::global_submitted_gems(team::ally)) + bag >= static_cast<int>(bc::constants::winning_gems);
+	// P.team_bank: the bags the rest of the team carries count too (shared sum, in tens, rounded down): when the
+	// team's bags finish the game every carrier banks now. 12 of 77 losses of _ST vs _L0/_r2/_v6/_es2 ended with
+	// banked + carried >= 1000 (gen02 968 banked + 88 carried, gen19 990 + 48, gen13 982 + 44, ...).
+	return static_cast<int>(bc::global_submitted_gems(team::ally)) + bag + (P.team_bank ? comms().others_carried() : 0) >=
+		static_cast<int>(bc::constants::winning_gems);
 }
 
 bool Brain::can_support(const Ally& a, const std::vector<Enemy*>& E) const
@@ -1628,7 +1655,7 @@ bool Brain::escort_wait()
 bool Brain::altar_unsafe(int i) const
 {
 	auto& W = world();
-	if (!W.altar_contested[static_cast<std::size_t>(i)] || round - W.altar_enemy_round[static_cast<std::size_t>(i)] > P.altar_enemy_memory)
+	if (!W.contested(i) || round - W.altar_enemy_round[static_cast<std::size_t>(i)] > P.altar_enemy_memory)
 		return false;
 	// An ally standing by makes it a two-body bank.
 	for (const auto& a : W.allies)
@@ -1847,6 +1874,45 @@ void Brain::update_mode()
 		deny_bonus += 0.6f;
 		enemy_half_penalty *= 0.4f;
 	}
+	race_state = 0;
+	if (P.race_mode)
+	{
+		// Who wins the gem race if nothing changes? Each team's banking rate over the last ~200 rounds projects its
+		// finish; our side also counts the team's carried bags (P.team_bank sum). Behind by more than race_margin
+		// rounds: if our fights go well (as many enemy deaths as ours, not outnumbered now) take gems from them
+		// (their camps, their carriers); otherwise farming faster is the only way, so gold stops being worth
+		// detours (it cannot pay back before they finish).
+		auto& W = world();
+		if (round % P.race_sample == 0 && (race_n == 0 || race_r[static_cast<std::size_t>((race_n - 1) % 8)] != round))
+		{
+			const std::size_t k = static_cast<std::size_t>(race_n % 8);
+			race_r[k] = round, race_us[k] = ours, race_them[k] = theirs;
+			++race_n;
+		}
+		if (race_n >= 4 && round >= P.race_from)
+		{
+			const std::size_t old_k = static_cast<std::size_t>(race_n >= 8 ? race_n % 8 : 0);
+			const float span = static_cast<float>(std::max(1, round - race_r[old_k]));
+			const float rate_us = std::max(0.05f, static_cast<float>(ours - race_us[old_k]) / span);
+			const float rate_them = std::max(0.05f, static_cast<float>(theirs - race_them[old_k]) / span);
+			const int carried = static_cast<int>(gems) + (P.team_bank ? comms().others_carried() : 0);
+			const float t_us = static_cast<float>(std::max(0, static_cast<int>(bc::constants::winning_gems) - ours - carried)) / rate_us;
+			const float t_them = static_cast<float>(std::max(0, static_cast<int>(bc::constants::winning_gems) - theirs)) / rate_them;
+			const bool they_finish = static_cast<float>(round) + t_them < static_cast<float>(bc::constants::max_rounds);
+			if (they_finish && t_them + static_cast<float>(P.race_margin) < t_us)
+			{
+				const bool fights_ok = W.enemy_deaths + P.race_death_slack >= W.ally_deaths && deficit <= 0;
+				race_state = fights_ok ? 1 : 2;
+				gold_v *= P.race_gold;
+				if (fights_ok)
+				{
+					deny_bonus += P.race_deny;
+					enemy_half_penalty *= P.race_half;
+					fight_margin = std::max(1.0f, fight_margin - P.race_fight);
+				}
+			}
+		}
+	}
 	if (type == CT::cassi || type == CT::issac)
 	{
 		fight_margin += P.pair_caution;
@@ -1894,7 +1960,7 @@ bool Brain::tribute(bool force)
 		return false;
 	const int ticks = static_cast<int>((gems + 9) / 10);
 	const bool endgame = round + dist + ticks + P.endgame_margin >= static_cast<int>(bc::constants::max_rounds);
-	const bool winning = bc::global_submitted_gems(team::ally) + gems >= bc::constants::winning_gems;
+	const bool winning = wins_with(static_cast<int>(gems)) && gems > 0;
 	const bool risky = enemy_near_field && static_cast<int>(gems) >= P.tribute_risky;
 	// Once a bank trip starts, finish it: re-deciding every turn let a passing enemy or the on-the-way test
 	// flip the choice each round and the champion oscillated in place for hundreds of rounds.
@@ -1937,6 +2003,7 @@ bool Brain::tribute(bool force)
 		try
 		{
 			bc::self().submit_gems(altar);
+			tribute_start = round, tribute_ticks = ticks;
 			place_ward(true);
 		}
 		catch (...)
@@ -2934,6 +3001,10 @@ bool Brain::capture_group(Group& g)
 	{
 		if (capture_group_id != g.id)
 			capture_group_id = g.id, capture_since = round;
+		// An enemy on any tile of the group resets the capture (it completes 6 rounds after they leave): restart
+		// the clock, assuming they leave after this turn, so the capture-recall cannot land before the reward.
+		if (P.capture_reset && g.enemy_on_tile)
+			capture_since = round + 1;
 		// Recall while capturing: started one turn after stepping on the tile, the teleport lands as the
 		// capture completes, so we arrive home with the reward, healed, ready to shop and bank near spawn.
 		// Strong ladder teams do this after almost every capture far from home.

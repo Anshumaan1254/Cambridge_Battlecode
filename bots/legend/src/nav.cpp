@@ -332,6 +332,16 @@ bool Nav::step_field(vec2& pos, const Field& field, int stop_at, const bc::bitbo
 		cand[static_cast<std::size_t>(n++)] = { key, d };
 	}
 	std::sort(cand.begin(), cand.begin() + n, [](const auto& a, const auto& b) { return a.first < b.first; });
+	// Every improving step enters danger (enemy reach, awake camps, a posted alert) while we stand outside it:
+	// the static field only breaks ties on danger, so bodies walked into enemies just to shorten the route
+	// (ladder audit P1). Try the avoiding dynamic search first; it falls back to the plain route when no safe
+	// path exists, so this never deadlocks.
+	if (P.danger_detour && avoid && n > 0 && (cand[0].first & 3) == 3 && !avoid->is_set(pos) && !fallback_goals.is_empty() &&
+		bc::fuel_remaining() > static_cast<std::uint64_t>(P.danger_detour_fuel))
+	{
+		if (step_to(pos, fallback_goals, avoid, -1, true))
+			return true;
+	}
 	for (int i = 0; i < n; ++i)
 	{
 		try

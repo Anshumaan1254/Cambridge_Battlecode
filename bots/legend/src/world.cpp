@@ -31,14 +31,23 @@ void World::init_static()
 
 	altars = bc::map::altars().positions();
 	altar_approach.clear();
+	altar_approach.reserve(altars.size()); // reallocations are costly in fuel: reserving halved this loop
+	// Opening fuel: the first turn has 200k and init used up to ~320k (lanes, ambush, corners, pilgrimage: bodies
+	// lost their first 2 rounds; 84 lost turns over the 17 official maps). Memory allocation is what costs: exporting
+	// a 100x100 distance field cost ~25k, unreserved vectors doubled loops. Bit reads of one packed walls export
+	// replace per-tile host calls here; vectors are reserved; the hole scan visits holes only; islands and contested
+	// altars are computed later (find_islands from prebuild_fields, contested() on first use).
+	const auto walls_lin = walls.export_linear_buffer();
+	auto bit = [](const std::vector<std::uint8_t>& v, int i) { return ((v[static_cast<std::size_t>(i) >> 3] >> (i & 7)) & 1) != 0; };
 	for (auto a : altars)
 	{
 		std::vector<vec2> app;
+		app.reserve(8);
 		for (int dy = -1; dy <= 1; ++dy)
 			for (int dx = -1; dx <= 1; ++dx)
 			{
 				const vec2 p{ a.x + dx, a.y + dy };
-				if ((dx || dy) && bc::map::is_in_bounds(p) && !walls.is_set(p))
+				if ((dx || dy) && p.x >= 0 && p.y >= 0 && p.x < W && p.y < H && !bit(walls_lin, p.y * W + p.x))
 					app.push_back(p);
 			}
 		altar_approach.push_back(std::move(app));
@@ -48,22 +57,16 @@ void World::init_static()
 	home.f.compute(walls, ally_spawn, visited);
 	home.ready = true;
 	home_reach = visited;
+	const bc::bitboard enemy_walls = terrain | bc::map::altars() | ally_spawn;
+	away.f.compute(enemy_walls, enemy_spawn, visited);
+	away.ready = true;
 	spawn_altar_d = BIG;
 	for (const auto& app : altar_approach)
 		for (auto t : app)
 			spawn_altar_d = std::min(spawn_altar_d, home.get(t));
-	const bc::bitboard enemy_walls = terrain | bc::map::altars() | ally_spawn;
-	away.f.compute(enemy_walls, enemy_spawn, visited);
-	away.ready = true;
-	altar_contested.assign(altars.size(), false);
+	// altar_contested is computed on first use (contested()): ~17k fuel on altar-rich maps, not needed in the opening.
+	altar_contested.clear();
 	altar_enemy_round.assign(altars.size(), -1000);
-	for (std::size_t i = 0; i < altars.size(); ++i)
-	{
-		int dh = BIG, da = BIG;
-		for (auto t : altar_approach[i])
-			dh = std::min(dh, home.get(t)), da = std::min(da, away.get(t));
-		altar_contested[i] = dh < BIG && da < BIG && std::abs(dh - da) <= 6;
-	}
 
 	walls_no_holes = bc::map::walls() | bc::map::altars() | enemy_spawn;
 	// 1-wide hole crossings: a hole tile with standable ground on both opposite sides is one dash (range 2)
@@ -73,27 +76,24 @@ void World::init_static()
 	dash_walls = walls;
 	if (P.dash_holes && dash_kit)
 	{
-		const auto holes_lin = bc::map::holes().export_linear_buffer();
-		const auto walls_lin = walls.export_linear_buffer();
-		auto bit = [](const std::vector<std::uint8_t>& v, int i) { return ((v[static_cast<std::size_t>(i) >> 3] >> (i & 7)) & 1) != 0; };
+		// Only the hole tiles are visited (a full-map scan cost ~87k fuel on lanes, most of the first turn).
 		auto ground = [&](int x, int y) { return x >= 0 && y >= 0 && x < W && y < H && !bit(walls_lin, y * W + x); };
-		for (int y = 0; y < H; ++y)
-			for (int x = 0; x < W; ++x)
-			{
-				if (!bit(holes_lin, y * W + x))
-					continue;
-				static constexpr int D[4][2] = { { 1, 0 }, { 0, 1 }, { 1, 1 }, { 1, -1 } };
-				for (const auto& d : D)
-					if (ground(x - d[0], y - d[1]) && ground(x + d[0], y + d[1]))
-					{
-						dash_walls.set(vec2{ x, y }, false);
-						break;
-					}
-			}
+		for (const auto h : bc::map::holes().positions())
+		{
+			static constexpr int D[4][2] = { { 1, 0 }, { 0, 1 }, { 1, 1 }, { 1, -1 } };
+			for (const auto& d : D)
+				if (ground(h.x - d[0], h.y - d[1]) && ground(h.x + d[0], h.y + d[1]))
+				{
+					dash_walls.set(h, false);
+					break;
+				}
+		}
 	}
 	groups.clear();
 	int id = 0;
-	for (const auto& g : bc::map::camp_groups())
+	const auto all_groups = bc::map::camp_groups();
+	groups.reserve(all_groups.size());
+	for (const auto& g : all_groups)
 	{
 		Group G;
 		G.handle = static_cast<std::uint32_t>(static_cast<bc::handle_camp_group_t>(g));
@@ -102,7 +102,9 @@ void World::init_static()
 		G.gold = static_cast<int>(g.gold_value());
 		G.respawn = g.max_respawn_timer();
 		long sx = 0, sy = 0;
-		for (const auto& c : g.camps())
+		const auto camps = g.camps();
+		G.camps.reserve(camps.size()), G.tiles.reserve(camps.size()), G.hp.reserve(camps.size());
+		for (const auto& c : camps)
 		{
 			const auto s = c.base_stats();
 			CampRef r{ c, c.kind(), c.spawn_position(), s.base_health, s.base_strength };
@@ -151,6 +153,22 @@ void World::init_static()
 	}
 	hops.assign(groups.size(), Hop{});
 	detect_objective();
+}
+
+bool World::contested(int i)
+{
+	if (altar_contested.empty())
+	{
+		altar_contested.assign(altars.size(), false);
+		for (std::size_t k = 0; k < altars.size(); ++k)
+		{
+			int dh = BIG, da = BIG;
+			for (auto t : altar_approach[k])
+				dh = std::min(dh, home.get(t)), da = std::min(da, away.get(t));
+			altar_contested[k] = dh < BIG && da < BIG && std::abs(dh - da) <= 6;
+		}
+	}
+	return altar_contested[static_cast<std::size_t>(i)];
 }
 
 void World::detect_objective()
@@ -455,7 +473,7 @@ void World::update_alive(int round)
 		if (bc::detail::sdk_champion_is_alive(a.handle, &alive) == 0)
 		{
 			if (a.alive && !alive)
-				a.died_round = round;
+				a.died_round = round, ++ally_deaths;
 			a.alive = alive != 0;
 		}
 	}
@@ -465,7 +483,7 @@ void World::update_alive(int round)
 		if (bc::detail::sdk_champion_is_alive(e.handle, &alive) == 0)
 		{
 			if (e.alive && !alive)
-				e.died_round = round;
+				e.died_round = round, ++enemy_deaths;
 			e.alive = alive != 0;
 		}
 	}

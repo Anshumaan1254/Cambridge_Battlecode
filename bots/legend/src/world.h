@@ -155,7 +155,10 @@ struct World
 	bc::bitboard enemy_locks; // visible enemy altar locks
 
 	void init_static();
+	int ally_deaths = 0, enemy_deaths = 0; // body deaths seen from the global alive flags (both teams, whole game)
 	void find_islands();
+	bool islands_pending = false; // find_islands deferred from init to a later turn with spare fuel
+	bool contested(int i);		 // altar about as close to their spawn as to ours (lazy)
 	void init_units();
 	void update_alive(int round); // ally and enemy alive flags and death rounds (cheap; also while dead)
 	void perceive(vec2 me);

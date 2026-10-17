@@ -58,6 +58,11 @@ private:
 	int cur_prio = -1;
 	int capture_group_id = -1, capture_since = -1, last_bank_round = -100;
 	int tribute_cancel_round = -1000;
+	int tribute_start = -1000, tribute_ticks = 0;
+	// Gem race (P.race_mode): banked totals sampled every race_sample rounds, the race state they imply.
+	std::array<int, 8> race_r{}, race_us{}, race_them{};
+	int race_n = 0;
+	int race_state = 0; // 0 even or ahead, 1 behind and we win fights (contest gems), 2 behind and we do not (pure gem pace) // round the current tribute started and its length
 	bool W_dist_home_ok() const;
 	bool engaged = false;
 	int dbg_path = 0, dbg_eng = 0; // SPELL_TRACE: which decision used the turn / which engage branch

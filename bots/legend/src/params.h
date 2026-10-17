@@ -212,6 +212,27 @@ struct Params
 	// out and a recall back for a 22-34 gem bag. Unopposed, 14.6% of body-rounds were walks to an altar
 	// (tools/analysis/bank_audit.mjs); banking before the recall would have saved >=10 rounds on 166 of 355
 	// capture-recall-then-bank trips (tools/analysis/bank_first.mjs).
+	int defer_islands = 1;			// find_islands runs from prebuild_fields on a later turn (~47k fuel on 100x100 maps), not in init
+	int start_round = 2;			// no body acts before this round: with the opening-fuel fix bodies started in round 1 or 2 depending on
+								// their init cost (staggered: 40.2% vs _ST); 2: panel mean 75.9 vs 72.8 (_L0 _es2 _r2 _v6), 50.9 head-to-head
+	int danger_detour = 1;			// step_field: when every improving step is in danger and we are not, route around it (dynamic search)
+	int danger_detour_fuel = 40000;	// ... only with this much fuel left (the search costs up to ~30k on 100x100 maps)
+	int team_bank = 1;				// share the team's carried gems (comms bit 6); wins_with counts the others' bags: every carrier banks when the team's bags win
+	// Gem race (update_mode): project both finishes from the banking rates; behind by race_margin rounds -> gold is
+	// worth race_gold of its value; and when our fights go well, contest their gems (deny, half penalty, fight bar,
+	// carriers with race_carrier+ gems posted as opportunities).
+	int race_mode = 1;
+	int race_sample = 25;			// sample both banked totals every this many rounds (8 samples kept)
+	int race_from = 150;			// not before this round
+	int race_margin = 40;			// behind = they finish this many rounds before us
+	int race_death_slack = 2;		// "fights go well": enemy deaths + this >= our deaths, and not outnumbered now
+	float race_gold = 0.3f;
+	float race_deny = 0.5f;
+	float race_half = 0.5f;
+	float race_fight = 0.15f;
+	int race_carrier = 30;
+	int capture_reset = 1;		// an enemy seen on the group's tiles restarts the capture-recall clock (the engine resets the capture)
+	int tribute_elapsed = 1;	// handle_channel counts the tribute's remaining turns from its start, not from the carried bag
 	int bank_first = 1;			// full bag at a capture: skip the recall and bank at the nearest altar when that beats banking from spawn
 	int bank_first_margin = 2;	// ... by at least this many steps (nearest-altar walk + recall_time + margin <= spawn altar walk)
 	float bank_trip_w = 1.0f;	// bank threshold rises by this many gems per step of bank trip beyond bank_trip_free

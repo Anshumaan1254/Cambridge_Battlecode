@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: 2026-10-17, ~10:15 UTC (session 2). Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
+- Last updated: 2026-10-17, ~10:30 UTC (session 2). Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
 - Competition: Cambridge Battlecode 2026a (CAMBC), 12 Oct to 18 Nov 2026. C++ bot compiled to wasm.
 - The submitted bot cannot be changed after submission and keeps nothing between matches. All "learning"
   is either offline (training parameters before submission) or in-match (adapting inside one game).
@@ -61,7 +61,7 @@ saved. Recreated in session 2:
 | `stuck` (Opus) | champions stuck between walls: detector over replays, stress maps, root causes, nav fix | `_x_stuck` | `x_stuck.patch`, `x_stuck_NOTES.md`, `tools/analysis/stuck.mjs`, `maps/stuck/` |
 | `coord` (Opus) | team coordination: measure the failures first (deaths alone, allies not joining, split damage), then fix the costly ones (focus fire, engage protocol, buddies, sectors) | `_x_coord` | `x_coord.patch`, `x_coord_NOTES.md`, `tools/analysis/coord_audit.mjs` |
 | `ml` (Sonnet) | ML fight model: logging build, data, formula vs logistic / tree / boosted trees / MLP; export only if it clearly wins | `_x_ml`, `_x_ml_log` | `x_ml_NOTES.md` (+ `x_ml.patch` only if it wins) |
-| `docs` (Haiku) | document `tools/rl/train_local.sh` in `docs/LEARNING.md` and `README.md` | none | docs |
+| `docs` (Haiku) | **done**: `docs/LEARNING.md` §1 "Training on your own machine", README "Train the bot yourself". Its review of the script found 3 issues, fixed: PATH on macOS / with `--skip-setup`, the printed map count included `zz_test`, `apply_params.py` could only write into legend (now `--bot NAME`) | none | docs |
 
 **Merge plan** (coordinator): `mr` first, then `stuck`, `gold`, `coord`, `ml`. Each on top of the previous merge, a
 45-map panel after each, kept only if it wins (§7.1 rule), then a `submissions/BUILDS.md` row and a new zip.

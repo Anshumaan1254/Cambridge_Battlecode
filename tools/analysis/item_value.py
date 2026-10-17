@@ -262,14 +262,19 @@ TOP_BUILDS = {
 
 # Prototype builds (bots/_x_econ build_style 2): rich farmers take Treasure first, the poor Cassi & Issac pair
 # survival first, and Bruiser (5 + 1 + 1 points) replaces Power (6 points of one stat) everywhere.
+# Final prototype (rich_treasure_first = 0): Ren and Stellar keep r2's first emblem, Treasure second.
 X_BUILDS = {
-	'Ren': [('Treasure', 'foc'), ('Monster', 'foc'), ('Bruiser', 'foc'), ('Jungle', 'hp'), ('Bruiser', 'foc'), ('Durability', 'hp')] + [('Bruiser', 'foc'), ('Bruiser', 'foc'), ('Bruiser', 'hp')] * 6,
-	'Stellar': [('Treasure', 'foc'), ('Monster', 'foc'), ('Bruiser', 'foc'), ('Durability', 'hp')] + [('Bruiser', 'foc'), ('Bruiser', 'foc'), ('Bruiser', 'hp')] * 6,
+	'Ren': [('Jungle', 'hp'), ('Treasure', 'foc'), ('Monster', 'foc'), ('Bruiser', 'foc'), ('Bruiser', 'foc'), ('Durability', 'hp')] + [('Bruiser', 'foc'), ('Bruiser', 'foc'), ('Bruiser', 'hp')] * 6,
+	'Stellar': [('Monster', 'foc'), ('Treasure', 'foc'), ('Bruiser', 'foc'), ('Durability', 'hp')] + [('Bruiser', 'foc'), ('Bruiser', 'foc'), ('Bruiser', 'hp')] * 6,
 	'Cassi': [('Durability', 'hp'), ('Jungle', 'hp'), ('Bruiser', 'hp'), ('Monster', 'foc')] + [('Bruiser', 'foc'), ('Bruiser', 'hp')] * 8,
 	'Issac': [('Durability', 'hp'), ('Jungle', 'hp'), ('Bruiser', 'str'), ('Monster', 'str')] + [('Bruiser', 'str'), ('Bruiser', 'hp')] * 8,
 	'Ryth': [('Jungle', 'hp'), ('Monster', 'str'), ('Durability', 'hp')] + [('Bruiser', 'str'), ('Bruiser', 'hp')] * 8,
 	'Varg': [('Monster', 'str'), ('Treasure', 'str'), ('Jungle', 'str'), ('Durability', 'hp')] + [('Bruiser', 'str'), ('Bruiser', 'str'), ('Bruiser', 'hp')] * 6,
 }
+# First prototype (rich_treasure_first = 1): Treasure opens for Ren and Stellar
+A_BUILDS = dict(X_BUILDS)
+A_BUILDS['Ren'] = [('Treasure', 'foc'), ('Monster', 'foc'), ('Bruiser', 'foc'), ('Jungle', 'hp'), ('Bruiser', 'foc'), ('Durability', 'hp')] + [('Bruiser', 'foc'), ('Bruiser', 'foc'), ('Bruiser', 'hp')] * 6
+A_BUILDS['Stellar'] = [('Treasure', 'foc'), ('Monster', 'foc'), ('Bruiser', 'foc'), ('Durability', 'hp')] + [('Bruiser', 'foc'), ('Bruiser', 'foc'), ('Bruiser', 'hp')] * 6
 # Only Power -> Bruiser on top of the r2 builds (ablation)
 B_BUILDS = {k: [('Bruiser' if f == 'Power' else f, s) for f, s in v] for k, v in R2_BUILDS.items()}
 
@@ -305,8 +310,9 @@ def main():
 		v0, _, _, _ = m.simulate([], args.rounds)
 		vx, bx, _, _ = m.simulate(X_BUILDS.get(name, []), args.rounds)
 		vb, _, _, _ = m.simulate(B_BUILDS.get(name, []), args.rounds)
+		va, _, _, _ = m.simulate(A_BUILDS.get(name, []), args.rounds)
 		print(f"   value over {args.rounds} rounds (gems, vs no items): greedy {vg - v0:.1f}  r2 {v2 - v0:.1f}  top-team {vt - v0:.1f}  "
-			f"x_econ {vx - v0:.1f}  r2+bruiser {vb - v0:.1f}")
+			f"x_econ {vx - v0:.1f}  x_econ-treasure-first {va - v0:.1f}  r2+bruiser {vb - v0:.1f}")
 		print(f"   greedy: {fmt(bg)}")
 		print(f"   r2:     {fmt(b2)}")
 		print(f"   x_econ: {fmt(bx)}")

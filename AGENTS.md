@@ -3,10 +3,72 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: 2026-10-17, ~15:40 UTC (session 2, part 2). Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
+- Last updated: **2026-10-17 14:50 UTC** (session 2, part 2). Start with **§00** below. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
 - Competition: Cambridge Battlecode 2026a (CAMBC), 12 Oct to 18 Nov 2026. C++ bot compiled to wasm.
 - The submitted bot cannot be changed after submission and keeps nothing between matches. All "learning"
   is either offline (training parameters before submission) or in-match (adapting inside one game).
+
+---
+
+## 00. CURRENT POSITION (2026-10-17 14:50 UTC): read this first
+
+### Where we are
+- `bots/legend` (committed) = **`_L1`** (old legend `_L0` + maths + route patches, merged and validated) **+ new switchable
+  code, all default ON, not yet fully validated**:
+  - `dash_holes`, `finish_camp`, `capture_before_retreat` (= frozen copy `bots/_f1`);
+  - `stay_rule`, `stay_veto`, `flee_recall` (the user's fight rule; = `bots/_s1`);
+  - `farm_monolith` (default 1 = unchanged behaviour).
+- `submissions/legend.zip` is **still the old build** (`legend_econ_spell_20261017.zip` = `_L0`). Do not upload `bots/legend` as is:
+  build the final candidate (next steps) and rebuild the zip from it.
+- Panel pool is now **56 maps** (27 generated + 12 ladder + 17 official in `maps/comp/`), 112 games per opponent.
+- RL: the user ran `tools/rl/train_local.sh` (results in §0a). The **8 consistent ES params win** (`_es2`); the full
+  `best_params.json` does not. Not yet baked into legend.
+
+### Findings so far (all numbers: 56 maps, both sides, win % unless noted)
+| Build | vs head-to-head | `_r2` | `_v6` | `_devci` | Verdict |
+|---|---|---|---|---|---|
+| `_L1` (legend + maths + route) | 56.2 vs `_L0` | 72.3 | 86.6 | 83.0 | **merged** |
+| `_f1` (= `_L1` + dash_holes + finish_camp + capture_before_retreat) | 57.1 vs `_L1` | 59.8 | 77.7 | 87.5 | mixed: wins head-to-head, loses vs `_r2`/`_v6`. Ablations running |
+| `_es2` (= `_f1` + 8 ES params) | **58.0 vs `_f1`** | **78.6** | **83.9** | 80.4 | **wins**; fewer deaths |
+| `_s1` (= `_f1` + stay_rule + stay_veto + flee_recall) | 51.8 vs `_f1` | 71.4 | 76.8 | 83.9 | slightly positive (noise-level head-to-head, better vs `_r2`) |
+| `_s2` (= `_s1` without stay_veto) | 51.8 vs `_f1` | running | | | |
+| `_es1` (= `_L1` + full ES best_params) | 42.9 vs `_L1` | 73.2 | 77.7 | 89.3 | not adopted |
+| `_c1` (coord agent's joint fight estimate + flee to ally, on `_L1`) | 40.2 vs `_L1` | 65.2 | 76.8 | 74.1 | **dropped** |
+| dash routing (`_f1` vs `_L1` on the hole maps only) | 65.6 (21-11) | | | | dash_holes helps where holes exist |
+| gold/tiebreak patch (`x_gold.patch`) on 37 scarce maps | 35-47 vs `_f1` | | | | **not merged** (see §0a) |
+- Not bugs locally: recall use (34 recalls per game, more than opponents), emblems (all champions except Cassi & Issac
+  own 4-6 emblems; C&I are gold-poor and die a lot).
+- Bugs found and fixed (switches above): uncollected rewards (`safety()` ran before the capture), retreat from nearly
+  dead camps, no dash routes over 1-tile holes.
+
+### In progress right now (local processes; if they are gone, see "how to resume")
+| Task | Who / where | Progress | Left to do |
+|---|---|---|---|
+| Panel of `_s2` and ablations `_ab_dash`, `_ab_fin`, `_ab_cap` (each = `_f1` minus one fix) vs `_r2`, `_v6` | `scratchpad/eval3.sh`, `eval4.sh` (bench outputs in `/tmp/eval`) | `_s1` done, `_s2` 1 of 4 lines | read results; switch off whichever fix costs points vs `_r2`/`_v6` |
+| `_nomono` (= `_f1` with `farm_monolith=0`) on 56 maps + monolith maps | `scratchpad/eval5.sh` | queued after eval4 | if not worse, make `farm_monolith=0` the default (user: do not rely on the monolith) |
+| **Gold-rush strategy** for gold-only maps (user message 9): gold as fast as possible, melee near clusters / ranged far ones, kill lone enemies we can surround, never the monolith | Sonnet agent `rush`, `bots/_x_rush` (built from `_x_gold2`) | started 14:40 | its deliverables: `experiments/wip/x_rush.patch`, `x_rush_NOTES.md`; merge only if it beats `_f1` on `maps/gold` + `maps/gold2` + `contest` |
+| **Stuck navigation** (user: champions walk the same path again and again) | Opus agent `stuck`, `bots/_x_stuck2` | causes found and fixed (8 switches, see `x_stuck_NOTES.md`: fuel-starved fields on big maps, goal next to dead camps, hopeless avoid-search, detours undone by the static field, target flips, give-up timer); final A/B pending | its deliverable `experiments/wip/x_stuck.patch` (against current legend); merge if head-to-head vs `_f1` >= 50% and no panel loss |
+
+### Tasks left (in order)
+1. Read the ablations: keep the fixes that do not lose vs `_r2`/`_v6` (dash_holes clearly helps on hole maps; keep it
+   unless it costs elsewhere). Decide `stay_veto` from `_s2` vs `_s1`.
+2. Build the **candidate** = legend with the chosen fix switches + the 8 ES params (`deny_bonus=0.043f cap_recall_hp=0.610f
+   q0_push=-0.718f fight_learn_rate=0.235f cornered_margin=0.634f isolated_fight_adv=1.428f target_threat_adv=1.305f
+   fight_back_margin=0.873f`) + `farm_monolith` per eval5. Panel it (56 maps vs `_L1 _r2 _v6 _hunt _hunt2 _devci _base`).
+3. Merge `x_stuck.patch` and then `x_rush.patch` when their agents report, each panelled on top of the candidate.
+4. Check lost turns: `cambc run BOT _v6 --map maps/gen16_98x99_V_c5.map26a -o DIR` then `node tools/analysis/rollovers.mjs DIR/*.repl26a` (must stay ~12).
+5. Bake into `bots/legend`, rebuild `submissions/legend.zip` (`rm -f submissions/legend.zip && cambc bundle legend --output submissions/legend.zip`; check only `src/*.cpp|*.h`), copy into `submissions/history/`, add a row in `submissions/BUILDS.md`, update README/STRATEGY result tables, commit, push.
+6. Tell the user the new build is pushed so they can re-run `tools/rl/train_local.sh` on it (ES must train the final code).
+7. Still open from the user's list: **a pre-match plan from the map** (decide at init from map features: gem supply,
+   monolith-only, spawn distance, hole crossings, pack sizes → team knobs; the gold detector in `x_gold.patch` is a start),
+   **danger/reward-weighted paths** (route fields are shortest-walk), **coordination** (the measured top failure "help
+   does not come" is still unsolved; `_c1` lost, try a narrower version), ML fight model (paused; low priority).
+
+### How to resume if the processes are gone
+- Bots `_L0`, `_L1`, `_f1`, `_s1`, `_s2`, `_es2`, `_nomono`, `_ab_*` are local: recreate `_f1` = current legend with
+  `stay_rule=0 stay_veto=0 flee_recall=0`, `_s1` = current legend, `_es2` = `_f1` + the 8 params above (all via
+  `SRC=bots/legend tools/variant.sh NAME key=val ...`). `_L1` = legend with `dash_holes=0 finish_camp=0 capture_before_retreat=0 stay_rule=0 stay_veto=0 flee_recall=0`.
+- Agent copies: `bots/_x_stuck2` = legend + `experiments/wip/x_stuck.patch`; `bots/_x_gold2` = legend + `x_gold.patch`.
 
 ---
 

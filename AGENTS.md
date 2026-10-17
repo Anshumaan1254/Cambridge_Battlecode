@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-17 17:10 UTC** (session 3). Start with **§00** below. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
+- Last updated: **2026-10-17 17:15 UTC** (session 3). Start with **§00** below. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
 - Competition: Cambridge Battlecode 2026a (CAMBC), 12 Oct to 18 Nov 2026. C++ bot compiled to wasm.
 - The submitted bot cannot be changed after submission and keeps nothing between matches. All "learning"
   is either offline (training parameters before submission) or in-match (adapting inside one game).
@@ -63,7 +63,7 @@ Branch `claude/laughing-curie-3rq6hu` (no PR unless the user asks). Everything b
 ### 3. In progress (at 17:10 UTC)
 | Task | Who / where | Progress | Left to do |
 |---|---|---|---|
-| **`bank_first=0` A/B** (variant `bots/_pA` = legend with `bank_first=0`) | `/tmp/ev/e12.sh` (local), log `/tmp/ev/e12.log` | done so far: vs legend **50.9**, `_r2` **83.0** (legend 74.1), `_v6` **89.3** (86.6), `_devci` 92.9 (94.6), `_L0` **72.3** (70.5): mean of the 4 panel opponents 84.4 vs 81.5 | the script was re-running legend vs `_r2`/`_v6`/`_devci` as a determinism check (got 74.1 vs `_r2`, identical to before). **Next: set `bank_first = 0` in legend (comment with these numbers), rebuild zip, BUILDS row, push** |
+| **`bank_first=0` A/B** (variant `bots/_pA` = legend with `bank_first=0`) | `/tmp/ev/e12.sh` (local), log `/tmp/ev/e12.log` | **finished 17:15 UTC**: `_pA` vs legend 50.9 head-to-head; vs `_r2` 83.0 (current legend 74.1), `_v6` 89.3 (88.4), `_devci` 92.9 (96.4), `_L0` 72.3 (70.5): mean of the 4 = 84.4 vs 82.4, i.e. +2 (noise-level except vs `_r2`). Note: current `bots/legend` (with the 2 inert `cast_route_*` switches) scored `_v6` 88.4 / `_devci` 96.4 where the shipped `legend_st` scored 86.6 / 94.6: an unused code change shifts fuel-dependent decisions, so cells move ±2 with no behaviour change | decide: ship `bank_first=0` (pace -9 rounds on 29 real maps, pilgrimage -120, +9 vs `_r2`) or confirm on the held-out maps first (`maps/gold,gold2,obj`, head-to-head vs legend); then rebuild zip, BUILDS row, push |
 | **Side asymmetry / opening fights** (contest, collision side B, eight, interlock) | Opus agent `side`, copy `bots/_x_side` from `bots/_C3` (= `legend_c3`, frozen), outputs `/tmp/side/`, deliverables `experiments/wip/x_side.patch` + `x_side_NOTES.md` | started ~16:35; so far it added `tools/mapgen/swap_sides.mjs` (uncommitted, its own); no report yet | read its report; its patch is cut against `_C3`, **rebase onto current legend** (`legend_st`) before testing; merge only if it wins on the official maps and is not worse on the 56-map pool |
 | ES on the user's machine | the user | not started on the new build | the user re-runs `tools/rl/train_local.sh` on the pushed build; when the archive comes back, apply `best_params.json` to a copy (`tools/variant.sh`), panel it, bake in only what wins (last time only the 8 params that moved consistently won) |
 

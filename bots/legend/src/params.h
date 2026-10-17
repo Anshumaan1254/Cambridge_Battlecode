@@ -5,7 +5,7 @@ struct Params
 {
 	// Task valuation
 	float gold_value = 0.22f;		 // gem-equivalent value of one gold
-	float deny_bonus = 0.55f;		 // extra value for camps on the enemy half (they lose what we take)
+	float deny_bonus = 0.043f;		 // extra value for camps on the enemy half (they lose what we take) (ES: 0.55 -> 0.043)
 	float enemy_half_penalty = 10.f; // rounds-equivalent risk cost for enemy-half camps
 	float unknown_discount = 0.75f;	 // value multiplier for groups whose state we have not seen recently
 	float hysteresis = 1.15f;		 // keep current task unless a new one beats it by this factor
@@ -19,7 +19,7 @@ struct Params
 	int pair_plans = 0;				 // claim packs too heavy for one body and wait for a partner (off: costs pace)
 	float pair_wait = 8.f;			 // rounds added to a pair plan for the partner to arrive
 	int pair_wait_max = 18;			 // give up waiting for a partner after this many rounds
-	float target_threat_adv = 1.1f;	 // skip camps where recently seen enemies beat us (and allies there)
+	float target_threat_adv = 1.305f;	 // skip camps where recently seen enemies beat us (and allies there) (ES: 1.1 -> 1.305)
 
 	// Farming model corrections (prediction audit, tools/analysis/xm_audit.mjs on 48 traced games vs _v6 and _hunt2)
 	int math_eta = 1;				 // travel = steps to attack range (ranged: 3), dash kits 10 tiles per 8 rounds
@@ -47,23 +47,25 @@ struct Params
 	int finish_enemy_d = 8;
 	float camp_hp_reserve = 0.18f;	 // keep this fraction of max health after a camp fight
 	float fight_margin = 1.30f;		 // engage proactively when our kill time beats theirs by this factor
-	float fight_back_margin = 0.75f; // when they can already hit us, fight back unless this outmatched
-	float cornered_margin = 0.45f;	 // chasers we cannot outrun: hit back unless the advantage is below this
+	float fight_back_margin = 0.873f; // when they can already hit us, fight back unless this outmatched (ES: 0.75 -> 0.873)
+	float cornered_margin = 0.634f;	 // chasers we cannot outrun: hit back unless the advantage is below this (ES: 0.45 -> 0.634)
 	float far_enemy_weight = 1.0f;	 // visible enemies beyond reach+2 count this much in the fight estimate
 	int ally_spell_dps = 1;			 // count allies' spells in our damage (else basic attacks only)
 	int spawn_heal_bonus = 1;		 // on our spawn, count one more health bar (we heal fully)
 	int bag_caution = 40;			 // carrying this many gems, avoid even fights we can escape
 	int backup_radius = 8;			 // allies (seen, or claiming a camp) this close count as backup
-	float isolated_fight_adv = 1.6f; // alone, start a fight only at this advantage (or a sure kill)
+	float isolated_fight_adv = 1.428f; // alone, start a fight only at this advantage (or a sure kill) (ES: 1.6 -> 1.428)
 	float isolated_flee_adv = 1.1f;	 // alone and weaker than this: walk away as soon as they are in sight
 	int flee_dist = 7;				 // ... when the nearest enemy is this close
 	float reserve_margin = 0.5f;	 // half the team dead: extra advantage needed to fight
-	int stay_rule = 1;				 // stay in a fight when our health > the enemies' worst damage until the target dies, with
+	int stay_rule = 0;				 // off: all three on (+ ES params) = 49.1% vs this build, fewer deaths (1301 vs 1504) but
+									 // lower panel mean (vs _r2 67.0 vs 78.6, _L0 58.9 vs 67.0); without stay_veto 41.1%
+									 // rule: stay in a fight when our health > the enemies' worst damage until the target dies, with
 									 // no other enemy within stay_support_r of the target (the user's rule, session 2)
-	int stay_veto = 1;				 // ... and skip fights where that worst damage could kill us, while we can still escape
+	int stay_veto = 0;				 // ... and skip fights where that worst damage could kill us, while we can still escape
 	int stay_support_r = 10;
 	float stay_margin = 1.1f;
-	int flee_recall = 1;			 // fleeing out of reach: recall when no enemy can interrupt it (safe_to_recall)
+	int flee_recall = 0;			 // fleeing out of reach: recall when no enemy can interrupt it (safe_to_recall)
 	int support_filter = 0;			 // a visible ally counts in the fight only when it can help: health above the retreat
 									 // line and within support_reach of an enemy here (ladder audit: 'phantom support', a
 									 // full-health Cassi died with Issac at 11 HP counted as backup)
@@ -110,7 +112,7 @@ struct Params
 	float home_hp = 0.45f;	   // below this health fraction a trip home is welcome (heal + shop)
 	int recall_min_dist = 5;   // recall instead of walking when spawn is farther than this
 	int cap_recall_min_home = 8;  // recall while capturing when spawn is farther than this ...
-	float cap_recall_hp = 0.75f;  // ... and health is below this fraction,
+	float cap_recall_hp = 0.610f;  // ... and health is below this fraction, (ES: 0.75 -> 0.61)
 	int cap_recall_gold = 90;     // ... or gold after the capture reaches this (shopping),
 								  // ... or the bag after the capture reaches tribute_min
 	int hold_spells_near_enemies = 1; // no spells on camps while enemies are near (keep burst for them)
@@ -153,7 +155,7 @@ struct Params
 	float prior_pull = 0.f;			 // per window, unplayed stance values drift back to their priors (tested with ucb_c)
 	float q0_spread = 0.3f;			 // optimistic prior values per stance (SPREAD starts preferred)
 	float q0_grouped = 0.f;
-	float q0_push = -0.2f;
+	float q0_push = -0.718f; // ES: -0.2 -> -0.718
 	float ctx_invaded = 0.6f;		 // preference for GROUPED per ally death on our half in the last window
 	float ctx_fights = 0.3f;		 // preference for PUSH per (kills - deaths) in the last window
 	float stance_hysteresis = 0.15f; // keep the current stance unless another is better by this
@@ -162,7 +164,7 @@ struct Params
 	float pain_kill_relief = 0.6f;	 // pain removed where an enemy died near us
 	float pain_half_life = 50.f;	 // rounds
 	float pain_w = 8.f;				 // farming-score rounds added per unit of pain at a camp
-	float fight_learn_rate = 0.15f;	 // fight-estimate change per death after a fight / kill after a fight
+	float fight_learn_rate = 0.235f;	 // fight-estimate change per death after a fight / kill after a fight (ES: 0.15 -> 0.235)
 	float fight_bias_max = 0.3f;	 // max boldness (log scale); caution may go to twice this
 	int group_radius = 12;			 // GROUPED: camps farther than this from allies' camps cost extra
 	float group_far_w = 0.8f;		 // ... rounds per tile beyond the radius

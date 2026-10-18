@@ -13,7 +13,22 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Results of the current build `legend_m6` (session 8, Oct 18 evening; 44 distinct maps × both sides = 88 games per row)
+## Results of the current build `legend_m7` (session 9, Oct 18; 44 distinct maps × both sides = 88 games per row)
+
+`legend_m7` = `legend_m6` + two changes taken from 15 games of the top 3 teams playing **each other**
+(`docs/strategy_v2/08_TOP3_VS_TOP3.md`): area spells (Stellar, Prism) are aimed so their radius catches enemies at
+distance 5 (the top teams land 20-28% of their spell damage there, we landed 3-8%), and Cassi & Issac buy damage before
+health (our Cassi had 70 focus at round 300, theirs 195-248). Pace 520.9 rounds (unopposed, 17 official maps).
+
+| Opponent | `legend_m7` | deaths (ours-theirs) | `legend_m6` on the same games |
+|---|---|---|---|
+| `legend_m6` (previous ship) | **65.9%** (70.6); held-out maps 62.0% | 649-709 | - |
+| `_px9` ladder-calibrated proxy | **73.9%** (67.6) | 602-675 | 58.0% (64.7) |
+| `_f2q` proxy that casts its areas from 5 like the top teams | 53.4% (41.2) | 678-586 | 44.3% (41.2) |
+| `_fA` pressure archetype | 70.5% (73.5) | 724-932 | 72.7% (82.4) |
+| `legend_st` | 78.4% (82.4) | 520-916 | 73.9% (82.4) |
+
+## Results of `legend_m6` (session 8, Oct 18 evening; 44 distinct maps × both sides = 88 games per row)
 
 `legend_m6` = `legend_m5` + the top teams' targeting, learned from 60 ladder games of `legend_m5` against the top 3
 (`docs/strategy_v2/07_LADDER_M5_18OCT.md`): hit the body we can hit this turn with the lowest health, take every kill the

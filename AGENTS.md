@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-18 15:40 UTC (session 9; container clock)**. Rule from the user: update this file and push at every step. Start with **§S9**, then **§S8**,
+- Last updated: **2026-10-18 16:45 UTC (session 9; container clock; `legend_m7` shipped)**. Rule from the user: update this file and push at every step. Start with **§S9**, then **§S8**,
   **§S7**, **§S7-SV2**, then §000000 (resume protocol), §00000, §0000, §000, §00. **All work stays on branch `ccr-a858cd03-q87cpi`**:
   `git pull` (merge, never force) before every push. Session 9: the user asked to read the `claude/laughing-curie-3rq6hu` branch too:
   it is the session 4-5 state (last commit 2026-10-17 20:28 UTC) and everything in it is already in this branch (its §0000 is below).
@@ -37,6 +37,18 @@ running or unfinished, and what to do next, so a new agent can continue without 
   `fight2` (Opus, high): area reach 5, cast-first openers, no idling at 4-5 from ready casters; copy `bots/_x_f2`, variants `_f2*`,
   notes `experiments/wip/x_f2_NOTES.md`, patch `x_f2.patch`.
   `econ2` (Sonnet, high): 3rd/2nd-team builds, Cassi focus, gold to casters; copy `bots/_x_e2`, variants `_e2*`, notes `x_e2_NOTES.md`, patch `x_e2.patch`.
+- **SHIPPED `legend_m7` (16:40 UTC)** = `_m7` (= coordinator's `_c9a`) = `_xp4` + `experiments/wip/x_m7.patch` (fight2's `x_f2.patch` code with
+  `aoe_cast5=3`, plus `ci_health_first=0`); source hash 61dd9019869d, zip sha256 ee467569…, `submissions/history/legend_m7_20261018.zip`;
+  `bots/legend/src` = `_m7` + the inert code (build_style 3/4, LEGEND_RUNTIME_PARAMS; checked: legend vs `_px9` on the 34 official games =
+  `_m7`'s ledger rows exactly). 88 distinct / official 34: vs `_xp4` **65.9 / 70.6** (deaths 649-709), held-out **62.0**; `_px9` 73.9 / 67.6
+  (`_xp4` 58.0 / 64.7), `_fA` 70.5 / 73.5 (72.7 / 82.4), `_ST` 78.4 / 82.4 (73.9 / 82.4), `_f2q` 53.4 / 41.2 (44.3 / 41.2); pace 520.9; 0 faults;
+  rollovers 8 per team (r1-3). Ledger cells are under both names (`_c9a_vs_*`, `_m7_vs_*`). **New baseline: `_m7`.**
+  Parts alone on `_xp4`: `_f2c` (aoe_cast5=3) 54.5 / 58.8, held-out 60.0; `_e2h0` (ci_health_first=0) 58.0 / 58.8, held-out 54.0.
+- Agent results: `econ2` done (notes `x_e2_NOTES.md`): every top-team build order loses inside our brain (style 7 = 3rd team 34.1%, style 8 =
+  2nd team 47.7%, Cassi focus-before-health 39-44%); only `ci_health_first=0` wins. Gold routing (E4) not attempted. `fight2` (notes
+  `x_f2_NOTES.md`): F2 area casts from 5 win; F1 (counting enemy areas as reach 5 in the danger map / fight triggers) loses (42.0): bodies flee
+  from 5; F3 holds at the edge lose again (46.6). Built the reach-5 proxy `_f2q`. `obj2` (Sonnet) started 16:30 on the stampede objective
+  (top teams start its 360-gem group at r54, we at r175; loosening obj_clear_max/obj_absorb alone did not help).
 - Session 8's `evade` and `neutral` agents pushed nothing (no notes in git): their tasks are folded into `fight2` / `econ2`.
 
 ## S8. SESSION 8 (2026-10-18 13:00 UTC, new container): read this first

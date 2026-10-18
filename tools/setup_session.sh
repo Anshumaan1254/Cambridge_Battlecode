@@ -60,13 +60,16 @@ tools/snapshot.sh _px 61fdce4 > /dev/null && (cd bots/_px && patch -s -p1 --no-b
 SRC=bots/_px tools/variant.sh _px9 px_mode=2 --define "LEGEND_DRAFT 9,4,3,0,8" > /dev/null
 SRC=bots/_m5a tools/variant.sh _x_px > /dev/null && (cd bots/_x_px && patch -s -p1 --no-backup-if-mismatch < ../../experiments/wip/x_pxfix.patch)
 SRC=bots/_x_px tools/variant.sh _xp4 px_mode=2 camp_in_fight=3 > /dev/null
+# Session 9: _m7 = legend_m7 (shipped) = _xp4 + x_m7.patch (fight2's area casts from 5, aoe_cast5=3, + ci_health_first=0);
+# _f2q = the reach-5 proxy (_px9 + x_f2.patch with aoe_cast5=3 open_first=1; one engage_angle hunk does not apply: fine)
+SRC=bots/_xp4 tools/variant.sh _m7 > /dev/null && (cd bots/_m7 && patch -s -p1 --no-backup-if-mismatch < ../../experiments/wip/x_m7.patch)
 rm -rf $T
-for b in _rm _ST _m2 _m3 _x_gp _m4 _m4x _m5a _px9 _xp4 _fA _fB _fC legend idle; do cambc build $b > /dev/null && echo "built $b"; done
+for b in _rm _ST _m2 _m3 _x_gp _m4 _m4x _m5a _px9 _xp4 _m7 _fA _fB _fC legend idle; do cambc build $b > /dev/null && echo "built $b"; done
 python3 - <<'EOF'
 import sys; sys.path.insert(0, 'tools'); import ledger
 want = {'_rm': '339a961d3427', '_ST': 'ca21cbfe785b', '_eA': '0ee193334b60', '_eB': '654605b27deb', '_eC': '116ccc8b53b1',
 		'_m2': '1684aa2a482c', '_m3': '86c9e8f3de35', '_x_gp': '92e199947185', '_m4': '0dc2a2aac28a',
-		'_m5a': '5620bb02867a', '_xp4': '6a1a52e4ddb8', '_fA': '25fe5950b034', '_fB': 'f8e472c342f3', '_fC': 'ef5391dcc92b'}
+		'_m5a': '5620bb02867a', '_xp4': '6a1a52e4ddb8', '_m7': '61dd9019869d', '_fA': '25fe5950b034', '_fB': 'f8e472c342f3', '_fC': 'ef5391dcc92b'}
 for b, h in want.items():
 	got = ledger.src_hash(b)
 	print(f'{b:5s} {got} {"ok" if got == h else "MISMATCH (expected " + h + ")"}')

@@ -56,6 +56,15 @@ running or unfinished, and what to do next, so a new agent can continue without 
   bodies arrive one by one. Contest pool CT4 (contest + `maps/ct`, 20 games; vs `_snk` / `_mite` / `_ifish` / `_px9` / `_m8` / `_fA`): `_ct0` (= `_m10`
   play) 30/60/50/50/50/75; skip the enemy half to r150/r300 (`_ct1`/`_ct2`): worse (passivity loses); **GROUPED stance to r150 (`_ct3`)
   75/55/60/55/65/85, to r300 (`_cw1`) 70/55/70/55/65/90**. Confirming on CT34 (contest + 33 perturbed copies, 68 games); then inertness on the 88.
+  (6) **Sneaky-bush study done** (`docs/strategy_v2/10_SNEAKY_BUSH.md`, tool `tools/strategy_v2/bush.py`; the draft-table check found 0 mismatches in 17 rows):
+  their bush time 7.9% of alive body-rounds vs our 3.3% (4.8 vs 3.3 without contest; contest 21.7, eight 10.5, stampede 12.5, fragment 13.2); 23.5% of their
+  champion damage comes from a bush (ours 9.0%); 48% of our champion-caused deaths had a bush hitter in the last 5 rounds (40% without contest); **all
+  1,683 of their wards are on bush tiles, ours 19% when one was in reach**. But 8 of our 12 losses are income races with 0-7 deaths (ambush: banking
+  carry 59.7 vs 41.4 gem-rounds per gem; expanse: they take the 120-gem far-corner groups 6 times to our 2; pilgrimage: 72% of our body time walking,
+  12 of 21 group kills gold-only); outside contest 70% of the camp-gem gap is neutral camps and camps on our half. Counters proposed: C1 ward the
+  bush (**testing: `ward_bush` in `experiments/wip/x_wb.patch` on `_m10`, variants `_wb1` = prefer a bush tile within 2, `_wb2` = + re-ward after 3
+  rounds when a bush is in reach**), C2 bush ghost in the fight estimate, C3 contest bush-ring no-go for lone bodies (for `ct`), C5 expanse far-corner
+  cycle, C6 neutral-camp scoring, C7 earlier banking on 100x100 / 50x65 maps.
 - The user got the zips in chat: `legend_m8` (best measured), then `legend_m10` (current `submissions/legend.zip`, plays `legend_m8`'s games).
 
 ## S11. SESSION 11 (2026-10-18, same container as S10): read this first

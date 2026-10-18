@@ -30,6 +30,7 @@ files. Each replay is named `<group>_<NN>_<official map>` (the map is found by c
 | `map_plan.py` | the draft-time planner prototype: groups, map type, k-medoids zones, DBSCAN hubs, champion assignment, circuits, draft-memory size. Input: map dumps from `node tools/replay/mapinfo.mjs maps/comp/X.map26a > X.txt` |
 | `pacesum.py` | summary of unopposed pace runs (`bench.py BOT idle`): mean rounds to 1,000 per map, per-champion gold and gems |
 | `h2hsum.py` | head-to-head summary counting each distinct game once (skips `maps/ladder` copies) |
+| `bush.py` | bush play: time in bushes, damage dealt from bushes and the damage that comes back, openers, deaths whose killer stood in a bush, waits, hidden enemies within 4, ward placement. `python3 -I tools/strategy_v2/bush.py DMG_DIR MAP_DIR [--skip contest] [--section occ,hits,deaths,wait,hidden,wards]`; MAP_DIR holds one `mapinfo.mjs` dump per game, named like the decoded JSON (doc 10) |
 
 ## Definitions (same as in the docs)
 

@@ -32,3 +32,11 @@ Contest pool CT4 = `maps/comp/contest.map26a,maps/ct/*.map26a` (10 maps = 20 gam
   penalty during mono_grouped_until), `mono_rg*` (regroup: outnumbered by >= 3 -> team goes home to spawn for mono_rg_hold rounds).
   `_rg1`: bodies do gather on spawn r40-60, but leave together after 30 rounds into the waiting pack: 90 deaths still.
 - Bigger pool: `maps/ct2/pert_s7..s30` (24 more perturbed copies of contest, `--keep` team A spawn) -> CT34 = contest + maps/ct + maps/ct2 (34 maps, 68 games).
+
+### 21:15 CT34 pool (34 maps = 68 games) vs `_snk`, win %
+`_ct0` (= `_m10` play) **38.2**; `_ct3` (GROUPED stance to r150) 67.6; `_cw1` (to r300) 69.1; `_cw2` (to r600) 72.1; `_cw6` (forever) 67.6.
+Losses of `_cw2` are still massacres (deaths ~90 vs ~12); in pert_s11 at r40 our 6 bodies were 10-15 tiles apart and arrived at the centre pack one by one.
+New switch `mono_follow_until` (code in `bots/_x_ct2`): the lowest-index living body with a claim leads, all others farm the leader's group (joining allowed even for
+non-heavy groups). Single games: contest, pert_s11, pert_s9 vs `_snk`: all three won (`_fo200`, `_fg200` = follow 200 + GROUPED 300) where `_ct0` lost 2.
+Variants: `_fo100 _fo200 _fo300` (follow until r), `_fg200`; `_gm1.._gm9` = GROUPED 300 with only some parts (mono_gmask: 1 enemy-half x2, 2 deny x0.5,
+4 isolated +0.3, 8 stay near allies' claims). `_rg1..4` regroup (go home when outnumbered by >= 3): not helpful alone.

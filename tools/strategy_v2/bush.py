@@ -343,7 +343,8 @@ def sec_deaths(games):
 			by[d['m']][1] += d['any5']
 			by[d['m']][2] += 1
 	print('  ' + ', '.join(f'{k} {v[0]}/{v[1]}/{v[2]}' for k, v in sorted(by.items())))
-	json.dump(inc, open(os.path.join(os.environ.get('BUSH_OUT', '/tmp'), 'bush_incidents.json'), 'w'))
+	if os.environ.get('BUSH_OUT'):
+		json.dump(inc, open(os.path.join(os.environ['BUSH_OUT'], 'bush_incidents.json'), 'w'))
 
 
 def sec_wait(games):

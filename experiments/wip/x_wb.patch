@@ -1,0 +1,89 @@
+diff -ruN _m10/src/brain.cpp _x_wb/src/brain.cpp
+--- _m10/src/brain.cpp	2026-10-18 20:14:34.305838022 +0000
++++ _x_wb/src/brain.cpp	2026-10-18 20:53:54.107710339 +0000
+@@ -1339,9 +1339,52 @@
+ 
+ void Brain::place_ward(bool force)
+ {
+-	if (!force && round - ward_round < 10)
++	if (!force && round - ward_round < (P.ward_bush >= 2 ? std::min(10, P.ward_bush_gap) : 10))
+ 		return;
+ 	auto& W = world();
++	vec2 bush{ -1, -1 };
++	if (P.ward_bush)
++	{
++		// The sneaky-bush ladder team wards a bush tile within 2 every time one exists (1,683 of 1,683 wards; ours 127 of 672, 19%):
++		// a ward inside a bush reveals the champions hiding in it, one outside does not (ENGINE_FACTS). 48% of our champion-caused
++		// deaths in their 17 games had a hitter standing in a bush (docs/strategy_v2/10_SNEAKY_BUSH.md). Pick the bush tile nearest
++		// the closest recently seen enemy, else nearest their spawn.
++		const auto& B = bc::map::bushes();
++		vec2 ref = W.enemy_spawn_c;
++		int rd = BIG;
++		for (const auto& e : W.enemies)
++			if (e.alive && e.seen_round >= round - 20 && cheb(e.pos, pos) <= 12 && cheb(e.pos, pos) < rd)
++				rd = cheb(e.pos, pos), ref = e.pos;
++		int bd = BIG;
++		for (int dy = -2; dy <= 2; ++dy)
++			for (int dx = -2; dx <= 2; ++dx)
++			{
++				const vec2 c = pos + vec2{ dx, dy };
++				if (!bc::map::is_in_bounds(c) || !B.is_set(c) || W.walls.is_set(c) || W.camp_occ.is_set(c))
++					continue;
++				const int d = cheb(c, ref);
++				if (d < bd)
++					bd = d, bush = c;
++			}
++	}
++	// ward_bush 2: re-ward early when a bush is in reach and our ward is not in it; otherwise the usual 10-round rhythm.
++	if (!force && round - ward_round < 10 && !(P.ward_bush >= 2 && bush.x >= 0 && !(bush == ward_pos)))
++		return;
++	if (bush.x >= 0)
++	{
++		try
++		{
++			if (bc::self().place_ward(bush))
++			{
++				ward_round = round;
++				ward_pos = bush;
++				return;
++			}
++		}
++		catch (...)
++		{
++		}
++	}
+ 	const vec2 dir = sgn_step(pos, W.enemy_spawn_c);
+ 	const vec2 cands[] = { pos + dir * 2, pos + dir, pos + vec2{ dir.x * 2, dir.y }, pos + vec2{ dir.x, dir.y * 2 } };
+ 	for (auto c : cands)
+@@ -1353,6 +1396,7 @@
+ 			if (bc::self().place_ward(c))
+ 			{
+ 				ward_round = round;
++				ward_pos = c;
+ 				return;
+ 			}
+ 		}
+diff -ruN _m10/src/brain.h _x_wb/src/brain.h
+--- _m10/src/brain.h	2026-10-18 20:14:34.305813189 +0000
++++ _x_wb/src/brain.h	2026-10-18 20:53:54.107922337 +0000
+@@ -237,6 +237,7 @@
+ 	int task = T_NONE, task_group = -1, task_since = 0;
+ 	int task_progress = -1; // giveup_progress: last round we hit, captured or waited at task_group
+ 	int ward_round = -100;
++	vec2 ward_pos{ -1, -1 }; // where our ward was last placed (ward_bush)
+ 	float last_hp = 0;
+ 	int last_hit_round = -100;
+ 	std::vector<int> blacklist; // per group: round until which we ignore it
+diff -ruN _m10/src/params.h _x_wb/src/params.h
+--- _m10/src/params.h	2026-10-18 20:14:34.732267617 +0000
++++ _x_wb/src/params.h	2026-10-18 20:53:54.113336736 +0000
+@@ -154,6 +154,9 @@
+ 	float mi_kite_max_kill = 40.f; // ... and a kill within this many rounds
+ 	int mi_chip = 0;			   // an idle damage spell hits a camp within 4 while passing (camps never heal)
+ 	int mi_close_in = 0;		   // in range by the group field but no live camp in sight (walls block vision): walk closer
++	int ward_bush = 0;		   // place_ward: 1 = prefer a bush tile within 2 (a ward inside a bush reveals it; the sneaky-bush team wards bushes
++							   // 100% of the time, we 19%); 2 = also re-ward after ward_bush_gap rounds when a bush is in reach and our ward is not in it
++	int ward_bush_gap = 3;	   // ... (ward_bush 2)
+ 	int mapdraft = 3;		   // 0 = our composition choice; sparring proxies: 1 = Mite's per-map drafts, 2 = ifish's (draft.cpp)
+ 							   // 3 = ours with the top teams' choices where they beat ours (rushbait-v2, interlock, expanse; stampede with md_stampede)
+ 	int md_stampede = 1;	   // mapdraft 3: stampede drafts the 2nd team's casters (Prism, Stellar, C&I, Ryth, Tavi) for the ring plan

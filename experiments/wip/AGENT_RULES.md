@@ -1,3 +1,24 @@
+# Session 7 (2026-10-18, from 02:00 UTC, new container): read this block first; it overrides everything below
+
+- Baseline: **`bots/_b7`** = frozen copy of current `bots/legend` (commit 67abcbf: shipped `legend_s6` + agent contest6's `cm_mode`/`cm_obj`). Read-only.
+  Make your copy with `SRC=bots/_b7 tools/variant.sh _x_NAME` (then edit `bots/_x_NAME/src`).
+  Patch: `cd bots && diff -ruN _b7/src _x_NAME/src > ../experiments/wip/x_NAME.patch`.
+- Other read-only bots, built: `_s6` (shipped `legend_s6`), `_ST` (`legend_st`, the build of the user's 17 real ladder games), `_L0 _es2 _c3 _st`,
+  `_r2 _v6 _hunt _hunt2 _devci _base`, `idle`, `_lad` (ladder proxy: `_b7` with the real Ren-first enemy's draft Ren, Stellar, C&I, Ryth, Varg
+  and its builds, `build_style 3`), `_x_pair7`/`_p7*` (coordinator's pair variants; do not touch).
+- **The real ladder is far stronger than our sparring bots** (17 real games of `legend_st`: 1 win; deaths 232 vs 50; camp gems 7.9k vs 16.2k;
+  the enemy finished `rows` at r355 and `rushbait-v2` at r525 *while contested*; our unopposed pace there is 441 and 641). Every sparring bot is
+  our own code family: head-to-head numbers are a regression guard, not the goal. Code-family-independent measures first: unopposed pace
+  (`tools/pace17.sh BOT [JOBS]`: 17 official maps vs `idle`, both sides, ~15 s; per map in `/tmp/ev/p_BOT.txt`; `_b7` = **565.2**),
+  deaths per game, gems/gold per body (`node tools/analysis/econ_open.mjs REPLAY...`).
+- CPU: 4 cores shared by two agents and the coordinator. Use `--jobs 2` and your own `--out /tmp/<name>/...`. Contested 56-map benches take
+  ~2-3 min at 2 jobs; pace runs ~15-30 s.
+- Acceptance: the targeted metric clearly better; head-to-head vs `_b7` >= ~48 on the 56 maps and >= ~47 on the official 17 (34 games, noisy);
+  no worse pace; 0 faults; no new fuel rollovers (`node tools/analysis/rollovers.mjs` on gen16_98x99 and the official maps).
+  Every behaviour change behind a switch in `params.h` with a comment giving the measured evidence.
+- Never commit/push/checkout/stash/reset, never `pkill -f`/`pgrep -f`/`killall`, never edit `bots/legend` or others' bots,
+  keep `experiments/wip/x_NAME.patch` and `x_NAME_NOTES.md` current as you go (the coordinator commits them).
+
 # Session 6 (2026-10-17, from 21:00 UTC, new container): read this block first; it overrides everything below
 
 - Baseline: **`bots/_b6`** = frozen copy of current `bots/legend` (commit 31e0ccb: session 5's `_rmxp` + `dist_landmark`). Read-only.

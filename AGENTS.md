@@ -52,6 +52,10 @@ running or unfinished, and what to do next, so a new agent can continue without 
   `og_poor_collect` (poorer body collects before r400) **38.2** official vs `_m10`: gold spreads (Cassi's first emblem r200 vs r352) but team gold falls
   148.5k -> 130.7k (Ren is the fastest, Treasure-boosted collector): rejected. `og_gold_mult` 2.5 (gold x2.5 while a body owns < 150, until r300)
   **55.9** official vs `_m10` (deaths 325-369): the effect is earlier gold-cluster targets, not earlier emblems; full cells running.
+  (5) **Contest agent `ct` so far** (`experiments/wip/x_ct_NOTES.md`): games are bimodal: whoever wins the first centre clash (r30-60) snowballs; our
+  bodies arrive one by one. Contest pool CT4 (contest + `maps/ct`, 20 games; vs `_snk` / `_mite` / `_ifish` / `_px9` / `_m8` / `_fA`): `_ct0` (= `_m10`
+  play) 30/60/50/50/50/75; skip the enemy half to r150/r300 (`_ct1`/`_ct2`): worse (passivity loses); **GROUPED stance to r150 (`_ct3`)
+  75/55/60/55/65/85, to r300 (`_cw1`) 70/55/70/55/65/90**. Confirming on CT34 (contest + 33 perturbed copies, 68 games); then inertness on the 88.
 - The user got the zips in chat: `legend_m8` (best measured), then `legend_m10` (current `submissions/legend.zip`, plays `legend_m8`'s games).
 
 ## S11. SESSION 11 (2026-10-18, same container as S10): read this first

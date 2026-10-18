@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-18 02:30 UTC (session 7, container clock)**. Rule from the user: update this file and push at every step. Start with **§000000** (session 7), then **§00000** (session 6), **§0000**, **§000**, **§00** below.
+- Last updated: **2026-10-18 03:00 UTC (session 7, container clock)**. Rule from the user: update this file and push at every step. Start with **§000000** (session 7), then **§00000** (session 6), **§0000**, **§000**, **§00** below.
   Session 7 pushes to **`claude/battlecode-bot-optimization-0ixvxa`** (harness branch). Session 6 pushed to `ccr-b9ffa7d9-hvk1ud`, sessions 3-5 to `claude/laughing-curie-3rq6hu`:
   before pushing, `git fetch origin` and merge any new commits from those branches (other sessions may be live; do not duplicate their panels).
 - **Two sessions are live on this branch (20:00 UTC)**: session 4 (container with `/tmp/ev/fp_*`, still running its full
@@ -17,6 +17,7 @@ running or unfinished, and what to do next, so a new agent can continue without 
 
 ## 000000. SESSION 7: CURRENT POSITION (started 2026-10-18 02:00 UTC, new container): read this first, then §00000
 
+- Last update of this block: 03:00 UTC (container clock). Branch `claude/battlecode-bot-optimization-0ixvxa`.
 - Started from session 6's last push (`ccr-b9ffa7d9-hvk1ud` @ 67abcbf, fast-forwarded into this branch). Container rebuilt with `/tmp/ev/setup.sh`
   (local; = §000.6 "How to resume" + `tools/snapshot.sh _ST cd4e2aa` + unzip `legend_{es2,c3,st,s6}` from `submissions/history/`).
 - **Shipped: still `legend_s6`**. `bots/legend` = `legend_s6` + contest6 (`cm_mode`, `cm_obj`), frozen as **`bots/_b7`** (baseline of session-7 A/Bs).
@@ -31,13 +32,37 @@ running or unfinished, and what to do next, so a new agent can continue without 
   first emblem Ren r343, the rest never (game ends r434). The enemy Varg soloed its first pack at r27 and had Monster + Power Strength at r32.
   (`econ_open.mjs`'s gold columns miss gold that is captured and spent in the same round; read the CaptureGems events instead.)
 
-| Task | Who / where | State | Left to do |
+### 000000.1 Results so far (56 maps, 112 games per cell; all / official 17; deaths us-them)
+- `_b7` vs `_s6` (shipped): **50.0 / 50.0** (1142-1105): contest6 is neutral outside contest. Not shipped alone.
+- Ladder proxy `_lad` (= `_b7` + `build_style 3` + the real Ren-first enemy's draft Ren, Stellar, C&I, Ryth, Varg, `LEGEND_DRAFT 8,4,3,0,9`):
+  `_b7` beats it **56.2 / 58.8** (1315-1217). Health-first builds and that draft do not make our code stronger: the proxy is not ladder strength.
+  Also built `_ladB` (C&I, Stellar, Varg, Ren) and `_ladC` (Stellar, Tavi, Prism, C&I, Ren), both `build_style 3`, for panel diversity.
+- pair6 finished: `x_pair6.patch` ported onto `_b7` as `bots/_x_pair7` (`experiments/wip/x_pair7.patch`; one hunk, the `safety()` threshold line, fixed by hand).
+
+| Bot | vs `_b7` | vs `_lad` | `_r2` | `_devci` | `_L0` | `_v6` | mean of 4 (all / official) | panel deaths (4 cells) | held-out vs `_b7` |
+|---|---|---|---|---|---|---|---|---|---|
+| `_b7` | | 56.2 / 58.8 | 73.2 / 79.4 | 93.8 / 94.1 | 80.4 / 88.2 | 92.9 / 97.1 | 85.1 / 89.7 | 3847 | |
+| `_p7h` (`pair_veto 1`, margin 0.8) | 51.8 / 50.0 | 54.5 / 58.8 | 80.4 / 85.3 | 92.9 / 91.2 | 79.5 / 85.3 | 91.1 / 91.2 | 86.0 / 88.3 | 3848 | 52.0 (100 games) |
+| `_p7f` (`pair_join_w 0`) | 47.3 / 44.1 | | | | | | | | |
+| `_p7hf` (both) | 50.0 / 47.1 | 48.2 / 47.1 | | | | | | | |
+
+  Verdict: `_p7h` is neutral (+0.9 all, -1.4 official, same deaths): **not merged**; the switches stay available to agent `fight7`.
+
+### 000000.2 Agents running (Opus, started 02:05 UTC)
+| Agent | Task | Copy / outputs | Findings so far (from their notes) |
 |---|---|---|---|
-| Farming speed (first cycle, shop timing, farm builds, helper vs collector, abandoned walks, respawn cycling) | agent `farm7` (Opus), copy `bots/_x_farm7`, outputs `/tmp/farm7/`, deliverables `experiments/wip/x_farm7.patch` + `x_farm7_NOTES.md` | started 02:35 | merge what wins on pace (17 + 56 maps) with h2h vs `_b7` >= 48 |
-| Deaths / fight selection / escape / reachable support / pair risk | agent `fight7` (Opus), copy `bots/_x_fight7`, outputs `/tmp/fight7/`, deliverables `x_fight7.patch` + `x_fight7_NOTES.md` | started 02:35 | merge what cuts deaths with h2h >= 50 and no worse vs `_lad` |
-| pair6 finish: `x_pair6.patch` ported onto `_b7` as `bots/_x_pair7` (1 hunk fixed by hand: `safety()` threshold line), variants `_p7h` (veto 1, margin 0.8), `_p7f` (join_w 0), `_p7hf` (both) | coordinator, `/tmp/ev/e1.sh`, results `/tmp/ev/h_<bot>/` | h2h vs `_b7` (all / official, deaths us-them): `_p7h` 51.8 / 50.0 (1113-1212), `_p7f` 47.3 / 44.1 (rejected), `_p7hf` 50.0 / 47.1 (1086-1218); vs `_lad`: `_b7` 56.2 / 58.8 (1315-1217), `_p7h` 54.5 / 58.8 (1211-1172), `_p7hf` 48.2 / 47.1. Patch on `_b7`: `experiments/wip/x_pair7.patch` | `_p7h` panel vs `_r2 _devci _L0 _v6` + held-out running (`/tmp/ev/e2.sh`); merge `pair_veto=1 pair_veto_margin=0.8` if not worse |
-| Ladder proxy `_lad` = `_b7` + `build_style 3` + draft Ren, Stellar, C&I, Ryth, Varg (`LEGEND_DRAFT 8,4,3,0,9`) | coordinator | built | `_b7` beats it 56.2 / 58.8: the proxy is weaker than our build, not ladder strength. Also built `_ladB` (C&I, Stellar, Varg, Ren) and `_ladC` (Stellar, Tavi, Prism, C&I, Ren), both `build_style 3` |
-| Ship decision `_b7` vs `_s6` (56 maps + official) | coordinator | 50.0 / 50.0 (deaths 1142-1105): neutral, contest pace only | ship together with the next real gain |
+| `farm7` | farming speed: first cycle, shop timing, farm builds, helper vs collector, abandoned walks, respawn cycling | `bots/_x_farm7`, `/tmp/farm7/`, `experiments/wip/x_farm7.patch` + `x_farm7_NOTES.md` | **give-up clock bug**: `farm()` blacklisted a target when `round - task_since > 2 x eta + 60` with eta = the *current* eta (0 at the group), so any clear longer than 60 rounds was abandoned, often the round the pack died (rows Varg). Fix (clock restarts on every hit/capture turn): pace **565.2 -> 551.4** (pilgrimage 778 -> 662). On top: `ci_health_first=0` (C&I damage first) **537.9**; `max_join 2` 545.4; ambush `obj_team_best` (team plan when it scores better than a 5-heal-trip solo plan) and lanes `incumbent` (first claimer keeps the group) being tested |
+| `fight7` | deaths: fight selection, escape, reachable support, pair risk | `bots/_x_fight7`, `/tmp/fight7/`, `x_fight7.patch` + `x_fight7_NOTES.md`, new `tools/analysis/fight_deaths.mjs` | vs `_lad`: 13.3 body deaths per game vs 9.6; 59% die fleeing (59% of those 21+ steps from home, advantage < 0.63 at the flee); 61% follow an escapable fight choice, mostly vs ONE visible enemy, 1-3 more arrive in 85%. Two mechanisms: **visibility flicker** (combat() counts only enemies visible this round: advantage jumps 1 -> 18 when one enemy hides for a round) and **no early retreat unless isolated**. Switches built: `fm_age` (remembered hidden enemies count), `threat_flee_adv` (walk away early when outmatched), `unk_w` (proactive fights must beat unseen enemies), `fh_rounds` (stay cautious after fleeing); results pending |
+
+### 000000.3 Plan (in order)
+1. When `farm7` reports: merge its winning switches into `bots/legend` (pace on 17 + 56 maps, h2h vs `_b7` >= 48), then ship if it does not lose to `_s6`
+   (**ship first, then continue**: zip, `submissions/history/`, BUILDS row, README, push).
+2. When `fight7` reports: merge on top (deaths lower, h2h >= 50, not worse vs `_lad`), full panel, ship.
+3. Then: ask the user to re-run ES (`tools/rl/train_local.sh`) on the shipped build; next agent topics (only after 1-2): the opening contact on
+   contested maps (contest/eight: the kill difference of rounds 1-150 decides ~70% of games), enemy power-spike tracking, endgame altar denial
+   (probe: a lock on an enemy mid-tribute cancels it), draft at team size 3 (the farming enemy drafts C&I, Stellar, Varg on expanse).
+4. Ask the user for real ladder replays of each new ship (the only signal that is not our own code family) and for permission to build public
+   top-team bots (Tarot Club repo) as sparring opponents.
 
 ## 00000. SESSION 6: CURRENT POSITION (started 2026-10-17 21:00 UTC, new container): read this first, then §0000
 

@@ -126,6 +126,12 @@ Left to do, in priority order:
    `support_v2`, `engage_angle` (doctrine), `fight_mem`, `pair_pool`, `kill_reach`, `fight_smooth`, `flee_fail_turns`, `flee_hold` (S7 fight),
    `join_marginal`, `claim_release` (S7 econ).
 
+**Update 16:40 UTC**: 3 more ladder groups ("top 4", 15 games, `experiments/ladder_m5/top4/`, addendum in doc 07): 2 wins; same gaps
+(neutral captures 63 vs 192, damage per gold 20.6 vs 29.4, burst deaths 43% vs 16%); 3 games replay identically to the `legend_m5`
+groups, so those were played by the same build. Agents started on items 3 and 4 (both Opus, baseline `_xp4`, judged vs `_px9` + guards):
+`evade` (avoid being hit; copy `bots/_x_ev`, variants `_xv*`, notes `experiments/wip/x_ev_NOTES.md`, patch `x_ev.patch`) and
+`neutral` (neutral control, income, damage per gold; copy `bots/_x_nt`, variants `_xn*`, notes `x_nt_NOTES.md`, patch `x_nt.patch`).
+
 Rules that held this session: test on distinct maps only (`'maps/*.map26a,maps/comp/*.map26a'`, 88 games; never `maps/ladder` copies), every game
 through `tools/ledger.py`, ship only with >= 50 vs the baseline on all and official, not worse vs the third parties, pace within 10, 0 faults,
 no new rollovers; push the zip first, then continue.

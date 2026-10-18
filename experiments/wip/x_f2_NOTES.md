@@ -23,10 +23,18 @@ at distance 5; we deal 3 and take 12 per body-round at distance 5 against them; 
 - `_x_f2`: `SRC=bots/_xp4 tools/variant.sh _x_f2 && (cd bots/_x_f2 && patch -p1 < ../../experiments/wip/x_f2.patch)`
 - variants: `SRC=bots/_x_f2 tools/variant.sh NAME key=val ...`
   `_f2a` aoe_reach5=1; `_f2b` aoe_cast5=1; `_f2c` aoe_cast5=3; `_f2d` open_first=1; `_f2e` open_first=2;
-  `_f2f` aoe_reach5=1 aoe_cast5=1 open_first=1.
+  `_f2f` aoe_reach5=1 aoe_cast5=1 open_first=1; `_f2g` aoe_reach5=3; `_f2h` aoe_cast5=3 open_first=1;
+  `_f2i` aoe_cast5=3 aoe_reach5=3; `_f2j` aoe_cast5=3 open_first=1 aoe_reach5=3.
 - proxy with reach-5 casts: `_f2p` = `_px9` + `x_f2.patch` (one hunk, the engage_angle loop, does not apply: `_px9` has no
   engage_angle; ignore it), then `SRC=bots/_f2p tools/variant.sh NAME aoe_cast5=...`.
 
 ## Results (88 distinct games / official 34 / deaths ours-theirs)
 
-(in progress)
+| Bot | recipe | vs `_xp4` | notes |
+|---|---|---|---|
+| `_f2a` | aoe_reach5=1 | 42.0 / 47.1 / 688-624 | rejected: in_reach at 5 makes bodies flee or fight-back from 5; more deaths, not fewer |
+| `_f2b` | aoe_cast5=1 | 52.3 / 58.8 / 632-684 | |
+| `_f2c` | aoe_cast5=3 | **54.5 / 58.8** / 639-699 | best of round 1 |
+| `_f2d` | open_first=1 | 51.1 / 55.9 / 654-670 | neutral |
+| `_f2e` | open_first=2 | 46.6 / 44.1 / 633-632 | rejected: holding at the edge (the old A6 / px_hold idea) loses again |
+| `_f2f` | aoe_reach5=1 aoe_cast5=1 open_first=1 | 50.0 / 52.9 / 609-591 | F1 cancels F2 |

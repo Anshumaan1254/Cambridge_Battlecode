@@ -1,6 +1,6 @@
 diff -ruN _xp4/src/brain.cpp _x_f2/src/brain.cpp
 --- _xp4/src/brain.cpp	2026-10-18 15:17:15.649252893 +0000
-+++ _x_f2/src/brain.cpp	2026-10-18 15:35:18.293289792 +0000
++++ _x_f2/src/brain.cpp	2026-10-18 15:42:03.062948447 +0000
 @@ -266,6 +266,26 @@
  	return std::max({ k.dmg >= 0 ? k.dmg_mod : 0.f, k.cc >= 0 ? k.cc_mod : 0.f, k.aoe >= 0 ? k.aoe_mod : 0.f });
  }
@@ -37,18 +37,32 @@ diff -ruN _xp4/src/brain.cpp _x_f2/src/brain.cpp
  	}
  	bool cancel = false;
  	if (recalling && threat_close && !world().ally_spawn.is_set(pos))
-@@ -718,7 +740,9 @@
+@@ -701,6 +723,7 @@
+ {
+ 	auto& W = world();
+ 	danger.clear();
++	danger4.clear();
+ 	camp_danger.clear();
+ 	enemy_near = false;
+ 	enemy_near_field = false;
+@@ -718,10 +741,15 @@
  		const bool spell_up = (e.kit.dmg >= 0 && (!fresh || e.ready(e.kit.dmg))) || (e.kit.cc >= 0 && (!fresh || e.ready(e.kit.cc))) ||
  			(e.kit.aoe >= 0 && (!fresh || e.ready(e.kit.aoe)));
  		int reach = e.kit.attack_range + (e.kit.ranged ? 0 : 1) + (dash_up ? 2 : 0);
 -		if (spell_up)
++		const int reach0 = std::max(reach, spell_up ? 4 : 0) + age;
 +		if (P.aoe_reach5)
 +			reach = std::max(reach, enemy_spell_reach(e, !fresh));
 +		else if (spell_up)
  			reach = std::max(reach, 4);
  		reach += age;
  		danger.draw_chebyshev(e.pos, static_cast<float>(reach));
-@@ -1057,13 +1081,36 @@
++		if (P.aoe_reach5 == 3)
++			danger4.draw_chebyshev(e.pos, static_cast<float>(reach0)); // routes avoid 5, the fight/flee trigger stays at 4
+ 		const int ed = cheb(e.pos, pos);
+ 		if (ed <= 9)
+ 		{
+@@ -1057,13 +1085,36 @@
  				continue;
  			int n = 0;
  			for (const auto& o : W.enemies)
@@ -86,18 +100,18 @@ diff -ruN _xp4/src/brain.cpp _x_f2/src/brain.cpp
  float Brain::camp_dps() const
  {
  	float base = str * (1.f + (kit.reset >= 0 ? 0.125f : 0.f));
-@@ -1231,7 +1278,9 @@
+@@ -1231,7 +1282,9 @@
  	// Enemy reach next turn: attack range (+1 step for melee), +2 with a dash ready, 4 with a spell ready.
  	auto reach_of = [](const Enemy& e) {
  		int r = e.kit.attack_range + (e.kit.ranged ? 0 : 1) + (e.ready(e.kit.dash) ? 2 : 0);
 -		if (e.ready(e.kit.dmg) || e.ready(e.kit.cc) || e.ready(e.kit.aoe))
-+		if (P.aoe_reach5)
++		if (P.aoe_reach5 && P.aoe_reach5 != 3)
 +			r = std::max(r, enemy_spell_reach(e, false));
 +		else if (e.ready(e.kit.dmg) || e.ready(e.kit.cc) || e.ready(e.kit.aoe))
  			r = std::max(r, 4);
  		return r;
  	};
-@@ -1399,8 +1448,11 @@
+@@ -1399,9 +1452,12 @@
  		const float tku = our_hp / std::max(1.f, their_dps + reflect * static_cast<float>(1 + allies_near));
  		adv = tku / std::max(0.1f, t_kill_them) * learner().fight_scale();
  	}
@@ -105,12 +119,14 @@ diff -ruN _xp4/src/brain.cpp _x_f2/src/brain.cpp
 +	const int aoe_r5 = P.aoe_cast5 && ready(kit.aoe) ? static_cast<int>(kit.aoe_range + kit.aoe_radius) : 0;
 +	bool killable = d <= std::max(my_reach, (ready(kit.dmg) || ready(kit.cc)) ? 4 : 0) &&
  		tgt->hp <= burst_vs(*tgt) + allies_burst;
+-	const bool in_reach = danger.is_set(pos);
 +	if (!killable && aoe_r5 > 0 && d <= aoe_r5)
 +		killable = tgt->hp <= (d <= kit.attack_range && can_attack ? str : 0.f) + focus * kit.aoe_mod + allies_burst; // F2: the area from 5
- 	const bool in_reach = danger.is_set(pos);
++	const bool in_reach = P.aoe_reach5 == 3 ? danger4.is_set(pos) : danger.is_set(pos);
  
  	// Can we actually get away? Melee and dash chasers move and hit in the same turn. Fleeing only works
-@@ -1490,7 +1542,7 @@
+ 	// if no such chaser is close, if our own dash outruns theirs, or if we survive the whole walk home.
+@@ -1490,7 +1546,7 @@
  		for (auto* e : E)
  		{
  			const int de = cheb(pos, e->pos);
@@ -119,7 +135,7 @@ diff -ruN _xp4/src/brain.cpp _x_f2/src/brain.cpp
  			if (de > my_reach && !spell_r)
  				continue;
  			if (e->type == CT::ren)
-@@ -1500,7 +1552,9 @@
+@@ -1500,7 +1556,9 @@
  					continue;
  			}
  			float tb = de <= my_reach && can_attack ? str * (ready(kit.reset) ? 2.f : 1.f) : 0.f;
@@ -130,7 +146,7 @@ diff -ruN _xp4/src/brain.cpp _x_f2/src/brain.cpp
  				tb += std::max({ ready(kit.dmg) ? focus * kit.dmg_mod : 0.f, ready(kit.cc) ? focus * kit.cc_mod : 0.f, ready(kit.aoe) ? focus * kit.aoe_mod : 0.f });
  			for (const auto& a : W.allies)
  				if (a.handle != self && a.alive && a.visible && a.kit_ready && cheb(a.pos, e->pos) <= std::max(a.kit.attack_range + 1, 4))
-@@ -1541,7 +1595,7 @@
+@@ -1541,7 +1599,7 @@
  		if (fight && !pkill && (P.px_hold > 0 || P.px_burst_wait > 0) && !tgt->channeling && !tgt->tributing)
  		{
  			const int dt = cheb(pos, tgt->pos);
@@ -139,7 +155,7 @@ diff -ruN _xp4/src/brain.cpp _x_f2/src/brain.cpp
  			if (dt > kit.attack_range && !spell_now)
  			{
  				bool step_in = in_reach;
-@@ -1805,6 +1859,7 @@
+@@ -1805,6 +1863,7 @@
  	}
  	if (d > 4 && cast_on_nearer(e))
  		return true;
@@ -147,7 +163,7 @@ diff -ruN _xp4/src/brain.cpp _x_f2/src/brain.cpp
  	if (d > kit.attack_range)
  	{
  		bc::bitboard goal;
-@@ -1826,7 +1881,9 @@
+@@ -1826,7 +1885,9 @@
  				if (&o == &e || !o.alive || !o.visible || cheb(o.pos, e.pos) > 8)
  					continue;
  				int r = o.kit.attack_range + (o.kit.ranged ? 0 : 1) + (o.ready(o.kit.dash) ? 2 : 0);
@@ -158,7 +174,7 @@ diff -ruN _xp4/src/brain.cpp _x_f2/src/brain.cpp
  					r = std::max(r, 4);
  				others.draw_chebyshev(o.pos, static_cast<float>(r));
  			}
-@@ -1853,18 +1910,67 @@
+@@ -1853,18 +1914,67 @@
  		}
  		if (kit.ranged)
  		{
@@ -229,7 +245,7 @@ diff -ruN _xp4/src/brain.cpp _x_f2/src/brain.cpp
  		}
  		else
  		{
-@@ -3621,9 +3727,10 @@
+@@ -3621,9 +3731,10 @@
  		return false;
  	auto& W = world();
  	Enemy* pick = nullptr;
@@ -241,7 +257,7 @@ diff -ruN _xp4/src/brain.cpp _x_f2/src/brain.cpp
  			continue;
  		if (o.type == CT::ren && hp <= 2.5f * bc::constants::passive_abilities::ren_retaliation_focus_ratio * o.focus && o.hp > burst_vs(o))
  			continue;
-@@ -3632,8 +3739,15 @@
+@@ -3632,8 +3743,15 @@
  	}
  	if (!pick)
  		return false;
@@ -260,8 +276,16 @@ diff -ruN _xp4/src/brain.cpp _x_f2/src/brain.cpp
  
 diff -ruN _xp4/src/brain.h _x_f2/src/brain.h
 --- _xp4/src/brain.h	2026-10-18 15:17:15.649068019 +0000
-+++ _x_f2/src/brain.h	2026-10-18 15:35:18.294061309 +0000
-@@ -205,6 +205,8 @@
++++ _x_f2/src/brain.h	2026-10-18 15:42:03.063635308 +0000
+@@ -196,6 +196,7 @@
+ 	bool alive = true, can_move = false, can_attack = false, can_cast = false, cast_done = false;
+ 	std::array<int, 2> cd{};
+ 	bc::bitboard danger;	  // tiles enemies can hit next turn
++	bc::bitboard danger4;	  // P.aoe_reach5 == 3: the legend danger map (every spell 4), for combat()'s in_reach
+ 	bc::bitboard camp_danger; // tiles in range of awake camps
+ 	bc::bitboard alert_zone;  // area an ally reported as dangerous (shared memory)
+ 	bc::bitboard clump;		  // P.spread_vs_splash: tiles next to an ally while a splash/area threat is near (else empty)
+@@ -205,6 +206,8 @@
  	int enemy_near_d = BIG; // nearest recently seen enemy, minus the rounds since we saw it (it may have closed in)
  	bool enemy_near_field = false; // enemy_near, not counting enemies standing on their own spawn
  	bool cast_area_stun_at(const Enemy& e); // area stun hitting e from up to range + radius away
@@ -272,7 +296,7 @@ diff -ruN _xp4/src/brain.h _x_f2/src/brain.h
  	float fight_margin = 1.3f, fight_back_margin = 0.75f, deny_bonus = 0.55f, enemy_half_penalty = 10.f;
 diff -ruN _xp4/src/params.h _x_f2/src/params.h
 --- _xp4/src/params.h	2026-10-18 15:17:15.710098716 +0000
-+++ _x_f2/src/params.h	2026-10-18 15:35:29.007911239 +0000
++++ _x_f2/src/params.h	2026-10-18 15:42:03.064429127 +0000
 @@ -383,6 +383,18 @@
  								// most this many rounds per fight (ranged must choose between a step and an attack)
  	int px_burst_wait = 0;		// proactive fight with no spell ready: hold outside their reach while a spell is at most this many
@@ -281,7 +305,7 @@ diff -ruN _xp4/src/params.h _x_f2/src/params.h
 +	// Fight micro v2 (agent fight2, session 9; docs/strategy_v2/08 section 2, experiments/wip/x_f2_NOTES.md). All 0 = legend_m6.
 +	int aoe_reach5 = 0;			// F1: an enemy area spell (ready, or cooldown unknown) threatens range + radius (5), not 4: danger
 +								// map, combat()'s reach/incoming, the channel stun check, engage_angle. 2: also walk-compatible
-+								// spells (Cassi's stun) range + 1
++								// spells (Cassi's stun) range + 1. 3: only the danger map for routes (combat() stays at 4)
 +	int aoe_cast5 = 0;			// F2: our area spells aim at a tile within range whose radius catches the target (reach 5), most
 +								// enemies first: engage() (ranged), cast_on_nearer, px targeting reach, killable
 +	int open_first = 0;			// F3 (bits): 1 = after a fight step, cast a walk-compatible spell that now reaches the target

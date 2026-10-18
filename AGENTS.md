@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-18 21:55 UTC (S7R: `legend_m11` shipped); earlier: 2026-10-18 (session 11; `legend_m10` shipped = `legend_m8`'s play with the default-branch ideas switched off; see §S11)**. Rule from the user: update this file and push at every step. Start with **§S11**, then **§S10**, **§S9**, **§S8**,
+- Last updated: **2026-10-18 22:06 UTC (S7R: `legend_m12` shipped); earlier: 2026-10-18 (session 11; `legend_m10` shipped = `legend_m8`'s play with the default-branch ideas switched off; see §S11)**. Rule from the user: update this file and push at every step. Start with **§S11**, then **§S10**, **§S9**, **§S8**,
   **§S7**, **§S7-SV2**, then §000000 (resume protocol), §00000, §0000, §000, §00. **All work stays on branch `ccr-a858cd03-q87cpi`**:
   `git pull` (merge, never force) before every push. The repository's **default branch is `claude/lucid-pasteur-2jiojv`** (Oct 17, its
   bot does not compile); this branch is 142 commits ahead of it. No PR unless the user asks.
@@ -14,6 +14,15 @@ running or unfinished, and what to do next, so a new agent can continue without 
 ---
 
 ## S7R. SESSION 7 RESUMED (2026-10-18 20:05 UTC, the original S7 container, live in parallel with S11): read with §S11
+
+- **SHIPPED `legend_m12` (22:06 UTC; the user: "finish the bot by 4 am, best bot by as much A/B testing as possible")**: `submissions/legend.zip`
+  sha256 6e33d2b5…, `submissions/history/legend_m12_20261018.zip`, BUILDS row. `_fw` = `_m10` + `experiments/wip/x_m12.patch` (hash 104743e4f1d5) =
+  `_m11` + `ward_bush_maps` 1 (warding only on contest-type maps). Decision metric changed after the user's ladder report: **the top-team proxies on the
+  official maps**, not head-to-head vs our own builds (m11 beat m10 67.6 official but lost to Mite 76.5 vs 82.4 and ifish 70.6 vs 79.4: non-transitive).
+  Official 34: `_fw` Mite 85.3, ifish 79.4, `_px9` 76.5, `_snk` 67.6, `_fA` 88.2 (mean 79.4; `_m10` 76.5, `_m11` 74.1); identical to `_fo200` (= `_m10` +
+  contest blob, no warding) on every map but contest; contest pool 88.2 / 95.6 / 97.1 vs `_m8` / `_mite` / `_snk` (`_fo200` 69.1 / 89.7 / 83.8); h2h vs `_m8`
+  52.3 / 52.9, vs `_m10` 51.1 / 52.9; pace 507.6; rollovers 8/8; 0 faults. Rejected in the same hour: paired opening `pair_open_until` 150/250
+  (`x_po.patch`: 64.7 vs every proxy at 150, beats `_m11` 55.9: non-transitive), ward gap 2 (38.2 vs `_m11`). **New baseline: `_fw` (= legend_m12).**
 
 - **22:00 UTC, the user: "m11 is performing poorly on the top ladder; implement the handoff"** (`docs/strategy_v2/11_FINAL_STRATEGY_HANDOFF.md`, from an
   unpushed session 12; its zip `submissions/history/legend_final_s12_20261018.zip`, hash 3729300fd292 verified = `legend_m10` + `ward_bush=2` +

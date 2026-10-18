@@ -1347,11 +1347,14 @@ void Brain::use_locks()
 
 void Brain::place_ward(bool force)
 {
-	if (!force && round - ward_round < (P.ward_bush >= 2 ? std::min(10, P.ward_bush_gap) : 10))
+	// ward_bush_maps 1: bush warding only on lone-monolith maps (contest): there it adds 7-27 points to the blob opening; elsewhere it
+	// lost to the top-team proxies on the official maps (Mite 70.6 vs 82.4, ifish 73.5 vs 79.4) and the ladder confirmed it.
+	const int wb = (P.ward_bush_maps == 1 && !world().mono_mode) ? 0 : P.ward_bush;
+	if (!force && round - ward_round < (wb >= 2 ? std::min(10, P.ward_bush_gap) : 10))
 		return;
 	auto& W = world();
 	vec2 bush{ -1, -1 };
-	if (P.ward_bush)
+	if (wb)
 	{
 		// The sneaky-bush ladder team wards a bush tile within 2 every time one exists (1,683 of 1,683 wards; ours 127 of 672, 19%):
 		// a ward inside a bush reveals the champions hiding in it, one outside does not (ENGINE_FACTS). 48% of our champion-caused
@@ -1376,7 +1379,7 @@ void Brain::place_ward(bool force)
 			}
 	}
 	// ward_bush 2: re-ward early when a bush is in reach and our ward is not in it; otherwise the usual 10-round rhythm.
-	if (!force && round - ward_round < 10 && !(P.ward_bush >= 2 && bush.x >= 0 && !(bush == ward_pos)))
+	if (!force && round - ward_round < 10 && !(wb >= 2 && bush.x >= 0 && !(bush == ward_pos)))
 		return;
 	if (bush.x >= 0)
 	{

@@ -80,12 +80,14 @@ SRC=bots/_m9 tools/variant.sh _m10 $MIOFF > /dev/null
 rm -rf $T
 # S7R: _m11 = legend_m11 (shipped) = _m10 + experiments/wip/x_m11.patch (ward_bush 2 + the contest blob opening)
 SRC=bots/_m10 tools/variant.sh _m11 > /dev/null && (cd bots/_m11 && patch -s -p1 --no-backup-if-mismatch < ../../experiments/wip/x_m11.patch)
-for b in _m11 _rm _ST _m2 _m3 _x_gp _m4 _m4x _m5a _px9 _xp4 _m7 _fA _fB _fC _mite _ifish _m8 _cS3 _m9 _m10 legend idle; do cambc build $b > /dev/null && echo "built $b"; done
+# S7R: _fw = legend_m12 (shipped) = _m10 + experiments/wip/x_m12.patch (warding only on contest-type maps + the contest blob opening)
+SRC=bots/_m10 tools/variant.sh _fw > /dev/null && (cd bots/_fw && patch -s -p1 --no-backup-if-mismatch < ../../experiments/wip/x_m12.patch)
+for b in _fw _m11 _rm _ST _m2 _m3 _x_gp _m4 _m4x _m5a _px9 _xp4 _m7 _fA _fB _fC _mite _ifish _m8 _cS3 _m9 _m10 legend idle; do cambc build $b > /dev/null && echo "built $b"; done
 python3 - <<'EOF'
 import sys; sys.path.insert(0, 'tools'); import ledger
 want = {'_rm': '339a961d3427', '_ST': 'ca21cbfe785b', '_eA': '0ee193334b60', '_eB': '654605b27deb', '_eC': '116ccc8b53b1',
 		'_m2': '1684aa2a482c', '_m3': '86c9e8f3de35', '_x_gp': '92e199947185', '_m4': '0dc2a2aac28a',
-		'_m5a': '5620bb02867a', '_xp4': '6a1a52e4ddb8', '_m7': '61dd9019869d', '_mite': '688b37be81e3', '_ifish': '6fde429be694', '_m8': '540e17bfe5a4', '_cS3': '540e17bfe5a4', '_m9': '0df32fa5ee2d', '_m10': 'a0e6030bf0f4', '_m11': '0dd8010eaf12', '_fA': '25fe5950b034', '_fB': 'f8e472c342f3', '_fC': 'ef5391dcc92b'}
+		'_m5a': '5620bb02867a', '_xp4': '6a1a52e4ddb8', '_m7': '61dd9019869d', '_mite': '688b37be81e3', '_ifish': '6fde429be694', '_m8': '540e17bfe5a4', '_cS3': '540e17bfe5a4', '_m9': '0df32fa5ee2d', '_m10': 'a0e6030bf0f4', '_m11': '0dd8010eaf12', '_fw': '104743e4f1d5', '_fA': '25fe5950b034', '_fB': 'f8e472c342f3', '_fC': 'ef5391dcc92b'}
 for b, h in want.items():
 	got = ledger.src_hash(b)
 	print(f'{b:5s} {got} {"ok" if got == h else "MISMATCH (expected " + h + ")"}')

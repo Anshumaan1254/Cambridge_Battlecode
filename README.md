@@ -13,7 +13,24 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Current build: `legend_m11` (session 7R, Oct 18): ready for the ladder
+## Current build: `legend_m12` (session 7R, Oct 18): ready for the ladder
+
+`legend_m12` plays `legend_m10`'s proven game everywhere, and on contest-type maps (gems only in lone monoliths) it opens as one group until
+round 200 and wards the bushes. `legend_m11` warded bushes on every map: that beat our own older builds but lost to the top-team proxies (and,
+per the user, on the top ladder); `legend_m12` keeps the warding only where it wins.
+
+| Official 17 maps x 2 sides vs | `legend_m12` | `legend_m10` | `legend_m11` |
+|---|---|---|---|
+| Mite proxy (#2 team) | **85.3%** | 82.4% | 76.5% |
+| ifish proxy (#1 team) | **79.4%** | 79.4% | 70.6% |
+| `_px9` (ladder-calibrated) | 76.5% | 76.5% | 79.4% |
+| sneaky-bush proxy | **67.6%** | 61.8% | 67.6% |
+| `_fA` (pressure) | **88.2%** | 82.4% | 76.5% |
+| contest pool, 68 games, vs `legend_m8` / Mite / sneaky | **88.2 / 95.6 / 97.1** | 50 / 60 / 38 (CT4/CT34 cells) | 88.2 / 95.6 / 97.1 |
+
+Head-to-head vs `legend_m8` 52.3% (official 52.9%), vs `legend_m10` 51.1% (52.9%). Full numbers: `submissions/BUILDS.md`.
+
+## Previous build: `legend_m11` (session 7R, Oct 18): ready for the ladder
 
 `legend_m11` = `legend_m10` (= `legend_m8`'s play) + **bush warding** (a ward inside a bush reveals champions hiding there; we now ward a bush
 tile within 2 when one is in reach, as the sneaky-bush ladder team does with every ward) + **a grouped opening on contest-type maps** (the bodies

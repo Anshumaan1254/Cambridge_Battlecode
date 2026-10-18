@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-18 22:40 UTC (S7R: `legend_m13` shipped: parameter draft); earlier: 2026-10-18 (session 11; `legend_m10` shipped = `legend_m8`'s play with the default-branch ideas switched off; see §S11)**. Rule from the user: update this file and push at every step. Start with **§S11**, then **§S10**, **§S9**, **§S8**,
+- Last updated: **2026-10-18 23:25 UTC (S7R: new-map A/B of m13 / m12 and the size-gate fix `_pg2`; `legend_m13` shipped at 22:40); earlier: 2026-10-18 (session 11; `legend_m10` shipped = `legend_m8`'s play with the default-branch ideas switched off; see §S11)**. Rule from the user: update this file and push at every step. Start with **§S11**, then **§S10**, **§S9**, **§S8**,
   **§S7**, **§S7-SV2**, then §000000 (resume protocol), §00000, §0000, §000, §00. **All work stays on branch `ccr-a858cd03-q87cpi`**:
   `git pull` (merge, never force) before every push. The repository's **default branch is `claude/lucid-pasteur-2jiojv`** (Oct 17, its
   bot does not compile); this branch is 142 commits ahead of it. No PR unless the user asks.
@@ -15,6 +15,20 @@ running or unfinished, and what to do next, so a new agent can continue without 
 
 ## S7R. SESSION 7 RESUMED (2026-10-18 20:05 UTC, the original S7 container, live in parallel with S11): read with §S11
 
+- **23:25 UTC, the user: "improve the bot by A/B testing m13 and m12 on the official maps and on maps you create"** (the final sprint changes the
+  map pool). New pools: `maps/pad17` (16 official maps framed by walls: new sizes, same play; `tools/mapgen/pad_map.mjs`), `maps/ctsz` (contest at
+  6 new sizes + perturbed copies, `tools/mapgen/perturb.mjs`), `maps/gen2` (24 fresh `gen.mjs` maps, seed 2026), `maps/gold3` (gem-scarce, seeds 31/37).
+  Found: m13's draft is size-free but two brain plans were not: the stampede ring only at 60x50 (m13 drafts the casters on any objective map, then
+  plays them without the ring) and the contest plan only at 50x50. Candidate code `_x_pg` = m13 + `experiments/wip/x_pg.patch`: `o2_ring` 3 (ring
+  also when our team has Prism or Tavi), `mono_size50` 2 (contest plan when every lone monolith stands near the middle: min(d, 1-d) of the
+  spawn-to-spawn walk >= `mono_center` 0.45; contest and copies 0.50 at any size, the gold_mono maps where the plan lost 0.38-0.42), `pd_obj_multi`
+  (objective draft only when the lone gem group is multi-camp: excludes the gold_elk maps, where no objective plan runs). Control `_pg0` (defaults)
+  34/34 games identical to m13. `_pg` = o2_ring 3 + mono_size50 2; `_pg2` = `_pg` + pd_obj_multi 1 (ship candidate).
+  Results (win % vs Mite, ifish, `_px9`, `_snk`, `_fA` pooled; games): objective / resized-transposed stampede (12 maps, 120): m12 64.2, m13 59.2,
+  `_pg` **74.2** (unopposed stampede_p2 471/479 rounds = the original map's, m13 803/790); contest at new sizes (13 maps, 130): m12 96.2, m13 **60.0**,
+  `_pg` 96.2; resized official (16 maps, 160): m12 65.6, m13 69.4, `_pg` **73.1**; fresh generated (24 maps, 240): all three 66.7 (identical games:
+  same drafts, no plan fires). Head-to-head on those pools: `_pg` vs m13 88.0 (ring + contest maps) and 53.8 (pads + fresh), vs m12 60.0 and 53.8;
+  m13 vs m12 50.0. Running: `_pg2` everywhere + held-out (gold, gold2, gold3, obj) vs Mite / `_px9` / ifish (`$S/pg2.sh`, then `pg3.sh`).
 - **SHIPPED `legend_m13` (22:40 UTC)** = `_pd2` = `_fc` + the **parameter draft** (`experiments/wip/x_pd.patch`, `mapdraft` 6, hash c8272a7e1846; sha256 8f1ac104…).
   The user's request: analyse the map first, derive parameters, choose the first pick from them, later picks from the enemy's picks + synergy + map
   (for the final sprint, where the map pool changes). draft.cpp `derive_params()` / `pd_score()` / `param_pick()`: no per-map table. Accuracy vs the

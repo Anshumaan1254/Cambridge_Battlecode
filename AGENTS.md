@@ -35,8 +35,11 @@ running or unfinished, and what to do next, so a new agent can continue without 
 - Checks before the push: control `_mi0` (all switches 0) vs `_m8` 50.0 with identical games (deaths 360-360); `_mi1` (= `_m9`) vs `_m8`
   **35.3% on the 34 official games** (deaths 371-358), 0 faults, rollovers unchanged (gen16 8/8, stampede 1/1, lanes 6/6, ambush 7 vs 6).
   **Locally the combined ideas look detrimental**; the user will judge on the ladder. Rollback: `submissions/history/legend_m8_20261018.zip`.
-- Next (running after the push): 88-game cells of `_m9` vs `_m8`, `_mite`, `_ifish`, `_px9`, then leave-one-out ablations (`_m9` with one
-  `mi_*` switch off) to find which ideas cost the most; report to the user, who decides what stays.
+- **Full cells of `_m9` (ledger name `_mi1`; 88 distinct / official 34, `_m8`'s cell in brackets)**: vs `_m8` 58.0 / **35.3** (deaths
+  639-711); `_mite` 63.6 / 64.7 (76.1 / 82.4); `_ifish` 51.1 / **35.3** (69.3 / 79.4); `_px9` 65.9 / 58.8 (78.4 / 76.5). **Worse than
+  `legend_m8` against every third party by 12-18 points (official 18-44)**: the user was told; recommended rollback = `legend_m8`.
+- Running: add-one (`_a_<idea>` = `_m8` code + that idea alone) and leave-one-out (`_l_<idea>` = `_m9` minus that idea) vs `_m8`, 88 games each
+  (`$S/bin/mi_screen.sh`, log `/tmp/mi.log`); results go into the table below as they land.
 
 ## S10. SESSION 10 (2026-10-18 17:20 UTC, new container): read this first
 

@@ -12,6 +12,25 @@ running or unfinished, and what to do next, so a new agent can continue without 
 
 ---
 
+## 000000. RESUME PROTOCOL (session limits, container restarts): read before running any test
+
+- **Never redo a finished game.** Every bot-vs-bot result goes to the committed ledger `experiments/results/ledger/<BOT>_vs_<OPP>.jsonl`
+  (one line per game: map, side, win, rounds, gems, deaths, gold, faults, and the SOURCE HASH of both bots). A row is only reused for the
+  exact code it was played with: rebuild a bot (new sources) and its old rows stop counting, automatically.
+- Check first: `python3 tools/ledger.py table BOT --opps _rm,_ST,_eA,_eB,_eC --maps 'maps/*.map26a,maps/ladder/*.map26a,maps/comp/*.map26a'`
+  (complete cells show `complete`; others show how many games are on the current code).
+- Play the rest (chunks of 8 maps; a cut loses at most one chunk; re-running resumes):
+  `python3 tools/ledger.py run BOT OPP --maps '...' --jobs 2`. It prints "N of M games already in the ledger, K to play".
+- If an old-style `tools/bench.py` run was cut off (its output dir, e.g. `/tmp/ev/m2`): `python3 tools/ledger.py import DIR` first. It keeps
+  every finished game (the stats file is written when a game ends) and skips duplicates. Then `ledger.py run` for the rest.
+- After a container restart `/tmp` is empty: the ledger (in git) survives, replays and stats do not, which is fine. Rebuild the bots from the
+  committed patches (`SRC=bots/_rm tools/variant.sh`, `patch -p1 < experiments/wip/x_*.patch`), then `ledger.py run` for the missing games.
+  Bots that a panel uses must be built with the sources they were played with: the hash check refuses anything else.
+- Agents (survive, farm, any new one) must use `ledger.py` for their cells too, so their results survive a cut the same way.
+- Replays and full stats (~1.8 MB per game) stay out of git. Only the ledger is committed.
+- Status at 10:05 UTC: `_m2` vs `_rm` complete (61.6%), vs `_ST` complete (63.4%), vs `_eA` 110/112 (bench run still finishing; import it when done),
+  vs `_eB`, `_eC` not started. The rest: `ledger.py run` after the import.
+
 ## 00000. SESSION 6 (2026-10-18, new container): read this first
 
 ### Inputs from the user (message 1 of session 6)

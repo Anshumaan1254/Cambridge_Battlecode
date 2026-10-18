@@ -123,8 +123,12 @@ running or unfinished, and what to do next, so a new agent can continue without 
   | `mi_chip` | 54.5 / 50.0 (610-648) | 53.4 / 32.4 |
   | `mi_close_in` | 51.1 / 50.0 (649-654) | 58.0 / 35.3 |
 
-  Pass the first gate (>= 50 all and official vs `_m8`): `learn_fight`, `deny_gems`, `flip_guard`, `chip`, `learn_burst`. Next (running): those five
-  vs the third parties (`_mite`, `_ifish`, `_px9`), then the passing ones combined vs `_m8`, `_m10` and the third parties (the user's S7R rule).
+  Pass the first gate (>= 50 all and official vs `_m8`): `learn_fight`, `deny_gems`, `flip_guard`, `chip`, `learn_burst`. **Third parties** (88 / official;
+  `_m8`: `_mite` 76.1 / 82.4, `_ifish` 69.3 / 79.4, `_px9` 78.4 / 76.5): `learn_fight` 72.7 / 82.4, 65.9 / 70.6, **65.9 / 55.9**; `deny_gems` 72.7 / 73.5,
+  71.6 / 79.4, 73.9 / 73.5; `flip_guard` 73.9 / 79.4, 64.8 / 73.5, 72.7 / 70.6; `chip` 75.0 / 76.5, 70.5 / 82.4, 77.3 / 70.6 (mean -0.3: level);
+  `learn_burst` 76.1 / 85.3, 68.2 / 73.5, **64.8 / 61.8**. **None passes the user's rule** (each beats our previous build head-to-head but loses to the
+  outside opponents, `_px9` most): all `mi_*` stay off, `legend_m10` stays. Combination builds `_cmb2` (learn_fight + deny_gems), `_cmb3` (+ flip_guard),
+  `_cmb5` (+ chip + learn_burst) were built but not played (every part is worse alone vs the third parties). Revisit only with ladder evidence.
   S7R owns opening gold, contest and the sneaky-bush draft; this session stays on the default-branch ideas.
 
 ## S10. SESSION 10 (2026-10-18 17:20 UTC, new container): read this first

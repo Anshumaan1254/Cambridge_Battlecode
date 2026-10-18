@@ -77,7 +77,11 @@ Pace = round at which our team banks 1000 gems vs `idle` (mean of both sides; a 
   (vs 546.8). Rejected. (Caveat: vs `idle` we always lead by 150+, so `tribute_min` drops to 25; real games bank bigger bags.)
 - `join_reach` (new, default 0): a joiner skips a claimed group it cannot reach before the claimers would finish it (pilgrimage: Cassi crossed the
   map between the two 68-gem packs for 300 rounds, 0 captures, 0 gold, no items all game). Pace on `_C4`: 0.7 541.1, **1.2 537.2** (pilgrimage
-  765 -> 649, corners 436 -> 394, expanse 611 -> 660). 56-map pace check running.
+  765 -> 649, corners 436 -> 394, expanse 611 -> 660). 56-map pace: `_rm` 474.1, `_C4` 458.8, `join_reach` 1.2 453.4.
+- **`_C4` panel** (56 maps / official; `_rm` reference in brackets): `_rm` **61.6 / 67.6**; `_eA` 59.8 / 64.7 (57.1 / 58.8); `_eB` 69.6 / 85.3 (68.8 / 73.5);
+  `_eC` 75.9 / 79.4 (80.4 / 76.5); `_ST` 67.0 / 73.5 (- / 52.9); held-out vs `_rm` 52.0. Deaths lower in every cell (vs `_rm` 1023-1268).
+  The `_eC` all-map gap (-4.5) is contest (a monolith race decided at r2000: `_C2` won it 2/2 + its ladder copy 2/2, `_C4` 0/4) plus scattered
+  single-game flips; held-out check vs `_eC` running.
 
 ## Tools (new files, agent farm)
 - `tools/farm/pack_watch.mjs FILE X,Y FROM TO [R]`: per round, health of the pack at (X,Y) and the champions near it (both teams).

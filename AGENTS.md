@@ -102,8 +102,11 @@ running or unfinished, and what to do next, so a new agent can continue without 
   **non-transitive (beats our previous build, loses to everyone else, the Mite proxy included): rejected**. spread_vs_splash 1: 188 games 54.3,
   third parties -2 to -8 except `_xp4` level: rejected.
 - Draft (the user's message 3): safest pick first, counter the enemy's visible picks (`current_draft(team::enemy)` returns the completed
-  rounds, so our last pick sees their first 3-4), then the map. Step 1 running: which 5th pick (`last_pick`: Tavi `_lpT`, Prism `_lpP`,
-  Vendetta `_lpV`, Marcella `_lpM`, instead of Ryth) does best against which enemy composition (`_mite`, `_ifish`, `_px9`, `_fA`, `_m8`).
+  rounds, so our last pick sees their first 3-4), then the map. Screen (`last_pick`, `last_pick_size`; `tools/pickscreen.py`): 5th pick on
+  5-champion maps vs Varg-first (`_mite`, `_px9`) / Ren-first (`_ifish`, `_fA`): **Ryth (ours) 76 / 71**, Marcella 59 / 65, Prism 58 / 63,
+  Vendetta 58 / 62, Tavi 56 / 48 (h2h vs `_m8` 47.7-50.0, Tavi 39.8). 4th pick on 4-maps: Varg (ours) 75 / 75, Ryth 58 / 58 (45.5 h2h).
+  No counter beats the current picks against either profile: **not adopted; documented in README ("Options measured in session 10")**
+  as a future option. Test code for all session-10 switches: `experiments/wip/x_s10_tests.patch` (on `_cS3` sources).
 - Still open from S9: contest (spawn-camped), neutral control / gold routing, gem-race endgame, fight micro re-tests vs the new proxies.
 
 ## S9. SESSION 9 (2026-10-18 15:15 UTC, new container): read this first

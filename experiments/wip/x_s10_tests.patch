@@ -1,0 +1,179 @@
+diff -ruN base_c1/src/brain.cpp _x_c2/src/brain.cpp
+--- base_c1/src/brain.cpp	2026-10-18 19:24:54.707064543 +0000
++++ _x_c2/src/brain.cpp	2026-10-18 18:24:22.058605684 +0000
+@@ -41,6 +41,25 @@
+ 			rep(v, it, 5);
+ }
+ 
++// gold_rank: who takes a reward two of our bodies want (its gold buys that body's next items). The champions whose
++// damage clears camps fastest first: Stellar (area spells: 160-250 camp damage per camp round in the top teams' games,
++// Ren 80-120), Varg (splash), Cassi, Issac, Ryth, then Ren (our Ren took 35-38% of capture gold on the ladder).
++int gold_rank(CT t)
++{
++	switch (t)
++	{
++	case CT::stellar: return 0;
++	case CT::varg: return 1;
++	case CT::cassi: return 2;
++	case CT::prism: return 2;
++	case CT::tavi: return 2;
++	case CT::issac: return 3;
++	case CT::ryth: return 4;
++	case CT::ren: return 5;
++	default: return 3;
++	}
++}
++
+ // Shard plans: five shards of a family complete its emblem; only the emblem grants the passive.
+ std::vector<I> build_for(CT t)
+ {
+@@ -369,6 +388,18 @@
+ 	const auto abl = me.abilities();
+ 	ab.assign(abl.begin(), abl.end());
+ 	build = build_for(type);
++	if ((P.dmg_first & 1 && type == CT::ren) || (P.dmg_first & 16 && type == CT::ryth))
++	{
++		// The damage emblem (Monster in the damage stat: +10% camp damage) before the first health emblem: faster clears.
++		const I m = type == CT::ren ? I::monster_shard_of_focus : I::monster_shard_of_strength;
++		const auto it = std::find(build.begin(), build.end(), m);
++		if (it != build.end() && it - build.begin() >= 5 && it + 5 <= build.end())
++		{
++			std::vector<I> head(it, it + 5);
++			build.erase(it, it + 5);
++			build.insert(build.begin(), head.begin(), head.end());
++		}
++	}
+ 	auto& W = world();
+ 	W.dash_kit = kit.dash >= 0;
+ 	W.init_static();
+@@ -2580,7 +2611,9 @@
+ 	const int dh = W.dist_home(pos);
+ 	const bool rich = static_cast<int>(gold) >= P.shop_gold && dh <= P.shop_trip_max;
+ 	const bool hurt_and_rich = gold >= 90 && hp < 0.6f * max_hp && dh <= P.shop_trip_max;
+-	if (!rich && !hurt_and_rich)
++	// Passing next to spawn with a few shards' worth of gold: the detour is a step or two, the stats count from now.
++	const bool near = P.shop_near_dist > 0 && dh <= P.shop_near_dist && static_cast<int>(gold) >= P.shop_near_gold;
++	if (!rich && !hurt_and_rich && !near)
+ 		return false;
+ 	if (task == T_CAPTURE || reward_here())
+ 		return false;
+@@ -2947,6 +2980,11 @@
+ 	// Living allies that claim this group, and the lowest claimer index (it captures).
+ 	int claimers = 0, first_claimer = 99;
+ 	bool closer_lower_claimer = false; // a lower-index claimer at least as close to a reward as we are
++	// Order of reward ownership: the index, or (gold_rank) the champion rank then the index; the same in every body.
++	const auto own_key = [&](int i) {
++		const CT t = i == W.my_index ? type : W.allies[static_cast<std::size_t>(i)].type;
++		return P.gold_rank == 1 ? gold_rank(t) * 8 + i : P.gold_rank == 2 ? (t == CT::stellar ? 0 : 8) + i : i;
++	};
+ 	float ally_dps = 0;
+ 	bool melee_ally = false;
+ 	for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 6; ++i)
+@@ -2969,7 +3007,7 @@
+ 			}
+ 			++claimers;
+ 			first_claimer = std::min(first_claimer, i);
+-			if (g.st == ST_REWARD && i < W.my_index)
++			if (g.st == ST_REWARD && own_key(i) < own_key(W.my_index))
+ 			{
+ 				const auto& a = W.allies[static_cast<std::size_t>(i)];
+ 				// Unseen allies are beyond vision, so farther than us when we are close.
+@@ -2988,7 +3026,7 @@
+ 	case ST_REWARD:
+ 		// One body captures; if allies claim it, the lowest index takes it unless we are clearly nearer
+ 		// (the joiner may still be walking in while we stand next to the reward).
+-		if (claimers && first_claimer < W.my_index && closer_lower_claimer)
++		if (claimers && (P.gold_rank ? closer_lower_claimer : first_claimer < W.my_index && closer_lower_claimer))
+ 			{ WHY(4); return -1; }
+ 		if (P.no_split)
+ 		{
+@@ -3007,7 +3045,7 @@
+ 				const auto k = static_cast<std::size_t>(i);
+ 				const bool still = ally_prev_round[k] == round - 1 && ally_prev_pos[k] == a.pos;
+ 				const int a_arr = still ? ally_still_since[k] : round;
+-				if (!on || a_arr < my_arr || (a_arr == my_arr && i < W.my_index))
++				if (!on || a_arr < my_arr || (a_arr == my_arr && own_key(i) < own_key(W.my_index)))
+ 					{ WHY(12); return -1; }
+ 			}
+ 		}
+diff -ruN base_c1/src/draft.cpp _x_c2/src/draft.cpp
+--- base_c1/src/draft.cpp	2026-10-18 19:24:54.706719031 +0000
++++ _x_c2/src/draft.cpp	2026-10-18 19:20:41.798532765 +0000
+@@ -336,6 +336,25 @@
+ 			chosen = 0;
+ 		}
+ 	}
++	if (P.last_pick >= 0)
++	{
++		try
++		{
++			const int ts = std::clamp(static_cast<int>(bc::draft::team_size()), 3, 5);
++			if (ts >= 4 && ts == P.last_pick_size && static_cast<int>(mine.size()) == ts - 1)
++			{
++				const auto c = static_cast<D>(P.last_pick);
++				if (std::find(mine.begin(), mine.end(), c) == mine.end())
++				{
++					bc::draft::pick(c);
++					return;
++				}
++			}
++		}
++		catch (...)
++		{
++		}
++	}
+ 	D pick = D::stellar;
+ 	bool found = false;
+ 	std::array<D, 5> plan = COMPS[0].picks;
+diff -ruN base_c1/src/params.h _x_c2/src/params.h
+--- base_c1/src/params.h	2026-10-18 19:24:54.706981920 +0000
++++ _x_c2/src/params.h	2026-10-18 19:20:41.799335574 +0000
+@@ -22,6 +22,8 @@
+ 	int pair_plans = 0;				 // claim packs too heavy for one body and wait for a partner (off: costs pace)
+ 	float pair_wait = 8.f;			 // rounds added to a pair plan for the partner to arrive
+ 	int pair_wait_max = 18;			 // give up waiting for a partner after this many rounds
++	int gold_rank = 0;				 // (1) a reward two of our bodies want goes to the better gold user (brain.cpp gold_rank: Stellar first), not the lower index;
++									 // 2 = only Stellar ahead of the index order
+ 	int no_split = 1;				 // a reward with a visible ally on its tiles is left to that ally (lower index wins when both stand
+ 									 // there): ladder rows, 10 of our 18 captures were 33/33 splits of one 66-gem pack; unopposed
+ 									 // rows 6 of 21 (agent farm)
+@@ -129,9 +131,11 @@
+ 	int endgame_margin = 12;   // extra rounds of slack for the final tribute
+ 	int endgame_alarm = 800;   // their score from which stopping their tributes overrides everything
+ 
+-	int mapdraft = 3;		   // 0 = our composition choice; sparring proxies: 1 = Mite's per-map drafts, 2 = ifish's (draft.cpp)
++	int mapdraft = 0;		   // 0 = our composition choice; sparring proxies: 1 = Mite's per-map drafts, 2 = ifish's (draft.cpp)
+ 							   // 3 = ours with the top teams' choices where they beat ours (rushbait-v2, interlock, expanse; stampede with md_stampede)
+-	int md_stampede = 1;	   // mapdraft 3: stampede drafts the 2nd team's casters (Prism, Stellar, C&I, Ryth, Tavi) for the ring plan
++	int last_pick = -1;		   // (experiments) the last pick (team size last_pick_size) is this champion id instead of the plan's
++	int last_pick_size = 5;	   // ... on maps of this team size (4: the 4th pick)
++	int md_stampede = 0;	   // mapdraft 3: stampede drafts the 2nd team's casters (Prism, Stellar, C&I, Ryth, Tavi) for the ring plan
+ 	int build_style = 2;	   // 0 = old farm builds, 1 = health/durability/treasure builds (ladder-proven),
+ 							   // sparring proxies: 3 / 4 / 10 = ifish (frontline health then Power / Monster then Power / 3 or 4 by map),
+ 							   //     9 = Mite (Jungle, Durability in the damage stat, Bruiser health, Power)
+@@ -140,6 +144,7 @@
+ 	int rich_treasure_first = 0; // build_style 2: Ren and Stellar open with Treasure (1) or with r2's first emblem
+ 							   // (Ren Jungle health, Stellar Monster) and Treasure second (0); vs _v6 on the ladder
+ 							   // maps: 1 won 19/24 (gems +8,623), 0 won 21/24 (+9,385, deaths 441-670)
++	int dmg_first = 0;		   // bits: 1 Ren, 16 Ryth buy their Monster (camp damage) emblem before the first health emblem
+ 	int ci_health_first = 0;   // build_style 2: Cassi & Issac buy health first (1) or Monster damage first (0);
+ 							   // vs _v6 on the ladder maps: 1 won 19/24 (gems +8,623, deaths 495-660), 0 won 16/24 (+3,449, 560-550)
+ 	int monster_in_dps = 1;	   // count the Monster emblem's +10% camp damage in the kill-time model
+@@ -147,6 +152,8 @@
+ 	// Shopping and home trips (heal + shop + bank near spawn; recall makes them cheap)
+ 	int shop_gold = 150;	   // go home to shop at this much gold when home is close
+ 	int shop_trip_max = 9;	   // max steps from spawn for a walking shopping trip
++	int shop_near_dist = 0;	   // (0 off) also step onto spawn to shop from this close with shop_near_gold or more
++	int shop_near_gold = 60;
+ 	int shop_shards = 4;	   // recall home to shop once this many shards are affordable
+ 	int shop_cost_max = 6;	   // max rounds to reach spawn for a shopping trip (recall = 5)
+ 	float home_hp = 0.45f;	   // below this health fraction a trip home is welcome (heal + shop)
+@@ -319,7 +326,7 @@
+ 								// fights at the central gold triples decided the game, 6 of our deaths by r59 vs _r2)
+ 	// Session 9 (agent obj2): objective ring. The 2nd ladder team killed stampede's 17,400-HP group at r54-124 taking 0 damage:
+ 	// every body stood at Chebyshev 4 from the elks (camps hit within 3) and cast range-4 spells (area spells hit up to 6 camps).
+-	int o2_ring = 2;			// objective group with live elks: casters (a range-4 damage/stun/area spell) cast from distance 4 and never step into camp reach
++	int o2_ring = 0;			// objective group with live elks: casters (a range-4 damage/stun/area spell) cast from distance 4 and never step into camp reach
+ 								// (2 = on stampede only: elsewhere, e.g. ambush, it lost 5 of 11 changed games in session 10)
+ 	float o2_ring_clear = 160.f; // ring plan ready when the casters' spell damage clears the group within this many rounds
+ 	float o2_ring_share = 0.5f;	 // value share per caster

@@ -33,6 +33,20 @@ Sparring proxies of the two teams (their per-map drafts and builds, Mite's stamp
 | `legend_m6` | **68.2%** (79.4) | 584-725 | 63.8% (70.6) |
 | `legend_st` | **83.0%** (91.2) | 491-899 | 78.4% (82.4) |
 
+### Options measured in session 10 and kept for future updates (not in `legend_m8`)
+
+Every option below was A/B tested against the previous bot (`legend_m8`) and against the sparring panel; none was a better
+trade, so they stay off. Code: `experiments/wip/x_s10_tests.patch` (switches on top of `legend_m8`'s sources).
+
+| Option | How it works | Result vs `legend_m8` (88 distinct games / official 34) | Why kept off |
+|---|---|---|---|
+| **Counter-pick draft** (`last_pick`, `last_pick_size`) | Picks are simultaneous per round, but `bc::draft::current_draft(team::enemy)` returns the enemy's completed rounds, so our last pick sees their first 3-4 picks. Plan: commit the safe picks first (Ren, Stellar, Cassi & Issac: in every top-team draft), counter in the last round, fill by map features | 5th pick on 5-champion maps against Varg-first enemies (Mite, `_px9`) / Ren-first enemies (ifish, `_fA`): **Ryth (ours) 76% / 71%**, Marcella 59 / 65, Prism 58 / 63, Vendetta 58 / 62, Tavi 56 / 48. 4th pick on 4-champion maps: Varg (ours) 75 / 75, Ryth 58 / 58 | our current last picks are already the best answer to both enemy profiles; revisit when a new enemy profile appears (e.g. a different first pick on the ladder) |
+| Shop when passing within 2-4 steps of spawn with 60-120 gold (`shop_near_dist`, `shop_near_gold`) | detour onto spawn to buy shards | 50.0 / 48.9 / 50.0 | changes 1-7 games in 88: walking home at 150 gold within 9 steps and recall-to-shop already cover it |
+| Reward gold to the champion that uses it best (`gold_rank` 1: Stellar, Varg, Cassi, Issac, Ryth, Ren; 2: Stellar only) | when two of our bodies want one reward, the better gold user captures it instead of the lower index | 48.9 / 44.1; 47.7 / 47.1 | fewer deaths but slower farming |
+| Camp-damage emblem first for Ren / Ryth (`dmg_first`) | Monster before the first health emblem (Stellar, Cassi, Issac and Varg already buy it first) | Ren 54.5 / 41.2; Ryth 53.4 / 52.9 but every third-party cell 2-6 points lower; both 46.6 / 41.2 | not a better trade |
+| Hold for the spell before opening a fight (`strike_first=1`) | wait up to 2 rounds outside reach when a spell is about to come off cooldown | 59.1 / 61.8 head-to-head, but 50.0 over 188 games with the held-out maps, and lower against 6 of 7 other opponents (Mite proxy 69.3 vs 76.1) | beats only our own previous build |
+| Mite's or ifish's whole per-map draft table | `mapdraft` 1 / 2 | no map better than ours beyond noise | `legend_m8` already takes their choices where they win |
+
 ## Results of `legend_m7` (session 9, Oct 18; 44 distinct maps × both sides = 88 games per row)
 
 `legend_m7` = `legend_m6` + two changes taken from 15 games of the top 3 teams playing **each other**

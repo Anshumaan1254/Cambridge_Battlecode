@@ -1,3 +1,28 @@
+# Session 7 (2026-10-18, new container): read this block first; it overrides everything below
+
+- Work only on branch `ccr-a858cd03-q87cpi` and only with what is in it (the user: do not look at or merge other branches).
+- Baseline: **`bots/_BASE_`** (named in your task prompt) = the shipped build or its successor. Read-only. Make your copy with
+  `SRC=bots/_BASE_ tools/variant.sh _x_NAME` (then edit `bots/_x_NAME/src`). Patch: `cd bots && diff -ruN _BASE_/src _x_NAME/src > ../experiments/wip/x_NAME.patch`.
+  Variants of your copy: `SRC=bots/_x_NAME tools/variant.sh _xN_k key=val ...` (name them with your prefix; never touch others' bots).
+- **Every game goes through the ledger** (`tools/ledger.py`, see AGENTS.md "Resume protocol"): a session cut must not lose finished games.
+  - head-to-head: `python3 tools/ledger.py run BOT OPP --maps 'maps/comp/*.map26a' --jobs 2` (official 17, 34 games) first, then the 56-map pool
+    `'maps/*.map26a,maps/ladder/*.map26a,maps/comp/*.map26a'` (112 games), held-out `'maps/gold/*.map26a,maps/gold2/*.map26a,maps/obj/*.map26a'` (100).
+  - unopposed pace: `python3 tools/ledger.py run BOT idle --maps 'maps/comp/*.map26a' --jobs 2`, then `python3 tools/ledger_pace.py BOT1 BOT2 --maps`.
+  - summaries without rebuilding: `python3 tools/ledger_sum.py [--maps] BOT_vs_OPP ...` (all / official / deaths / maps not won).
+  - a cell is reused only for the exact sources: do not edit a bot after you started its cells (make a new variant instead).
+  - replays for analysis: `cambc run A B --map M -o /tmp/<name>/r` (one game) or `tools/bench.py ... --out /tmp/<name>/...`.
+- Read-only opponents (built): `_m2` (= shipped `legend_m2`), `_rm` (`legend_rm`), `_ST` (`legend_st`, 1-16 on the ladder), archetypes `_eA` (Ren-first
+  pressure), `_eB` (C&I-first farming), `_eC` (caster objective), `idle`. Real evidence: `experiments/ladder_oct18/<map>.repl26a` (17 ladder games of
+  `legend_st` as team A, 1 win) and `docs/HOUSEOFCODERS_ENEMY_STRATEGY_REPORT.md`. Our sparring bots are our own code family: a change must make
+  sense on the ladder evidence too.
+- CPU: 4 cores shared by up to two agents and the coordinator: always `--jobs 2`.
+- Acceptance: head-to-head vs the baseline >= 50 on the 56 maps **and** the official 17, not worse vs `_ST` / `_eA` / `_eB` / `_eC`, 0 faults,
+  no new fuel rollovers (`node tools/analysis/rollovers.mjs REPLAY` on `gen16_98x99_V_c5`, both sides: baseline 8 per team, rounds 1-3 only).
+  Gaps under ~4 points on 112 games are noise: confirm on the held-out pool.
+- Never commit/push/checkout/stash/reset, never `pkill -f`/`pgrep -f`/`killall`, never edit `bots/legend` or others' bots, never run
+  `tools/setup_session.sh` (it rebuilds shared bots). Keep `experiments/wip/x_NAME.patch` and `x_NAME_NOTES.md` current as you go
+  (a session limit can stop you at any time: your notes are the only handoff).
+
 # Session 6 (2026-10-18, new container): read this block first; it overrides everything below
 
 - Baseline: **`bots/_rm`** = frozen copy of `bots/legend` as shipped (`legend_rm`, `submissions/legend.zip`). Read-only.

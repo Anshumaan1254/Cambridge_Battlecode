@@ -1,0 +1,159 @@
+diff -ruN _m10/src/brain.cpp _x_og/src/brain.cpp
+--- _m10/src/brain.cpp	2026-10-18 20:14:34.305838022 +0000
++++ _x_og/src/brain.cpp	2026-10-18 20:37:50.301280870 +0000
+@@ -369,6 +369,25 @@
+ 	const auto abl = me.abilities();
+ 	ab.assign(abl.begin(), abl.end());
+ 	build = build_for(type);
++	if (P.og_jungle_first)
++	{
++		// og_jungle_first: the farmers' first emblem cuts camp damage taken by 30% (fewer heal trips; the 2nd ladder team's Ren /
++		// Ryth / Varg open with it). The damage stat keeps the shard points useful.
++		const int bit = type == CT::cassi ? 1 : type == CT::issac ? 2 : type == CT::ryth ? 4 : type == CT::stellar ? 8 : type == CT::varg ? 16 : type == CT::ren ? 32 : 0;
++		if (P.og_jungle_first & bit)
++		{
++			const bool foc = type == CT::cassi || type == CT::stellar || type == CT::ren;
++			const I ju = foc ? I::jungle_shard_of_focus : I::jungle_shard_of_strength;
++			auto jungle = [](I it) { return it == I::jungle_shard_of_strength || it == I::jungle_shard_of_health || it == I::jungle_shard_of_focus; };
++			for (std::size_t i = 0; i + 5 <= build.size(); i += 5)
++				if (jungle(build[i]))
++				{
++					build.erase(build.begin() + static_cast<std::ptrdiff_t>(i), build.begin() + static_cast<std::ptrdiff_t>(i + 5));
++					break;
++				}
++			build.insert(build.begin(), 5, ju);
++		}
++	}
+ 	if (P.mi_health_emblem)
+ 	{
+ 		// mi_health_emblem (default branch): a Durability health emblem (-10% damage taken, +5 health points) right after the
+@@ -2509,6 +2528,10 @@
+ 			left = std::min(left, static_cast<float>(static_cast<int>(bc::constants::winning_gems) - lead_g) * static_cast<float>(round) / static_cast<float>(lead_g));
+ 		gold_v = P.gold_value * std::clamp(left / std::max(1.f, P.gold_horizon), 0.f, 1.f);
+ 	}
++	// og_gold_mult: in the opening, gold is worth more to a body that has not yet earned its first emblem.
++	if (P.og_gold_mult != 1.f && round < P.og_gold_until && type != CT::tavi &&
++		static_cast<int>(build_idx) * 30 + static_cast<int>(gold) < P.og_gold_need)
++		gold_v *= P.og_gold_mult;
+ 	if (ours - theirs >= P.lead)
+ 	{
+ 		// Ahead: protect the lead. Bank smaller bags, take only clearly winning fights.
+@@ -3148,6 +3171,38 @@
+ 	}
+ }
+ 
++// og (opening economy): stat points a body has bought (1 per shard; Bruiser / Power emblems add their bonus points), from its
++// current max health / strength / focus and its design's base and growth. Base stats are a host call: cached per type.
++static float og_item_points(bc::champion_type t, float max_hp, float str, float focus)
++{
++	static std::array<bool, 12> have{};
++	static std::array<bc::champion_stats, 12> bs{};
++	const auto k = static_cast<std::size_t>(t);
++	if (k >= 12)
++		return 0.f;
++	if (!have[k])
++	{
++		try
++		{
++			bs[k] = bc::champion_designs[k].base_stats();
++		}
++		catch (...)
++		{
++			return 0.f;
++		}
++		have[k] = true;
++	}
++	const auto& b = bs[k];
++	float p = 0.f;
++	if (b.health_growth > 0.f)
++		p += std::max(0.f, max_hp - b.base_health) / b.health_growth;
++	if (b.strength_growth > 0.f)
++		p += std::max(0.f, str - b.base_strength) / b.strength_growth;
++	if (b.focus_growth > 0.f)
++		p += std::max(0.f, focus - b.base_focus) / b.focus_growth;
++	return p;
++}
++
+ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_override) const
+ {
+ 	if (need_pair)
+@@ -3173,6 +3228,13 @@
+ 	// Living allies that claim this group, and the lowest claimer index (it captures).
+ 	int claimers = 0, first_claimer = 99;
+ 	bool closer_lower_claimer = false; // a lower-index claimer at least as close to a reward as we are
++	// og_poor_collect: in the opening a reward goes to the poorer body; richer allies are ignored by the index / arrival rules.
++	const bool og_poor = P.og_poor_collect > 0 && round < P.og_poor_collect && g.st == ST_REWARD;
++	const float og_my = og_poor ? og_item_points(type, max_hp, str, focus) : 0.f;
++	auto og_richer = [&](const Ally& a) {
++		return og_poor && a.visible && a.seen_round == round && !(a.channeling && g.mask.is_set(a.pos)) &&
++			og_item_points(a.type, a.max_hp, a.str, a.focus) - og_my >= P.og_poor_gap;
++	};
+ 	float ally_dps = 0;
+ 	bool melee_ally = false;
+ 	for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 6; ++i)
+@@ -3195,7 +3257,7 @@
+ 			}
+ 			++claimers;
+ 			first_claimer = std::min(first_claimer, i);
+-			if (g.st == ST_REWARD && i < W.my_index)
++			if (g.st == ST_REWARD && i < W.my_index && !og_richer(W.allies[static_cast<std::size_t>(i)]))
+ 			{
+ 				const auto& a = W.allies[static_cast<std::size_t>(i)];
+ 				// Unseen allies are beyond vision, so farther than us when we are close.
+@@ -3216,6 +3278,23 @@
+ 		// (the joiner may still be walking in while we stand next to the reward).
+ 		if (claimers && first_claimer < W.my_index && closer_lower_claimer)
+ 			{ WHY(4); return -1; }
++		if (og_poor)
++		{
++			// A poorer ally (og_poor_gap fewer item points) that claims this reward or stands on it, not much farther than us,
++			// collects it: each body reaches its first emblem sooner (ladder: Cassi r441, Issac r253 vs Ren r66).
++			for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 8; ++i)
++			{
++				const auto& a = W.allies[static_cast<std::size_t>(i)];
++				if (i == W.my_index || !a.alive || !a.visible || a.seen_round != round || a.channeling)
++					continue;
++				if (!(g.mask.is_set(a.pos) || (i < 6 && C.claim[static_cast<std::size_t>(i)] == g.id)))
++					continue;
++				if (og_item_points(a.type, a.max_hp, a.str, a.focus) - og_my > -P.og_poor_gap)
++					continue;
++				if (nav().group_dist(g, a.pos) <= d_tile + P.og_poor_slack)
++					{ WHY(14); return -1; }
++			}
++		}
+ 		if (P.no_split)
+ 		{
+ 			// One collector per reward: allies standing on the tiles when it lands split it with no speed-up, and the
+@@ -3230,6 +3309,8 @@
+ 				const auto& a = W.allies[static_cast<std::size_t>(i)];
+ 				if (i == W.my_index || !a.alive || !a.visible || a.seen_round != round || !g.mask.is_set(a.pos))
+ 					continue;
++				if (og_richer(a))
++					continue; // og_poor_collect: it steps off for us
+ 				const auto k = static_cast<std::size_t>(i);
+ 				const bool still = ally_prev_round[k] == round - 1 && ally_prev_pos[k] == a.pos;
+ 				const int a_arr = still ? ally_still_since[k] : round;
+diff -ruN _m10/src/params.h _x_og/src/params.h
+--- _m10/src/params.h	2026-10-18 20:14:34.732267617 +0000
++++ _x_og/src/params.h	2026-10-18 20:37:50.300206397 +0000
+@@ -435,6 +435,20 @@
+ 								// (ranged, an opener of ours ready): when the step enters an enemy's next-turn reach, hold at the
+ 								// edge (they step in, we cast first) for at most open_hold rounds per fight
+ 	int open_hold = 2;			// ... rounds
++
++	// Opening economy (agent og, session 11; experiments/wip/x_og_NOTES.md). All defaults = legend_m10 (inert).
++	// Ladder (17 games vs the sneaky-bush team): our gold goes to Ren / Varg (first emblem r66 / r60) while Cassi (r441),
++	// Issac (r253), Ryth (r219) starve; locally on packs C&I made 257 attacks by r250 for 1 capture (Ren and Stellar collect).
++	int og_poor_collect = 0;	// before this round a reward goes to the poorer body: an ally with og_poor_gap fewer item points
++								// (stat points bought, from its visible max health / strength / focus) within og_poor_slack more steps
++								// collects; we ignore richer allies on the tiles (they step off). Index / arrival rules otherwise.
++	float og_poor_gap = 3.f;	// ... item-point gap that decides (1 point = 1 shard, 30 gold)
++	int og_poor_slack = 3;		// ... the poorer ally may be this many steps farther from the reward than we are
++	float og_gold_mult = 1.f;	// gold's gem value x this while we own (shards bought x 30 + gold) < og_gold_need and round < og_gold_until
++	int og_gold_need = 150;		// ... (first emblem)
++	int og_gold_until = 300;	// ...
++	int og_jungle_first = 0;	// bits: the first emblem is Jungle (camp damage taken -30%) in the damage stat, and the build's later Jungle
++								// block (a second Jungle passive does not stack) is dropped: 1 Cassi, 2 Issac, 4 Ryth, 8 Stellar, 16 Varg, 32 Ren
+ };
+ 
+ inline constexpr Params P{};

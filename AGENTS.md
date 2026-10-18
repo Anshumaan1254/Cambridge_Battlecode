@@ -45,6 +45,8 @@ running or unfinished, and what to do next, so a new agent can continue without 
   **Contest draft rejected**: on the contest geometry variants (`maps/ct/contest_{sw,tr,swtr}`, 10 opponents, 54 games) `_sdc` won 25 vs `_m10`'s 36
   (top proxies 8 vs 11; h2h vs `_m10` 1/6): the official-map +6 is specific to that one layout. `_sdC` acceptance stopped (moot). Collision: same check
   on `maps/cl/collision_{sw,tr,swtr}` (made with `tools/mapgen/swap_sides.mjs`) for `_sdl` before any acceptance.
+  **Collision draft rejected** too: 33 vs 37 wins (54 games; top proxies 10 vs 13; h2h 2/6). **Verdict: no sneaky-bush draft choice improves our bot**
+  on any map once checked on more than one layout; `legend_m10`'s draft stays. `_snk` joins the sparring panel (`_m10` vs `_snk` on their 11 maps 12/22).
   A workflow `sneaky-bush-study` (Sonnet + Haiku, no games) writes `docs/strategy_v2/10_SNEAKY_BUSH.md` (bush play, same-draft losses) and checks the table.
 - The user got the zips in chat: `legend_m8` (best measured), then `legend_m10` (current `submissions/legend.zip`, plays `legend_m8`'s games).
 

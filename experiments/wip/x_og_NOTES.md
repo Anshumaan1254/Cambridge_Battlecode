@@ -44,5 +44,11 @@ Body mean gold r150 144 (`_snk` itself: 144; its Issac 165, Cassi 108, Stellar 1
 - `og_jungle_first` bits (1 Cassi, 2 Issac, 4 Ryth, 8 Stellar, 16 Varg, 32 Ren): first emblem Jungle in the damage stat, the later
   Jungle block dropped.
 
-## Results
-(running: `_og0` control vs `_mite`, `_og1` = og_poor_collect 400, `_og2` = og_gold_mult 2.5 vs `_m10` / `_snk` official 34)
+## Results (cells: 88 distinct / official 34; ledger names)
+- `_og0` (all switches off) vs `_mite` official: **34/34 games identical to `_m10`** (inert).
+- `_og1` = `og_poor_collect=400` vs `_m10` official: **38.2** (deaths 376-310). It redistributes as intended (first emblem Cassi 200 vs 352,
+  Issac 161 vs 208, Stellar 166 vs 195) but team gold falls 130.7k vs 148.5k (Ren earned 994 vs 1348: Ren has Treasure +20% from its 2nd emblem
+  and is the fastest collector; the yielding body walks off). **Rejected**: the poorer-collects rule costs income and games.
+- `_og2` = `og_gold_mult=2.5` (until r300, while owned < 150) vs `_m10` official: **55.9** (deaths 325-369); first emblems barely move
+  (body gold r150 143.5 vs 144): its effect is target choice (gold clusters early), not faster emblems. Full cells running.
+

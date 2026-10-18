@@ -69,3 +69,15 @@ more against an equal opponent; `join_w 0` and margin 0.8 do not have that cost.
 
 Pace (17 official maps vs `idle`): `_p6i` 576.2 = `_b6` (identical per map: the rules only act with enemies in sight).
 Fuel: gen16_98x99 rollovers unchanged (A 8 / B 12 in the opening, both sides, `_p6i` vs `_b6`).
+
+## Final report (agent pair6, restored by the coordinator from the hand-back after a worker restart)
+- **Recommended and merged into legend**: `pair_veto=1`, `pair_veto_margin=0.8`, `pair_join_w=0`; `pair_bits=0`, `pair_abort_hp`/`pair_retreat_hp` 0.25,
+  `pair_caution=0` (`bots/_x_pair6` wasm = tested `_p6k`).
+- Means over `_r2 _v6 _hunt2 _devci _L0` (56 maps, 112 games per cell), `_b6` -> recommended: deaths per game 9.16 -> 8.17 (official 11.07 -> 9.92),
+  pair deaths 2.46 -> 2.03 (official 3.05 -> 2.52), others 4.24 -> 4.11, win 87.5 -> 88.0 (official 90.0 -> 89.4).
+- Head-to-head vs `_b6`: 56 maps 51.8; official 47.1 (16/34) + side-swapped/transposed official copies 48.5 (68 games) = 48.0 over 102; held-out 58.0.
+  All switches off = games identical to `_b6`. Pace 576.2 = `_b6`. 0 faults, no new rollovers.
+- Rejected: strict veto (margin 1.0: 42.9 h2h, the pair drops out of team fights), margin 0.65 (48.2), veto mode 2 (50.9, held-out 44.0),
+  `pair_join_w` 0.5, `pair_caution` 0.5, keeping the pair together (they die more per round within 3 tiles: 6.6 vs 4.4 per 1000).
+- Mechanism: 65% of 248 traced pair deaths began as an escapable fight started by the margin rule on one visible enemy; more arrived from the fog.
+  Open: a prior for alive enemies not seen recently (64 of 120 such starts ended with 3+ enemies).

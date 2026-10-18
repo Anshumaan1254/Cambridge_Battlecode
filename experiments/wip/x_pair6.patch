@@ -148,28 +148,40 @@ diff -ruN _b6/src/comms.h _x_pair6/src/comms.h
  	void write_bag(int gems);
 diff -ruN _b6/src/params.h _x_pair6/src/params.h
 --- _b6/src/params.h	2026-10-17 21:11:44.754162949 +0000
-+++ _x_pair6/src/params.h	2026-10-17 22:10:00.553260363 +0000
-@@ -73,6 +73,27 @@
++++ _x_pair6/src/params.h	2026-10-17 22:50:08.307080929 +0000
+@@ -73,6 +73,39 @@
  									 // _v6 86.6 (83.9), _devci 85.7 (80.4), _hunt2 94.6 (93.8); deaths -16%
  	float pair_caution = 0.f;		 // Cassi and Issac die together (both bodies, both bags): this much more advantage to fight
  									 // (0.3 measured neutral: 63.4 vs _r2 against 67.0, 87.5 vs _v6 against 86.6)
-+	// Cassi & Issac (agent pair6, session 6). Measured on _b6 (56 maps, 112 games per cell): the pair dies 2.2-2.9 times
-+	// per game (vs _r2 2.45, _L0 2.86; official maps 2.6-3.8), 55-60% of our body deaths. XM_TRACE of 248 pair deaths
-+	// vs _r2: 65% started as a fight we could leave (141 of 161 by the margin rule, mostly 1 enemy seen vs the pair),
-+	// then the trigger body was focused while the team estimate stayed favourable (adv 1.1-10 at 10-35% own health).
-+	float pair_join_w = 1.f;		 // both pair bodies on our side of a fight: count their health as min + w x max
-+									 // (1 = the sum, as before). Enemies kill both by focusing the weaker one.
-+	float pair_abort_hp = 0.25f;	 // a pair body leaves an escapable, not-killable fight below this health fraction
-+									 // (0.25 for every body before)
++	// Cassi & Issac (agent pair6, session 6; experiments/wip/x_pair6_NOTES.md). On _b6 (56 maps, 112 games per cell) the pair
++	// dies 2.2-2.9 times per game (official maps 2.6-3.8), 55-60% of our body deaths. XM_TRACE of 248 pair deaths vs _r2: 65%
++	// began as a fight we could leave (141 of 161 by the margin rule, mostly 1 visible enemy vs the pair, more arriving), then
++	// the trigger body was focused and cornered while the team estimate stayed favourable (adv 1.1-10 at 10-35% own health).
++	// Fight starts not in reach killed the pair body (or its partner) within 12 rounds 11% of the time, 2-4% for the others.
++	// Measured, 5-opponent mean (_r2 _v6 _hunt2 _devci _L0) per game, _b6 -> pair_veto 1 + margin 0.8 + pair_join_w 0 (_p6k):
++	// pair deaths 2.46 -> 2.03 (official 3.05 -> 2.52), all deaths 9.16 -> 8.17 (official 11.07 -> 9.92), other bodies 4.24 ->
++	// 4.11, win 87.5 -> 88.0 (official 90.0 -> 89.4); head-to-head vs _b6 51.8 (official 47.1), held-out pool 58.0 with deaths
++	// 23.2 vs 26.3; pace vs idle unchanged (576.2: the rules act only with enemies in sight).
++	float pair_join_w = 0.f;		 // both pair bodies on our side of a fight: count their health as min + w x max (1 = the
++									 // sum, as before): enemies kill both through the weaker one. Alone (w 0): pair deaths -8%,
++									 // 55.4 head-to-head (official 47.1), held-out 52.0; w 0.5 measured worse than both (noise)
++	float pair_abort_hp = 0.25f;	 // a pair body leaves an escapable, not-killable fight below this health fraction (0.25 for
++									 // every body). 0.4 with pair_retreat_hp 0.35: no change (vs _r2 pair 2.47 vs 2.45, 52.7 h2h)
 +	float pair_retreat_hp = 0.25f;	 // safety(): a pair body retreats below this health fraction (retreat_hp for the rest)
-+	int pair_veto = 0;				 // a pair body skips an escapable, not-killable fight when every visible enemy hitting it
-+									 // until the target dies (+1 round) x pair_veto_margin exceeds its health (stay_veto for the
-+									 // pair only; for every body it cut deaths 13% but lost 45-49% head-to-head)
-+	float pair_veto_margin = 1.f;	 // (pair_veto 2: with the partner on our side of the fight, the weaker body's health is compared)
++	int pair_veto = 1;				 // a pair body skips an escapable, not-killable fight when every visible enemy hitting it
++									 // until the target dies (+1 round) x pair_veto_margin exceeds its health (the user's stay_veto,
++									 // for the pair only; for every body it cut deaths 13% but lost 45-49% head-to-head).
++									 // margin 1: pair deaths -13% but the pair left team fights and the other bodies died more
++									 // (mirror: 42.9 head-to-head); margin 0.8: 54.5 (official 55.9), held-out 58.0, deaths -13% there;
++									 // 0.65: 48.2, held-out 54.0. pair_veto 2 (the weaker of the two pair bodies in the fight): 50.9,
++									 // held-out 44.0: not better
++	float pair_veto_margin = 0.8f;
 +	int pair_bits = 0;				 // each pair body posts 2 status bits (bit 7 of bytes 2-5; off with alert_refresh): at risk
 +									 // (health below pair_low with an enemy within pair_danger_d or in reach) and bag >= pair_bag_min.
 +									 // The partner of a body at risk banks its bag when an altar is pair_bank_t rounds away (walk +
-+									 // ticks); a body counts its partner's posted bag in bag_caution (a pair death loses both bags)
++									 // ticks); a body counts its partner's posted bag in bag_caution (a pair death loses both bags).
++									 // Works (traced) but rarely matters: the bank rule fired twice in a game; with pair_veto 1
++									 // (margin 1) it measured the same as without (head-to-head 42.9 both). Off
 +	float pair_low = 0.4f;
 +	int pair_danger_d = 5;
 +	int pair_bag_min = 20;

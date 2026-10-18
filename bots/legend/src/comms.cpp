@@ -21,6 +21,11 @@ void Comms::read(int round)
 	if (!bag_on)
 		bag_tens = 0;
 	stance = ((b[0] >> 7) & 1) | (((b[1] >> 7) & 1) << 1);
+	for (int k = 0; k < 2; ++k)
+	{
+		pair_risk[static_cast<std::size_t>(k)] = (b[static_cast<std::size_t>(2 + 2 * k)] >> 7) & 1;
+		pair_bag[static_cast<std::size_t>(k)] = (b[static_cast<std::size_t>(3 + 2 * k)] >> 7) & 1;
+	}
 	const std::uint16_t raw = static_cast<std::uint16_t>(b[6] | (b[7] << 8));
 	// Bit 7 of byte 2 flips on every post: re-posting the same alert (a fight still going on at one tile)
 	// refreshes it for the team instead of letting it expire (P.alert_refresh).
@@ -96,4 +101,15 @@ void Comms::write_bag(int gems)
 	}
 	my_bag = mine;
 	bag_tens = s;
+}
+
+void Comms::write_pair(int slot, bool risk, bool bag)
+{
+	if (slot < 0 || slot > 1 || P.alert_refresh)
+		return;
+	const std::size_t i = static_cast<std::size_t>(2 + 2 * slot);
+	bc::shared_memory[i] = static_cast<std::uint8_t>((bc::shared_memory[i] & 0x7F) | (risk ? 0x80 : 0));
+	bc::shared_memory[i + 1] = static_cast<std::uint8_t>((bc::shared_memory[i + 1] & 0x7F) | (bag ? 0x80 : 0));
+	pair_risk[static_cast<std::size_t>(slot)] = risk;
+	pair_bag[static_cast<std::size_t>(slot)] = bag;
 }

@@ -416,6 +416,8 @@ void Brain::turn()
 		C.read(round);
 		C.write_bag(0);
 		C.write_self(W.my_index, -1);
+		if (P.pair_bits && (type == CT::cassi || type == CT::issac))
+			C.write_pair(type == CT::cassi ? 0 : 1, false, false);
 		learner().tick(round, W.my_index == 0, false);
 		if (W.my_index == 0)
 			C.write_stance(learner().stance);
@@ -450,6 +452,11 @@ void Brain::turn()
 			}
 	}
 	build_danger();
+	if (P.pair_bits && (type == CT::cassi || type == CT::issac))
+	{
+		const bool risk = hp < P.pair_low * max_hp && (enemy_near_d <= P.pair_danger_d || danger.is_set(pos));
+		C.write_pair(type == CT::cassi ? 0 : 1, risk, static_cast<int>(gems) >= P.pair_bag_min);
+	}
 	XM(xm_pre());
 
 	if (flag(state, bc::champion_state::recalling) || flag(state, bc::champion_state::submitting_gems) ||
@@ -1264,6 +1271,8 @@ bool Brain::combat()
 	float our_hp = hp, our_dps = str + focus * best_mod(kit) / 8.f + my_burst / 3.f;
 	float allies_burst = 0;
 	int allies_near = 0;
+	const bool me_pair = type == CT::cassi || type == CT::issac;
+	float pair_hp[2] = { me_pair ? hp : -1.f, -1.f }; // health of the pair bodies counted on our side (self first)
 	std::array<vec2, 8> side_pos{};
 	int side_n = 0;
 	side_pos[static_cast<std::size_t>(side_n++)] = pos;
@@ -1274,10 +1283,14 @@ bool Brain::combat()
 				side_pos[static_cast<std::size_t>(side_n++)] = a.pos;
 			const float ab = std::max(a.str, a.focus * best_mod(a.kit));
 			our_hp += a.hp;
+			if (a.type == CT::cassi || a.type == CT::issac)
+				pair_hp[pair_hp[0] < 0 ? 0 : 1] = a.hp;
 			our_dps += P.ally_spell_dps ? a.str + a.focus * best_mod(a.kit) / 8.f + ab / 3.f : a.str * 1.2f;
 			allies_burst += a.str;
 			++allies_near;
 		}
+	if (pair_hp[0] >= 0 && pair_hp[1] >= 0 && P.pair_join_w < 1.f)
+		our_hp -= (1.f - P.pair_join_w) * std::max(pair_hp[0], pair_hp[1]); // focus on the weaker kills both
 	if (W.ally_spawn.is_set(pos) && P.spawn_heal_bonus)
 	{
 		// We heal fully next round on spawn, but only while the fight stays here: stepping off spawn to
@@ -1424,7 +1437,8 @@ bool Brain::combat()
 		fight = true; // fleeing a same-speed chaser hands it free hits: trade instead
 	else if (tgt->channeling && adv >= 0.9f)
 		fight = true;
-	if (fight && !killable && can_escape && (hp < 0.25f * max_hp || (static_cast<int>(gems) >= P.bag_caution && adv < 1.5f)))
+	const int pair_bag = P.pair_bits && me_pair && comms().pair_bag[type == CT::cassi ? 1 : 0] ? P.pair_bag_min : 0; // partner's posted bag
+	if (fight && !killable && can_escape && (hp < (me_pair ? P.pair_abort_hp : 0.25f) * max_hp || (static_cast<int>(gems) + pair_bag >= P.bag_caution && adv < 1.5f)))
 		fight = false;
 	if (fight && reserve && !(killable && adv >= 1.f) && adv < fight_margin + P.reserve_margin && can_escape)
 		fight = false;
@@ -1445,6 +1459,16 @@ bool Brain::combat()
 		if (support == 0 && hp > worst * P.stay_margin && d <= my_reach + 2)
 			fight = true;
 		else if (P.stay_veto && fight && !killable && can_escape && hp <= worst)
+			fight = false;
+	}
+	if (P.pair_veto && me_pair && fight && !killable && can_escape)
+	{
+		// Cassi & Issac: a death costs both bodies and both bags, and enemies focus the pair. Skip a fight that every
+		// visible enemy hitting this body could end before the target dies.
+		const float worst = their_dps * (std::ceil(tgt->hp / std::max(1.f, our_dps)) + 1.f);
+		// pair_veto 2: the partner fighting next to us dies for both of us too: the weaker body's health counts.
+		const float pair_low_hp = P.pair_veto == 2 && pair_hp[1] >= 0 ? std::min(hp, pair_hp[1]) : hp;
+		if (pair_low_hp <= worst * P.pair_veto_margin)
 			fight = false;
 	}
 	// A bag that wins the game is worth more than any fight we can walk away from.
@@ -1862,7 +1886,7 @@ bool Brain::safety()
 			if (g.st == ST_ALIVE && !g.harmless && g.near.is_set(pos))
 				g.exit_steps = std::max(g.exit_steps, esc);
 	}
-	float threshold = std::max(P.retreat_hp * max_hp, camp_in * static_cast<float>(std::max(P.safety_v2 ? escape + 1 : 4, esc + 1)));
+	float threshold = std::max(((type == CT::cassi || type == CT::issac) ? P.pair_retreat_hp : P.retreat_hp) * max_hp, camp_in * static_cast<float>(std::max(P.safety_v2 ? escape + 1 : 4, esc + 1)));
 	if (obj_in > 0)
 	{
 		// Objective camps: only those that target us (no ally nearer), after our emblems, for the steps out of
@@ -2088,7 +2112,10 @@ bool Brain::tribute(bool force)
 	// A long bank trip is worth a bigger bag: the threshold rises with the cheapest way to an altar from here,
 	// so a body far from every altar keeps farming and banks when its route passes close to one.
 	const int need = bank_min(recall_bank ? via_home : dist);
-	const bool want = force || endgame || winning || risky || committed || static_cast<int>(gems) >= need || dist <= P.tribute_near ||
+	// P.pair_bits: the partner is low with enemies on it; its death takes our bag too, so bank it if that is quick.
+	const bool partner_risk = P.pair_bits && (type == CT::cassi || type == CT::issac) && comms().pair_risk[type == CT::cassi ? 1 : 0] &&
+		static_cast<int>(gems) >= 10 && dist + ticks <= P.pair_bank_t;
+	const bool want = force || endgame || winning || risky || committed || partner_risk || static_cast<int>(gems) >= need || dist <= P.tribute_near ||
 		(static_cast<int>(gems) >= 10 && on_the_way(a));
 	if (!want)
 		return false;

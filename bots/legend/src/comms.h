@@ -2,6 +2,7 @@
 // Bytes 0-5: one per body: bits 0-6 = claimed group id + 1 (0 = none); bit 7 of bytes 0-1 = team stance
 //            (written only by the stance leader, body 0; see learn.h).
 // Bit 7 of byte 2: flips on every alert post (refresh, P.alert_refresh).
+// P.pair_bits (only with alert_refresh off): bit 7 of bytes 2-5 = Cassi at risk, Cassi bag, Issac at risk, Issac bag.
 // Bytes 6-7: team alert: bits 0-13 tile index (y * W + x), bits 14-15 kind.
 // P.team_bank (maps with at most 62 groups): claims use bits 0-5 and bit 6 of bytes 0-5 holds a 6-bit team sum
 //            of carried gems in tens (each body adds the change of its own min(10, bag / 10)).
@@ -30,7 +31,10 @@ struct Comms
 	int my_bag = 0;					// this body's last contribution
 	int last_toggle = 0;
 
+	std::array<bool, 2> pair_risk{}, pair_bag{}; // P.pair_bits: Cassi (slot 0, bit 7 of bytes 2-3), Issac (slot 1, bytes 4-5)
+
 	void read(int round);
+	void write_pair(int slot, bool risk, bool bag);
 	void write_self(int index, int group);
 	void write_stance(int s);
 	void write_bag(int gems);

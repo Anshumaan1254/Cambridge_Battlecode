@@ -46,6 +46,7 @@ trade, so they stay off. Code: `experiments/wip/x_s10_tests.patch` (switches on 
 | Camp-damage emblem first for Ren / Ryth (`dmg_first`) | Monster before the first health emblem (Stellar, Cassi, Issac and Varg already buy it first) | Ren 54.5 / 41.2; Ryth 53.4 / 52.9 but every third-party cell 2-6 points lower; both 46.6 / 41.2 | not a better trade |
 | Hold for the spell before opening a fight (`strike_first=1`) | wait up to 2 rounds outside reach when a spell is about to come off cooldown | 59.1 / 61.8 head-to-head, but 50.0 over 188 games with the held-out maps, and lower against 6 of 7 other opponents (Mite proxy 69.3 vs 76.1) | beats only our own previous build |
 | Mite's or ifish's whole per-map draft table | `mapdraft` 1 / 2 | no map better than ours beyond noise | `legend_m8` already takes their choices where they win |
+| ifish-style pressure on the enemy half (`enemy_half_penalty` 10 -> 6; `fight_margin` 1.30 -> 1.2) | farm and fight more on their side, take fights at a smaller margin | 51.1 / 47.1; 51.1 / 52.9 | penalty 6: Mite proxy 70.5 vs 76.1; margin 1.2: Mite proxy 77.3 (88.2 official) but ifish proxy 63.6 vs 69.3, `_px9` 70.5 vs 78.4 |
 
 ## Results of `legend_m7` (session 9, Oct 18; 44 distinct maps × both sides = 88 games per row)
 

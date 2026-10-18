@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-18 18:15 UTC (session 10; container clock; `legend_m8` shipped)**. Rule from the user: update this file and push at every step. Start with **§S10**, then **§S9**, **§S8**,
+- Last updated: **2026-10-18 20:10 UTC (session 10; container clock; `legend_m8` shipped; pending list in §S10.5)**. Rule from the user: update this file and push at every step. Start with **§S10**, then **§S9**, **§S8**,
   **§S7**, **§S7-SV2**, then §000000 (resume protocol), §00000, §0000, §000, §00. **All work stays on branch `ccr-a858cd03-q87cpi`**:
   `git pull` (merge, never force) before every push. Other branches (`ccr-b9ffa7d9-hvk1ud`, `claude/battlecode-bot-optimization-0ixvxa`:
   parallel sessions that shipped `legend_s6/s7/s7a` from the old fork 7e444b0) are older lineages; their fixes were ported here in S7-S8.
@@ -107,6 +107,21 @@ running or unfinished, and what to do next, so a new agent can continue without 
   Vendetta 58 / 62, Tavi 56 / 48 (h2h vs `_m8` 47.7-50.0, Tavi 39.8). 4th pick on 4-maps: Varg (ours) 75 / 75, Ryth 58 / 58 (45.5 h2h).
   No counter beats the current picks against either profile: **not adopted; documented in README ("Options measured in session 10")**
   as a future option. Test code for all session-10 switches: `experiments/wip/x_s10_tests.patch` (on `_cS3` sources).
+- ifish-style pressure (`_eh6` enemy_half_penalty 6, `_fm12` fight_margin 1.2; on `_cS3`): vs `_m8` 51.1 / 47.1 and 51.1 / 52.9; `_eh6` vs `_mite`
+  70.5 (76.1); `_fm12` vs `_mite` 77.3 / 88.2 but `_ifish` 63.6 (69.3), `_px9` 70.5 (78.4). Not adopted (README options table).
+
+### S10.5 CURRENT STATE (20:10 UTC) and WHAT IS LEFT (priority order)
+**Shipped: `legend_m8`** (`submissions/legend.zip`, sha256 710bc048…). Baseline for every new change: `_m8` (= `_cS3`), with `_mite` / `_ifish`
+as the top-team proxies next to `_px9`, `_fA`, `_ST`, `_xp4`, `_m7`. Rule used all session (the user's): judge every change head-to-head against
+the previous bot, and keep it only if it is also not worse against the other opponents (a change that only beats our own previous build is
+rejected: `strike_first`). Nothing below is running.
+1. **Ladder check of `legend_m8`** (the user): upload the zip, queue match groups vs the top 3 (Mite and ifish especially) on all 17 maps,
+   send the zips; then `tools/strategy_v2/run_all.py`, `teamsum.py`, `micro.py` as in S9 and compare with doc 08 / doc 09.
+   Watch stampede (we now play Mite's caster ring: should capture the 360 group from ~r124), rushbait-v2, interlock, expanse.
+2. contest (spawn-camped on the ladder; locally `_m8` wins 8 of 12): no-feeding opening and gold for the tiebreak (S9 item 4).
+3. Neutral control under opposition (S9 item 5); gold routing was tried here and lost.
+4. If the ladder shows a new enemy draft profile, re-run the counter-pick screen (`last_pick`, `tools/pickscreen.py`) against a proxy of it.
+5. Gem-race endgame / altar denial (S7 task 6), Part C draft-time map plan (S9 item 9).
 - Still open from S9: contest (spawn-camped), neutral control / gold routing, gem-race endgame, fight micro re-tests vs the new proxies.
 
 ## S9. SESSION 9 (2026-10-18 15:15 UTC, new container): read this first

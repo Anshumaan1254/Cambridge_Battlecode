@@ -63,7 +63,8 @@ running or unfinished, and what to do next, so a new agent can continue without 
   carry 59.7 vs 41.4 gem-rounds per gem; expanse: they take the 120-gem far-corner groups 6 times to our 2; pilgrimage: 72% of our body time walking,
   12 of 21 group kills gold-only); outside contest 70% of the camp-gem gap is neutral camps and camps on our half. Counters proposed: C1 ward the
   bush (**testing: `ward_bush` in `experiments/wip/x_wb.patch` on `_m10`, variants `_wb1` = prefer a bush tile within 2, `_wb2` = + re-ward after 3
-  rounds when a bush is in reach**), C2 bush ghost in the fight estimate, C3 contest bush-ring no-go for lone bodies (for `ct`), C5 expanse far-corner
+  rounds when a bush is in reach**; official 34: `_wb1` vs `_m10` 47.1, vs `_snk` 58.8; **`_wb2` vs `_m10` 64.7 (deaths 254-405), vs `_snk` 70.6** (`_m10` 61.8);
+  control 34/34 identical; full rule cells for `_wb2` running, `$S/wb2.sh`), C2 bush ghost in the fight estimate, C3 contest bush-ring no-go for lone bodies (for `ct`), C5 expanse far-corner
   cycle, C6 neutral-camp scoring, C7 earlier banking on 100x100 / 50x65 maps.
 - The user got the zips in chat: `legend_m8` (best measured), then `legend_m10` (current `submissions/legend.zip`, plays `legend_m8`'s games).
 

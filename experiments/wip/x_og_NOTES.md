@@ -50,5 +50,11 @@ Body mean gold r150 144 (`_snk` itself: 144; its Issac 165, Cassi 108, Stellar 1
   Issac 161 vs 208, Stellar 166 vs 195) but team gold falls 130.7k vs 148.5k (Ren earned 994 vs 1348: Ren has Treasure +20% from its 2nd emblem
   and is the fastest collector; the yielding body walks off). **Rejected**: the poorer-collects rule costs income and games.
 - `_og2` = `og_gold_mult=2.5` (until r300, while owned < 150) vs `_m10` official: **55.9** (deaths 325-369); first emblems barely move
-  (body gold r150 143.5 vs 144): its effect is target choice (gold clusters early), not faster emblems. Full cells running.
+  (body gold r150 143.5 vs 144): its effect is target choice (gold clusters early), not faster emblems.
+  Full: vs `_m10` **52.3 / 55.9**, vs `_m8` 52.3 / 55.9 (deaths 599-670), pace **502.6** (503.8), 0 faults; but third parties (`_m8` in brackets):
+  `_mite` **61.4 / 70.6** (76.1 / 82.4), `_ifish` 61.4 / 73.5 (69.3 / 79.4), `_px9` **56.8 / 70.6** (78.4 / 76.5), `_fA` 71.6 / 73.5 (73.9 / 82.4),
+  `_ST` 78.4 / 91.2 (83.0 / 91.2). **Rejected (non-transitive, like strike_first)**: gold-first beats our own build and loses 5-22 points to the proxies.
+  Lesson: screen against the proxies first (`_px9`, `_mite`, `_ifish` official 34), then vs `_m10`.
+- `_og3` = gold x2.5 while owned < 300 (two emblems): vs `_m10` official 50.0. `_og4` = gold x4: 55.9 (deaths 308-382; Ren takes even more:
+  gold r150 363). `_og5` = `og_jungle_first=3` (C&I open with Jungle in the damage stat): 55.9 (deaths 318-363). Proxy screens running.
 

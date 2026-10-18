@@ -1,6 +1,6 @@
 diff -ruN _m10/src/brain.cpp _x_og/src/brain.cpp
 --- _m10/src/brain.cpp	2026-10-18 20:14:34.305838022 +0000
-+++ _x_og/src/brain.cpp	2026-10-18 20:37:50.301280870 +0000
++++ _x_og/src/brain.cpp	2026-10-18 20:58:20.547167541 +0000
 @@ -369,6 +369,25 @@
  	const auto abl = me.abilities();
  	ab.assign(abl.begin(), abl.end());
@@ -133,10 +133,28 @@ diff -ruN _m10/src/brain.cpp _x_og/src/brain.cpp
  				const auto k = static_cast<std::size_t>(i);
  				const bool still = ally_prev_round[k] == round - 1 && ally_prev_pos[k] == a.pos;
  				const int a_arr = still ? ally_still_since[k] : round;
+@@ -3438,6 +3519,17 @@
+ 	}
+ 
+ 	float value = (static_cast<float>(g.gems) + gold_v * static_cast<float>(g.gold)) * share;
++	if (P.og_solo && round < P.og_solo_until)
++	{
++		const int bit = type == CT::cassi ? 1 : type == CT::issac ? 2 : type == CT::ryth ? 4 : type == CT::stellar ? 8 : type == CT::varg ? 16 : type == CT::ren ? 32 : 0;
++		if (P.og_solo & bit)
++		{
++			if (claimers && g.st != ST_REWARD)
++				value *= P.og_solo_join;
++			if (!g.ours)
++				value *= P.og_solo_away;
++		}
++	}
+ 	if (!g.ours)
+ 	{
+ 		const float risk = sc_risk;
 diff -ruN _m10/src/params.h _x_og/src/params.h
 --- _m10/src/params.h	2026-10-18 20:14:34.732267617 +0000
-+++ _x_og/src/params.h	2026-10-18 20:37:50.300206397 +0000
-@@ -435,6 +435,20 @@
++++ _x_og/src/params.h	2026-10-18 20:58:20.546124916 +0000
+@@ -435,6 +435,26 @@
  								// (ranged, an opener of ours ready): when the step enters an enemy's next-turn reach, hold at the
  								// edge (they step in, we cast first) for at most open_hold rounds per fight
  	int open_hold = 2;			// ... rounds
@@ -154,6 +172,12 @@ diff -ruN _m10/src/params.h _x_og/src/params.h
 +	int og_gold_until = 300;	// ...
 +	int og_jungle_first = 0;	// bits: the first emblem is Jungle (camp damage taken -30%) in the damage stat, and the build's later Jungle
 +								// block (a second Jungle passive does not stack) is dropped: 1 Cassi, 2 Issac, 4 Ryth, 8 Stellar, 16 Varg, 32 Ren
++	int og_solo = 0;			// bits (as og_jungle_first): before og_solo_until these bodies farm their own groups: joining a claimed group
++								// is worth og_solo_join of the usual share, groups off our half og_solo_away of their value (C&I made 257
++								// attacks by r250 on packs for 1 capture: their work paid Ren and Stellar)
++	int og_solo_until = 250;	// ...
++	float og_solo_join = 0.5f;	// ...
++	float og_solo_away = 0.7f;	// ...
  };
  
  inline constexpr Params P{};

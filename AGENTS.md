@@ -3,16 +3,72 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-18 16:50 UTC (session 9; container clock; `legend_m7` shipped; pending list in §S9 "CURRENT STATE")**. Rule from the user: update this file and push at every step. Start with **§S9**, then **§S8**,
+- Last updated: **2026-10-18 18:00 UTC (session 10; container clock)**. Rule from the user: update this file and push at every step. Start with **§S10**, then **§S9**, **§S8**,
   **§S7**, **§S7-SV2**, then §000000 (resume protocol), §00000, §0000, §000, §00. **All work stays on branch `ccr-a858cd03-q87cpi`**:
-  `git pull` (merge, never force) before every push. Session 9: the user asked to read the `claude/laughing-curie-3rq6hu` branch too:
-  it is the session 4-5 state (last commit 2026-10-17 20:28 UTC) and everything in it is already in this branch (its §0000 is below).
+  `git pull` (merge, never force) before every push. Other branches (`ccr-b9ffa7d9-hvk1ud`, `claude/battlecode-bot-optimization-0ixvxa`:
+  parallel sessions that shipped `legend_s6/s7/s7a` from the old fork 7e444b0) are older lineages; their fixes were ported here in S7-S8.
   No PR unless the user asks.
 - Competition: Cambridge Battlecode 2026a (CAMBC), 12 Oct to 18 Nov 2026. C++ bot compiled to wasm.
 - The submitted bot cannot be changed after submission and keeps nothing between matches. All "learning"
   is either offline (training parameters before submission) or in-match (adapting inside one game).
 
 ---
+
+## S10. SESSION 10 (2026-10-18 17:20 UTC, new container): read this first
+
+- Input: the user's `INTERWIN.zip` = 29 match archives, **13 distinct games between the two top teams**, now in
+  `experiments/interwin_oct18/<map>.repl26a` (analysis tables in `analysis/`: `report.md`, `teamsum.md`, `micro.md`, CSVs from
+  `tools/strategy_v2/run_all.py`). 5 of them are session 9's group 7b2474db (2nd vs 1st); 8 are new (stampede, rows, fragment,
+  packs x2, elkring x2, lanes). Side A = **Mite = 2nd**, side B = **ifish (Intercontinental Fish) = 1st** (by their fixed per-map drafts).
+- The user's request: analyse how ifish deals with Mite and how Mite beats ifish, reverse-engineer their drafting against each
+  other, map parameters and champion synergy, recreate them, and make **our ifish-like bot beat a Mite-like strategy**; no RL now;
+  never ship a change that loses performance; Opus agents only for make-or-break work.
+- Setup: `tools/setup_session.sh --bots` after the SDK/toolchain (all 15 hashes ok). `tools/cell.py BOT OPP [--maps]` prints a
+  ledger cell (all / official / deaths / per official map, both sides).
+
+### S10.1 Findings (ifish vs Mite, 13 games; ifish 7, Mite 6)
+| Map | Mite (A) draft | ifish (B) draft | Result A-B | Deaths A-B |
+|---|---|---|---|---|
+| stampede x2 | Prism, Stellar, C&I, Ryth, Tavi | Stellar, Tavi, Prism, C&I, Ren | **Mite 1008-0, 1080-0** (r470, r484) | 1-2, 4-1 |
+| contest | Prism, Stellar, C&I, Ryth, Tavi | Stellar, Tavi, Prism, C&I, Ren | **0-0 r2000, Mite on gold 18.2k-2.3k** | 8-97 |
+| packs x2 | Ren, Stellar, C&I | Ren, Stellar, C&I | **Mite 1014-716, 1008-928** | 4-7, 8-8 |
+| rushbait-v2 | Varg, Ryth, C&I, Stellar | Ren, Stellar, C&I, Ryth | **Mite 1024-920** | 8-5 |
+| rows | Varg, Ryth, C&I, Ren | C&I, Stellar, Varg, Ren | ifish 990-1056 | 0-0 |
+| fragment | Varg, Stellar, C&I | Ren, Stellar, C&I | ifish 132-1034 | 12-3 |
+| elkring x2 | Varg, Stellar, C&I, Ryth, Tavi | Ren, Stellar, C&I, Ryth, Varg | ifish 936-1008, 666-1026 | 4-2, 8-0 |
+| eight | Varg, Stellar, C&I, Ryth, Tavi | Ren, Stellar, C&I, Ryth, Varg | ifish 374-1020 | 11-3 |
+| corners | Varg, Stellar, C&I, Ryth, Tavi | Ren, Stellar, C&I, Ryth, Varg | ifish 596-1030 | 7-0 |
+| lanes | Varg, Stellar, C&I, Tavi, Ren | Ren, Stellar, C&I, Ryth, Varg | ifish 972-1020 | 4-0 |
+
+- Both teams draft from a fixed per-map table (identical vs us, vs each other, vs the 3rd team; 33 games): tables in `draft.cpp`
+  (`MITE`, `IFISH`, x_proxy_mi.patch). Mite: Varg-first, Tavi as the 5th on most 5-maps, Varg + Ryth on every 4-map, all casters on
+  stampede/contest. ifish: our draft on 5-maps, Ryth (not Varg) on swirl/rushbait/interlock, C&I-first + Monster builds on rows/expanse.
+- **How ifish beats Mite: fights on Mite's own half.** Without contest: 82 fights on Mite's half, Mite loses 39 bodies to ifish's 6
+  (ifish deals 50.8k vs 39.7k there); ifish deaths 2.6 per game vs Mite 5.9. Mite's victims: C&I 34, Stellar 14, Tavi 9 (Mite's casters
+  stay at base health: Cassi / Stellar / Tavi 700-750 HP at r300; ifish's Ren 1,900, Ryth 2,200). ifish's killer: Stellar 30 of 71 (Power
+  focus first: PfE at r38-46). Mite opens as often (66 vs 65) and its openers out-damage (553/197 vs 467/275) but its bodies die at
+  bands 2-4 (deaths per 100 body-rounds 14.6 / 10.2 / 6.4 vs ifish 4.8 / 3.2 / 3.6): health decides the trades.
+- **How Mite beats ifish**: (1) stampede: all five casters ring the 6-elk + 6-gem objective from distance 4 from r54, capture 360 (split
+  5 x 72) at r124, r263, r412-428: 1080 by r470-484 while ifish farms gold; (2) contest: Treasure first on every caster (Stellar gold 5.1k),
+  98-9 deaths, decided on gold earned; (3) farming: more neutral captures (8.1 vs 4.2 per game), camp gems 903 vs 816; Mite's Ren / Ryth /
+  Varg buy **Jungle in strength** first (packs Ren JsE r21, 10-12 captures; rushbait Ryth 16 and Varg 14 captures) and farm without heal trips.
+- Mite builds (style 9 in the proxy): Jungle, Durability in the damage stat, Bruiser health, Power forever; Ren / Ryth on strength on the
+  small-team maps, focus on 5-maps; Treasure first on contest. ifish builds (style 3): Bruiser + Durability health on Ren / Ryth, Power
+  first on Stellar / Issac / Varg; Monster then Power on rows / expanse (style 4).
+
+### S10.2 Proxies (frozen: `experiments/wip/x_proxy_mi.patch` on `_m7` + `x_o2.patch`)
+- `_x_mt` (code, hash dfb71a28348c) = `_m7` + `x_o2.patch` + `x_proxy_mi.patch`: `official_map()` (the 17 official maps by size and camp mix),
+  `mapdraft` 1 = Mite's table, 2 = ifish's; `build_style` 9 = Mite, 10 = ifish (3, or 4 on rows / expanse).
+  `_mite` = `_x_mt` + `mapdraft=1 build_style=9 o2_ring=1 o2_ring_melee=1` (688b37be81e3); `_ifish` = `_x_mt` + `mapdraft=2 build_style=10` (6fde429be694).
+- Calibration: `_ifish` vs `_mite` 55.9 on the official 34 (real 7-6): Mite proxy wins stampede 1080 both sides and contest 0-0 on gold
+  (deaths 94-11), ifish proxy wins rows 1056-990 (the real score), eight, elkring, expanse, monolith. Good enough as sparring partners.
+- `_m7` vs `_mite` **75.0 / 73.5** (deaths 593-785), vs `_ifish` **65.9 / 67.6** (703-668): inside our brain our draft and builds beat theirs
+  overall. `_m7` loses to the proxies where they use a map plan we lack: rushbait-v2 (both sides vs `_mite`; both top teams draft Ryth at
+  size 4), swirl B, stampede B (Mite's ring), expanse (ifish's C&I, Stellar, Varg + Monster), lanes A, elkring B.
+
+### S10.3 Candidates (code `_x_c1` = `_x_mt` + `mapdraft` 3 / `md_stampede`; control `_x_c1` defaults vs `_mite`: 86 of 88 games identical to `_m7`)
+- `_cA` = `mapdraft=3` (Ryth instead of Varg on swirl / rushbait-v2 / interlock, C&I, Stellar, Varg on expanse); `_cB` = `_cA` + Mite's
+  stampede (casters + `o2_ring=1 o2_ring_melee=1`); `_cR` = `o2_ring=1` with our draft. Panel vs `_m7 _mite _ifish _px9 _fA _ST` running.
 
 ## S9. SESSION 9 (2026-10-18 15:15 UTC, new container): read this first
 

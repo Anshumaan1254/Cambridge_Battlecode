@@ -13,6 +13,15 @@ running or unfinished, and what to do next, so a new agent can continue without 
 
 ---
 
+## S7R. SESSION 7 RESUMED (2026-10-18 20:05 UTC, the original S7 container, live in parallel with S11): read with §S11
+
+- This container (S7's) resumed after the session limit; its agents econ / fight / contest died then. It works on: (1) **`join_marginal`**
+  (agent econ's best switch: 63.4 / 55.9 vs `_m4`, never picked up by S8-S11) ported onto `_m8`: `_jm8` = `_m8` + `experiments/wip/x_jm8.patch`
+  (rebuild: `SRC=bots/_m8 tools/variant.sh _jm8 && (cd bots/_jm8 && patch -p1 --no-backup-if-mismatch < ../../experiments/wip/x_jm8.patch)`;
+  control `_jm8c` = `_jm8` with `join_marginal=0`: 50.0, identical games). vs `_m8` **54.5 / 47.1** (deaths 665-652); third-party cells running.
+  (2) Next: contest (S10.5 #2) and neutral control under opposition (S10.5 #3). **S11 keeps the `mi_*` idea screen**; do not duplicate either way.
+- The user got the zips in chat: `legend_m8` (best measured), then `legend_m10` (current `submissions/legend.zip`, plays `legend_m8`'s games).
+
 ## S11. SESSION 11 (2026-10-18, same container as S10): read this first
 
 - The user asked (1) whether the new bot was pushed (yes: `legend_m8`; GitHub's front page shows the default branch

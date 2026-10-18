@@ -26,6 +26,9 @@ pool) in brackets. Every game is in `experiments/results/ledger/` (`python3 tool
 | `legend_m2` (previous ship) | **58.0%** (58.8) | 770-732 |
 | `legend_rm` | **67.0%** (79.4) | 902-1187 |
 | `legend_st` (on the ladder Oct 18: 1 win in 17) | **73.2%** (70.6) | 958-1114 |
+| `_eA` Ren-first pressure archetype | 75.0% (94.1) | 840-1710 |
+| `_eB` C&I-first farming archetype | 82.1% (94.1) | 675-1559 |
+| `_eC` caster objective archetype | 83.9% (91.2) | 686-1319 |
 
 ## Results (local, 56 maps × both sides = 112 games per row; session 3, Oct 17)
 

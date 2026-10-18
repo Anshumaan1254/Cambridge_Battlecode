@@ -37,17 +37,19 @@ running or unfinished, and what to do next, so a new agent can continue without 
   (source hash 0dc2a2aac28a; `tools/setup_session.sh` rebuilds it: `_x_gp` = `_m2` + `experiments/wip/x_gp.patch`, `_m4` = `_x_gp` + `join_reach=1.2f
   outmatch_solo_adv=0.45f`). Ledger (56 maps / official 17): vs `_m2` **58.0 / 58.8** (deaths 770-732), vs `_ST` **73.2 / 70.6** (958-1114), vs `_rm`
   **67.0 / 79.4** (902-1187), 0 faults; pace 524.5; gen16 rollovers 8 per team. `_x_gp` (fix alone on `_m2`) vs `_m2` 51.8 / 61.8.
-  Archetype cells `_m4` vs `_eA _eB _eC` still playing (`$S/gp.sh`): add them to the BUILDS row when done. `bots/legend/src` = `_m4` + the inert 78c32bf code.
+  Archetypes: `_eA` 75.0 / 94.1 (`_m2` 72.3 / 76.5), `_eB` 82.1 / 94.1 (73.2 / 85.3), `_eC` 83.9 / 91.2 (85.7 / 85.3). `bots/legend/src` = `_m4` + the inert 78c32bf code.
   The A100 space (`tools/rl/a100/space.json`) now also has `outmatch_flee_adv`, `outmatch_solo_adv`, `pair_flee_bonus`, `join_reach`, `outmatch_flee_dist` (52).
   **Ask the user to re-run the A100 trainer on this build** (the bundle they have trains `legend_rm`).
 
 | # | Task | State |
 |---|---|---|
 | 1 | Ship the survive + farm merge | **done**: `legend_m2` |
-| 2 | `_m3` / `_m4` acceptance | **done**: `legend_m4` shipped (archetype cells finishing) |
+| 2 | `_m3` / `_m4` acceptance | **done**: `legend_m4` shipped |
 | 3 | **Agent `econ` (Opus, high)**: farming income vs the real teams (opening: our first captures r55-125, their Varg r27; income to the clearers; contact-aware damage builds: their Varg ends `MsE+PsE8`; body-time waste). Baseline `_m4`, copy `bots/_x_econ`, deliverables `experiments/wip/x_econ.patch` + `x_econ_NOTES.md` | running (started ~11:20 UTC) |
 | 4 | **Agent `contest` (Sonnet, high)**: lone-monolith maps (contest 0-1000 on the ladder, zero monolith damage): detector + feasible monolith cycle / denial, inert elsewhere. Baseline `_m4`, copy `bots/_x_contest`, deliverables `x_contest.patch` + `x_contest_NOTES.md` | running (started ~11:20 UTC) |
 | 5 | Later: gem-race endgame (`race`: close finishes, altar denial; probes in ENGINE_FACTS "Session 5 probes"), deaths at full health (enemies appearing inside reach) | not started |
+- Summaries: `python3 tools/ledger_sum.py [--maps] [--pool GLOBS|all] BOT` (all / official / deaths per cell, no rebuild; default pool = the 56 maps:
+  agents add other pools to the same cells). Pace: `python3 tools/ledger_pace.py BOT... --maps`.
 - Auto checkpoint: `$S/ckpt.sh` commits and pushes `experiments/wip/x_econ*`, `x_contest*`, the ledger and new tools every 10 minutes
   (`$S` = this session's scratchpad; lost with the container, which is fine: everything it pushes is in git).
 

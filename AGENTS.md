@@ -15,6 +15,14 @@ running or unfinished, and what to do next, so a new agent can continue without 
 
 ## S7R. SESSION 7 RESUMED (2026-10-18 20:05 UTC, the original S7 container, live in parallel with S11): read with §S11
 
+- **22:00 UTC, the user: "m11 is performing poorly on the top ladder; implement the handoff"** (`docs/strategy_v2/11_FINAL_STRATEGY_HANDOFF.md`, from an
+  unpushed session 12; its zip `submissions/history/legend_final_s12_20261018.zip`, hash 3729300fd292 verified = `legend_m10` + `ward_bush=2` +
+  `mono_grouped_until=300`). `legend_m11` already is that build with the contest variant the handoff prefers (`mono_follow_until` 200). Its §1-2:
+  the 30 uploaded games (`experiments/intercon_oct18/`, analysis in `analysis/`) are Intercontinental Fish (ladder #1, now Stellar-first) vs 6
+  teams, 25-5; IC's edge is execution: paired opening (melee bodies farm with an ally 84-93% before r200, ours 52-70%), fights opened with
+  spells from 4-5, more neutral captures; copying its draft, Stellar-first order or builds lost inside our brain. Working on §5 #1 now:
+  `pair_open_until` (`experiments/wip/x_po.patch` on `_m11`: before round R, off contest, bodies 1/3/5 farm the group their partner 0/2/4 claims).
+
 - **SHIPPED `legend_m11` (S7R, ~21:55 UTC)** at the user's request ("prioritize finishing the bot so we get feedback from the actual ladder"):
   `submissions/legend.zip` sha256 1fb13fa2…, `submissions/history/legend_m11_20261018.zip`, BUILDS row. `_m11` = `_m10` + `experiments/wip/x_m11.patch`
   (source hash 0dd8010eaf12; = contest agent's `_fo200` (`mono_plan` detector + `mono_follow_until` 200) + `x_wb.patch` with `ward_bush=2`).

@@ -22,6 +22,26 @@ variants `bots/_xf*`. Outputs in `/tmp/fight/`. Patch: `experiments/wip/x_fight.
   within fight_mem_r of their last tile (spells assumed ready); they also count for the outmatch enemy count.
 - `pair_pool`: Cassi + Issac both on our side count 2 x min(health) instead of the sum.
 - `kill_reach`: 'killable' counts an ally's hit only when that ally is within its reach of the target.
+- `fight_smooth`: adv = last^a x now^(1-a) (geometric blend) when the body also judged a fight last round.
+- `flee_fail_turns` (+ `flee_fail_adv` 0.2): after this many in-reach flee turns that lost health with the chaser still
+  within its hit reach, hit back.
+- `flee_hold` (+ `flee_hold_d` 3, `flee_hold_adv` 0.2): for flee_hold rounds after an outmatch flee the bars widen, an
+  unseen enemy (seen within threat_memory) within outmatch_flee_dist + flee_hold_d keeps us walking home, and rallies
+  are not answered. Traces: bodies fled to 8 tiles, farmed back toward the group, and were caught 3-4 rounds later.
+- Trace-only: `FIGHT_TRACE` define prints a `TK` line per turn with an enemy within 10 (path, task, enemy distance,
+  in-danger flag, health); `/tmp/fight/tk.mjs` prints the 12 rounds before each death.
 
 ## Results
-(in progress)
+Screen: official 17 maps, both sides (34 games per cell; one cell's SD is ~8.5 points: a screen only).
+Control `_xf0` (= `_x_fight`, all switches off) vs `_m4`: 50.0, deaths 318-318 (plays identically).
+
+| Variant | vs `_m4` (deaths ours-theirs) | vs `_fA` |
+|---|---|---|
+| `_m4` | - | 64.7 (409-348) |
+| `_xf1` fight_mem 3 | 50.0 (298-313) | 55.9 (366-407) |
+| `_xf2` pair_pool | 47.1 (338-367) | 58.8 (403-343) |
+| `_xf3` kill_reach | 44.1 (340-300) | 61.8 (403-345) |
+| `_xf4` cornered_margin 0 | 44.1 (419-284) | 61.8 (402-458) |
+| `_xf5` cornered_margin 0.4 | 44.1 (374-255) | 52.9 (469-327) |
+| `_xf6` fight_smooth 0.5 | 47.1 (312-280) | 73.5 |
+- 13 of 34 games change winner between `_m4` and `_xf1` vs `_fA`: fight changes flip whole games; judge on 112+ games.

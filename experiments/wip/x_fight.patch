@@ -1,0 +1,231 @@
+diff -ruN _m4/src/brain.cpp _x_fight/src/brain.cpp
+--- _m4/src/brain.cpp	2026-10-18 10:31:54.671512061 +0000
++++ _x_fight/src/brain.cpp	2026-10-18 11:09:38.489907308 +0000
+@@ -508,6 +508,13 @@
+ 		unstick();
+ 	prebuild_fields();
+ 	XM(xm_post());
++#ifdef FIGHT_TRACE
++	debug_block({
++		if (enemy_near_d <= 10)
++			std::printf("TK r=%d ty=%d path=%d task=%d g=%d x=%d y=%d hp=%.0f mhp=%.0f ed=%d dz=%d gems=%u\n", round, static_cast<int>(type), dbg_path, task, task_group, pos.x, pos.y, hp, max_hp,
++				enemy_near_d, static_cast<int>(danger.is_set(pos)), gems);
++	});
++#endif
+ #ifdef LEGEND_TRACE
+ 	debug_block({
+ 		std::printf("T r=%d %d task=%d g=%d pos=(%d,%d) hp=%.0f gems=%u gold=%u fuel=%llu\n", round, static_cast<int>(type), task, task_group, pos.x, pos.y, hp, gems, gold,
+@@ -1195,7 +1202,21 @@
+ 			E.push_back(&e);
+ 		}
+ 	if (E.empty())
++	{
++		// P.flee_hold: the group we just walked away from is out of sight, not gone: keep walking home while a body seen
++		// within threat_memory rounds stands within outmatch_flee_dist + flee_hold_d.
++		if (P.flee_hold > 0 && round - outmatch_round <= P.flee_hold && task != T_CAPTURE && !W.ally_spawn.is_set(pos))
++			for (const auto& e : W.enemies)
++				if (e.alive && e.seen_round >= 0 && round - e.seen_round <= P.threat_memory && !W.enemy_spawn.is_set(e.pos) &&
++					cheb(e.pos, pos) <= P.outmatch_flee_dist + P.flee_hold_d)
++				{
++					task = T_FLEE;
++					if (go_home_step(true))
++						return true;
++					break;
++				}
+ 		return false;
++	}
+ 
+ 	// Enemy reach next turn: attack range (+1 step for melee), +2 with a dash ready, 4 with a spell ready.
+ 	auto reach_of = [](const Enemy& e) {
+@@ -1220,6 +1241,31 @@
+ 		if (d <= reach_of(*e))
+ 			incoming += e->str + e->burst() / 2.f;
+ 	}
++	// P.fight_mem (agent fight): enemies this body saw a round or three ago and no longer sees (a bush, the edge of its
++	// vision) still stand there. Counting only this round's sightings made adv swing turn to turn (traces: 0.74 -> 1.72
++	// -> 0.42) and the visible count jump 1 -> 3-5 just before 26 of 78 traced deaths.
++	int hidden = 0;
++	if (P.fight_mem > 0)
++		for (auto& e : W.enemies)
++		{
++			if (!e.alive || e.visible || e.seen_round < 0 || e.recalling)
++				continue;
++			const int age = round - e.seen_round;
++			if (age < 1 || age > P.fight_mem || e.died_round > e.seen_round)
++				continue;
++			const int d = cheb(e.pos, pos);
++			if (d > P.fight_mem_r || W.enemy_spawn.is_set(e.pos))
++				continue;
++			float b = std::max({ e.kit.dmg >= 0 ? e.focus * e.kit.dmg_mod : 0.f, e.kit.cc >= 0 ? e.focus * e.kit.cc_mod : 0.f,
++				e.kit.aoe >= 0 ? e.focus * e.kit.aoe_mod : 0.f, e.kit.reset >= 0 ? e.str : 0.f });
++			const float w = P.fight_mem_w;
++			their_hp += w * e.hp;
++			their_dps += w * (e.str + e.focus * best_mod(e.kit) / 8.f + b / 3.f);
++			const int r = e.kit.attack_range + (e.kit.ranged ? 0 : 1) + (e.kit.dash >= 0 ? 2 : 0) + age;
++			if (d <= std::max(r, 4 + age))
++				incoming += w * (e.str + b / 2.f);
++			++hidden;
++		}
+ 	// Our side: self plus visible allies within 6 (with their spells, not just basic attacks).
+ 	float my_burst = 0;
+ 	if (ready(kit.dmg)) my_burst = std::max(my_burst, focus * kit.dmg_mod);
+@@ -1229,6 +1275,10 @@
+ 	float our_hp = hp, our_dps = str + focus * best_mod(kit) / 8.f + my_burst / 3.f;
+ 	float allies_burst = 0;
+ 	int allies_near = 0;
++	// P.pair_pool: Cassi and Issac die together, so on our side the pair holds out only as long as its weaker body.
++	const bool me_pair = type == CT::cassi || type == CT::issac;
++	float pair_hp_c = me_pair && type == CT::cassi ? hp : -1.f, pair_hp_i = me_pair && type == CT::issac ? hp : -1.f;
++	std::vector<const Ally*> support;
+ 	for (const auto& a : W.allies)
+ 		if (a.handle != self && a.alive && a.visible && cheb(a.pos, pos) <= 6 && (!P.support_filter || can_support(a, E)))
+ 		{
+@@ -1237,7 +1287,15 @@
+ 			our_dps += P.ally_spell_dps ? a.str + a.focus * best_mod(a.kit) / 8.f + ab / 3.f : a.str * 1.2f;
+ 			allies_burst += a.str;
+ 			++allies_near;
++			if (a.type == CT::cassi)
++				pair_hp_c = a.hp;
++			else if (a.type == CT::issac)
++				pair_hp_i = a.hp;
++			if (P.kill_reach)
++				support.push_back(&a);
+ 		}
++	if (P.pair_pool && pair_hp_c >= 0.f && pair_hp_i >= 0.f)
++		our_hp -= pair_hp_c + pair_hp_i - 2.f * std::min(pair_hp_c, pair_hp_i);
+ 	if (W.ally_spawn.is_set(pos) && P.spawn_heal_bonus)
+ 	{
+ 		// We heal fully next round on spawn, but only while the fight stays here: stepping off spawn to
+@@ -1324,8 +1382,24 @@
+ 		const float tku = our_hp / std::max(1.f, their_dps + reflect * static_cast<float>(1 + allies_near));
+ 		adv = tku / std::max(0.1f, t_kill_them) * learner().fight_scale();
+ 	}
++	// P.fight_smooth: geometric blend with last round's estimate (one enemy or ally leaving vision for a round flipped
++	// fight / flee every turn in the traces, each flip a turn of free hits).
++	if (P.fight_smooth > 0.f && last_adv_round == round - 1)
++		adv = std::pow(std::max(0.01f, last_adv), P.fight_smooth) * std::pow(std::max(0.01f, adv), 1.f - P.fight_smooth);
++	last_adv = adv;
++	last_adv_round = round;
++	// P.kill_reach (report P0 'killable'): an ally's hit counts toward a sure kill only if it can land this round: the ally
++	// stands within its attack range of the target (+1 step for melee). allies_burst summed every supporter within 6.
++	float kill_burst = allies_burst;
++	if (P.kill_reach)
++	{
++		kill_burst = 0;
++		for (const auto* a : support)
++			if (cheb(a->pos, tgt->pos) <= a->kit.attack_range + (a->kit.ranged ? 0 : 1))
++				kill_burst += a->str;
++	}
+ 	const bool killable = d <= std::max(my_reach, (ready(kit.dmg) || ready(kit.cc)) ? 4 : 0) &&
+-		tgt->hp <= burst_vs(*tgt) + allies_burst;
++		tgt->hp <= burst_vs(*tgt) + kill_burst;
+ 	const bool in_reach = danger.is_set(pos);
+ 
+ 	// Can we actually get away? Melee and dash chasers move and hit in the same turn. Fleeing only works
+@@ -1384,6 +1458,16 @@
+ 	// A bag that wins the game is worth more than any fight we can walk away from.
+ 	if (fight && P.win_bank && !killable && can_escape && gems > 0 && wins_with(static_cast<int>(gems)))
+ 		fight = false;
++	// P.flee_fail_turns: a flee that has not shaken the chaser (still hit, it stands within its reach) only hands it
++	// free hits: turn and hit back (traces vs _fA: 10-12 round flee streaks with an enemy adjacent, then the death).
++	if (!fight && in_reach && P.flee_fail_turns > 0 && flee_round == round - 1 && flee_streak >= P.flee_fail_turns && hp < flee_hp0 - 1.f &&
++		adv >= P.flee_fail_adv && !on_spawn && dh > 2)
++		for (auto* e : E)
++			if (cheb(pos, e->pos) <= e->kit.attack_range + (e->kit.ranged ? 0 : 1))
++			{
++				fight = true;
++				break;
++			}
+ 	// Do not dive their spawn: it heals them and they block us.
+ 	if (W.enemy_spawn.is_set(tgt->pos) || cheb(tgt->pos, W.enemy_spawn_c) <= 3)
+ 		fight = fight && killable;
+@@ -1393,7 +1477,7 @@
+ 	(void)stunners;
+ 
+ 	// Early warning: an outnumbering group is visible; allies keep away from it.
+-	if (!fight && E.size() >= 3 && adv < 1.f)
++	if (!fight && static_cast<int>(E.size()) + hidden >= 3 && adv < 1.f)
+ 		post_danger(tgt->pos);
+ 	if (fight)
+ 	{
+@@ -1406,6 +1490,10 @@
+ 	{
+ 		post_danger(tgt->pos);
+ 		task = T_FLEE;
++		if (flee_round != round - 1)
++			flee_streak = 0, flee_hp0 = hp;
++		++flee_streak;
++		flee_round = round;
+ 		// A stun on the closest melee chaser buys a free step (only stuns that still let us walk).
+ 		for (auto* e : E)
+ 			if (e->ch && !kit.cc_excl && (!e->kit.ranged || e->ready(e->kit.dash)) && cheb(pos, e->pos) <= static_cast<int>(kit.cc_range) && ready(kit.cc))
+@@ -1476,13 +1564,18 @@
+ 	// within 8 tiles for 7+ rounds before 75% of our deaths, the victim walked toward them in 48%, 58% died with the
+ 	// enemy holding >1.2x our health within 6.
+ 	const bool pair_body = type == CT::cassi || type == CT::issac;
+-	const float out_bar = static_cast<int>(E.size()) >= P.outmatch_min_enemies ? P.outmatch_flee_adv : P.outmatch_solo_adv;
+-	const bool outmatched = P.outmatch_flee && nearest_enemy <= P.outmatch_flee_dist && out_bar > 0.f &&
+-		adv < out_bar + (pair_body ? P.pair_flee_bonus : 0.f);
++	const float out_bar = static_cast<int>(E.size()) + hidden >= P.outmatch_min_enemies ? P.outmatch_flee_adv : P.outmatch_solo_adv;
++	// P.flee_hold (agent fight): for flee_hold rounds after such an exit the bars widen (distance + flee_hold_d, advantage
++	// + flee_hold_adv). Traces: a body fled to 8 tiles, went back to farming (walking toward them), and was caught 3-4 rounds later.
++	const bool holding = P.flee_hold > 0 && round - outmatch_round <= P.flee_hold;
++	const bool outmatched = P.outmatch_flee && nearest_enemy <= P.outmatch_flee_dist + (holding ? P.flee_hold_d : 0) && out_bar > 0.f &&
++		adv < out_bar + (pair_body ? P.pair_flee_bonus : 0.f) + (holding ? P.flee_hold_adv : 0.f);
+ 	if ((((isolated || reserve) && adv < P.isolated_flee_adv && nearest_enemy <= P.flee_dist) || outmatched) && task != T_CAPTURE)
+ 	{
+ 		post_danger(tgt->pos);
+ 		task = T_FLEE;
++		if (outmatched)
++			outmatch_round = round;
+ 		if (P.flee_recall && W.dist_home(pos) > P.recall_min_dist && safe_to_recall())
+ 		{
+ 			try
+@@ -2129,6 +2222,8 @@
+ 	const int max_d = opp ? (their_endgame ? 16 : 12) : 9;
+ 	if (hp < hp_gate * max_hp || ((task == T_CAPTURE || reward_here()) && !their_endgame))
+ 		return false;
++	if (P.flee_hold > 0 && round - outmatch_round <= P.flee_hold && !opp)
++		return false; // we just walked away from an outmatching group: a rally there is not ours to answer
+ 	const int d = cheb(C.alert_pos, pos);
+ 	if (d > max_d || d < 2)
+ 		return false;
+diff -ruN _m4/src/brain.h _x_fight/src/brain.h
+--- _m4/src/brain.h	2026-10-18 10:31:54.667697192 +0000
++++ _x_fight/src/brain.h	2026-10-18 11:09:38.490751335 +0000
+@@ -214,6 +214,12 @@
+ 	int ward_round = -100;
+ 	float last_hp = 0;
+ 	int last_hit_round = -100;
++	// agent fight: combat() memory (P.fight_smooth, P.flee_fail_turns)
++	float last_adv = 1.f;
++	int last_adv_round = -100;
++	int flee_streak = 0, flee_round = -100;
++	int outmatch_round = -100; // last outmatch flee (P.flee_hold)
++	float flee_hp0 = 0;
+ 	std::vector<int> blacklist; // per group: round until which we ignore it
+ 	// Last-resort unstick: a walking task that stays inside a 3x3 box without attacking for unstick_rounds.
+ 	int last_act_round = -100;
+diff -ruN _m4/src/params.h _x_fight/src/params.h
+--- _m4/src/params.h	2026-10-18 10:31:54.730029951 +0000
++++ _x_fight/src/params.h	2026-10-18 11:09:38.491202715 +0000
+@@ -86,6 +86,19 @@
+ 	float pair_kill_adv = 0.5f;		 // ... and below it a 'killable' target needs this advantage (1.0: same games as 0.5, off)
+ 	float pair_retreat_hp = 0.f;	 // Cassi & Issac: safety() retreat line (max with retreat_hp; 0.4: 55.9 vs _eA vs 70.6 without)
+ 	int ren_reflect = 1;			 // combat(): a fight on Ren counts its retaliation (0.2 x focus per hit) on each of our hitters
++	// Agent fight (session 7). All default off (= _m4).
++	int fight_mem = 0;				 // combat(): enemies seen 1..fight_mem rounds ago (now hidden: bush, vision) within fight_mem_r
++	float fight_mem_w = 0.75f;		 // ... of their last tile count with this weight in the enemy side (spells assumed ready)
++	int fight_mem_r = 8;			 // ... (traces: the visible-enemy count jumps 1 -> 3-5 between turns before 26 of 78 deaths)
++	int pair_pool = 0;				 // combat(): Cassi + Issac both on our side count 2 x min(their health), not the sum (they die together)
++	float fight_smooth = 0.f;		 // combat(): adv = this x last round's adv + (1 - this) x now, when this body also judged a fight
++									 // last round (traces: adv swung 0.07 <-> 0.78 turn to turn with the same chaser adjacent)
++	int flee_fail_turns = 0;		 // combat(): after this many flee turns in reach that did not shake the chaser (it still hits us),
++	float flee_fail_adv = 0.2f;		 // ... hit back at this advantage (traces: 10-12 round flee streaks, enemy adjacent, then death)
++	int flee_hold = 0;				 // after an outmatch flee, for this many rounds: flee bars widen (distance + flee_hold_d,
++	int flee_hold_d = 3;			 // ... adv + flee_hold_adv), unseen enemies seen within threat_memory still push us home, and
++	float flee_hold_adv = 0.2f;		 // ... rallies go unanswered (traces: fled to 8 tiles, farmed back toward them, caught)
++	int kill_reach = 0;				 // combat(): 'killable' counts an ally's hit only when the ally is within its own reach of the target
+ 	int threat_score_memory = 8;	 // group_score: enemies seen this many rounds ago still guard the camps within 8 of them
+ 									 // (20: 50.0 vs _rm, more deaths; alert_radius 8 for the team DANGER alert: 47.1, more deaths)
+ 	float reserve_margin = 0.5f;	 // half the team dead: extra advantage needed to fight

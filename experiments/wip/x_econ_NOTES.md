@@ -34,4 +34,12 @@ Pace = round at which we bank 1000 gems vs `idle`, mean of both sides, 17 offici
 | `econ_build` (bits) | 1: C&I passives in damage stat; 2: Ren Jungle focus; 4: Varg/Stellar 2 Power emblems after Monster; 8: Ren Monster first | pace: 1 524.9, 2 531.0, 4 530.8, 10 529.8 (all noise) |
 | `bank_trip_cap` 4 / + `bank_trip_free` 6 / `tribute_min` 60 + cap 3 | bigger bags | pace 527.9 / 525.7 / 526.7 (rushbait worse 650 -> 674-707): rejected |
 | `heavy_team` | team plan (objective-plan test + gather) for heavy groups off objective maps | pace 542.1 (pilgrimage 579 -> 722; interlock unchanged: Ren waits alone at the elk pair, the others farm wolves): rejected |
-| `join_age` | joins use health estimated from the claim's age when the group is out of sight | testing |
+| `join_age` 0.5 / 1.0 | joins use health estimated from the claim's age when the group is out of sight | pace 543.4 / 542.6 (stampede 698 -> 792/883: the objective group's estimate hit 0): rejected |
+| `hysteresis` 1.3 | stickier targets | pace 528.3: noise |
+| `max_join` 4 | 5 bodies per group (the ladder enemy's opening sweep) | pace 530.4: noise |
+| `max_wait` 30 / 10 | respawn waits | 540.1 / 539.7: rejected |
+| `claim_release` | an alive ally's claim leaving a group we remember as a reward = it collected it (mark respawning) | 56 maps: official 524.6 (= `_m4`), other 39 maps 410.7 vs 418.7 |
+| `join_marginal` | joiner's value = claimers' rounds saved by its help (after its walk) / their clear, over its own rounds; no 0.6 share | expanse single game 569 (vs 581-618 for other variants), waste 25% -> 13.6%, Issac first capture r139 (r226-r328) |
+
+Noise: the 17-map official pace moves +-10 for changes that do nothing on most maps (e.g. pilgrimage 579-670 across variants); `_m4`'s 524.5 is
+the best of the farm agent's tuning on these 17 maps, so most variants regress toward ~530-540. Decide on the 56-map pool (112 games).

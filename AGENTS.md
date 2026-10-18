@@ -3,7 +3,9 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-17 23:55 UTC (session 6)**. Rule from the user: update this file and push at every step. Start with **§00000** (session 6), then **§0000**, **§000**, **§00** below. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
+- Last updated: **2026-10-18 02:40 UTC (session 7)**. Rule from the user: update this file and push at every step. Start with **§000000** (session 7), then **§00000** (session 6), **§0000**, **§000**, **§00** below.
+  Session 7 pushes to **`claude/battlecode-bot-optimization-0ixvxa`** (harness branch). Session 6 pushed to `ccr-b9ffa7d9-hvk1ud`, sessions 3-5 to `claude/laughing-curie-3rq6hu`:
+  before pushing, `git fetch origin` and merge any new commits from those branches (other sessions may be live; do not duplicate their panels).
 - **Two sessions are live on this branch (20:00 UTC)**: session 4 (container with `/tmp/ev/fp_*`, still running its full
   panels: `_ST`, `_rm`, `_rs3`, `_rnr` done, `_rnd` running, then `_rmx`, `_x_side`, `_rmxp`; results written into §000) and
   session 5 (§0000). Before pushing: `git pull --rebase`. Do not duplicate each other's panels: see §000 for session 4's numbers.
@@ -12,6 +14,30 @@ running or unfinished, and what to do next, so a new agent can continue without 
   is either offline (training parameters before submission) or in-match (adapting inside one game).
 
 ---
+
+## 000000. SESSION 7: CURRENT POSITION (started 2026-10-18 02:00 UTC, new container): read this first, then §00000
+
+- Started from session 6's last push (`ccr-b9ffa7d9-hvk1ud` @ 67abcbf, fast-forwarded into this branch). Container rebuilt with `/tmp/ev/setup.sh`
+  (local; = §000.6 "How to resume" + `tools/snapshot.sh _ST cd4e2aa` + unzip `legend_{es2,c3,st,s6}` from `submissions/history/`).
+- **Shipped: still `legend_s6`**. `bots/legend` = `legend_s6` + contest6 (`cm_mode`, `cm_obj`), frozen as **`bots/_b7`** (baseline of session-7 A/Bs).
+- User input: the same `HOUSEOFCODERS_ENEMY_STRATEGY_REPORT.md` session 6 used, now committed as **`docs/ENEMY_REPORT.md`**.
+- New tool: `tools/pace17.sh BOT [JOBS] [MAPS]` (unopposed pace vs `idle`, 17 official maps, ~15 s at 4 jobs). `_b7` = **565.2**
+  (ambush 716, collision 569, contest 946, corners 418, eight 428, elkring 495, expanse 601, fragment 581, interlock 537, lanes 504, monolith 526,
+  packs 393, pilgrimage 778, rows 441, rushbait-v2 641, stampede 711, swirl 320).
+- **Key comparison**: the real enemy finished these maps *while contested by us* faster than we finish them unopposed: rows 355 (0 deaths either side)
+  vs our 441, ambush 561 vs 716, rushbait-v2 525 vs 641, pilgrimage 658 vs 778, fragment 488 vs 581, expanse 580 vs 601. Farming speed is a real,
+  code-family-independent gap (target: 17-map pace well under 520), on top of the fight gap (deaths 232 vs 50).
+- rows unopposed (`_b7`, side A): 3 wolf packs per side (66 gems + 270 gold, respawn 40); our captures r45, 87, 104, 129; Issac's first capture r355;
+  first emblem Ren r343, the rest never (game ends r434). The enemy Varg soloed its first pack at r27 and had Monster + Power Strength at r32.
+  (`econ_open.mjs`'s gold columns miss gold that is captured and spent in the same round; read the CaptureGems events instead.)
+
+| Task | Who / where | State | Left to do |
+|---|---|---|---|
+| Farming speed (first cycle, shop timing, farm builds, helper vs collector, abandoned walks, respawn cycling) | agent `farm7` (Opus), copy `bots/_x_farm7`, outputs `/tmp/farm7/`, deliverables `experiments/wip/x_farm7.patch` + `x_farm7_NOTES.md` | started 02:35 | merge what wins on pace (17 + 56 maps) with h2h vs `_b7` >= 48 |
+| Deaths / fight selection / escape / reachable support / pair risk | agent `fight7` (Opus), copy `bots/_x_fight7`, outputs `/tmp/fight7/`, deliverables `x_fight7.patch` + `x_fight7_NOTES.md` | started 02:35 | merge what cuts deaths with h2h >= 50 and no worse vs `_lad` |
+| pair6 finish: `x_pair6.patch` ported onto `_b7` as `bots/_x_pair7` (1 hunk fixed by hand: `safety()` threshold line), variants `_p7h` (veto 1, margin 0.8), `_p7f` (join_w 0), `_p7hf` (both) | coordinator, `/tmp/ev/e1.sh`, results `/tmp/ev/h_<bot>/` | running | merge the best if h2h vs `_b7` >= 50 and vs `_lad` not worse |
+| Ladder proxy `_lad` = `_b7` + `build_style 3` + draft Ren, Stellar, C&I, Ryth, Varg (`LEGEND_DRAFT 8,4,3,0,9`) | coordinator | built | `_b7` vs `_lad` running; use as an extra panel opponent |
+| Ship decision `_b7` vs `_s6` (56 maps + official) | coordinator | running | ship if >= 50 and pace not worse |
 
 ## 00000. SESSION 6: CURRENT POSITION (started 2026-10-17 21:00 UTC, new container): read this first, then §0000
 

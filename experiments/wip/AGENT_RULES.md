@@ -1,8 +1,9 @@
 # Session 6 (2026-10-17, from 21:00 UTC, new container): read this block first; it overrides everything below
 
-- Baseline: **`bots/_b6`** = frozen copy of current `bots/legend` (commit 31e0ccb: session 5's `_rmxp` + `dist_landmark`). Read-only.
-  Make your copy with `SRC=bots/_b6 tools/variant.sh _x_NAME` (then edit `bots/_x_NAME/src`).
-  Patch: `cd bots && diff -ruN _b6/src _x_NAME/src > ../experiments/wip/x_NAME.patch`.
+- **From Oct 18 01:40 UTC the baseline is `bots/_s7`** = the shipped `legend_s7` (= current `bots/legend`, commit f424fda). Read-only.
+  Make your copy with `SRC=bots/_s7 tools/variant.sh _x_NAME`; patch `cd bots && diff -ruN _s7/src _x_NAME/src > ../experiments/wip/x_NAME.patch`.
+  Read `_b6` below as `_s7`. `_s7` reference: vs `_ST` 56.2, `_r2` 82.1, pace 565.2 (`/tmp/ev/p__s7.txt`).
+- Earlier baseline: `bots/_b6` (commit 31e0ccb: session 5's `_rmxp` + `dist_landmark`).
 - Other read-only bots, built: `_ST` (shipped `legend_st`), `_rm`, `_rmxp`, `_L0 _es2 _c3 _st _r2 _v6 _hunt _hunt2 _devci _base`, `idle`.
 - **The real ladder is far stronger than our sparring bots** (user report, 17 real games of `legend_st`: 1 win, deaths 232 vs 50, camp
   gems half of theirs). Every sparring bot is our own code family: treat head-to-head numbers as a regression guard, not as the goal.

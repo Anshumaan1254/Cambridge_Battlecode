@@ -102,6 +102,7 @@ tools/draft_tournament.py  composition round robins (forced drafts, same code) -
 tools/draft_model.py       map-aware draft model from a tournament (nearest training maps) -> draft_table.h
 tools/panel.sh      one summary line per sparring opponent
 tools/bench.py      parallel A-vs-B benchmark with summary (comma-separated map globs)
+tools/ledger.py     resumable per-game results ledger (experiments/results/ledger): play only missing games, import cut-off runs
 tools/suite.sh      bench against the sparring panel
 tools/tune.py       self-play parameter tuner
 tools/variant.sh    build a parameter/define variant of legend

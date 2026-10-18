@@ -303,6 +303,26 @@ float best_mod(const Kit& k)
 	return std::max({ k.dmg >= 0 ? k.dmg_mod : 0.f, k.cc >= 0 ? k.cc_mod : 0.f, k.aoe >= 0 ? k.aoe_mod : 0.f });
 }
 
+// Next-turn reach of an enemy's spells (0 when none is up). Legend: every spell 4. P.aoe_reach5 (agent fight2): an area
+// spell lands radius 1 around a tile up to range 4 away, so it hits bodies at 5 (top 3 vs each other: 20-28% of spell damage
+// lands at 5; ours 8%; at distance 5 we dealt 3 and took 12 per body-round). 2: spells usable while walking (Cassi's stun)
+// reach range + 1 (walk, then cast). `assume_ready`: cooldowns unknown (unseen this round).
+int enemy_spell_reach(const Enemy& e, bool assume_ready)
+{
+	auto up = [&](int slot) { return slot >= 0 && (assume_ready || e.ready(slot)); };
+	int r = (up(e.kit.dmg) || up(e.kit.cc) || up(e.kit.aoe)) ? 4 : 0;
+	if (P.aoe_reach5 && up(e.kit.aoe))
+		r = std::max(r, static_cast<int>(e.kit.aoe_range + e.kit.aoe_radius) + (e.kit.aoe_excl ? 0 : 1));
+	if (P.aoe_reach5 >= 2)
+	{
+		if (up(e.kit.cc) && !e.kit.cc_excl)
+			r = std::max(r, static_cast<int>(e.kit.cc_range) + 1);
+		if (up(e.kit.dmg) && !e.kit.dmg_excl)
+			r = std::max(r, static_cast<int>(e.kit.dmg_range) + 1);
+	}
+	return r;
+}
+
 vec2 sgn_step(vec2 from, vec2 to)
 {
 	return { (to.x > from.x) - (to.x < from.x), (to.y > from.y) - (to.y < from.y) };
@@ -630,6 +650,8 @@ void Brain::handle_channel()
 		}
 		if (d <= 4 && (e.ready(e.kit.cc) || (e.ready(e.kit.aoe) && e.kit.aoe_stuns)))
 			stunner_close = true;
+		else if (P.aoe_reach5 && e.ready(e.kit.aoe) && e.kit.aoe_stuns && d <= static_cast<int>(e.kit.aoe_range + e.kit.aoe_radius))
+			stunner_close = true; // Ryth's area stun cancels a tribute from 5
 	}
 	bool cancel = false;
 	if (recalling && threat_close && !world().ally_spawn.is_set(pos))
@@ -738,6 +760,7 @@ void Brain::build_danger()
 {
 	auto& W = world();
 	danger.clear();
+	danger4.clear();
 	camp_danger.clear();
 	enemy_near = false;
 	enemy_near_field = false;
@@ -755,10 +778,15 @@ void Brain::build_danger()
 		const bool spell_up = (e.kit.dmg >= 0 && (!fresh || e.ready(e.kit.dmg))) || (e.kit.cc >= 0 && (!fresh || e.ready(e.kit.cc))) ||
 			(e.kit.aoe >= 0 && (!fresh || e.ready(e.kit.aoe)));
 		int reach = e.kit.attack_range + (e.kit.ranged ? 0 : 1) + (dash_up ? 2 : 0);
-		if (spell_up)
+		const int reach0 = std::max(reach, spell_up ? 4 : 0) + age;
+		if (P.aoe_reach5)
+			reach = std::max(reach, enemy_spell_reach(e, !fresh));
+		else if (spell_up)
 			reach = std::max(reach, 4);
 		reach += age;
 		danger.draw_chebyshev(e.pos, static_cast<float>(reach));
+		if (P.aoe_reach5 == 3)
+			danger4.draw_chebyshev(e.pos, static_cast<float>(reach0)); // routes avoid 5, the fight/flee trigger stays at 4
 		const int ed = cheb(e.pos, pos);
 		if (ed <= 9)
 		{
@@ -1094,11 +1122,34 @@ bool Brain::cast_area_stun_at(const Enemy& e)
 				continue;
 			int n = 0;
 			for (const auto& o : W.enemies)
-				n += o.alive && o.visible && o.type != CT::marcella && cheb(o.pos, c) <= rad;
+				n += o.alive && o.visible && (!kit.aoe_stuns || o.type != CT::marcella) && cheb(o.pos, c) <= rad;
 			if (n > best_n || (n == best_n && dx == 0 && dy == 0))
 				best_n = n, best = c;
 		}
 	return best_n > 0 && cast_ground(kit.aoe, best);
+}
+
+int Brain::cast_area_n(const Enemy& e) const
+{
+	// Most visible enemies one area cast catching e can hit (0 when out of reach).
+	if (kit.aoe < 0)
+		return 0;
+	const int range = static_cast<int>(kit.aoe_range), rad = static_cast<int>(kit.aoe_radius);
+	if (cheb(pos, e.pos) > range + rad)
+		return 0;
+	int best_n = 0;
+	for (int dy = -rad; dy <= rad; ++dy)
+		for (int dx = -rad; dx <= rad; ++dx)
+		{
+			const vec2 c{ e.pos.x + dx, e.pos.y + dy };
+			if (cheb(pos, c) > range || !bc::map::is_in_bounds(c))
+				continue;
+			int n = 0;
+			for (const auto& o : world().enemies)
+				n += o.alive && o.visible && cheb(o.pos, c) <= rad;
+			best_n = std::max(best_n, n);
+		}
+	return best_n;
 }
 
 float Brain::camp_dps() const
@@ -1268,7 +1319,9 @@ bool Brain::combat()
 	// Enemy reach next turn: attack range (+1 step for melee), +2 with a dash ready, 4 with a spell ready.
 	auto reach_of = [](const Enemy& e) {
 		int r = e.kit.attack_range + (e.kit.ranged ? 0 : 1) + (e.ready(e.kit.dash) ? 2 : 0);
-		if (e.ready(e.kit.dmg) || e.ready(e.kit.cc) || e.ready(e.kit.aoe))
+		if (P.aoe_reach5 && P.aoe_reach5 != 3)
+			r = std::max(r, enemy_spell_reach(e, false));
+		else if (e.ready(e.kit.dmg) || e.ready(e.kit.cc) || e.ready(e.kit.aoe))
 			r = std::max(r, 4);
 		return r;
 	};
@@ -1436,9 +1489,12 @@ bool Brain::combat()
 		const float tku = our_hp / std::max(1.f, their_dps + reflect * static_cast<float>(1 + allies_near));
 		adv = tku / std::max(0.1f, t_kill_them) * learner().fight_scale();
 	}
-	const bool killable = d <= std::max(my_reach, (ready(kit.dmg) || ready(kit.cc)) ? 4 : 0) &&
+	const int aoe_r5 = P.aoe_cast5 && ready(kit.aoe) ? static_cast<int>(kit.aoe_range + kit.aoe_radius) : 0;
+	bool killable = d <= std::max(my_reach, (ready(kit.dmg) || ready(kit.cc)) ? 4 : 0) &&
 		tgt->hp <= burst_vs(*tgt) + allies_burst;
-	const bool in_reach = danger.is_set(pos);
+	if (!killable && aoe_r5 > 0 && d <= aoe_r5)
+		killable = tgt->hp <= (d <= kit.attack_range && can_attack ? str : 0.f) + focus * kit.aoe_mod + allies_burst; // F2: the area from 5
+	const bool in_reach = P.aoe_reach5 == 3 ? danger4.is_set(pos) : danger.is_set(pos);
 
 	// Can we actually get away? Melee and dash chasers move and hit in the same turn. Fleeing only works
 	// if no such chaser is close, if our own dash outruns theirs, or if we survive the whole walk home.
@@ -1527,7 +1583,7 @@ bool Brain::combat()
 		for (auto* e : E)
 		{
 			const int de = cheb(pos, e->pos);
-			const bool spell_r = spell_up && de <= 4;
+			const bool spell_r = (spell_up && de <= 4) || de <= aoe_r5;
 			if (de > my_reach && !spell_r)
 				continue;
 			if (e->type == CT::ren)
@@ -1537,7 +1593,9 @@ bool Brain::combat()
 					continue;
 			}
 			float tb = de <= my_reach && can_attack ? str * (ready(kit.reset) ? 2.f : 1.f) : 0.f;
-			if (spell_r)
+			if (spell_r && de > 4)
+				tb += focus * kit.aoe_mod; // F2: only the area reaches 5
+			else if (spell_r)
 				tb += std::max({ ready(kit.dmg) ? focus * kit.dmg_mod : 0.f, ready(kit.cc) ? focus * kit.cc_mod : 0.f, ready(kit.aoe) ? focus * kit.aoe_mod : 0.f });
 			for (const auto& a : W.allies)
 				if (a.handle != self && a.alive && a.visible && a.kit_ready && cheb(a.pos, e->pos) <= std::max(a.kit.attack_range + 1, 4))
@@ -1578,7 +1636,7 @@ bool Brain::combat()
 		if (fight && !pkill && (P.px_hold > 0 || P.px_burst_wait > 0) && !tgt->channeling && !tgt->tributing)
 		{
 			const int dt = cheb(pos, tgt->pos);
-			const bool spell_now = dt <= 4 && (ready(kit.dmg) || ready(kit.cc) || ready(kit.aoe));
+			const bool spell_now = (dt <= 4 && (ready(kit.dmg) || ready(kit.cc) || ready(kit.aoe))) || dt <= aoe_r5;
 			if (dt > kit.attack_range && !spell_now)
 			{
 				bool step_in = in_reach;
@@ -1842,6 +1900,7 @@ bool Brain::engage(Enemy& e)
 	}
 	if (d > 4 && cast_on_nearer(e))
 		return true;
+	const int aoe_r5 = P.aoe_cast5 && ready(kit.aoe) ? static_cast<int>(kit.aoe_range + kit.aoe_radius) : 0;
 	if (d > kit.attack_range)
 	{
 		bc::bitboard goal;
@@ -1863,7 +1922,9 @@ bool Brain::engage(Enemy& e)
 				if (&o == &e || !o.alive || !o.visible || cheb(o.pos, e.pos) > 8)
 					continue;
 				int r = o.kit.attack_range + (o.kit.ranged ? 0 : 1) + (o.ready(o.kit.dash) ? 2 : 0);
-				if (o.ready(o.kit.dmg) || o.ready(o.kit.cc) || o.ready(o.kit.aoe))
+				if (P.aoe_reach5)
+					r = std::max(r, enemy_spell_reach(o, false));
+				else if (o.ready(o.kit.dmg) || o.ready(o.kit.cc) || o.ready(o.kit.aoe))
 					r = std::max(r, 4);
 				others.draw_chebyshev(o.pos, static_cast<float>(r));
 			}
@@ -1890,18 +1951,67 @@ bool Brain::engage(Enemy& e)
 		}
 		if (kit.ranged)
 		{
-			const bool spell_now = d <= 4 && (ready(kit.cc) || ready(kit.dmg) || ready(kit.aoe));
+			const bool spell_now = (d <= 4 && (ready(kit.cc) || ready(kit.dmg) || ready(kit.aoe))) || d <= aoe_r5;
+			bool hold = false;
+			if ((P.open_first & 2) && !spell_now && !danger.is_set(pos) && (ready(kit.cc) || ready(kit.dmg) || ready(kit.aoe)) && !e.channeling && !e.tributing)
+			{
+				// F3: a proactive approach with our opener ready: the next step enters an enemy's next-turn reach (area
+				// casters 5 with aoe_reach5) and we cannot hit this turn (ranged lose the attack when walking, damage
+				// spells are exclusive with walking). Hold at the edge: the side that steps in takes the first volley
+				// (top vs us: the opener wins the first 3 rounds 391 to 58). At most open_hold rounds per fight.
+				bool step_in = false;
+				for (const auto& o : world().enemies)
+				{
+					if (!o.alive || !o.visible)
+						continue;
+					int r = o.kit.attack_range + (o.kit.ranged ? 0 : 1) + (o.ready(o.kit.dash) ? 2 : 0);
+					r = std::max(r, P.aoe_reach5 ? enemy_spell_reach(o, false) : ((o.ready(o.kit.dmg) || o.ready(o.kit.cc) || o.ready(o.kit.aoe)) ? 4 : 0));
+					step_in |= cheb(pos, o.pos) - 1 <= r;
+				}
+				if (round - of_round > 1)
+					of_since = round;
+				of_round = round;
+				hold = step_in && round - of_since < P.open_hold;
+			}
 			if (d <= kit.attack_range + 2 && ready(kit.dash))
 				step(goal, false, true), dbg_eng = 2;
 			else if (spell_now)
 			{
 				dbg_eng = 3;
-				if (!cast_unit_champ(kit.cc, ec) && !cast_unit_champ(kit.dmg, ec))
-					cast_ground(kit.aoe, e.pos);
+				if (d > 4)
+				{
+					// F2: only the area reaches 5: aim so its radius catches the target (and as many others as possible)
+					if (!cast_area_stun_at(e))
+						step(goal, false, true), dbg_eng = 4;
+					else
+						return true;
+				}
+				else
+				{
+					if ((P.aoe_cast5 & 2) && ready(kit.aoe) && !kit.aoe_stuns && cast_area_n(e) >= 2 && cast_area_stun_at(e))
+						return true; // F2: an area catching 2+ beats the single-target spell
+					if (!cast_unit_champ(kit.cc, ec) && !cast_unit_champ(kit.dmg, ec))
+					{
+						if (P.aoe_cast5)
+							cast_area_stun_at(e);
+						else
+							cast_ground(kit.aoe, e.pos);
+					}
+					return true;
+				}
+			}
+			else if (hold)
+			{
+				dbg_eng = 9;
 				return true;
 			}
 			else
+			{
 				step(goal, false, true), dbg_eng = 4;
+				// F3: Cassi's stun is usable while walking: step in and open with it
+				if ((P.open_first & 1) && kit.cc >= 0 && !kit.cc_excl && ready(kit.cc) && cheb(pos, e.pos) <= static_cast<int>(kit.cc_range) && e.type != CT::marcella)
+					cast_unit_champ(kit.cc, ec);
+			}
 		}
 		else
 		{
@@ -3658,9 +3768,10 @@ bool Brain::cast_on_nearer(const Enemy& skip)
 		return false;
 	auto& W = world();
 	Enemy* pick = nullptr;
+	const int lim = P.aoe_cast5 && ready(kit.aoe) ? std::max(4, static_cast<int>(kit.aoe_range + kit.aoe_radius)) : 4;
 	for (auto& o : W.enemies)
 	{
-		if (&o == &skip || !o.ch || !o.alive || !o.visible || cheb(pos, o.pos) > 4 || W.enemy_spawn.is_set(o.pos))
+		if (&o == &skip || !o.ch || !o.alive || !o.visible || cheb(pos, o.pos) > lim || W.enemy_spawn.is_set(o.pos))
 			continue;
 		if (o.type == CT::ren && hp <= 2.5f * bc::constants::passive_abilities::ren_retaliation_focus_ratio * o.focus && o.hp > burst_vs(o))
 			continue;
@@ -3669,8 +3780,15 @@ bool Brain::cast_on_nearer(const Enemy& skip)
 	}
 	if (!pick)
 		return false;
+	if (P.aoe_cast5 && cheb(pos, pick->pos) > 4)
+		return cast_area_stun_at(*pick);
 	if (!cast_unit_champ(kit.cc, *pick->ch) && !cast_unit_champ(kit.dmg, *pick->ch))
-		cast_ground(kit.aoe, pick->pos);
+	{
+		if (P.aoe_cast5)
+			cast_area_stun_at(*pick);
+		else
+			cast_ground(kit.aoe, pick->pos);
+	}
 	return cast_done;
 }
 

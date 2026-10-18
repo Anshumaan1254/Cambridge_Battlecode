@@ -135,8 +135,12 @@ struct Params
 	int rich_treasure_first = 0; // build_style 2: Ren and Stellar open with Treasure (1) or with r2's first emblem
 							   // (Ren Jungle health, Stellar Monster) and Treasure second (0); vs _v6 on the ladder
 							   // maps: 1 won 19/24 (gems +8,623), 0 won 21/24 (+9,385, deaths 441-670)
-	int ci_health_first = 1;   // build_style 2: Cassi & Issac buy health first (1) or Monster damage first (0);
-							   // vs _v6 on the ladder maps: 1 won 19/24 (gems +8,623, deaths 495-660), 0 won 16/24 (+3,449, 560-550)
+	int ci_health_first = 0;   // build_style 2: Cassi & Issac buy health first (1) or Monster damage first (0);
+							   // vs _v6 on the ladder maps: 1 won 19/24 (gems +8,623, deaths 495-660), 0 won 16/24 (+3,449, 560-550).
+							   // Session 9 (agent econ2): 0 since legend_m7. The top ladder teams' Cassi has 195-248 focus at r300,
+							   // ours had 70 (doc 08 section 3); 0 gives 125. On legend_m6: vs legend_m6 58.0 (88 distinct games;
+							   // official 58.8), held-out 54.0; with aoe_cast5=3 (= legend_m7) 65.9 / 70.6, held-out 62.0.
+							   // The top teams' full orders (Treasure/Jungle/Durability in the damage stat, then Power) lost 34-48%.
 	int monster_in_dps = 1;	   // count the Monster emblem's +10% camp damage in the kill-time model
 
 	// Shopping and home trips (heal + shop + bank near spawn; recall makes them cheap)
@@ -383,6 +387,21 @@ struct Params
 								// most this many rounds per fight (ranged must choose between a step and an attack)
 	int px_burst_wait = 0;		// proactive fight with no spell ready: hold outside their reach while a spell is at most this many
 								// rounds from ready (open with the burst)		// the team-kill estimate counts allies' spells at half weight (cooldowns unknown)
+
+	// Fight micro v2 (agent fight2, session 9; docs/strategy_v2/08 section 2, experiments/wip/x_f2_NOTES.md). All 0 = legend_m6.
+	int aoe_reach5 = 0;			// F1: an enemy area spell (ready, or cooldown unknown) threatens range + radius (5), not 4: danger
+								// map, combat()'s reach/incoming, the channel stun check, engage_angle. 2: also walk-compatible
+								// spells (Cassi's stun) range + 1. 3: only the danger map for routes (combat() stays at 4)
+	int aoe_cast5 = 3;			// F2: our area spells aim at a tile within range whose radius catches the target (reach 5), most
+								// enemies first: engage() (ranged), cast_on_nearer, px targeting reach, killable. Bit 2: at d <= 4 an
+								// area catching 2+ enemies goes before the single-target spell. Top teams land 20-28% of their spell
+								// damage at distance 5, we landed 3-8%; with 3: 21% (kpi_local vs _px9). On legend_m6: vs legend_m6
+								// 54.5 (official 58.8), held-out 60.0, vs the reach-5 proxy _f2q 53.4 (legend_m6 44.3)
+	int open_first = 0;			// F3 (bits): 1 = after a fight step, cast a walk-compatible spell that now reaches the target
+								// (Cassi's stun: walk + stun = the opener); 2 = proactive fight, no cast/attack possible this turn
+								// (ranged, an opener of ours ready): when the step enters an enemy's next-turn reach, hold at the
+								// edge (they step in, we cast first) for at most open_hold rounds per fight
+	int open_hold = 2;			// ... rounds
 };
 
 #ifdef LEGEND_RUNTIME_PARAMS

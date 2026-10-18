@@ -196,6 +196,7 @@ private:
 	bool alive = true, can_move = false, can_attack = false, can_cast = false, cast_done = false;
 	std::array<int, 2> cd{};
 	bc::bitboard danger;	  // tiles enemies can hit next turn
+	bc::bitboard danger4;	  // P.aoe_reach5 == 3: the legend danger map (every spell 4), for combat()'s in_reach
 	bc::bitboard camp_danger; // tiles in range of awake camps
 	bc::bitboard alert_zone;  // area an ally reported as dangerous (shared memory)
 	bc::bitboard clump;		  // P.spread_vs_splash: tiles next to an ally while a splash/area threat is near (else empty)
@@ -205,6 +206,8 @@ private:
 	int enemy_near_d = BIG; // nearest recently seen enemy, minus the rounds since we saw it (it may have closed in)
 	bool enemy_near_field = false; // enemy_near, not counting enemies standing on their own spawn
 	bool cast_area_stun_at(const Enemy& e); // area stun hitting e from up to range + radius away
+	int cast_area_n(const Enemy& e) const;  // enemies one area cast catching e can hit
+	int of_round = -100, of_since = -100;	// P.open_first & 2: hold rounds
 
 	// game-state modulated thresholds (recomputed each turn from P and the scoreboard)
 	float fight_margin = 1.3f, fight_back_margin = 0.75f, deny_bonus = 0.55f, enemy_half_penalty = 10.f;

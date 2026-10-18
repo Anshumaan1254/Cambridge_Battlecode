@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-18 16:45 UTC (session 9; container clock; `legend_m7` shipped)**. Rule from the user: update this file and push at every step. Start with **§S9**, then **§S8**,
+- Last updated: **2026-10-18 16:50 UTC (session 9; container clock; `legend_m7` shipped; pending list in §S9 "CURRENT STATE")**. Rule from the user: update this file and push at every step. Start with **§S9**, then **§S8**,
   **§S7**, **§S7-SV2**, then §000000 (resume protocol), §00000, §0000, §000, §00. **All work stays on branch `ccr-a858cd03-q87cpi`**:
   `git pull` (merge, never force) before every push. Session 9: the user asked to read the `claude/laughing-curie-3rq6hu` branch too:
   it is the session 4-5 state (last commit 2026-10-17 20:28 UTC) and everything in it is already in this branch (its §0000 is below).
@@ -50,6 +50,28 @@ running or unfinished, and what to do next, so a new agent can continue without 
   from 5; F3 holds at the edge lose again (46.6). Built the reach-5 proxy `_f2q`. `obj2` (Sonnet) started 16:30 on the stampede objective
   (top teams start its 360-gem group at r54, we at r175; loosening obj_clear_max/obj_absorb alone did not help).
 - Session 8's `evade` and `neutral` agents pushed nothing (no notes in git): their tasks are folded into `fight2` / `econ2`.
+
+### S9 CURRENT STATE (16:50 UTC) and WHAT IS LEFT TO DO (in priority order)
+
+**Shipped: `legend_m7`** (`submissions/legend.zip`, sha256 ee467569…; frozen copy `bots/_m7`, rebuilt by `tools/setup_session.sh`).
+**Baseline for every new change: `_m7`.** Its gains are local only: it has **not** played the ladder yet (neither has `legend_m6`).
+
+| # | Task | Who | State |
+|---|---|---|---|
+| 1 | **Ladder check of `legend_m7`**: upload `submissions/legend.zip`, queue match groups vs the top 3 (and a few teams ranked 30-100, our real neighbours), rotate all 17 maps, send the zips. Then `python3 tools/strategy_v2/run_all.py DIR ZIPS...`, `python3 -I tools/strategy_v2/micro.py --skip contest DIR/dmg=*:us:them`, `python3 -I tools/strategy_v2/teamsum.py --skip contest DIR/out=*:us:them`; compare with `experiments/ladder_m5/top4/micro.md` and doc 08: spell damage at distance 5 (was 8%), distance-5 band dealt/taken (was 3 / 12), openers (74 vs 129), Cassi focus at r300 (70 -> ~125 locally), deaths (6.7 per game vs 3-5), wins. Roll back to `submissions/history/legend_m6_20261018.zip` only if the KPIs get worse | the user | waiting for match groups |
+| 2 | **Fight micro on top of `_m7`** (agent `fight2`, Opus, running): F4 opener coordination and any F-rule left, rebased onto `_m7`; judge vs `_m7` (88 distinct + official), `_f2q`, `_px9`, `_fA`, `_ST`, pace. Notes `experiments/wip/x_f2_NOTES.md` | agent fight2 | running |
+| 3 | **Objective maps** (agent `obj2`, Sonnet, running): start stampede's 360-gem group early like the top teams (r54, tank in front, casters at range 3-4, one body farms gold; we start r175, pace 732), check other obj_mode maps. Notes `experiments/wip/x_o2_NOTES.md`, patch `x_o2.patch` (cut vs `_xp4`: re-test on `_m7`) | agent obj2 | running |
+| 4 | **contest** (lost every ladder game, spawn-camped from r100-200; 2nd and 3rd do the same to 1st): no feeding (do not walk out alone into their camp), gold income for the tiebreak, monolith only with the whole team. Detector `mono_mode` in `experiments/wip/x_contest.patch` (session 7). obj2 may leave an analysis | next agent (Sonnet) | not started |
+| 5 | **Neutral control and gold routing**: under opposition our neutral captures fall to 2.6 per game (top teams 7-10) and 34% of our neutral kills have 2+ bodies near (theirs 63-75%); our Ren takes 35-38% of capture gold, the 3rd team's Stellar + Cassi 60%. econ2 did not try routing (E4). Unopposed pace (`ledger.py run BOT idle`) is the fair first test | open | not started |
+| 6 | **A better sparring proxy**: `_f2q` (= `_px9` + reach-5 area casts) is the closest so far (`_xp4` beat it only 44.3%). Next: `_f2q` + `ci_health_first=0` + the 1st/3rd draft (8,4,3,0,9), so the proxy has the top teams' Cassi and openers | coordinator | not started |
+| 7 | Re-test the fight switches kept off against `_f2q` (doctrine `burst_exit`, `spread_vs_splash`, `strike_first`, `pair_space`, `support_v2`, `engage_angle`; S7 fight `fight_mem`, `pair_pool`, `kill_reach`, `fight_smooth`, `flee_fail_turns`, `flee_hold`; fight2 `aoe_reach5`, `open_first`): they were judged against opponents that never cast from 5 | open | not started |
+| 8 | Builds: the full top-team orders lose inside our brain (34-48%, session 9); re-test only after fights change (e.g. Cassi focus beyond `ci_health_first=0`: theirs 195-248 at r300, ours ~125) | open | parked |
+| 9 | Part C draft-time map plan (zones, circuits; `tools/strategy_v2/map_plan.py`), gem-race endgame (S7 task 6), altar denial | open | not started |
+| 10 | A100 RL re-run on `legend_m7` (`tools/rl/a100/run_a100.sh`): the user said not now (session 9) | the user, later | parked |
+
+Rules that held: distinct maps only (`'maps/*.map26a,maps/comp/*.map26a'`, 88 games; never `maps/ladder`), every game through `tools/ledger.py`,
+ship only with >= 50 vs the baseline on all and official, not worse vs the third parties (mean), pace within 10, 0 faults, no new rollovers;
+push the zip first, then continue. Local KPIs of any match-up: `tools/strategy_v2/kpi_local.sh BOT OPP OUT`.
 
 ## S8. SESSION 8 (2026-10-18 13:00 UTC, new container): read this first
 

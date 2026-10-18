@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-18 11:35 container clock (session 7)**. Rule from the user: update this file and push at every step. Start with **§S7**
+- Last updated: **2026-10-18 13:20 UTC (session 8)**. Rule from the user: update this file and push at every step. Start with **§S8**, then **§S7**
   (session 7), then **§S7-SV2** (session 7, strategy v2: the top-3 replay study and the new plan, `docs/strategy_v2/`), then §000000
   (resume protocol), §00000 (session 6), §0000, §000, §00. **All work stays on branch `ccr-a858cd03-q87cpi`**:
   **two sessions push to this branch** (§S7 = the coordinator with agents econ / fight / contest; §S7-SV2 = strategy v2): `git pull` (merge,
@@ -14,6 +14,27 @@ running or unfinished, and what to do next, so a new agent can continue without 
   is either offline (training parameters before submission) or in-match (adapting inside one game).
 
 ---
+
+## S8. SESSION 8 (2026-10-18 13:00 UTC, new container): read this first
+
+- Inputs: the A100 RL results (`rl_a100_results_20261018_1821_0f32bbb`, same files as `tune_out/a100/`; trained on the user's laptop:
+  18 cores, RTX 5070, cambc 2.2.2, 35 generations, 45,322 games, commit 0f32bbb = **`legend_rm` code**, not `legend_m4`), the strategy-v2 plan
+  (`docs/strategy_v2/`, candidate `submissions/candidates/legend_exec_20261018.zip` = `_rm` + `x_exec`). The user's "analysis.md" did not arrive
+  (only the two zips). Both session-7 sessions have stopped; their agents (econ, fight, contest) are gone; their notes are the handoff.
+- **RL result**: tournament (142 cases x 2 sides): best `_t4` (gen 32 mean vector) reward +0.527, win 0.768 vs the defaults +0.243 / 0.687;
+  validation of `_t4` (official 17): `_rm` 70.6, `_ST` 55.9, `_eA` 50.0, `_eB` 94.1, `_eC` 85.3, `_eD` 85.3. Parameters that moved consistently
+  (share of generation steps in the final direction >= 0.7, move >= 12% of the range): `deficit_defend` 1->3, `race_margin` 40->73,
+  `isolated_flee_adv` 1.1->1.5, `flee_dist` 7->5, `tribute_min` 34->54, `bank_trip_w` 1->1.74, `backup_radius` 8->5, `kill_gems` 25->40,
+  `ctx_invaded` 0.6->0, `threat_memory` 4->7, `reserve_margin` 0.5->0.33, `cap_recall_gold` 90->60, `fight_learn_rate` 0.235->0.33,
+  `max_wait` 18->14, `target_threat_adv` 1.3->1.49, `cornered_margin` 0.63->0.74, `isolated_fight_adv` 1.43->1.23. `max_join` (range 0-1 in
+  that run) is left at `_m4`'s 3. Analysis script: `tools/rl/a100/analyze_run.py` (to be committed).
+- Variants under test (ledger, 44 distinct maps = `maps/*.map26a` + `maps/comp`, no ladder copies; then pace vs `idle`, then `_fA`, `_ST`):
+  `_m4x` = `_m4` + `x_exec.patch`; `_m4r` = `_m4` + every RL value (not `max_join`); `_m4c` = `_m4` + the consistent subset;
+  `_m4xr`, `_m4xc` = `_m4x` + the same. Rebuild: `SRC=bots/_m4 tools/variant.sh _m4x && (cd bots/_m4x && patch -p1 < ../../experiments/wip/x_exec.patch)`,
+  then `SRC=bots/_m4 tools/variant.sh _m4r $(cat experiments/wip/rl_a100_all_args.txt)` (args files committed next to the patches).
+- Plan (priority): (1) ship the best of these if it beats `_m4` head-to-head and is not worse vs `_ST`/`_fA` or on pace (push first);
+  (2) the top-style sparring bot `bots/_top` (05 section 2; Sonnet agent); (3) fight doctrine A4-A7/A9 on the new base (Opus agent, targeted
+  disengages only: session 7 showed broad caution loses); (4) Part C/D (draft-time plan, field/contest playbooks); (5) builds/draft package vs `_top`.
 
 ## S7. SESSION 7 (2026-10-18, new container): read this first
 

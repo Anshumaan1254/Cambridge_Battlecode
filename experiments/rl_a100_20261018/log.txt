@@ -1,0 +1,53 @@
+[17:03:40] start: commit 0f32bbb, legend 9f313f505be0, 47 params, 6 case groups (1256 case keys), opponents ['_L0', '_ST', '_eA', '_eB', '_eC', '_eD', '_es2', '_r2', '_rm', '_self', '_v6', 'idle'], jobs 18, pop 9 pairs, surrogate MLP ensemble, torch 2.11.0+cu128 on cuda: NVIDIA GeForce RTX 5070 Laptop GPU, budget 1.5 h
+[17:03:40]    group official_vs_ladder_archetypes: match, 68 cases, 12 per generation, weight 4.0
+[17:03:40]    group official_vs_frozen: match, 51 cases, 6 per generation, weight 2.0
+[17:03:40]    group official_pace: pace, 17 cases, 4 per generation, weight 1.5
+[17:03:40]    group regression_fixtures: match, 6 cases, 2 per generation, weight 1.0
+[17:03:40]    group ladder_and_generated_vs_panel: match, 336 cases, 5 per generation, weight 1.0
+[17:03:40]    group heldout_gold_obj: match, 150 cases, 2 per generation, weight 0.5
+[17:05:59] gen 0: mean -0.035 (win 0.66) | pop best +0.476 worst -0.476 | surrogate - | 31 cases, 1178 games, build 29s, games 103s (1.58 core-s/game), faults 0, missing 0
+[17:07:45] gen 1: mean +0.373 (win 0.73) | pop best +0.382 worst -0.010 | surrogate - | 31 cases, 1178 games, build 1s, games 100s (1.53 core-s/game), faults 0, missing 0
+[17:09:49] gen 2: mean +0.260 (win 0.69) | pop best +0.582 worst -0.110 | surrogate +0.361, +0.022 | pulled toward surrogate0 (+0.361 > mean +0.260) | 31 cases, 1302 games, build 6s, games 109s (1.50 core-s/game), faults 0, missing 0
+[17:11:48] gen 3: mean +0.416 (win 0.77) | pop best +0.635 worst -0.083 | surrogate +0.141, -0.149 | 31 cases, 1302 games, build 1s, games 108s (1.49 core-s/game), faults 0, missing 0
+[17:13:50] gen 4: mean +0.090 (win 0.71) | pop best +0.515 worst -0.030 | surrogate +0.220, +0.207 | pulled toward surrogate0 (+0.220 > mean +0.090) | 31 cases, 1302 games, build 1s, games 111s (1.54 core-s/game), faults 0, missing 0
+[17:15:52] gen 5: mean +0.187 (win 0.71) | pop best +0.741 worst +0.061 | surrogate +0.162, +0.105 | 31 cases, 1302 games, build 1s, games 112s (1.55 core-s/game), faults 0, missing 0
+[17:17:50] gen 6: mean +0.108 (win 0.71) | pop best +0.661 worst -0.100 | surrogate -0.910, -0.576 | 31 cases, 1302 games, build 1s, games 106s (1.47 core-s/game), faults 0, missing 0
+[17:19:48] gen 7: mean +0.474 (win 0.73) | pop best +0.757 worst -0.028 | surrogate -0.623, +0.054 | 31 cases, 1302 games, build 1s, games 105s (1.45 core-s/game), faults 0, missing 0
+[17:21:52] gen 8: mean +0.160 (win 0.69) | pop best +0.659 worst +0.055 | surrogate +0.196, -0.185 | pulled toward surrogate0 (+0.196 > mean +0.160) | 31 cases, 1302 games, build 1s, games 110s (1.52 core-s/game), faults 0, missing 0
+[17:23:50] gen 9: mean +0.489 (win 0.77) | pop best +0.755 worst -0.001 | surrogate +0.302, +0.664 | pulled toward surrogate1 (+0.664 > mean +0.489) | 31 cases, 1302 games, build 1s, games 105s (1.46 core-s/game), faults 0, missing 0
+[17:25:56] gen 10: mean +0.395 (win 0.76) | pop best +0.716 worst -0.275 | surrogate -0.655, -0.656 | 31 cases, 1302 games, build 1s, games 112s (1.55 core-s/game), faults 0, missing 0
+[17:28:01] gen 11: mean +0.539 (win 0.79) | pop best +0.773 worst -0.224 | surrogate -0.385, -0.321 | 31 cases, 1302 games, build 1s, games 110s (1.52 core-s/game), faults 0, missing 0
+[17:30:01] gen 12: mean +0.200 (win 0.68) | pop best +0.548 worst -0.488 | surrogate -0.237, -0.454 | 31 cases, 1302 games, build 1s, games 107s (1.48 core-s/game), faults 0, missing 0
+[17:32:03] gen 13: mean +0.206 (win 0.68) | pop best +0.549 worst -0.337 | surrogate -0.248, -0.112 | 31 cases, 1302 games, build 1s, games 112s (1.55 core-s/game), faults 0, missing 0
+[17:34:02] gen 14: mean +0.686 (win 0.85) | pop best +0.827 worst -0.102 | surrogate +0.188, -0.220 | 31 cases, 1302 games, build 1s, games 109s (1.51 core-s/game), faults 0, missing 0
+[17:36:03] gen 15: mean +0.467 (win 0.74) | pop best +0.539 worst +0.064 | surrogate -0.275, +0.342 | 31 cases, 1302 games, build 1s, games 108s (1.49 core-s/game), faults 0, missing 0
+[17:38:05] gen 16: mean +0.362 (win 0.74) | pop best +0.831 worst -0.058 | surrogate +0.243, -0.059 | 31 cases, 1302 games, build 1s, games 108s (1.50 core-s/game), faults 0, missing 0
+[17:40:07] gen 17: mean +0.484 (win 0.77) | pop best +0.674 worst -0.329 | surrogate +0.490, +0.271 | 31 cases, 1302 games, build 1s, games 108s (1.50 core-s/game), faults 0, missing 0
+[17:42:04] gen 18: mean +0.847 (win 0.87) | pop best +0.732 worst +0.240 | surrogate +0.341, +0.127 | 31 cases, 1302 games, build 1s, games 104s (1.44 core-s/game), faults 0, missing 0
+[17:44:01] gen 19: mean +0.564 (win 0.77) | pop best +0.722 worst -0.053 | surrogate +0.199, +0.296 | 31 cases, 1302 games, build 1s, games 103s (1.43 core-s/game), faults 0, missing 0
+[17:46:06] gen 20: mean +0.420 (win 0.76) | pop best +0.735 worst -0.350 | surrogate +0.118, -0.354 | 31 cases, 1302 games, build 1s, games 111s (1.54 core-s/game), faults 0, missing 0
+[17:48:02] gen 21: mean +0.258 (win 0.69) | pop best +0.599 worst -0.102 | surrogate -0.328, -0.089 | 31 cases, 1302 games, build 2s, games 103s (1.43 core-s/game), faults 0, missing 0
+[17:49:59] gen 22: mean +0.660 (win 0.82) | pop best +0.669 worst +0.065 | surrogate +0.311, +0.496 | 31 cases, 1302 games, build 1s, games 104s (1.44 core-s/game), faults 0, missing 0
+[17:52:09] gen 23: mean +0.467 (win 0.74) | pop best +0.910 worst -0.260 | surrogate +0.323, +0.487 | 31 cases, 1302 games, build 1s, games 115s (1.59 core-s/game), faults 0, missing 0
+[17:54:15] gen 24: mean +0.620 (win 0.77) | pop best +0.787 worst -0.030 | surrogate +0.604, +0.489 | 31 cases, 1302 games, build 1s, games 116s (1.60 core-s/game), faults 0, missing 0
+[17:56:15] gen 25: mean +0.578 (win 0.77) | pop best +0.723 worst -0.181 | surrogate +0.350, -0.318 | 31 cases, 1302 games, build 1s, games 109s (1.51 core-s/game), faults 0, missing 0
+[17:58:14] gen 26: mean +0.795 (win 0.82) | pop best +0.844 worst +0.197 | surrogate +0.516, +0.407 | 31 cases, 1302 games, build 1s, games 106s (1.46 core-s/game), faults 0, missing 0
+[18:00:15] gen 27: mean +0.195 (win 0.69) | pop best +0.467 worst -0.087 | surrogate +0.068, +0.039 | 31 cases, 1302 games, build 1s, games 110s (1.52 core-s/game), faults 0, missing 0
+[18:02:08] gen 28: mean +0.474 (win 0.76) | pop best +0.949 worst +0.177 | surrogate +0.330, +0.420 | 31 cases, 1302 games, build 1s, games 101s (1.40 core-s/game), faults 0, missing 0
+[18:04:04] gen 29: mean +0.609 (win 0.79) | pop best +0.746 worst +0.190 | surrogate +0.046, +0.197 | 31 cases, 1302 games, build 1s, games 103s (1.43 core-s/game), faults 0, missing 0
+[18:06:01] gen 30: mean +0.319 (win 0.73) | pop best +0.602 worst +0.088 | surrogate -0.084, +0.575 | pulled toward surrogate1 (+0.575 > mean +0.319) | 31 cases, 1302 games, build 1s, games 104s (1.44 core-s/game), faults 0, missing 0
+[18:08:07] gen 31: mean +0.669 (win 0.84) | pop best +0.753 worst -0.055 | surrogate -0.070, +0.556 | 31 cases, 1302 games, build 1s, games 111s (1.54 core-s/game), faults 0, missing 0
+[18:10:06] gen 32: mean +0.372 (win 0.71) | pop best +0.720 worst +0.064 | surrogate +0.131, +0.198 | 31 cases, 1302 games, build 1s, games 107s (1.47 core-s/game), faults 0, missing 0
+[18:12:06] gen 33: mean +0.534 (win 0.81) | pop best +0.680 worst -0.114 | surrogate +0.153, +0.566 | pulled toward surrogate1 (+0.566 > mean +0.534) | 31 cases, 1302 games, build 1s, games 106s (1.47 core-s/game), faults 0, missing 0
+[18:14:10] gen 34: mean +0.673 (win 0.84) | pop best +0.568 worst +0.074 | surrogate +0.244, -0.225 | 31 cases, 1302 games, build 1s, games 109s (1.51 core-s/game), faults 0, missing 0
+[18:14:10] training stopped after 35 generations (1.18 h); fitting the surrogate on 45322 games
+[18:15:28] tournament: 7 entrants x 142 cases x 2 sides (1988 games)
+[18:18:19]    _t4    reward +0.527 win 0.768 faults 0 origin {'gen': 32, 'kind': 'mean', 'reward': 0.3717130121360236, 'pred': 0.6434594988822937, 'pred_std': 0.08785570412874222} official_vs_ladder_archetypes +0.76 official_vs_frozen +0.26 official_pace -0.08 regression_fixtures +1.01
+[18:18:19]    _t2    reward +0.510 win 0.746 faults 0 origin {'gen': 33, 'kind': 'mean', 'reward': 0.5336297906698009, 'pred': 0.6447030901908875, 'pred_std': 0.08642388135194778} official_vs_ladder_archetypes +0.80 official_vs_frozen +0.08 official_pace -0.09 regression_fixtures +1.11
+[18:18:19]    _t3    reward +0.464 win 0.732 faults 0 origin {'gen': 31, 'kind': 'mean', 'reward': 0.6686436475240762, 'pred': 0.6470276117324829, 'pred_std': 0.09196515381336212} official_vs_ladder_archetypes +0.71 official_vs_frozen -0.01 official_pace -0.11 regression_fixtures +1.31
+[18:18:19]    _t5    reward +0.454 win 0.718 faults 0 origin {'gen': 20, 'kind': 'mean', 'reward': 0.4204729722517101, 'pred': 0.5644422769546509, 'pred_std': 0.0668589398264885} official_vs_ladder_archetypes +0.80 official_vs_frozen -0.20 official_pace -0.12 regression_fixtures +1.25
+[18:18:19]    _t1    reward +0.453 win 0.732 faults 0 origin {'gen': 18, 'kind': 'mean', 'reward': 0.8473516838005631, 'pred': 0.5537731051445007, 'pred_std': 0.05759938061237335} official_vs_ladder_archetypes +0.76 official_vs_frozen +0.16 official_pace -0.12 regression_fixtures +0.68
+[18:18:19]    _t0    reward +0.379 win 0.697 faults 0 origin {'gen': 35, 'kind': 'final_theta', 'reward': None} official_vs_ladder_archetypes +0.74 official_vs_frozen -0.12 official_pace -0.12 regression_fixtures +0.68
+[18:18:19]    _tdef  reward +0.243 win 0.687 faults 0 origin {'kind': 'defaults'} official_vs_ladder_archetypes +0.47 official_vs_frozen -0.26 official_pace -0.07 regression_fixtures +0.81
+[18:18:19] best: _t4 (+0.527; defaults +0.243) -> best_params.json
+[18:18:19] done

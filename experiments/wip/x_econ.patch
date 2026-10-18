@@ -1,6 +1,6 @@
 diff -ruN _m4/src/brain.cpp _x_econ/src/brain.cpp
 --- _m4/src/brain.cpp	2026-10-18 10:31:54.671512061 +0000
-+++ _x_econ/src/brain.cpp	2026-10-18 10:58:26.792630614 +0000
++++ _x_econ/src/brain.cpp	2026-10-18 11:22:25.826017851 +0000
 @@ -62,14 +62,21 @@
  		case CT::ren:
  			if (P.rich_treasure_first)
@@ -116,7 +116,42 @@ diff -ruN _m4/src/brain.cpp _x_econ/src/brain.cpp
  void Brain::remember_positions()
  {
  	// Called first thing in a turn: where we stood at the end of our last turn and where we saw the allies then
-@@ -2436,6 +2481,17 @@
+@@ -1750,12 +1795,24 @@
+ 	return true;
+ }
+ 
++bool Brain::finishing_kill() const
++{
++	auto& W = world();
++	if (P.finish_trip <= 0 || task != T_FARM || task_group < 0 || task_group >= static_cast<int>(W.groups.size()) || enemy_near_d <= P.finish_enemy_d)
++		return false;
++	const auto& g = W.groups[static_cast<std::size_t>(task_group)];
++	if (g.st != ST_ALIVE || !g.near.is_set(pos) || g.hp_total <= 0)
++		return false;
++	const float kill = std::ceil(g.hp_total / std::max(10.f, dps_on(g)));
++	return kill <= static_cast<float>(P.finish_trip) && hp - incoming_on(g) * kill >= (P.retreat_hp + 0.05f) * max_hp;
++}
++
+ bool Brain::home_trip()
+ {
+ 	// A trip home heals fully and turns gold into shards; recall (5 turn ends) makes it cheap from far away.
+ 	// Strong teams recall right after captures to heal, shop and bank near spawn instead of walking.
+ 	auto& W = world();
+-	if (task == T_CAPTURE || reward_here() || W.ally_spawn.is_set(pos))
++	if (task == T_CAPTURE || reward_here() || W.ally_spawn.is_set(pos) || finishing_kill())
+ 		return false;
+ 	const int dh = W.dist_home(pos);
+ 	// Within two steps of spawn the trip is almost free, so it is not skipped there: skipping it let farm()
+@@ -2100,7 +2157,7 @@
+ 	const bool hurt_and_rich = gold >= 90 && hp < 0.6f * max_hp && dh <= P.shop_trip_max;
+ 	if (!rich && !hurt_and_rich)
+ 		return false;
+-	if (task == T_CAPTURE || reward_here())
++	if (task == T_CAPTURE || reward_here() || finishing_kill())
+ 		return false;
+ 	return go_home();
+ }
+@@ -2436,6 +2493,17 @@
  		eta = d_adj;
  		if (claimers)
  		{
@@ -134,17 +169,34 @@ diff -ruN _m4/src/brain.cpp _x_econ/src/brain.cpp
  			// Join only packs too heavy for one body; never a third body except on a monolith.
  			const float solo_rounds = hp_left / std::max(10.f, ally_dps);
  			const bool heavy = g.monolith || g.elk || (!g.harmless && (solo_rounds > P.join_min_rounds || g.attackers >= 2));
-@@ -2553,7 +2609,8 @@
+@@ -2553,7 +2621,25 @@
  		};
  		float team_kill = 0;
  		const bool solo_ok = plan(ally_dps, melee_ally, time);
 -		if (!solo_ok && W.obj_mode && g.objective && P.obj_team && g.attackers >= P.obj_team_attackers && (sc_obj_focus < 0 || sc_obj_focus == g.id) &&
++		if (solo_ok && claimers && P.join_marginal && P.no_split && !g.monolith && !(W.obj_mode && g.objective) && (P.join_marginal == 1 || (g.attackers <= 1 && !g.elk)))
++		{
++			const float a_dps = std::max(10.f, ally_dps);
++			const float t_alone = hp_left / a_dps;
++			// Measured from when the claimers start hitting: now, or the respawn when it is still to come (we wait for it too).
++			const float start = g.st == ST_RESPAWN ? static_cast<float>(std::max(0, g.ready_round - round)) : 0.f;
++			const float arrive = std::max(0.f, static_cast<float>(d_adj) - start);
++			const float hp_then = hp_left - a_dps * arrive;
++			if (hp_then <= 0.f)
++				{ WHY(14); return -1; }
++			const float t_with = arrive + hp_then / (a_dps + my_dps);
++			const float saved = t_alone - t_with;
++			if (saved <= 0.5f)
++				{ WHY(14); return -1; }
++			share = saved / (t_alone + 6.f);
++			time = std::max(1.f, time - 6.f); // the claimer captures
++		}
 +		if (!solo_ok && ((W.obj_mode && g.objective && P.obj_team && g.attackers >= P.obj_team_attackers && (sc_obj_focus < 0 || sc_obj_focus == g.id)) ||
 +				(P.heavy_team && heavy_ok(g) && (sc_heavy_focus < 0 || sc_heavy_focus == g.id))) &&
  			obj_team_ready(g, hp_left, team_kill))
  		{
  			// Objective map: too heavy for us and the bodies already on it, but not for the whole team.
-@@ -2820,6 +2877,22 @@
+@@ -2820,6 +2906,22 @@
  				sc_obj_focus = c;
  		}
  	}
@@ -167,7 +219,7 @@ diff -ruN _m4/src/brain.cpp _x_econ/src/brain.cpp
  }
  
  void Brain::farm()
-@@ -3362,7 +3435,7 @@
+@@ -3362,7 +3464,7 @@
  	auto& W = world();
  	const bool obj = W.obj_mode && g.objective;
  	const bool obj_first = obj && P.obj_attackers_first;
@@ -178,17 +230,18 @@ diff -ruN _m4/src/brain.cpp _x_econ/src/brain.cpp
  		// left it half dead for the enemy (stampede vs _v6: 1,707 of 17,400 left for 130 rounds, then their
 diff -ruN _m4/src/brain.h _x_econ/src/brain.h
 --- _m4/src/brain.h	2026-10-18 10:31:54.667697192 +0000
-+++ _x_econ/src/brain.h	2026-10-18 10:54:35.155191367 +0000
-@@ -80,6 +80,8 @@
++++ _x_econ/src/brain.h	2026-10-18 11:22:25.817998160 +0000
+@@ -80,6 +80,9 @@
  	int sc_recent_n = 0;
  	float sc_risk = 0;
  	bool sc_alert = false;
 +	int sc_heavy_focus = -1; // heavy group the off-objective team plan is limited to this turn (P.heavy_team)
 +	bool heavy_ok(const Group& g) const;
++	bool finishing_kill() const;
  	int sc_obj_focus = -1; // objective group the team plan is limited to this turn (P.obj_focus)
  	bool reward_here(); // a dead group we were farming waits for its capture next to us
  	bool respond_to_alert();
-@@ -225,6 +227,9 @@
+@@ -225,6 +228,9 @@
  	vec2 my_prev_pos{ -1, -1 };
  	int my_prev_round = -100;
  	std::array<vec2, 8> ally_prev_pos{};
@@ -200,8 +253,8 @@ diff -ruN _m4/src/brain.h _x_econ/src/brain.h
  #ifdef LEGEND_TRACE
 diff -ruN _m4/src/params.h _x_econ/src/params.h
 --- _m4/src/params.h	2026-10-18 10:31:54.730029951 +0000
-+++ _x_econ/src/params.h	2026-10-18 10:58:26.790324080 +0000
-@@ -138,6 +138,30 @@
++++ _x_econ/src/params.h	2026-10-18 11:22:25.814050867 +0000
+@@ -138,6 +138,41 @@
  	int ci_health_first = 1;   // build_style 2: Cassi & Issac buy health first (1) or Monster damage first (0);
  							   // vs _v6 on the ladder maps: 1 won 19/24 (gems +8,623, deaths 495-660), 0 won 16/24 (+3,449, 560-550)
  	int monster_in_dps = 1;	   // count the Monster emblem's +10% camp damage in the kill-time model
@@ -228,6 +281,17 @@ diff -ruN _m4/src/params.h _x_econ/src/params.h
 +	// rounds and walk to it (interlock: Varg walked 4 rounds toward a wolf Ren had just collected, then switched again).
 +	// claim_release: an alive ally's claim leaving a group we remember as a reward means it collected it: we mark it respawning.
 +	int claim_release = 0;
++	// A joiner never collects (no_split: the first body on the tiles does), so what joining earns the team is the claimers' time saved.
++	// join_share credited it 0.6 of the reward: weak bodies (Issac, Cassi without items) chased the strong farmers' groups all game
++	// (expanse: Issac flipped between the same 5 groups for 300 rounds, scoring 1.5-3.2 on a wolf Ren was about to finish, first
++	// capture r226-r328). join_marginal: value = reward x (claimers' rounds saved by our help, counting our walk) / (their clear + 6),
++	// over the rounds we spend (walk + help); no help that saves nothing.
++	// Trips home in the middle of a kill: expanse, Issac hit a lone wolf from 1350 to 470 (r418-r430), recalled to heal and shop at
++	// 46% health, and came back 22 rounds later to finish it. finish_trip: no voluntary home or shopping trip (home_trip, shop_trip)
++	// while we stand in range of the group we farm and it dies within this many rounds with us above the retreat line (incoming x
++	// rounds), no enemy near (0 = off). safety() still retreats as before.
++	int finish_trip = 0;
++	int join_marginal = 0;			 // 2: only on single-attacker groups (packs and elks keep join_share: a lone claimer there needs heal trips)
 +	float heavy_team_hp = 4000.f; // ... groups of at least this much health that hit back (not monoliths)
  
  	// Shopping and home trips (heal + shop + bank near spawn; recall makes them cheap)

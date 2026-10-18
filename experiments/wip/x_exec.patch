@@ -1,0 +1,122 @@
+diff -ruN legend/src/brain.cpp _xexec/src/brain.cpp
+--- a/src/brain.cpp	2026-10-18 09:57:20.740081932 +0000
++++ b/src/brain.cpp	2026-10-18 10:22:22.480154590 +0000
+@@ -1378,6 +1378,10 @@
+ 		else if (P.stay_veto && fight && !killable && can_escape && hp <= worst)
+ 			fight = false;
+ 	}
++	// Fight commitment: having fought last turn, keep at it unless the estimate dropped clearly or we are low. The
++	// per-turn re-evaluation alone flipped T_FIGHT / T_FLEE under fire (walk in, walk out, hit nobody).
++	if (P.fight_commit && !fight && last_fight_round == round - 1 && adv >= P.fight_commit_margin && hp >= P.fight_commit_hp * max_hp)
++		fight = true;
+ 	// A bag that wins the game is worth more than any fight we can walk away from.
+ 	if (fight && P.win_bank && !killable && can_escape && gems > 0 && wins_with(static_cast<int>(gems)))
+ 		fight = false;
+@@ -1394,6 +1398,7 @@
+ 		post_danger(tgt->pos);
+ 	if (fight)
+ 	{
++		last_fight_round = round;
+ 		comms().post(AL_RALLY, tgt->pos, round);
+ 		learner().on_fight(round);
+ 		task = T_FIGHT;
+@@ -1403,6 +1408,11 @@
+ 	{
+ 		post_danger(tgt->pos);
+ 		task = T_FLEE;
++		// Melee may attack and walk in one turn: swing at an adjacent enemy before stepping away (the step usually
++		// leaves it out of reach, so swinging after the step hit nothing).
++		if (P.exec_flee_hit && !kit.ranged && can_attack)
++			if (Enemy* o = best_in_reach(nullptr))
++				attack_unit(*o->ch);
+ 		// A stun on the closest melee chaser buys a free step (only stuns that still let us walk).
+ 		for (auto* e : E)
+ 			if (e->ch && !kit.cc_excl && (!e->kit.ranged || e->ready(e->kit.dash)) && cheb(pos, e->pos) <= static_cast<int>(kit.cc_range) && ready(kit.cc))
+@@ -1503,6 +1513,26 @@
+ 	C.post(AL_DANGER, at, round);
+ }
+ 
++Enemy* Brain::best_in_reach(const Enemy* skip)
++{
++	auto& W = world();
++	Enemy* best = nullptr;
++	float bv = -1;
++	for (auto& o : W.enemies)
++	{
++		if (&o == skip || !o.ch || !o.alive || !o.visible || cheb(pos, o.pos) > kit.attack_range)
++			continue;
++		if (W.enemy_spawn.is_set(o.pos) && o.max_hp > burst_vs(o) + 1.f)
++			continue;
++		if (o.type == CT::ren && hp <= 2.5f * bc::constants::passive_abilities::ren_retaliation_focus_ratio * o.focus && o.hp > str)
++			continue;
++		const float v = (60.f + ((o.type == CT::cassi || o.type == CT::issac) ? 60.f : 0.f) + static_cast<float>(o.gems)) / std::max(50.f, o.hp);
++		if (v > bv)
++			bv = v, best = &o;
++	}
++	return best;
++}
++
+ bool Brain::engage(Enemy& e)
+ {
+ 	if (!e.ch)
+@@ -1520,6 +1550,29 @@
+ 	}
+ 	auto& ec = *e.ch;
+ 	int d = cheb(pos, e.pos);
++	if (P.exec_hit_first && d > kit.attack_range && can_attack)
++	{
++		// The team target is out of reach but another enemy is in reach: a turn spent walking under fire deals nothing.
++		if (Enemy* o = best_in_reach(&e))
++		{
++			if (kit.ranged)
++			{
++				if (!cast_done && !cast_unit_champ(kit.dmg, *o->ch))
++					cast_unit_champ(kit.cc, *o->ch);
++				if (attack_unit(*o->ch))
++				{
++					std::int32_t alive_flag = 1;
++					bc::detail::sdk_champion_is_alive(o->handle, &alive_flag);
++					if (alive_flag && !cast_done && ready(kit.reset) && cast_self(kit.reset))
++						attack_unit(*o->ch);
++				}
++				dbg_eng = 30;
++				return true;
++			}
++			attack_unit(*o->ch); // melee: then still walk toward the target below
++			dbg_eng = 31;
++		}
++	}
+ 	if (d > 4 && cast_on_nearer(e))
+ 		return true;
+ 	if (d > kit.attack_range)
+diff -ruN legend/src/brain.h _xexec/src/brain.h
+--- a/src/brain.h	2026-10-18 09:57:20.741332729 +0000
++++ b/src/brain.h	2026-10-18 10:22:18.462537286 +0000
+@@ -65,6 +65,8 @@
+ 	int race_state = 0; // 0 even or ahead, 1 behind and we win fights (contest gems), 2 behind and we do not (pure gem pace) // round the current tribute started and its length
+ 	bool W_dist_home_ok() const;
+ 	bool engaged = false;
++	int last_fight_round = -100;
++	Enemy* best_in_reach(const Enemy* skip);
+ 	int dbg_path = 0, dbg_eng = 0; // SPELL_TRACE: which decision used the turn / which engage branch
+ 	bool dbg_hit_other = false;	   // SPELL_TRACE: the melee step-then-hit-another-enemy branch swung
+ 	bool safe_to_recall() const;
+diff -ruN legend/src/params.h _xexec/src/params.h
+--- a/src/params.h	2026-10-18 09:57:20.741332729 +0000
++++ b/src/params.h	2026-10-18 10:22:18.462319130 +0000
+@@ -293,6 +293,15 @@
+ 	int gank_bag = 25;			 // chase a visible carrier with at least this many gems
+ 	float deny_hp_frac = 0.6f;	 // contest an enemy's capture (step on its tiles) from this health fraction
+ 	float deny_capture_mult = 1.3f; // value multiplier for contesting an enemy's capture
++
++	// Fight execution (strategy v2, replay audit of 15 top-team games: 74% of the rounds our champions were hit by
++	// champions they dealt no champion damage back; 636 of those rounds they walked, 278 with an enemy already in reach)
++	int exec_hit_first = 1;		// engage(): the chosen target is out of reach but another enemy is in reach: hit that one now
++								// (ranged: attack/cast and stand; melee: attack, then still step toward the target)
++	int exec_flee_hit = 1;		// fleeing melee champions swing at an adjacent enemy before the step (melee may attack and move)
++	int fight_commit = 1;		// keep fighting the next turn unless the estimate falls below fight_commit_margin or health
++	float fight_commit_margin = 0.7f; // below fight_commit_hp (no engage / flee flip-flop: walking in and out under fire)
++	float fight_commit_hp = 0.3f;
+ };
+ 
+ #ifdef LEGEND_RUNTIME_PARAMS

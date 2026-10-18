@@ -41,5 +41,15 @@ Pace = round at which we bank 1000 gems vs `idle`, mean of both sides, 17 offici
 | `claim_release` | an alive ally's claim leaving a group we remember as a reward = it collected it (mark respawning) | 56 maps: official 524.6 (= `_m4`), other 39 maps 410.7 vs 418.7 |
 | `join_marginal` | joiner's value = claimers' rounds saved by its help (after its walk) / their clear, over its own rounds; no 0.6 share | expanse single game 569 (vs 581-618 for other variants), waste 25% -> 13.6%, Issac first capture r139 (r226-r328) |
 
+| `join_marginal` (56 maps) | | pace official 541.6 (pilgrimage +98, rows +37, corners +40) / other 39 maps 410.5 (`_m4` 418.7); h2h vs `_m4` official 19/34 = 55.9 |
+| `join_marginal` 2 | marginal value only on single-attacker groups (packs/elks keep join_share) | pace official 529.8 / other 417.5: no gain |
+| `cap_recall_gold` 150 | recall after a capture only with an emblem's worth of gold | pace official 535.8 / other 417.3: rejected |
+| `finish_trip` 15 | no voluntary home/shop trip while in range of a group that dies within 15 rounds | expanse single game: clear 29.9 -> 28.7 (C&I solo wolves still 25-40 rounds: base damage ~45 dps); not pursued |
+| `pair_plans` 1 (+ cr + jm) | elk pairs on interlock | first elk pair capture r326 (cr+jm alone r310): no help |
+| `_xe_0` (all switches off) | noise check | 56-map pace 450.6 = `_m4` 450.8: the switches are inert when off |
+
+Interlock elk pairs: neither heavy_team nor pair_plans gets them done early; the bodies are spread over the wolves when the
+pairs would need 3-4 of them together. Left open (needs a team-level schedule: sweep the near wolves together, then the pair).
+
 Noise: the 17-map official pace moves +-10 for changes that do nothing on most maps (e.g. pilgrimage 579-670 across variants); `_m4`'s 524.5 is
 the best of the farm agent's tuning on these 17 maps, so most variants regress toward ~530-540. Decide on the 56-map pool (112 games).

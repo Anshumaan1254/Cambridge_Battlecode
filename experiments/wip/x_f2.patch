@@ -1,6 +1,6 @@
 diff -ruN _xp4/src/brain.cpp _x_f2/src/brain.cpp
 --- _xp4/src/brain.cpp	2026-10-18 15:17:15.649252893 +0000
-+++ _x_f2/src/brain.cpp	2026-10-18 15:42:03.062948447 +0000
++++ _x_f2/src/brain.cpp	2026-10-18 16:25:57.456652052 +0000
 @@ -266,6 +266,26 @@
  	return std::max({ k.dmg >= 0 ? k.dmg_mod : 0.f, k.cc >= 0 ? k.cc_mod : 0.f, k.aoe >= 0 ? k.aoe_mod : 0.f });
  }
@@ -155,7 +155,48 @@ diff -ruN _xp4/src/brain.cpp _x_f2/src/brain.cpp
  			if (dt > kit.attack_range && !spell_now)
  			{
  				bool step_in = in_reach;
-@@ -1805,6 +1863,7 @@
+@@ -1617,6 +1675,40 @@
+ 			return true; // hold this turn (not in reach: nothing to hit)
+ 		}
+ 	}
++	if (!fight && P.open_join && !cast_done && can_cast && last_fight_round < round - 1 && (!in_reach || hp >= P.open_join_hp * max_hp))
++	{
++		// F4: an ally opened a fight this round or last (RALLY on its target): add our spell to the volley from where we
++		// stand when it reaches (top vs us: the opener's side deals 391 to 58 in the first 3 rounds; the volley is the
++		// opener). No commitment: next turn the normal rules decide.
++		const auto& C = comms();
++		if (C.alert_kind == AL_RALLY && C.fresh(round, 1))
++		{
++			Enemy* j = nullptr;
++			for (auto* e : E)
++				if (e->ch && cheb(e->pos, C.alert_pos) <= 1 && (!j || cheb(e->pos, C.alert_pos) < cheb(j->pos, C.alert_pos)))
++					j = e;
++			if (j)
++			{
++				const int dj = cheb(pos, j->pos);
++				bool ok = false;
++				if (dj <= static_cast<int>(kit.dmg_range) && cast_unit_champ(kit.dmg, *j->ch))
++					ok = true;
++				else if (ready(kit.aoe) && (P.aoe_cast5 ? dj <= static_cast<int>(kit.aoe_range + kit.aoe_radius) : dj <= static_cast<int>(kit.aoe_range)) &&
++					(!kit.aoe_stuns || j->type != CT::marcella) && cast_area_stun_at(*j))
++					ok = true;
++				else if (kit.cc >= 0 && dj <= static_cast<int>(kit.cc_range) && j->type != CT::marcella && cast_unit_champ(kit.cc, *j->ch))
++					ok = true;
++				if (ok)
++				{
++					dbg_eng = 40;
++					if (can_attack && dj <= kit.attack_range)
++						attack_unit(*j->ch);
++					task = T_FIGHT;
++					return true;
++				}
++			}
++		}
++	}
+ 	if (fight)
+ 	{
+ 		last_fight_round = round;
+@@ -1805,6 +1897,7 @@
  	}
  	if (d > 4 && cast_on_nearer(e))
  		return true;
@@ -163,7 +204,7 @@ diff -ruN _xp4/src/brain.cpp _x_f2/src/brain.cpp
  	if (d > kit.attack_range)
  	{
  		bc::bitboard goal;
-@@ -1826,7 +1885,9 @@
+@@ -1826,7 +1919,9 @@
  				if (&o == &e || !o.alive || !o.visible || cheb(o.pos, e.pos) > 8)
  					continue;
  				int r = o.kit.attack_range + (o.kit.ranged ? 0 : 1) + (o.ready(o.kit.dash) ? 2 : 0);
@@ -174,7 +215,7 @@ diff -ruN _xp4/src/brain.cpp _x_f2/src/brain.cpp
  					r = std::max(r, 4);
  				others.draw_chebyshev(o.pos, static_cast<float>(r));
  			}
-@@ -1853,18 +1914,67 @@
+@@ -1853,18 +1948,67 @@
  		}
  		if (kit.ranged)
  		{
@@ -245,7 +286,7 @@ diff -ruN _xp4/src/brain.cpp _x_f2/src/brain.cpp
  		}
  		else
  		{
-@@ -3621,9 +3731,10 @@
+@@ -3621,9 +3765,10 @@
  		return false;
  	auto& W = world();
  	Enemy* pick = nullptr;
@@ -257,7 +298,7 @@ diff -ruN _xp4/src/brain.cpp _x_f2/src/brain.cpp
  			continue;
  		if (o.type == CT::ren && hp <= 2.5f * bc::constants::passive_abilities::ren_retaliation_focus_ratio * o.focus && o.hp > burst_vs(o))
  			continue;
-@@ -3632,8 +3743,15 @@
+@@ -3632,8 +3777,15 @@
  	}
  	if (!pick)
  		return false;
@@ -296,8 +337,8 @@ diff -ruN _xp4/src/brain.h _x_f2/src/brain.h
  	float fight_margin = 1.3f, fight_back_margin = 0.75f, deny_bonus = 0.55f, enemy_half_penalty = 10.f;
 diff -ruN _xp4/src/params.h _x_f2/src/params.h
 --- _xp4/src/params.h	2026-10-18 15:17:15.710098716 +0000
-+++ _x_f2/src/params.h	2026-10-18 15:42:03.064429127 +0000
-@@ -383,6 +383,18 @@
++++ _x_f2/src/params.h	2026-10-18 16:25:16.591847625 +0000
+@@ -383,6 +383,21 @@
  								// most this many rounds per fight (ranged must choose between a step and an attack)
  	int px_burst_wait = 0;		// proactive fight with no spell ready: hold outside their reach while a spell is at most this many
  								// rounds from ready (open with the burst)		// the team-kill estimate counts allies' spells at half weight (cooldowns unknown)
@@ -313,6 +354,9 @@ diff -ruN _xp4/src/params.h _x_f2/src/params.h
 +								// (ranged, an opener of ours ready): when the step enters an enemy's next-turn reach, hold at the
 +								// edge (they step in, we cast first) for at most open_hold rounds per fight
 +	int open_hold = 2;			// ... rounds
++	int open_join = 0;			// F4: not fighting, an ally's RALLY (its fight target) posted this round or last: cast our spell on
++								// that target from where we stand when it reaches (no step, no commitment)
++	float open_join_hp = 0.5f;	// ... when inside an enemy's reach, only from this health fraction
  };
  
  inline constexpr Params P{};

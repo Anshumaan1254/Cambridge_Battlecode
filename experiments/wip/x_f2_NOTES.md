@@ -15,6 +15,10 @@ at distance 5; we deal 3 and take 12 per body-round at distance 5 against them; 
   casts the area at d = 5 instead of stepping in, the area fallback at d <= 4 aims the same way, `cast_on_nearer` looks to 5,
   px targeting counts the area at 5, `killable` counts the area at 5. Bit 2: at d <= 4 an area that catches 2+ enemies is
   cast before the single-target spell.
+- `open_join` (F4): a body not fighting, with a fresh RALLY (an ally's fight target, this round or last; not if we fought
+  last round ourselves), casts its spell on that target from where it stands when it reaches (damage spell, then area with
+  the F2 aim, then stun), plus a basic attack if in range; no step, no commitment. Inside enemy reach only from
+  `open_join_hp` (0.5) health.
 - `open_first` (F3, bits): 1 = after a fight step, a walk-compatible spell that now reaches the target is cast (Cassi: walk
   5 -> 4 + stun); 2 = ranged body in a proactive fight with an opener ready that cannot hit this turn: when the next step
   enters an enemy's next-turn reach (with F1: 5 for area casters), hold at the edge for at most `open_hold` (2) rounds per fight.
@@ -67,6 +71,8 @@ in casting from 5, not in staying out of 5.
 | `_fA` | 69.3 / 82.4 / 590-1018 | 72.7 / 82.4 / 561-1015 |
 | `_ST` | 75.0 / 76.5 / 528-947 | 73.9 / 82.4 / 465-909 |
 | `_f2q` (reach-5 proxy) | 53.4 / 50.0 | 44.3 / 41.2 |
+| `_eA` | 78.4 / 91.2 / 698-1278 | 71.6 / 79.4 / 738-1230 |
+| `_m5a` | 52.3 / 50.0 / 559-708 | 52.3 / 61.8 / 580-710 |
 | pace (official 17, vs idle) | 521.9 | 521.9 |
 
 - 0 faults everywhere; fuel: gen16_98x99_V_c5 both sides, rollovers A=8 B=8, all in rounds 1-3 (= baseline).

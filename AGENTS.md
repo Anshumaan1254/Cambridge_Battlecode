@@ -18,8 +18,14 @@ running or unfinished, and what to do next, so a new agent can continue without 
 - This container (S7's) resumed after the session limit; its agents econ / fight / contest died then. It works on: (1) **`join_marginal`**
   (agent econ's best switch: 63.4 / 55.9 vs `_m4`, never picked up by S8-S11) ported onto `_m8`: `_jm8` = `_m8` + `experiments/wip/x_jm8.patch`
   (rebuild: `SRC=bots/_m8 tools/variant.sh _jm8 && (cd bots/_jm8 && patch -p1 --no-backup-if-mismatch < ../../experiments/wip/x_jm8.patch)`;
-  control `_jm8c` = `_jm8` with `join_marginal=0`: 50.0, identical games). vs `_m8` **54.5 / 47.1** (deaths 665-652); third-party cells running.
-  (2) Next: contest (S10.5 #2) and neutral control under opposition (S10.5 #3). **S11 keeps the `mi_*` idea screen**; do not duplicate either way.
+  control `_jm8c` = `_jm8` with `join_marginal=0`: 50.0, identical games). **Rejected** (88 distinct / official 34, `_m8`'s cell in brackets): vs `_m8`
+  54.5 / 47.1 (deaths 665-652); `_mite` 76.1 / 79.4 (76.1 / 82.4); **`_ifish` 58.0 / 52.9 (69.3 / 79.4)**; **`_px9` 68.2 / 55.9 (78.4 / 76.5)**; `_fA` 79.5 / 79.4
+  (73.9 / 82.4); `_ST` 81.8 / 85.3 (83.0 / 91.2); `_xp4` 70.5 / 58.8 (68.2 / 79.4); third-party mean 72.4 vs 74.8 (official much worse); pace 500.9 (503.8).
+  Fewer helpers on claimed camps saves walking but loses the fights the Ren-first proxies bring: a farming gain that costs contact strength.
+  (2) **Running (workflow `contest-and-neutral`, ~20:20 UTC)** on baseline `_m10`: agent `ct` (Sonnet) = contest (S10.5 #2; copy `bots/_x_ct`, variants `_ct*`,
+  notes `experiments/wip/x_ct_NOTES.md`, patch `x_ct.patch`) and agent `nc` (Opus) = neutral camp control under opposition (S10.5 #3; `bots/_x_nc`, `_nc*`,
+  `x_nc_NOTES.md`, `x_nc.patch`); each ship claim then goes to an independent verifier (recompute cells, inertness, rollovers, code review).
+  **S11 keeps the `mi_*` idea screen**; do not duplicate either way.
 - The user got the zips in chat: `legend_m8` (best measured), then `legend_m10` (current `submissions/legend.zip`, plays `legend_m8`'s games).
 
 ## S11. SESSION 11 (2026-10-18, same container as S10): read this first

@@ -51,6 +51,15 @@ running or unfinished, and what to do next, so a new agent can continue without 
   (`_svC` variant if `_ST` stays weak); bench vs `_rm _ST _eA _eB _eC` on the 56 maps (`--jobs 2`); if it beats `_rm` and `_ST` overall and on the official maps:
   copy into `bots/legend`, rebuild the zip, `submissions/history/legend_m1_<date>.zip`, BUILDS row, push (**ship first**), then add the new switches to `tools/rl/a100/space.json`.
 
+### Checkpoint 09:25 UTC
+- **farm** now `_C3` (= `_C2` + `varg_splash_pos` + step off the reward before a recall): pace 546.8; 56 maps / official: vs `_rm` 56.2 / 67.6,
+  `_ST` 59.8 / 70.6, `_eA` 64.3 / 73.5, `_eB` 68.8 / 82.4, `_eC` 77.7 / 82.4; held-out 56.0. Testing `_C4` (collector = first to arrive) and
+  `join_reach` 1.2 (pace 537.2; pilgrimage 765 -> 649). `x_farm.patch` has `join_reach` 0 (off) for now.
+- **survive** unchanged (`_svA` best; death categories vs `_eA`: all -23%, own half -26%, outmatched -33%, C&I -25%; burst deaths at full health barely move).
+- **`bots/_m1` built** = `_rm` + `x_farm.patch` + `x_survive.patch` (both apply cleanly) with `outmatch_flee=1 pair_flee_bonus=0.3 ren_reflect=1 pair_low_hp=0.4`.
+  First test running: `/tmp/ev/e3.sh` (official 17 maps vs `_rm`, `_ST`, `_eA`, 1 job; results in `/tmp/ev/m1c`, `python3 tools/sum.py /tmp/ev/m1c`).
+  Redo `_m1` from the agents' final patches when they finish.
+
 ### Plan (priority order) and state
 | # | Task | Who | State |
 |---|---|---|---|

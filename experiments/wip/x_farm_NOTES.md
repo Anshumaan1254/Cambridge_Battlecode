@@ -71,7 +71,13 @@ Pace = round at which our team banks 1000 gems vs `idle` (mean of both sides; a 
   611 -> 651); both 546.8. Noise: left at 8 / 0.7.
 - `_C3` still split rewards on pilgrimage (Cassi walked through the gold tile next to Varg, who was already channelling its capture-recall, and kept
   it by index). `_C4` (= current `_x_farm`): the collector is whoever arrived first (ours: `capture_since`; an ally's: the round since which we have
-  seen it standing still on the tiles; same round: lower index). Pilgrimage and rows traces: 0 splits. Evaluation queued (`/tmp/farm/b12.sh`).
+  seen it standing still on the tiles; same round: lower index). Pilgrimage and rows traces: 0 splits. Pace 546.6 (= `_C3`). Evaluation running.
+- `_C3` panel (56 maps / official): `_rm` 56.2 / 67.6, `_eB` 68.8 / 82.4, `_eA` 64.3 / 73.5, `_ST` 59.8 / 70.6, `_eC` 77.7 / 82.4; held-out vs `_rm` 56.0.
+- Bigger banks are slower unopposed (pace on `_C3`): `bank_trip_free` 6 556.9, `bank_trip_w` 2 552.9, `bank_trip_w` 2 + `bank_trip_cap` 3 550.3
+  (vs 546.8). Rejected. (Caveat: vs `idle` we always lead by 150+, so `tribute_min` drops to 25; real games bank bigger bags.)
+- `join_reach` (new, default 0): a joiner skips a claimed group it cannot reach before the claimers would finish it (pilgrimage: Cassi crossed the
+  map between the two 68-gem packs for 300 rounds, 0 captures, 0 gold, no items all game). Pace on `_C4`: 0.7 541.1, **1.2 537.2** (pilgrimage
+  765 -> 649, corners 436 -> 394, expanse 611 -> 660). 56-map pace check running.
 
 ## Tools (new files, agent farm)
 - `tools/farm/pack_watch.mjs FILE X,Y FROM TO [R]`: per round, health of the pack at (X,Y) and the champions near it (both teams).

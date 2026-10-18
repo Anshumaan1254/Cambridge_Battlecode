@@ -319,8 +319,12 @@ class Surrogate:
 		self.models = None
 		self.ridge = None
 		self.device = None
-		if torch is not None:
-			self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+		# torch only on a GPU: on CPU cores the MLP ensemble would compete with the games (ridge instead)
+		self.use_torch = torch is not None and torch.cuda.is_available() and not os.environ.get('A100_NO_TORCH')
+		if self.use_torch:
+			self.device = 'cuda'
+		if torch is not None and os.environ.get('A100_FORCE_TORCH'):  # tests of the MLP path on a CPU
+			self.use_torch, self.device = True, 'cpu'
 		# pool weights: every key weighted by its group's weight / number of keys in the group
 		w = np.zeros(nkeys)
 		cnt = {}
@@ -361,7 +365,7 @@ class Surrogate:
 		X = np.array(Xl, dtype=np.float32)
 		K = np.array(Kl, dtype=np.int64)
 		Y = np.array(Yl, dtype=np.float32)
-		if torch is None:
+		if not self.use_torch:
 			# ridge on [z, z^2, one-hot(key)]: per-case offsets plus a smooth parameter response
 			F = np.concatenate([X, X * X, np.eye(self.nkeys, dtype=np.float32)[K]], axis=1)
 			lam = 1.0
@@ -491,6 +495,10 @@ if torch is not None:
 
 # ------------------------------------------------------------------------------------------------ main loop
 
+def sur_gpu():
+	return torch is not None and torch.cuda.is_available() and not os.environ.get('A100_NO_TORCH')
+
+
 def centered_ranks(x):
 	x = np.asarray(x)
 	ranks = np.empty(len(x))
@@ -535,7 +543,7 @@ def main():
 		pop = 1
 	legend_hash = src_hash()
 	commit = sh('git rev-parse --short HEAD').stdout.strip() or 'unknown'
-	dev = 'none (ridge on CPU)' if torch is None else (f'torch {torch.__version__} on ' + ('cuda: ' + torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'cpu'))
+	dev = f'MLP ensemble, torch {torch.__version__} on cuda: {torch.cuda.get_device_name(0)}' if sur_gpu() else 'ridge regression on CPU (no CUDA torch)'
 	say(f'start: commit {commit}, legend {legend_hash}, {D} params, {len(suite.groups)} case groups ({len(suite.keys)} case keys), '
 		f'opponents {suite.opponents()}, jobs {args.jobs}, pop {pop} pairs, surrogate {dev}, budget {args.hours} h')
 	for g in suite.groups:
@@ -565,8 +573,6 @@ def main():
 		ensure_slot(s, legend_hash)
 	sec_game = None
 	fit_thread = None
-	if torch is not None and not torch.cuda.is_available():
-		torch.set_num_threads(2)  # CPU torch: leave the cores to the games
 	gen = gen0
 	while True:
 		elapsed = time.time() - t_start
@@ -583,8 +589,6 @@ def main():
 		for i in range(pop):
 			zs += [np.clip(theta + args.sigma * eps[i], -1, 1), np.clip(theta - args.sigma * eps[i], -1, 1)]
 		zs.append(theta.copy())
-		if fit_thread is not None:
-			fit_thread.join()
 		props = []
 		if sur.ready():
 			for kappa in (0.0, 1.0):
@@ -594,8 +598,10 @@ def main():
 		zs += props
 		names = slots[:len(zs)]
 		# the surrogate for the next generation trains on everything so far while this generation's games run
-		fit_thread = threading.Thread(target=sur.fit, kwargs={'data': (list(sur.X), list(sur.K), list(sur.Y))}, daemon=True)
-		fit_thread.start()
+		# (a fit still running from the last generation keeps going; the proposals use the last finished model)
+		if fit_thread is None or not fit_thread.is_alive():
+			fit_thread = threading.Thread(target=sur.fit, kwargs={'data': (list(sur.X), list(sur.K), list(sur.Y))}, daemon=True)
+			fit_thread.start()
 		t0 = time.time()
 		for n, z in zip(names, zs):
 			write_rt(n, space.values(z), fields)
@@ -662,7 +668,15 @@ def main():
 			e['pred'], e['pred_std'] = float(a), float(b)
 		pool.sort(key=lambda e: e['pred'] - 0.5 * e['pred_std'], reverse=True)
 	picks, seen = [], {json.dumps({k: defaults[k] for k in space.keys}, sort_keys=True), json.dumps(space.values(space.center()), sort_keys=True)}
-	for e in pool + [{'gen': gen, 'kind': 'final_theta', 'z': theta.tolist(), 'reward': None}]:
+	# entrants: the final theta (what ES converged to), the vector that beat its generation's population by the most
+	# on real games, then the surrogate's ranking of everything evaluated
+	rel = []
+	for h in history:
+		for e in evaluated:
+			if e['gen'] == h['gen'] and e.get('reward') is not None:
+				rel.append((e['reward'] - float(np.mean(h['pop_rewards'])), e))
+	best_rel = [max(rel, key=lambda t: t[0])[1]] if rel else []
+	for e in [{'gen': gen, 'kind': 'final_theta', 'z': theta.tolist(), 'reward': None}] + best_rel + pool:
 		key = json.dumps(space.values(e['z']), sort_keys=True)
 		if key in seen:
 			continue

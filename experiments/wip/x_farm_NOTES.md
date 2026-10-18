@@ -43,6 +43,13 @@ Pace = round at which our team banks 1000 gems vs `idle` (mean of both sides; a 
 | `_fb2` + `max_join` 3 | 544.4 | |
 - Head-to-head (56 maps, 112 games): `_c_pace` vs `_rm` 54.5 (official 55.9), deaths 1196-1206. **`_fb2` vs `_rm` 48.2 (official 44.1), deaths 1255-1101**:
   the pace gain does not carry over; single-feature runs to find the culprit are below.
+- Single features on top of the pace patch, vs `_rm` (56 maps / official): `no_split` 56.2 / 52.9; `obj_focus` 55.4 / 58.8; `unknown_keep` 2 49.1 / 52.9
+  (deaths 1137-1260). All within noise of the pace patch alone (54.5 / 55.9); the loss came from `unknown_keep` 1 (keeps walking into the enemy half).
+- Candidates (all with the pace patch, `no_split`, `obj_focus`, `unknown_keep` 2):
+| Build | pace (official 17) | vs `_rm` 56 maps / official | deaths |
+|---|---|---|---|
+| `_C1` (`max_join` 1) | 563.1 | 54.5 / 58.8 | 1055-1287 |
+| **`_C2` (`max_join` 3) = current `_x_farm`** | **553.3** | 54.5 / 61.8 | 1096-1297 |
 
 ## Tools (new files, agent farm)
 - `tools/farm/pack_watch.mjs FILE X,Y FROM TO [R]`: per round, health of the pack at (X,Y) and the champions near it (both teams).

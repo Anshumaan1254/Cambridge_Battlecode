@@ -2,6 +2,7 @@
 # One-command RL training of bots/legend on a Lightning AI A100 studio (or any Linux machine with many cores).
 #
 #   git clone -b ccr-a858cd03-q87cpi https://github.com/Akshayg005/Cambridge_Battlecode.git && cd Cambridge_Battlecode
+#   (or from the bundle file: git clone -b ccr-a858cd03-q87cpi cambc_rl.bundle Cambridge_Battlecode && cd Cambridge_Battlecode)
 #   bash tools/rl/a100/run_a100.sh                 # 2.5 h of training + tournament, then validation and the archive
 #   bash tools/rl/a100/run_a100.sh --hours 3       # longer
 #   bash tools/rl/a100/run_a100.sh --resume        # continue after an interruption (keeps tune_out/a100/)
@@ -39,17 +40,19 @@ OUT=tune_out/a100
 mkdir -p "$OUT"
 LOG="$OUT/console.txt"
 say() { echo "[$(date '+%H:%M:%S')] $*" | tee -a "$LOG"; }
+# conda / venv pythons (Lightning studios) install into the environment; a system python needs --user
+pip_install() { python3 -m pip install "$@" || python3 -m pip install --user "$@"; }
 
 if [ "$SKIP_SETUP" = 0 ]; then
 	say "step 1/6: prerequisites"
 	command -v git >/dev/null || { echo "git is required" >&2; exit 1; }
-	python3 -c "import numpy" 2>/dev/null || python3 -m pip install --user numpy
+	python3 -c "import numpy" 2>/dev/null || pip_install numpy
 	if ! python3 -c "import torch" 2>/dev/null; then
 		say "torch not found: installing it (the surrogate falls back to a CPU ridge model if this fails)"
-		python3 -m pip install --user torch || say "torch install failed: continuing with the ridge surrogate"
+		pip_install torch || say "torch install failed: continuing with the ridge surrogate"
 	fi
 	python3 -c "import torch;print('torch', torch.__version__, 'cuda', torch.cuda.is_available(), torch.cuda.get_device_name(0) if torch.cuda.is_available() else '')" 2>/dev/null | tee -a "$LOG" || true
-	command -v cambc >/dev/null || python3 -m pip install --user "cambc==$CAMBC_VERSION"
+	command -v cambc >/dev/null || pip_install "cambc==$CAMBC_VERSION"
 	have=$(cambc --version | awk '{print $2}')
 	[ "$have" = "$CAMBC_VERSION" ] || say "warning: cambc $have installed, the bot is verified on $CAMBC_VERSION (pip install --user cambc==$CAMBC_VERSION)"
 

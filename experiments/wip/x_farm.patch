@@ -254,22 +254,32 @@ diff -ruN _rm/src/brain.h _x_farm/src/brain.h
  
 diff -ruN _rm/src/params.h _x_farm/src/params.h
 --- _rm/src/params.h	2026-10-18 07:37:50.237297424 +0000
-+++ _x_farm/src/params.h	2026-10-18 08:19:40.686097297 +0000
-@@ -19,6 +19,13 @@
++++ _x_farm/src/params.h	2026-10-18 08:44:52.910116683 +0000
+@@ -14,11 +14,22 @@
+ 	int farm_monolith = 1;			 // 0: never farm a monolith group (20,000 HP, 200 strength; the user: do not rely on it for gems)
+ 	int max_trips = 5;				 // heal trips we accept to finish one camp group (camps never heal)
+ 	float join_min_rounds = 14.f;	 // join an ally's group when it alone needs more rounds than this
+-	int max_join = 1;				 // extra bodies allowed on one (non-monolith) group
++	int max_join = 3;				 // extra bodies allowed on one (non-monolith) group. Was 1; 3 (agent farm): unopposed pace on the 17 official maps
++									 // 563.1 -> 553.3 (rows 425 -> 398, monolith 474 -> 417, elkring 472 -> 442, eight 427 -> 396), head-to-head vs _rm
++									 // 54.5 both (official 58.8 -> 61.8). Ladder rows: the enemy clears each 3-wolf pack with 3-5 bodies in ~11 rounds
+ 	float join_share = 0.6f;		 // value credited to a joining body (the claimer captures)
  	int pair_plans = 0;				 // claim packs too heavy for one body and wait for a partner (off: costs pace)
  	float pair_wait = 8.f;			 // rounds added to a pair plan for the partner to arrive
  	int pair_wait_max = 18;			 // give up waiting for a partner after this many rounds
 +	int no_split = 1;				 // a reward with a visible ally on its tiles is left to that ally (lower index wins when both stand
 +									 // there): ladder rows, 10 of our 18 captures were 33/33 splits of one 66-gem pack; unopposed
 +									 // rows 6 of 21 (agent farm)
-+	int unknown_keep = 1;			 // the unseen-for-60-rounds discount (unknown_discount) does not apply to the target we walk to:
++	int unknown_keep = 2;			 // 1: the unseen-for-60-rounds discount (unknown_discount) does not apply to the target we walk to:
 +									 // every unseen enemy-half group lost 25% at round 61 and bodies that had walked 60 rounds to one
 +									 // switched there (pilgrimage, ambush: 3-4 bodies turned back at r61-66; agent farm).
-+									 // 2: no exemption, but a group never seen is discounted from round 0 (no cliff at r61 either)
++									 // 2 (default): no exemption, but a group never seen is discounted from round 0 (no cliff at r61 either).
++									 // Head-to-head vs _rm (56 maps, with no_split, obj_focus and the pace patch): 1 -> 48.2 (official 44.1, deaths
++									 // 1255-1101: bodies kept walking into the enemy half); 2 -> 54.5 (58.8, deaths 1055-1287). Pace 559.0 vs 563.1
  	float target_threat_adv = 1.305f;	 // skip camps where recently seen enemies beat us (and allies there) (ES: 1.1 -> 1.305)
  
  	// Farming model corrections (prediction audit, tools/analysis/xm_audit.mjs on 48 traced games vs _v6 and _hunt2)
-@@ -233,7 +240,9 @@
+@@ -233,7 +244,9 @@
  	int race_carrier = 30;
  	int capture_reset = 1;		// an enemy seen on the group's tiles restarts the capture-recall clock (the engine resets the capture)
  	int tribute_elapsed = 1;	// handle_channel counts the tribute's remaining turns from its start, not from the carried bag
@@ -280,7 +290,7 @@ diff -ruN _rm/src/params.h _x_farm/src/params.h
  	int bank_first_margin = 2;	// ... by at least this many steps (nearest-altar walk + recall_time + margin <= spawn altar walk)
  	float bank_trip_w = 1.0f;	// bank threshold rises by this many gems per step of bank trip beyond bank_trip_free
  	int bank_trip_free = 12;	// bank trips up to this many steps keep the plain threshold
-@@ -242,10 +251,19 @@
+@@ -242,10 +255,19 @@
  
  	// Objective maps (agent obj, session 3): the gems sit in one or a few heavy groups (stampede, contest)
  	int obj_plan = 1;			// detect objective maps at init (World::detect_objective); everything below needs it

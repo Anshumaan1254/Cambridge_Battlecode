@@ -7,9 +7,15 @@ results into one archive to send back.
 ## Steps
 
 1. Lightning AI: create a Studio, choose the **A100** machine, open its terminal.
-2. Get the code (this branch carries the trainer, the archetypes and the shipped build):
+2. Get the code (this branch carries the trainer, the archetypes and the shipped build), either from GitHub:
    ```bash
    git clone -b ccr-a858cd03-q87cpi https://github.com/Akshayg005/Cambridge_Battlecode.git
+   cd Cambridge_Battlecode
+   ```
+   or, without GitHub access, from the single-file bundle `cambc_rl.bundle` (the whole repo with its history; upload
+   it to the studio first):
+   ```bash
+   git clone -b ccr-a858cd03-q87cpi cambc_rl.bundle Cambridge_Battlecode
    cd Cambridge_Battlecode
    ```
 3. Start it in the background so a closed browser tab does not stop it (also turn off the Studio's auto-sleep):

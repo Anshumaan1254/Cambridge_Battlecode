@@ -295,4 +295,10 @@ struct Params
 	float deny_capture_mult = 1.3f; // value multiplier for contesting an enemy's capture
 };
 
+#ifdef LEGEND_RUNTIME_PARAMS
+// Training builds only (tools/rl/a100/es_a100.py): the values are defined in a generated params_rt.cpp, so a new
+// candidate recompiles one file instead of the whole bot. Submitted builds use the constexpr defaults above.
+extern const Params P;
+#else
 inline constexpr Params P{};
+#endif

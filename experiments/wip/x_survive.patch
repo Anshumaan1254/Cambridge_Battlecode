@@ -1,0 +1,97 @@
+diff -ruN _rm/src/brain.cpp _x_survive/src/brain.cpp
+--- _rm/src/brain.cpp	2026-10-18 07:37:50.236526014 +0000
++++ _x_survive/src/brain.cpp	2026-10-18 08:07:29.046091560 +0000
+@@ -1226,7 +1226,7 @@
+ 	const float t_kill_them = their_hp / std::max(1.f, our_dps);
+ 	const float t_kill_us = our_hp / std::max(1.f, their_dps);
+ 	// Learned calibration: bodies that died after choosing fights trust their estimate less.
+-	const float adv = t_kill_us / std::max(0.1f, t_kill_them) * learner().fight_scale();
++	float adv = t_kill_us / std::max(0.1f, t_kill_them) * learner().fight_scale();
+ 
+ 	// Backup: allies in sight, plus hidden allies whose claimed camp is close (they are a few steps away).
+ 	// Half our deaths on the ladder were lone champions caught by two or more enemies.
+@@ -1289,6 +1289,15 @@
+ 				tgt = e;
+ 	}
+ 	const int d = cheb(pos, tgt->pos);
++	// P.ren_reflect (agent survive): Ren returns 0.2 x focus of every hit to its attacker, so a fight on Ren costs each of
++	// our hitters that much per round on top of the enemies' damage. The estimate left it out: ladder fragment r78-88, our
++	// Stellar (750) and Ren hit their Ren (1,900 max health) for 10 rounds, Stellar lost ~70 a round and died.
++	if (P.ren_reflect && tgt->type == CT::ren)
++	{
++		const float reflect = bc::constants::passive_abilities::ren_retaliation_focus_ratio * tgt->focus;
++		const float tku = our_hp / std::max(1.f, their_dps + reflect * static_cast<float>(1 + allies_near));
++		adv = tku / std::max(0.1f, t_kill_them) * learner().fight_scale();
++	}
+ 	const bool killable = d <= std::max(my_reach, (ready(kit.dmg) || ready(kit.cc)) ? 4 : 0) &&
+ 		tgt->hp <= burst_vs(*tgt) + allies_burst;
+ 	const bool in_reach = danger.is_set(pos);
+@@ -1318,7 +1327,10 @@
+ 		fight = true; // fleeing a same-speed chaser hands it free hits: trade instead
+ 	else if (tgt->channeling && adv >= 0.9f)
+ 		fight = true;
+-	if (fight && !killable && can_escape && (hp < 0.25f * max_hp || (static_cast<int>(gems) >= P.bag_caution && adv < 1.5f)))
++	// P.pair_low_hp: Cassi & Issac leave a fight they can walk away from earlier (ladder: 64% of our 59 pair deaths were
++	// triggered by the partner below 25% health, the other partner healthy (73% above 75%) and 7+ tiles away).
++	const float low_hp = (type == CT::cassi || type == CT::issac) ? P.pair_low_hp : 0.25f;
++	if (fight && !killable && can_escape && (hp < low_hp * max_hp || (static_cast<int>(gems) >= P.bag_caution && adv < 1.5f)))
+ 		fight = false;
+ 	if (fight && reserve && !(killable && adv >= 1.f) && adv < fight_margin + P.reserve_margin && can_escape)
+ 		fight = false;
+@@ -1430,7 +1442,15 @@
+ 	}
+ 	// Leave before they reach us: alone (or with half the team dead) against a stronger group, start walking
+ 	// home while they are still out of stun range. Same speed means they cannot close the gap.
+-	if ((isolated || reserve) && adv < P.isolated_flee_adv && nearest_enemy <= P.flee_dist && task != T_CAPTURE)
++	// P.outmatch_flee (agent survive): the same early exit when we are not alone but the group here still outmatches
++	// us. Between the flee and the fight bars (adv 0.8-1.3) a body kept farming or walking while the group closed in;
++	// once in reach a same-speed chaser cannot be outrun. Ladder (17 games of legend_st, 232 deaths): the killers were
++	// within 8 tiles for 7+ rounds before 75% of our deaths, the victim walked toward them in 48%, 58% died with the
++	// enemy holding >1.2x our health within 6.
++	const bool pair_body = type == CT::cassi || type == CT::issac;
++	const bool outmatched = P.outmatch_flee && static_cast<int>(E.size()) >= P.outmatch_min_enemies && nearest_enemy <= P.outmatch_flee_dist &&
++		adv < P.outmatch_flee_adv + (pair_body ? P.pair_flee_bonus : 0.f);
++	if ((((isolated || reserve) && adv < P.isolated_flee_adv && nearest_enemy <= P.flee_dist) || outmatched) && task != T_CAPTURE)
+ 	{
+ 		post_danger(tgt->pos);
+ 		task = T_FLEE;
+@@ -1745,7 +1765,9 @@
+ 				escape = std::max(escape, 4 - d);
+ 			}
+ 		}
+-	float threshold = std::max(P.retreat_hp * max_hp, camp_in * static_cast<float>(P.safety_v2 ? escape + 1 : 4));
++	// P.pair_retreat_hp: Cassi & Issac walk home from camps earlier (a body caught low by an enemy kills both bodies).
++	const float rhp = (type == CT::cassi || type == CT::issac) ? std::max(P.retreat_hp, P.pair_retreat_hp) : P.retreat_hp;
++	float threshold = std::max(rhp * max_hp, camp_in * static_cast<float>(P.safety_v2 ? escape + 1 : 4));
+ 	if (obj_in > 0)
+ 	{
+ 		// Objective camps: only those that target us (no ally nearer), after our emblems, for the steps out of
+@@ -2700,7 +2722,7 @@
+ 	for (const auto& e : W.enemies)
+ 	{
+ 		alive_enemies += e.alive;
+-		if (e.alive && e.seen_round >= 0 && round - e.seen_round <= 8 && sc_recent_n < static_cast<int>(sc_recent.size()))
++		if (e.alive && e.seen_round >= 0 && round - e.seen_round <= P.threat_score_memory && sc_recent_n < static_cast<int>(sc_recent.size()))
+ 			sc_recent[static_cast<std::size_t>(sc_recent_n++)] = { e.pos, e.hp, e.str + e.focus * best_mod(e.kit) / 8.f + e.burst() / 3.f };
+ 	}
+ 	sc_risk = static_cast<float>(alive_enemies) / std::max<std::size_t>(1, W.enemies.size());
+diff -ruN _rm/src/params.h _x_survive/src/params.h
+--- _rm/src/params.h	2026-10-18 07:37:50.237297424 +0000
++++ _x_survive/src/params.h	2026-10-18 08:07:29.050069321 +0000
+@@ -57,6 +57,16 @@
+ 	float isolated_fight_adv = 1.428f; // alone, start a fight only at this advantage (or a sure kill) (ES: 1.6 -> 1.428)
+ 	float isolated_flee_adv = 1.1f;	 // alone and weaker than this: walk away as soon as they are in sight
+ 	int flee_dist = 7;				 // ... when the nearest enemy is this close
++	// Survival vs grouped invaders (agent survive, session 6; experiments/wip/x_survive_NOTES.md)
++	int outmatch_flee = 0;			 // also walk away (not alone) when the visible group here outmatches us: adv below
++	float outmatch_flee_adv = 0.8f;	 // ... this, with at least outmatch_min_enemies visible enemies within 9 and the
++	int outmatch_min_enemies = 2;	 // ... nearest within outmatch_flee_dist (not yet in reach: in reach the old rules apply)
++	int outmatch_flee_dist = 8;
++	float pair_flee_bonus = 0.f;	 // Cassi & Issac (two bodies, two bags per death): this much more advantage to stay
++	float pair_low_hp = 0.25f;		 // Cassi & Issac: below this health fraction skip fights we can escape (others: 0.25)
++	float pair_retreat_hp = 0.f;	 // Cassi & Issac: safety() retreat line from camps (max with retreat_hp)
++	int ren_reflect = 0;			 // combat(): a fight on Ren counts its retaliation (0.2 x focus per hit) on each of our hitters
++	int threat_score_memory = 8;	 // group_score: enemies seen this many rounds ago still guard the camps within 8 of them
+ 	float reserve_margin = 0.5f;	 // half the team dead: extra advantage needed to fight
+ 	int stay_rule = 0;				 // off: all three on (+ ES params) = 49.1% vs this build, fewer deaths (1301 vs 1504) but
+ 									 // lower panel mean (vs _r2 67.0 vs 78.6, _L0 58.9 vs 67.0); without stay_veto 41.1%

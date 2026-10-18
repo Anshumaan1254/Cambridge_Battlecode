@@ -1,3 +1,26 @@
+# Session 6 (2026-10-18, new container): read this block first; it overrides everything below
+
+- Baseline: **`bots/_rm`** = frozen copy of `bots/legend` as shipped (`legend_rm`, `submissions/legend.zip`). Read-only.
+  Make your copy with `SRC=bots/_rm tools/variant.sh _x_NAME` (then edit `bots/_x_NAME/src`).
+  Patch: `cd bots && diff -ruN _rm/src _x_NAME/src > ../experiments/wip/x_NAME.patch`.
+- Other read-only bots, built: `_ST` (`legend_st`, the build that went 1-16 on the ladder), `_L0 _es2 _c3 _st _r2 _v6 _hunt _hunt2 _devci _base`,
+  `idle`, `_b3`/`_b4` (= legend with `build_style` 3 / 4, the coordinator's), and the **opponent archetypes** (our code with the
+  ladder teams' drafts, builds and a more aggressive style; not faithful clones):
+  `_eA` Ren-first pressure (Ren, Stellar, C&I, Ryth, Varg; `build_style=3`; fight_margin 1.1, isolated_fight_adv 1.2, PUSH stance first),
+  `_eB` CI-first farming (C&I, Stellar, Varg, Ren; `build_style=4`; no joins), `_eC` caster objective (Stellar, Tavi, Prism, C&I, Ren).
+- **Real evidence**: `experiments/ladder_oct18/<map>.repl26a` (17 ladder games of `legend_st` as team A, 1 win) and
+  `docs/HOUSEOFCODERS_ENEMY_STRATEGY_REPORT.md`. Tools: `node tools/analysis/ladder_econ.mjs FILES --bodies` (captures, splits,
+  deaths, items per body, both teams), `node tools/analysis/death_ctx.mjs FILES [--team 1] [--list]` (where / how outnumbered we die),
+  `node tools/analysis/pair_deaths.mjs DIR` (needs `<map>_A.repl26a` names: `/tmp/claude-0/up/lad/` has symlinks; recreate with `ln -s`).
+  Our local sparring bots are all our own code family: a change must make sense on the ladder evidence, not only locally.
+- CPU: 4 cores, two agents + the coordinator. Use `--jobs 2` and your own `--out /tmp/<name>/...`; prefer the cheapest test that
+  answers the question (17 official maps x 2 sides = 34 games before the 56-map pool).
+- Acceptance: head-to-head vs `_rm` >= 50 on the 56 maps **and** on the official 17, not worse vs `_eA` / `_eB` / `_eC` and `_ST`,
+  0 faults, no new fuel rollovers. Gaps under ~4 points on 112 games are noise: confirm on the held-out pool (`maps/gold,gold2,obj`).
+- Same rules as below otherwise: never commit/push/checkout/stash/reset, never `pkill -f`/`pgrep -f`/`killall`, never edit
+  `bots/legend` or others' bots, keep `experiments/wip/x_NAME.patch` and `x_NAME_NOTES.md` current as you go (a session limit can
+  stop you at any time).
+
 # Session 5 (2026-10-17, from ~19:50 UTC, new container): read this block first; it overrides everything below
 
 - Baseline: **`bots/_rm`** = frozen copy of current `bots/legend` (commit d6aa4ef: `_ST` + opening fuel fix, `start_round=2`,

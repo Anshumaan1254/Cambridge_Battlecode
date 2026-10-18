@@ -35,6 +35,43 @@ void cycle(std::vector<I>& v, std::initializer_list<I> blocks, int n)
 std::vector<I> build_for(CT t)
 {
 	std::vector<I> v;
+	if (P.build_style >= 3)
+	{
+		// The ladder teams that beat legend_st 16-1 (Oct 18 replays, tools/analysis/ladder_econ.mjs) all build alike:
+		// one Durability health emblem (-10% damage taken) and, on the frontline, a Bruiser health emblem early
+		// (their Ren: 1,900 max health by r100 on fragment), then Power emblems in the damage stat for the rest of the
+		// game (Power counts as six points and stacks; passives do not): Ren PfE12+DhE+BhE, Issac PsE8+DhE by r450.
+		// Style 4 is their farming profile (rows, expanse: no deaths on either side): Monster in the damage stat, then Power.
+		const bool focus = t == CT::ren || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
+		const I power = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
+		if (P.build_style == 4)
+			rep(v, focus ? I::monster_shard_of_focus : I::monster_shard_of_strength, 5);
+		else
+			switch (t)
+			{
+			case CT::ren:
+			case CT::ryth:
+			case CT::marcella:
+				rep(v, I::bruiser_shard_of_health, 5);
+				rep(v, I::durability_shard_of_health, 5);
+				break;
+			case CT::cassi:
+			case CT::willow:
+				rep(v, I::bruiser_shard_of_health, 5);
+				rep(v, I::durability_shard_of_focus, 5);
+				break;
+			case CT::tavi:
+				rep(v, I::treasure_shard_of_focus, 5);
+				rep(v, I::durability_shard_of_focus, 5);
+				break;
+			default: // Stellar, Prism, Issac, Varg, Vendetta, Vesper: one Power emblem, then the health emblem
+				rep(v, power, 5);
+				rep(v, I::durability_shard_of_health, 5);
+				break;
+			}
+		rep(v, power, 300);
+		return v;
+	}
 	if (P.build_style == 2)
 	{
 		// Value-model builds (tools/analysis/item_value.py, calibrated on 36 r2 games). Every shard adds one point

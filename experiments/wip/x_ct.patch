@@ -1,0 +1,181 @@
+diff -ruN _m10/src/brain.cpp _x_ct/src/brain.cpp
+--- _m10/src/brain.cpp	2026-10-18 20:14:34.305838022 +0000
++++ _x_ct/src/brain.cpp	2026-10-18 20:19:17.441581099 +0000
+@@ -42,16 +42,16 @@
+ }
+ 
+ // Shard plans: five shards of a family complete its emblem; only the emblem grants the passive.
+-std::vector<I> build_for(CT t)
++std::vector<I> build_for(CT t, int bs)
+ {
+ 	std::vector<I> v;
+-	if (P.build_style >= 3 && P.build_style <= 4 || P.build_style == 10)
++	if (bs >= 3 && bs <= 4 || bs == 10)
+ 	{
+ 		// ifish (1st on the ladder; sparring proxy): one Durability health emblem and, on the frontline, a Bruiser health
+ 		// emblem early (their Ren: 1,900 max health by r100), then Power in the damage stat for the rest of the game. On
+ 		// its no-contact farming maps (rows, expanse: 0 deaths either side) Monster in the damage stat, then Power (style 4).
+ 		const int om = official_map();
+-		const int style = P.build_style == 10 ? (om == OM_ROWS || om == OM_EXPANSE ? 4 : 3) : P.build_style;
++		const int style = bs == 10 ? (om == OM_ROWS || om == OM_EXPANSE ? 4 : 3) : bs;
+ 		const bool focus = t == CT::ren || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
+ 		const I power = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
+ 		if (style == 4)
+@@ -82,7 +82,7 @@
+ 		rep(v, power, 300);
+ 		return v;
+ 	}
+-	if (P.build_style == 9)
++	if (bs == 9)
+ 	{
+ 		// Mite (2nd on the ladder; sparring proxy), from its emblem timings in 33 ladder games: Jungle (-30% camp damage
+ 		// taken) then Durability in the damage stat, one Bruiser health, then Power in the damage stat forever. Ren and
+@@ -103,7 +103,7 @@
+ 		rep(v, pw, 300);
+ 		return v;
+ 	}
+-	if (P.build_style == 2)
++	if (bs == 2)
+ 	{
+ 		// Value-model builds (tools/analysis/item_value.py, calibrated on 36 r2 games). Every shard adds one point
+ 		// of its stat whatever the family, so the family only decides the emblem bonus:
+@@ -211,7 +211,7 @@
+ 		}
+ 		return v;
+ 	}
+-	if (P.build_style == 1)
++	if (bs == 1)
+ 	{
+ 		// Ladder-proven: survive first (Jungle health, Durability), farm faster (Monster), earn more (Treasure),
+ 		// then raw stats through Power emblems (6 shards for the price of 5).
+@@ -368,7 +368,7 @@
+ 	kit = kit_of(me);
+ 	const auto abl = me.abilities();
+ 	ab.assign(abl.begin(), abl.end());
+-	build = build_for(type);
++	build = build_for(type, P.build_style);
+ 	if (P.mi_health_emblem)
+ 	{
+ 		// mi_health_emblem (default branch): a Durability health emblem (-10% damage taken, +5 health points) right after the
+@@ -391,6 +391,8 @@
+ 	auto& W = world();
+ 	W.dash_kit = kit.dash >= 0;
+ 	W.init_static();
++	if (W.mono_mode && P.mono_build)
++		build = build_for(type, P.mono_build);
+ 	// Islands are searched later (prebuild_fields): ~47k fuel on 100x100 maps, not needed in the opening rounds.
+ 	W.island_of.assign(W.groups.size(), -1);
+ 	W.islands_pending = true;
+@@ -409,7 +411,7 @@
+ 		if (W.my_index == 0)
+ 		{
+ 			std::printf("M w=%d h=%d spawn=(%d,%d) team=%d\n", W.W, W.H, W.ally_spawn_c.x, W.ally_spawn_c.y, static_cast<int>(bc::detail::sdk_my_team()));
+-			std::printf("O mode=%d share=%.2f groups=%d first=%d\n", static_cast<int>(W.obj_mode), W.obj_share, static_cast<int>(W.obj_groups.size()), W.obj_groups.empty() ? -1 : W.obj_groups[0]);
++			std::printf("O mode=%d share=%.2f groups=%d first=%d mono=%d mshare=%.2f\n", static_cast<int>(W.obj_mode), W.obj_share, static_cast<int>(W.obj_groups.size()), W.obj_groups.empty() ? -1 : W.obj_groups[0], static_cast<int>(W.mono_mode), W.mono_share);
+ 			for (const auto& g : W.groups)
+ 			{
+ 				std::printf("G id=%d gems=%d gold=%d respawn=%d ours=%d d_ally=%d hp=%.0f dps=%.0f tiles=", g.id, g.gems, g.gold, g.respawn, (int)g.ours, g.d_ally, g.max_hp, g.dps);
+@@ -2451,6 +2453,8 @@
+ 	if (round < P.early_round)
+ 		tribute_min = std::min(tribute_min, P.early_tribute_min); // bank small and early: gold and safety
+ 	stance = comms().stance;
++	if (P.mono_grouped_until > 0 && world().mono_mode && round < P.mono_grouped_until)
++		stance = STANCE_GROUPED; // lone-monolith maps: the first contact is a team wipe for whoever arrives piecemeal
+ 	isolated_fight_adv = P.isolated_fight_adv;
+ 	if (stance == STANCE_GROUPED)
+ 	{
+@@ -3159,6 +3163,8 @@
+ 		{ WHY(1); return -1; }
+ 	if (P.obj_open_rounds > 0 && W.obj_mode && round < P.obj_open_rounds && !g.objective && g.d_enemy - g.d_ally < P.obj_open_margin)
+ 		{ WHY(2); return -1; }
++	if (P.mono_open_rounds > 0 && W.mono_mode && round < P.mono_open_rounds && !g.ours)
++		{ WHY(2); return -1; }
+ 	const int d_tile = d_override >= 0 ? d_override : nav().group_dist(g, pos);
+ 	if (d_tile >= BIG)
+ 		{ WHY(3); return -1; }
+diff -ruN _m10/src/params.h _x_ct/src/params.h
+--- _m10/src/params.h	2026-10-18 20:14:34.732267617 +0000
++++ _x_ct/src/params.h	2026-10-18 20:18:40.931632162 +0000
+@@ -353,6 +353,15 @@
+ 	float o2_ring_mindps = 0.f;	 // a caster whose spell damage per round is below this stays out of the ring plan (Ren's stun is 15.6, Cassi's 17.5)
+ 
+ 
++	// Lone-monolith maps (agent contest, session 7): contest (the ladder map we lost 0-1000 with 63 deaths), its ladder copy and gold_mono_*
++	int mono_plan = 1;			// detect them at init (World::mono_mode); everything mono_* needs it (0: the baseline, byte-identical play)
++	float mono_share = 0.9f;	// ... when lone monoliths hold at least this share of the map's gem rate
++	int mono_obj = 0;			// ... plan the lone monoliths with the objective team plan (obj_*; obj_min_attackers=2 left them out)
++	int mono_grouped_until = 0;	// ... play the GROUPED stance (stay together, off their half) until this round
++	int mono_build = 0;			// builds on those maps: 0 = build_style, 3 = the ladder teams' (Durability / Bruiser health, then Power stacks)
++	int mono_open_rounds = 0;	// opening: before this round skip groups on the enemy's half (the enemy's triples at 25 steps from us: on contest
++								// two of five bodies walked there from r2 and met 3-4 enemies alone)
++
+ 	// Stuck champions (tools/analysis/stuck.mjs; experiments/wip/x_stuck_NOTES.md)
+ 	int stuck_live_goal = 1;	 // farming without the group's field: walk to tiles in range of live camps, not of any
+ 								 // group tile (a tile next to a dead camp counted as arrived: frozen 30-78 rounds on gen16)
+diff -ruN _m10/src/world.cpp _x_ct/src/world.cpp
+--- _m10/src/world.cpp	2026-10-18 20:14:34.305720608 +0000
++++ _x_ct/src/world.cpp	2026-10-18 20:18:40.932202440 +0000
+@@ -138,6 +138,17 @@
+ 		for (auto t : G.tiles)
+ 			G.radius = std::max(G.radius, cheb(t, G.center));
+ 		G.update_cluster();
++		if (P.mono_plan && G.gems > 0)
++		{
++			const float rate = static_cast<float>(G.gems) / static_cast<float>(std::max(1, G.respawn));
++			mono_rate_total += rate;
++			if (G.monolith && G.camps.size() == 1)
++			{
++				mono_rate_lone += rate;
++				if (G.d_ally < BIG)
++					mono_groups.push_back(G.id);
++			}
++		}
+ 		if (P.obj_plan && G.gems > 0)
+ 		{
+ 			// Objective-map detector input (see detect_objective), gathered here to keep init fuel flat.
+@@ -152,6 +163,8 @@
+ 		groups.push_back(std::move(G));
+ 	}
+ 	hops.assign(groups.size(), Hop{});
++	mono_share = mono_rate_total > 0 ? mono_rate_lone / mono_rate_total : 0;
++	mono_mode = P.mono_plan && mono_rate_total > 0 && mono_share >= P.mono_share;
+ 	detect_objective();
+ }
+ 
+@@ -176,6 +189,20 @@
+ 	// Heavy = too much health for one body to clear in a few trips (elk 2,400, monolith 20,000; stampede's fused
+ 	// group 17,400). Gem rate = gems per respawn round; a centre group counts once for the whole map, side groups
+ 	// once per copy, so the share is map-wide. The sums are gathered in init_static's group loop.
++	if (mono_mode && P.mono_obj)
++	{
++		// Lone monoliths are the whole gem supply: plan them as the team objective (obj_min_attackers 2 excluded them).
++		obj_groups = mono_groups;
++		obj_share = mono_share;
++		obj_mode = !obj_groups.empty();
++		if (obj_mode)
++		{
++			std::sort(obj_groups.begin(), obj_groups.end(), [&](int a, int b) { return groups[static_cast<std::size_t>(a)].d_ally < groups[static_cast<std::size_t>(b)].d_ally; });
++			for (int id : obj_groups)
++				groups[static_cast<std::size_t>(id)].objective = true;
++		}
++		return;
++	}
+ 	obj_share = obj_rate_total > 0 ? obj_rate_heavy / obj_rate_total : 0;
+ 	obj_mode = !obj_groups.empty() && static_cast<int>(obj_groups.size()) <= P.obj_max_groups && obj_share >= P.obj_share;
+ 	if (!obj_mode)
+diff -ruN _m10/src/world.h _x_ct/src/world.h
+--- _m10/src/world.h	2026-10-18 20:14:34.305702345 +0000
++++ _x_ct/src/world.h	2026-10-18 20:18:40.932588997 +0000
+@@ -141,6 +141,12 @@
+ 	float obj_share = 0;		 // share of the map's gem rate (gems / respawn) held by heavy groups
+ 	float obj_rate_total = 0, obj_rate_heavy = 0;
+ 	std::vector<int> obj_groups; // heavy gem groups, nearest to our spawn first
++	// Lone-monolith map (P.mono_plan, agent contest): (almost) all gem income is in single-camp monoliths (contest, its ladder copy,
++	// gold_mono_*). Everything the monolith plan does is gated by this flag, so every other map plays exactly as before.
++	bool mono_mode = false;
++	float mono_share = 0;		 // share of the map's gem rate (gems / respawn) held by lone monoliths
++	float mono_rate_total = 0, mono_rate_lone = 0;
++	std::vector<int> mono_groups; // the lone monoliths we can reach
+ 	void detect_objective();
+ 	Field home; // steps from our spawn
+ 	int spawn_altar_d = BIG; // walking steps from our spawn to the nearest altar's approach tile

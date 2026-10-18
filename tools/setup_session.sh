@@ -32,7 +32,7 @@ tools/snapshot.sh _rm 60d9930
 tools/snapshot.sh _ST cd4e2aa
 # The archetypes were built from _rm + the build_style 3/4 code of 78c32bf (brain.cpp only, no LEGEND_RUNTIME_PARAMS)
 git diff 60d9930 78c32bf -- bots/legend/src/brain.cpp > $T/bs_brain.diff
-SRC=bots/_rm tools/variant.sh _leg1 > /dev/null && (cd bots/_leg1/src && patch -s -p4 < $T/bs_brain.diff)
+SRC=bots/_rm tools/variant.sh _leg1 > /dev/null && (cd bots/_leg1/src && patch -s -p4 --no-backup-if-mismatch < $T/bs_brain.diff)
 SRC=bots/_leg1 tools/make_archetypes.sh > /dev/null
 # _m2 = legend_m2 (shipped in session 7) = _rm + x_farm.patch + x_survive.patch as of cbe612b + three survive switches on
 git show cbe612b:experiments/wip/x_farm.patch > $T/farm.patch
@@ -44,12 +44,20 @@ SRC=bots/_m2 tools/variant.sh _m3 join_reach=1.2f outmatch_solo_adv=0.45f > /dev
 # _x_gp = _m2 + the give-up clock fix (experiments/wip/x_gp.patch); _m4 = legend_m4 (shipped) = _x_gp + the _m3 values
 SRC=bots/_m2 tools/variant.sh _x_gp > /dev/null && (cd bots/_x_gp && patch -s -p1 --no-backup-if-mismatch < ../../experiments/wip/x_gp.patch)
 SRC=bots/_x_gp tools/variant.sh _m4 join_reach=1.2f outmatch_solo_adv=0.45f > /dev/null
+# _fA/_fB/_fC = the archetypes rebuilt on legend_m4 code (_leg4 = _m4 + all of 78c32bf = bots/legend at the legend_m4 ship)
+git diff 60d9930 78c32bf -- bots/legend/src/params.h > $T/bs_params.diff
+SRC=bots/_m4 tools/variant.sh _leg4 > /dev/null && (cd bots/_leg4/src && patch -s -p4 --no-backup-if-mismatch < $T/bs_brain.diff && patch -s -p4 --no-backup-if-mismatch < $T/bs_params.diff)
+PRESS="fight_margin=1.1f isolated_fight_adv=1.2f steal_hp_frac=0.4f enemy_half_penalty=4.f deny_bonus=0.4f"
+SRC=bots/_leg4 tools/variant.sh _fA build_style=3 $PRESS gank_bag=15 q0_push=0.5f --define "LEGEND_DRAFT 8,4,3,0,9" > /dev/null
+SRC=bots/_leg4 tools/variant.sh _fB build_style=4 max_join=0 deny_bonus=0.f --define "LEGEND_DRAFT 3,4,9,8,0" > /dev/null
+SRC=bots/_leg4 tools/variant.sh _fC build_style=3 obj_min_attackers=1 $PRESS --define "LEGEND_DRAFT 4,10,5,3,8" > /dev/null
 rm -rf $T
-for b in _rm _ST _m2 _m3 _x_gp _m4 legend idle; do cambc build $b > /dev/null && echo "built $b"; done
+for b in _rm _ST _m2 _m3 _x_gp _m4 _fA _fB _fC legend idle; do cambc build $b > /dev/null && echo "built $b"; done
 python3 - <<'EOF'
 import sys; sys.path.insert(0, 'tools'); import ledger
 want = {'_rm': '339a961d3427', '_ST': 'ca21cbfe785b', '_eA': '0ee193334b60', '_eB': '654605b27deb', '_eC': '116ccc8b53b1',
-		'_m2': '1684aa2a482c', '_m3': '86c9e8f3de35', '_x_gp': '92e199947185', '_m4': '0dc2a2aac28a'}
+		'_m2': '1684aa2a482c', '_m3': '86c9e8f3de35', '_x_gp': '92e199947185', '_m4': '0dc2a2aac28a',
+		'_fA': '25fe5950b034', '_fB': 'f8e472c342f3', '_fC': 'ef5391dcc92b'}
 for b, h in want.items():
 	got = ledger.src_hash(b)
 	print(f'{b:5s} {got} {"ok" if got == h else "MISMATCH (expected " + h + ")"}')

@@ -1,0 +1,153 @@
+diff -ruN _xp4/src/brain.cpp _x_e2/src/brain.cpp
+--- _xp4/src/brain.cpp	2026-10-18 15:17:15.649252893 +0000
++++ _x_e2/src/brain.cpp	2026-10-18 16:08:16.528386274 +0000
+@@ -40,10 +40,50 @@
+ 			rep(v, it, 5);
+ }
+ 
++
++// Session 9 (econ2): builds of the top ladder teams (docs/strategy_v2/08_TOP3_VS_TOP3.md section 3). The damage stat is
++// focus for the casters and strength for the fighters; the passives (Treasure, Jungle, Durability) are bought in the
++// damage stat, then one Bruiser health emblem, then Power in the damage stat forever.
++bool focus_champ(CT t)
++{
++	return t == CT::ren || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
++}
++
++void top_build(std::vector<I>& v, CT t, int style)
++{
++	const bool f = focus_champ(t);
++	const I tr = f ? I::treasure_shard_of_focus : I::treasure_shard_of_strength;
++	const I ju = f ? I::jungle_shard_of_focus : I::jungle_shard_of_strength;
++	const I du = f ? I::durability_shard_of_focus : I::durability_shard_of_strength;
++	const I pw = f ? I::power_shard_of_focus : I::power_shard_of_strength;
++	if (style == 7)
++	{
++		rep(v, tr, 5);
++		rep(v, ju, 5);
++		rep(v, du, 5);
++		rep(v, I::bruiser_shard_of_health, 5);
++	}
++	else if (style == 8)
++	{
++		rep(v, ju, 5);
++		if (P.e2_power_after)
++			rep(v, du, 5);
++		else
++			rep(v, pw, 5), rep(v, du, 5);
++		rep(v, I::bruiser_shard_of_health, 5);
++	}
++	rep(v, pw, 300);
++}
++
+ // Shard plans: five shards of a family complete its emblem; only the emblem grants the passive.
+ std::vector<I> build_for(CT t)
+ {
+ 	std::vector<I> v;
++	if (P.build_style == 7 || P.build_style == 8)
++	{
++		top_build(v, t, P.build_style);
++		return v;
++	}
+ 	if (P.build_style == 2)
+ 	{
+ 		// Value-model builds (tools/analysis/item_value.py, calibrated on 36 r2 games). Every shard adds one point
+@@ -98,6 +138,41 @@
+ 			break;
+ 		case CT::cassi:
+ 		case CT::willow:
++			if (P.e2_cassi)
++			{
++				const I fo = I::power_shard_of_focus;
++				switch (P.e2_cassi)
++				{
++				case 1:
++					top_build(v, t, 7);
++					break;
++				case 2:
++					top_build(v, t, 8);
++					break;
++				case 3:
++					rep(v, I::jungle_shard_of_focus, 5);
++					rep(v, I::durability_shard_of_health, 5);
++					rep(v, fo, 300);
++					break;
++				case 5: // Monster focus, Durability health, Power focus forever (h0 order with Power for the Bruiser cycle)
++					rep(v, I::monster_shard_of_focus, 5);
++					rep(v, I::durability_shard_of_health, 5);
++					rep(v, fo, 300);
++					break;
++				case 6: // Monster focus, Jungle health, Durability health, Power focus
++					rep(v, I::monster_shard_of_focus, 5);
++					rep(v, I::jungle_shard_of_health, 5);
++					rep(v, I::durability_shard_of_health, 5);
++					rep(v, fo, 300);
++					break;
++				default:
++					rep(v, I::treasure_shard_of_focus, 5);
++					rep(v, I::durability_shard_of_health, 5);
++					rep(v, fo, 300);
++					break;
++				}
++				break;
++			}
+ 			if (P.ci_health_first)
+ 			{
+ 				rep(v, I::durability_shard_of_health, 5);
+@@ -114,6 +189,39 @@
+ 			cycle(v, { I::bruiser_shard_of_focus, I::bruiser_shard_of_health }, 12);
+ 			break;
+ 		case CT::issac:
++			if (P.e2_issac)
++			{
++				switch (P.e2_issac)
++				{
++				case 1:
++					top_build(v, t, 7);
++					break;
++				case 2:
++					rep(v, I::power_shard_of_strength, 5);
++					rep(v, I::durability_shard_of_health, 5);
++					rep(v, I::power_shard_of_strength, 300);
++					break;
++				case 3:
++					top_build(v, t, 8);
++					break;
++				case 5: // Monster strength, Durability health, Power strength forever
++					rep(v, I::monster_shard_of_strength, 5);
++					rep(v, I::durability_shard_of_health, 5);
++					rep(v, I::power_shard_of_strength, 300);
++					break;
++				case 6: // Monster strength, Durability health, Jungle health, Power strength
++					rep(v, I::monster_shard_of_strength, 5);
++					rep(v, I::durability_shard_of_health, 5);
++					rep(v, I::jungle_shard_of_health, 5);
++					rep(v, I::power_shard_of_strength, 300);
++					break;
++				default:
++					rep(v, I::durability_shard_of_health, 5);
++					rep(v, I::power_shard_of_strength, 300);
++					break;
++				}
++				break;
++			}
+ 			if (P.ci_health_first)
+ 			{
+ 				rep(v, I::durability_shard_of_health, 5);
+diff -ruN _xp4/src/params.h _x_e2/src/params.h
+--- _xp4/src/params.h	2026-10-18 15:17:15.710098716 +0000
++++ _x_e2/src/params.h	2026-10-18 15:31:25.456274206 +0000
+@@ -137,6 +137,13 @@
+ 							   // maps: 1 won 19/24 (gems +8,623), 0 won 21/24 (+9,385, deaths 441-670)
+ 	int ci_health_first = 1;   // build_style 2: Cassi & Issac buy health first (1) or Monster damage first (0);
+ 							   // vs _v6 on the ladder maps: 1 won 19/24 (gems +8,623, deaths 495-660), 0 won 16/24 (+3,449, 560-550)
++	int e2_cassi = 0;		   // session 9 econ2: Cassi (and Willow) build when build_style 2: 0 = style 2, 1 = 3rd-team order (Treasure, Jungle,
++							   //     Durability in focus, Bruiser health, Power focus), 2 = 2nd-team order (Jungle focus, Durability focus, Bruiser
++							   //     health, Power focus), 3 = Jungle focus, Durability health, Power focus, 4 = Treasure focus, Durability health, Power focus
++	int e2_issac = 0;		   // same for Issac: 1 = 3rd-team order in strength, 2 = Power strength first then Durability health (1st team),
++							   //     3 = Jungle strength, Durability strength, Bruiser health, Power strength, 4 = Durability health, Power strength
++	int e2_power_after = 1;	   // build_style 8/9: Durability emblem is bought before (1) / after (0) the first Power emblems
++	int e2_collect = 0;		   // gold routing (see E4 notes)
+ 	int monster_in_dps = 1;	   // count the Monster emblem's +10% camp damage in the kill-time model
+ 
+ 	// Shopping and home trips (heal + shop + bank near spawn; recall makes them cheap)

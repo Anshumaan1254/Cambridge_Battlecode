@@ -56,5 +56,16 @@ Body mean gold r150 144 (`_snk` itself: 144; its Issac 165, Cassi 108, Stellar 1
   `_ST` 78.4 / 91.2 (83.0 / 91.2). **Rejected (non-transitive, like strike_first)**: gold-first beats our own build and loses 5-22 points to the proxies.
   Lesson: screen against the proxies first (`_px9`, `_mite`, `_ifish` official 34), then vs `_m10`.
 - `_og3` = gold x2.5 while owned < 300 (two emblems): vs `_m10` official 50.0. `_og4` = gold x4: 55.9 (deaths 308-382; Ren takes even more:
-  gold r150 363). `_og5` = `og_jungle_first=3` (C&I open with Jungle in the damage stat): 55.9 (deaths 318-363). Proxy screens running.
+  gold r150 363). `_og5` = `og_jungle_first=3` (C&I open with Jungle in the damage stat): 55.9 (deaths 318-363).
+- `_og4` on the 88 vs `_m10`: **38.6**. Rejected.
+- Proxy screens, official 34 (`_px9` / `_mite` / `_ifish`; reference `_m10` = `_m8` **76.5 / 82.4 / 79.4**, sum 238.3):
+  | variant | what | `_px9` | `_mite` | `_ifish` | sum |
+  |---|---|---|---|---|---|
+  | `_og4` | gold x4 until owned 150 | 61.8 | 70.6 | 76.5 | 208.9 |
+  | `_og5` | Jungle first on C&I | 67.6 | 67.6 | 67.6 | 202.8 |
+  | `_og6` | gold x2.5 + Jungle C&I | 76.5 | 61.8 | 73.5 | 211.8 |
+  | `_og7` | `og_solo=3` (C&I farm own groups before r250: join x0.5, off-half x0.7) | 70.6 | 70.6 | 55.9 | 197.1 |
+  | `_og8` | `og_solo=7` (+ Ryth) | 82.4 | 73.5 | 55.9 | 211.8 |
+  (`_og2` gold x2.5: 70.6 / 70.6 / 73.5 = 214.7.) All rejected. Placebo `_ogP` (gold x1.02) running to measure how much any perturbation
+  costs against the proxies (the reference build was selected on them, so its cells may be inflated).
 

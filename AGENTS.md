@@ -51,11 +51,15 @@ running or unfinished, and what to do next, so a new agent can continue without 
   (4) **Opening agent `og` so far** (`experiments/wip/x_og_NOTES.md`): shop lag after the first affordable emblem is 0-1 round already (nothing to gain);
   `og_poor_collect` (poorer body collects before r400) **38.2** official vs `_m10`: gold spreads (Cassi's first emblem r200 vs r352) but team gold falls
   148.5k -> 130.7k (Ren is the fastest, Treasure-boosted collector): rejected. `og_gold_mult` 2.5 (gold x2.5 while a body owns < 150, until r300)
-  **55.9** official vs `_m10` (deaths 325-369): the effect is earlier gold-cluster targets, not earlier emblems; full cells running.
+  **55.9** official vs `_m10` (deaths 325-369): the effect is earlier gold-cluster targets, not earlier emblems. Later: every opening variant lost
+  to the proxies on the official 34 (`_og2` sum 214.7, `_og4` 208.9 and 38.6 on the 88 vs `_m10`, Jungle-first C&I 202.8, solo C&I 197.1-211.8;
+  `_m10` 238.3): the gold-first opening as built so far is not a better trade (agent still working).
   (5) **Contest agent `ct` so far** (`experiments/wip/x_ct_NOTES.md`): games are bimodal: whoever wins the first centre clash (r30-60) snowballs; our
   bodies arrive one by one. Contest pool CT4 (contest + `maps/ct`, 20 games; vs `_snk` / `_mite` / `_ifish` / `_px9` / `_m8` / `_fA`): `_ct0` (= `_m10`
   play) 30/60/50/50/50/75; skip the enemy half to r150/r300 (`_ct1`/`_ct2`): worse (passivity loses); **GROUPED stance to r150 (`_ct3`)
-  75/55/60/55/65/85, to r300 (`_cw1`) 70/55/70/55/65/90**. Confirming on CT34 (contest + 33 perturbed copies, 68 games); then inertness on the 88.
+  75/55/60/55/65/85, to r300 (`_cw1`) 70/55/70/55/65/90**. **CT34 (contest + 33 perturbed copies, 68 games)**: `mono_follow_until` 200 (`_fo200`, bodies
+  follow each other as a blob until r200) vs `_snk` / `_mite` / `_ifish` / `_px9` / `_m8` **83.8 / 89.7 / 77.9 / 66.2 / 69.1** (`_ct0` = `_m10` play vs `_snk` 38.2);
+  rollovers 8/8. Inertness on the 88 and the verifier still to come.
   (6) **Sneaky-bush study done** (`docs/strategy_v2/10_SNEAKY_BUSH.md`, tool `tools/strategy_v2/bush.py`; the draft-table check found 0 mismatches in 17 rows):
   their bush time 7.9% of alive body-rounds vs our 3.3% (4.8 vs 3.3 without contest; contest 21.7, eight 10.5, stampede 12.5, fragment 13.2); 23.5% of their
   champion damage comes from a bush (ours 9.0%); 48% of our champion-caused deaths had a bush hitter in the last 5 rounds (40% without contest); **all
@@ -64,7 +68,12 @@ running or unfinished, and what to do next, so a new agent can continue without 
   12 of 21 group kills gold-only); outside contest 70% of the camp-gem gap is neutral camps and camps on our half. Counters proposed: C1 ward the
   bush (**testing: `ward_bush` in `experiments/wip/x_wb.patch` on `_m10`, variants `_wb1` = prefer a bush tile within 2, `_wb2` = + re-ward after 3
   rounds when a bush is in reach**; official 34: `_wb1` vs `_m10` 47.1, vs `_snk` 58.8; **`_wb2` vs `_m10` 64.7 (deaths 254-405), vs `_snk` 70.6** (`_m10` 61.8);
-  control 34/34 identical; full rule cells for `_wb2` running, `$S/wb2.sh`), C2 bush ghost in the fight estimate, C3 contest bush-ring no-go for lone bodies (for `ct`), C5 expanse far-corner
+  control 34/34 identical. **`_wb2` full cells (88 distinct / official 34; `_m8`'s in brackets)**: vs `_m10` 52.3 / 64.7 (deaths 552-700), vs `_m8` 51.1 / 64.7;
+  **`_mite` 63.6 / 70.6 (76.1 / 82.4)**, `_ifish` 70.5 / 73.5 (69.3 / 79.4), `_px9` 72.7 / 82.4 (78.4 / 76.5), `_fA` 78.4 / 79.4 (73.9 / 82.4), `_ST` 85.2 / 91.2
+  (83.0 / 91.2), `_snk` 64.8 / 70.6 (`_m10` 64.8 / 61.8); pace 504.4 (503.8). Third-party mean 74.1 vs 76.1: **fails the user's rule on the Mite cell**
+  (29 of 88 games flipped, 20 to losses, spread over generated maps). Open question: real cost (wards are obstacles: our re-wards may block our own
+  paths) or selection bias (`_m8`'s draft choices were selected on these proxies)? Held-out check running (`$S/wbh.sh`: `_wb2` and `_m10` vs `_mite`,
+  `_px9` on gold/gold2/obj, 100 games each). Not shipped. C2 bush ghost in the fight estimate, C3 contest bush-ring no-go for lone bodies (for `ct`), C5 expanse far-corner
   cycle, C6 neutral-camp scoring, C7 earlier banking on 100x100 / 50x65 maps.
 - The user got the zips in chat: `legend_m8` (best measured), then `legend_m10` (current `submissions/legend.zip`, plays `legend_m8`'s games).
 

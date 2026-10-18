@@ -40,3 +40,14 @@ New switch `mono_follow_until` (code in `bots/_x_ct2`): the lowest-index living 
 non-heavy groups). Single games: contest, pert_s11, pert_s9 vs `_snk`: all three won (`_fo200`, `_fg200` = follow 200 + GROUPED 300) where `_ct0` lost 2.
 Variants: `_fo100 _fo200 _fo300` (follow until r), `_fg200`; `_gm1.._gm9` = GROUPED 300 with only some parts (mono_gmask: 1 enemy-half x2, 2 deny x0.5,
 4 isolated +0.3, 8 stay near allies' claims). `_rg1..4` regroup (go home when outnumbered by >= 3): not helpful alone.
+
+### 21:50 CT34 (68 games per cell, win %), `mono_follow_until` = blob opening
+| bot | snk | mite | ifish | px9 | m8 |
+|---|---|---|---|---|---|
+| `_ct0` (= `_m10` play) | 38.2 | (CT4: 60) | (CT4: 50) | (CT4: 50) | (CT4: 50) |
+| `_fo100` (follow to r100) | 82.4 | | | | |
+| **`_fo200`** (follow to r200) | **83.8** | **89.7** | 77.9 | 66.2 | 69.1 |
+| `_fo300` | 73.5 | | | | |
+| `_fg200` (follow 200 + GROUPED stance 300) | 79.4 | 82.4 | 79.4 | 73.5 | 77.9 |
+Rollovers on gen16_98x99_V_c5 for `_fo200`: 8 / 8 (rounds 1-3), same as `_m10`. `_ct0` vs `_mite` on the 20 CT4 games identical to `_m10`'s rows.
+Losses of `_fo200` are still massacres, but late: the opening clash is even or won (4-4 at r100) and the dispersed bodies are then picked off by the roaming pack.

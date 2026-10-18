@@ -1,0 +1,140 @@
+diff -ruN _s7/src/brain.cpp _x_fight7/src/brain.cpp
+--- _s7/src/brain.cpp	2026-10-18 02:32:43.502597543 +0000
++++ _x_fight7/src/brain.cpp	2026-10-18 02:48:19.770637548 +0000
+@@ -1225,6 +1225,7 @@
+ {
+ 	auto& W = world();
+ 	engaged = false;
++	const int prev_task = task; // last turn's task (assigned below only)
+ 	std::vector<Enemy*> E;
+ 	for (auto& e : W.enemies)
+ 		if (e.alive && e.visible && cheb(e.pos, pos) <= 9)
+@@ -1248,7 +1249,7 @@
+ 	};
+ 	// Their side: enemies that can hit us within about two turns count fully, the rest of the visible
+ 	// group half (they arrive a turn or two later). Stuns cost us a turn: count ready stuns as damage.
+-	float their_hp = 0, their_dps = 0, incoming = 0;
++	float their_hp = 0, their_dps = 0, incoming = 0, incoming_join = 0;
+ 	int stunners = 0;
+ 	for (auto* e : E)
+ 	{
+@@ -1261,6 +1262,8 @@
+ 		their_dps += w * dps;
+ 		if (d <= reach_of(*e))
+ 			incoming += e->str + e->burst() / 2.f;
++		if (d <= reach_of(*e) + 2)
++			incoming_join += e->str + e->burst() / 2.f;
+ 	}
+ 	// Our side: self plus visible allies within 6 (with their spells, not just basic attacks).
+ 	float my_burst = 0;
+@@ -1346,6 +1349,45 @@
+ 	const float t_kill_us = our_hp / std::max(1.f, their_dps);
+ 	// Learned calibration: bodies that died after choosing fights trust their estimate less.
+ 	const float adv = t_kill_us / std::max(0.1f, t_kill_them) * learner().fight_scale();
++	// Fog prior (P.fog_prior): enemies alive but not in sight join fights we start. adv_s is the advantage with them
++	// counted; it decides only fights we could still leave (starts, and with fog_prior 2 escapable fight-backs).
++	float adv_s = adv;
++	if (P.fog_prior)
++	{
++		float vis_hp = 0, vis_dps = 0;
++		for (auto* e : E)
++			vis_hp += e->hp, vis_dps += e->str + e->focus * best_mod(e->kit) / 8.f + e->burst() / 3.f;
++		const float avg_hp = vis_hp / static_cast<float>(E.size()), avg_dps = vis_dps / static_cast<float>(E.size());
++		const int dh0 = W.dist_home(pos), da0 = W.dist_away(pos);
++		const float zone = dh0 >= BIG || da0 >= BIG ? 0.5f : static_cast<float>(dh0) / static_cast<float>(std::max(1, dh0 + da0));
++		float fog_hp = 0, fog_dps = 0;
++		for (const auto& e : W.enemies)
++		{
++			if (!e.alive || (e.visible && cheb(e.pos, pos) <= 9))
++				continue; // counted (or skipped on their spawn) above
++			const int age = e.seen_round >= 0 ? round - e.seen_round : BIG;
++			float w = 0;
++			if (age <= P.fog_mem)
++			{
++				if (cheb(e.pos, pos) - age <= P.fog_reach && !W.enemy_spawn.is_set(e.pos))
++					w = P.fog_w_seen * (1.f - static_cast<float>(age) / static_cast<float>(P.fog_mem + 1));
++			}
++			else
++				w = P.fog_w_unknown * zone;
++			if (w <= 0)
++				continue;
++			const bool known = e.seen_round >= 0;
++			fog_hp += w * (known ? (age <= P.fog_mem ? e.hp : e.max_hp) : avg_hp);
++			fog_dps += w * (known ? e.str + e.focus * best_mod(e.kit) / 8.f + e.focus * std::max({ e.kit.dmg >= 0 ? e.kit.dmg_mod : 0.f, e.kit.cc >= 0 ? e.kit.cc_mod : 0.f, e.kit.aoe >= 0 ? e.kit.aoe_mod : 0.f }) / 3.f : avg_dps);
++		}
++		if (P.fog_T > 0)
++		{
++			const float s = std::min(1.f, t_kill_them / static_cast<float>(P.fog_T));
++			fog_hp *= s, fog_dps *= s;
++		}
++		if (fog_hp > 0)
++			adv_s = (our_hp / std::max(1.f, their_dps + fog_dps)) / std::max(0.1f, (their_hp + fog_hp) / std::max(1.f, our_dps)) * learner().fight_scale();
++	}
+ 
+ 	// Backup: allies in sight, plus hidden allies whose claimed camp is close (they are a few steps away).
+ 	// Half our deaths on the ladder were lone champions caught by two or more enemies.
+@@ -1424,25 +1466,32 @@
+ 	const float t_die = hp / std::max(1.f, incoming);
+ 	const int dh = W.dist_home(pos);
+ 	const bool on_spawn = W.ally_spawn.is_set(pos);
+-	const bool can_escape = on_spawn || !chaser || (ready(kit.dash) && !chaser_dash) || static_cast<float>(dh) + 1.f < t_die;
++	bool can_escape = on_spawn || !chaser || (ready(kit.dash) && !chaser_dash) || static_cast<float>(dh) + 1.f < t_die;
++	if (P.esc_join && can_escape && !on_spawn && in_reach && chaser && !(ready(kit.dash) && !chaser_dash))
++		can_escape = static_cast<float>(dh) + 1.f < hp / std::max(1.f, incoming_join); // the others close in during the walk
+ 
+ 	bool fight = false;
++	// Fog prior: fights we could still leave are judged with the hidden enemies counted.
++	const float adv_start = !in_reach || (P.fog_prior == 2 && can_escape) ? adv_s : adv;
++	const float adv_back = P.fog_prior == 2 && can_escape ? adv_s : adv;
+ 	if (killable && adv >= 0.5f)
+ 		fight = true;
+-	else if (adv >= fight_margin)
++	else if (adv_start >= fight_margin)
+ 		fight = true;
+-	else if (in_reach && adv >= fight_back_margin)
++	else if (in_reach && adv_back >= fight_back_margin)
+ 		fight = true;
+ 	else if (in_reach && !can_escape && adv >= P.cornered_margin)
+ 		fight = true; // fleeing a same-speed chaser hands it free hits: trade instead
++	else if (P.corner_commit > 0 && in_reach && !can_escape && prev_task == T_FIGHT && adv >= P.corner_commit)
++		fight = true; // already trading and the flee cannot succeed: turning around only gives free hits
+ 	else if (tgt->channeling && adv >= 0.9f)
+ 		fight = true;
+ 	const int pair_bag = P.pair_bits && me_pair && comms().pair_bag[type == CT::cassi ? 1 : 0] ? P.pair_bag_min : 0; // partner's posted bag
+ 	if (fight && !killable && can_escape && (hp < (me_pair ? P.pair_abort_hp : 0.25f) * max_hp || (static_cast<int>(gems) + pair_bag >= P.bag_caution && adv < 1.5f)))
+ 		fight = false;
+-	if (fight && reserve && !(killable && adv >= 1.f) && adv < fight_margin + P.reserve_margin && can_escape)
++	if (fight && reserve && !(killable && adv >= 1.f) && adv_s < fight_margin + P.reserve_margin && can_escape)
+ 		fight = false;
+-	if (fight && isolated && !killable && adv < isolated_fight_adv && can_escape)
++	if (fight && isolated && !killable && adv_s < isolated_fight_adv && can_escape)
+ 		fight = false;
+ 	// The user's rule (session 2): stay and keep hitting only when our own health outlasts the most the enemies
+ 	// here can deal before the target dies (every visible enemy hitting us every round, spells included) and no
+diff -ruN _s7/src/params.h _x_fight7/src/params.h
+--- _s7/src/params.h	2026-10-18 02:32:43.500849802 +0000
++++ _x_fight7/src/params.h	2026-10-18 02:48:19.769051732 +0000
+@@ -122,6 +122,23 @@
+ 	int deficit_escort = 2;			 // ... this many: a respawned champion waits on spawn for the next ally
+ 	int escort_wait = 15;			 // max rounds to wait on spawn for an escort
+ 	int threat_memory = 4;			 // rounds an unseen enemy is still assumed nearby
++	// Fog prior (agent fight7, session 7): alive enemies we cannot see count in the fight estimate when we decide to START a
++	// fight we could still walk away from (never when cornered). pair6: 65% of pair deaths began as a margin-rule start on one
++	// visible enemy with more arriving from the fog (1 -> 3+ in 64 of 120 one-enemy starts).
++	int fog_prior = 0;				 // 0 off; 1 = proactive starts (not in reach); 2 = also fight-back while escapable
++	int fog_mem = 10;				 // an enemy seen this many rounds ago counts as "remembered" (position known, moves 1/round)
++	int fog_reach = 8;				 // ... when its last position minus its age is within this many tiles of us
++	float fog_w_seen = 1.f;			 // weight of a remembered hidden enemy (x (1 - age / (fog_mem + 1)))
++	float fog_w_unknown = 0.f;		 // weight of an alive enemy with no recent sighting, x our position's share of the way to
++									 // their spawn (0 on our spawn, 0.5 at the midline, 1 on theirs)
++	int fog_T = 0;					 // > 0: the prior scales with the fight's length, min(1, t_kill_them / fog_T) (quick kills
++									 // leave no time for arrivals)
++
++	// Escape realism (agent fight7). XM_TRACE of 635 deaths vs _r2: 212 died fleeing in reach, 129 of them had already been
++	// judged unable to escape (esc=0) when they turned, and fight/flee flips every round under focus (hit while not hitting).
++	float corner_commit = 0.f;		 // > 0: in reach, unable to escape and fighting last turn: keep fighting while adv >= this
++	int esc_join = 0;				 // 1: in reach, can_escape also needs the walk home to outlast every visible enemy that can
++									 // close in during it (reach + 2), not just those in reach now
+ 	int alert_radius = 0;			 // allies avoid this radius around a reported danger
+ 	int alert_age = 12;				 // rounds a danger report stays valid
+ 

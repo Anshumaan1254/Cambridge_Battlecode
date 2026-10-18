@@ -12,30 +12,28 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Results (local, 56 maps × both sides = 112 games per row; session 3, Oct 17)
+## Results (local, 56 maps × both sides = 112 games per row; session 6, Oct 18)
 
 The 56 maps are the 17 official ladder maps (`maps/comp/`, the real pool), 12 real ladder maps rebuilt from replays
-(`maps/ladder/`) and 27 generated ones. Opponents are frozen past versions of this bot and aggressive archetypes with
-the top ladder teams' drafts (`tools/make_sparring.sh`). Official-map-only rates in brackets.
+(`maps/ladder/`) and 27 generated ones. Official-map-only rates in brackets.
 
-| Opponent | `legend` (submitted on the ladder Oct 17, `_L0`) | `legend` now (`legend_c3`) |
-|---|---|---|
-| the Oct 17 ladder build (`_L0`) | — | **60.7%** (61.8) |
-| `_r2` (commit 4a3920d) | 60.0% | **79.5%** (73.5) |
-| `_v6` (first rewrite) | 73.3% | **91.1%** (97.1) |
-| aggressive Stellar/C&I draft (`_devci`) | 76.7% | **90.2%** (91.2) |
-| aggressive C&I hunter (`_hunt2`) | 95.6% | **99.1%** (100) |
+| Opponent | `legend_s7` (current zip) |
+|---|---|
+| `legend_st` (the build in the user's 17-game ladder report, 1 win) | **56.2%** (55.9) |
+| `legend_s6` (first ship of session 6) | 50.0% (47.1), 9% fewer deaths |
+| `_r2` (commit 4a3920d) | **82.1%** (88.2), deaths 717 vs 1,729 |
 
-These opponents are all our own code family. The user's audit of 40 real ladder games of `_L0` (5 wins) found we
-collect half the gems of the top teams and die twice as often; the session-3 changes target exactly that (deaths
-against `_devci` fell from 1,784 to 796 per 112 games). Build-by-build numbers: [`submissions/BUILDS.md`](submissions/BUILDS.md).
+Unopposed pace (rounds to 1000 gems vs `idle`, 17 official maps): `legend_st` 585 → **`legend_s7` 565**; lost opening turns
+168 → 46; deaths to camps in unopposed official-map games 10 → 0.
 
-What changed and why: [docs/STRATEGY.md](docs/STRATEGY.md) §1. How the bot learns:
-[docs/LEARNING.md](docs/LEARNING.md).
+These opponents are all our own code family, so they guard against regressions rather than predict the ladder. The real
+ladder report (17 games of `legend_st`) showed the gaps: deaths 232 vs 50, half the camp gems, contest 0-1000. Session 6 fixed
+the measurable causes (AGENTS.md §00000); fight deaths against stronger teams remain the main open problem.
+Build-by-build numbers: [`submissions/BUILDS.md`](submissions/BUILDS.md).
 
 ## Ready-to-submit ZIP
 
-Current: **`legend_s7`** (Oct 18, session 6): 56.2% head-to-head vs `legend_st` (the build in the 17-game ladder report), 82% vs `_r2`
+**Upload `submissions/legend.zip`** (`cambc submit legend`, or the platform's Submissions page). Current: **`legend_s7`** (Oct 18, session 6): 56.2% head-to-head vs `legend_st` (the build in the 17-game ladder report), 82% vs `_r2`
 with 29% fewer deaths than `legend_s6`, fewer lost opening turns (168 -> 46 on the official maps), no deaths to camps in unopposed
 official-map games, a team monolith plan on contest-like maps, and Cassi & Issac skip fights they would die in.
 

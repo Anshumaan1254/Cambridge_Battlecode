@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-18 01:40 UTC (session 6)**. Rule from the user: update this file and push at every step. Start with **§00000** (session 6), then **§0000**, **§000**, **§00** below. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
+- Last updated: **2026-10-18 (session 6, final)**. Rule from the user: update this file and push at every step. Start with **§00000** (session 6), then **§0000**, **§000**, **§00** below. Branch for session 6: `ccr-b9ffa7d9-hvk1ud` (earlier sessions: `claude/laughing-curie-3rq6hu`; do not open a PR unless the user asks).
 - **Two sessions are live on this branch (20:00 UTC)**: session 4 (container with `/tmp/ev/fp_*`, still running its full
   panels: `_ST`, `_rm`, `_rs3`, `_rnr` done, `_rnd` running, then `_rmx`, `_x_side`, `_rmxp`; results written into §000) and
   session 5 (§0000). Before pushing: `git pull --rebase`. Do not duplicate each other's panels: see §000 for session 4's numbers.
@@ -27,6 +27,21 @@ running or unfinished, and what to do next, so a new agent can continue without 
   Before that ship: **`bots/legend` = session 5's stacked candidate `_rmxp`** (= `_rm` + `x_side.patch`
   (`camp_in_fight=3`) + `x_pace.patch` (`bank_first=0`, `obj_min_hp` 4500, `obj_share` 0.7, `obj_max_groups` 8)) **+ `dist_landmark`** (below).
   Frozen locally as `bots/_b6` (baseline of session-6 A/Bs; wasm identical to `_lbxp`).
+
+### 00000.0 Final state of session 6 (Oct 18, the user asked to finish here)
+- **Upload `submissions/legend.zip` = `legend_s7`** (sha256 a2aafdab…, = `bots/legend/src`, verified: the zip extracts to the same
+  sources, builds, and plays clean `--release` games). History copies of every ship in `submissions/history/`.
+- Done this session (all shipped in `legend_s7`, each behind a switch in `params.h`): `dist_landmark`, `capture_rank`, `exit_aware`,
+  `camp_danger_live`, round refresh after init, contest plan (`cm_mode`, `cm_obj`), pair veto (`pair_veto`, margin 0.8); plus
+  session 4-5 work (opening fuel, `capture_reset`, `tribute_elapsed`, `danger_detour`, `team_bank`, `race_mode`, `camp_in_fight`, pace patch).
+- Built and measured, left **off**: `own_plan` (fixed group per body), `build_style 3` (the ladder team's health-first builds: pace 606),
+  `pair_bits`, `pair_join_w`, `cm_rush_until`, `cm_buddy_pen`.
+- **Stopped unfinished**: agent `fight7` (fog prior for unseen enemies + realistic escape / flee deaths), baseline `_s7`. Its partial
+  work: `experiments/wip/x_fight7.patch`, `x_fight7_NOTES.md`, `tools/analysis/fight_deaths.mjs` (not tested, not merged).
+- **Next steps, in order**: (1) real ladder replays of `legend_s7` from the user (the best signal: every sparring bot is our own code);
+  (2) finish fight7 (start fights counting recently seen enemies; flee only when it can succeed, else recall or fight back; arrive at
+  contested points together); (3) walk waste (46% of camp walking is abandoned walks); (4) ES re-training on the user's machine
+  (`tools/rl/train_local.sh`) on `legend_s7`.
 
 ### 00000.1 Findings (session 6)
 - **Unopposed games (vs `idle`) show bodies that earn nothing for hundreds of rounds** (`tools/analysis/econ_open.mjs`: per body first capture,

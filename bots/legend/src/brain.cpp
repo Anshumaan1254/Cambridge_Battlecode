@@ -3505,7 +3505,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			}
 		}
 		bool ring_ok = false;
-		if (P.o2_ring && (P.o2_ring != 2 || (W.W == 60 && W.H == 50)) && W.obj_mode && g.objective && g.attackers >= 1 && (sc_obj_focus < 0 || sc_obj_focus == g.id))
+		if (P.o2_ring && (P.o2_ring == 1 || (W.W == 60 && W.H == 50) || (P.o2_ring == 3 && W.ring_comp && W.team_champs >= P.o2_ring_team)) && W.obj_mode && g.objective && g.attackers >= 1 && (sc_obj_focus < 0 || sc_obj_focus == g.id))
 			ring_ok = ring_ready(g, hp_left, ring_kill);
 		if (ring_ok)
 		{

@@ -147,6 +147,11 @@ void World::init_static()
 				mono_rate_lone += rate;
 				if (G.d_ally < BIG)
 					mono_groups.push_back(G.id);
+				if (G.d_ally < BIG && G.d_enemy < BIG && G.d_ally + G.d_enemy > 0)
+				{
+					const float r = static_cast<float>(G.d_ally) / static_cast<float>(G.d_ally + G.d_enemy);
+					mono_mid = std::min(mono_mid, std::min(r, 1.f - r));
+				}
 			}
 		}
 		if (P.obj_plan && G.gems > 0)
@@ -166,7 +171,10 @@ void World::init_static()
 	mono_share = mono_rate_total > 0 ? mono_rate_lone / mono_rate_total : 0;
 	// mono_size50: only on 50x50 maps (contest and its copies). On the 24 generated monolith-only test maps (maps/gold*/gold_mono*, 30-80
 	// wide) the blob opening + bush warding lost to _px9 29 of 60 vs legend_m10's 39; on contest and 33 copies it won 88-97%.
-	mono_mode = P.mono_plan && mono_rate_total > 0 && mono_share >= P.mono_share && (!P.mono_size50 || (W == 50 && H == 50));
+	// mono_size50 2: no size test; the lone monoliths must stand near the middle instead (contest and its copies 0.49 at any size; the
+	// generated monolith-only maps where the plan lost have them on each half, 0.39-0.42)
+	mono_mode = P.mono_plan && mono_rate_total > 0 && mono_share >= P.mono_share
+		&& (!P.mono_size50 || (P.mono_size50 == 1 ? (W == 50 && H == 50) : mono_mid >= P.mono_center));
 	detect_objective();
 }
 
@@ -275,6 +283,8 @@ void World::init_units()
 {
 	allies.clear();
 	enemies.clear();
+	team_champs = 0;
+	ring_comp = false;
 	const auto me = handle_of(bc::self());
 	int i = 0;
 	for (const auto& c : bc::champions(team::ally))
@@ -285,6 +295,8 @@ void World::init_units()
 			a.type = static_cast<bc::champion_type>(info.type);
 		if (a.handle == me)
 			my_index = i;
+		ring_comp = ring_comp || a.type == bc::champion_type::prism || a.type == bc::champion_type::tavi;
+		team_champs += a.type != bc::champion_type::issac;
 		allies.push_back(a);
 		++i;
 	}

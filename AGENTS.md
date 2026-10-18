@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-18 23:25 UTC (S7R: new-map A/B of m13 / m12 and the size-gate fix `_pg2`; `legend_m13` shipped at 22:40); earlier: 2026-10-18 (session 11; `legend_m10` shipped = `legend_m8`'s play with the default-branch ideas switched off; see §S11)**. Rule from the user: update this file and push at every step. Start with **§S11**, then **§S10**, **§S9**, **§S8**,
+- Last updated: **2026-10-18 23:50 UTC (S7R: `legend_m14` shipped: no map-size gates; new-map A/B vs m13 / m12); earlier: 2026-10-18 (session 11; `legend_m10` shipped = `legend_m8`'s play with the default-branch ideas switched off; see §S11)**. Rule from the user: update this file and push at every step. Start with **§S11**, then **§S10**, **§S9**, **§S8**,
   **§S7**, **§S7-SV2**, then §000000 (resume protocol), §00000, §0000, §000, §00. **All work stays on branch `ccr-a858cd03-q87cpi`**:
   `git pull` (merge, never force) before every push. The repository's **default branch is `claude/lucid-pasteur-2jiojv`** (Oct 17, its
   bot does not compile); this branch is 142 commits ahead of it. No PR unless the user asks.
@@ -15,6 +15,15 @@ running or unfinished, and what to do next, so a new agent can continue without 
 
 ## S7R. SESSION 7 RESUMED (2026-10-18 20:05 UTC, the original S7 container, live in parallel with S11): read with §S11
 
+- **SHIPPED `legend_m14` (23:50 UTC)** = `_pg3` = m13 + `experiments/wip/x_pg.patch` with `o2_ring` 3, `o2_ring_team` 5, `mono_size50` 2, `pd_obj_multi` 1
+  (hash cdc6dc9027f3; sha256 50ca7600…; `submissions/history/legend_m14_20261018.zip`; `bots/legend/src` = it + the inert `LEGEND_RUNTIME_PARAMS` block,
+  wasm byte-identical; `tools/setup_session.sh` rebuilds `_x_pg`, `_pg3`). `o2_ring_team` 5 because on the three 4-champion objective maps
+  (obj_pack4) the ring won 14/30 vs 20/30 without it (m12 15/30); at 5 champions 75/90 vs m13 51/90, m12 62/90. Final cells (win %, pooled
+  vs Mite, ifish, `_px9`, `_snk`, `_fA`; m12 / m13 / m14): official 79.4 / 79.4 / 79.4 (identical games, 170/170); resized official 65.6 / 69.4 / 73.1;
+  objective + resized stampede 64.2 / 59.2 / 79.2; contest at new sizes 96.2 / 60.0 / 96.2; fresh generated 66.7 x3 (identical); held-out
+  (gold, gold2, gold3, obj; 78 maps, vs Mite / `_px9` / ifish) m12 80.8 / 59.0 / 76.3, m13 84.0 / 57.7 / 74.4, m14 86.5 / 62.2 / 75.0. h2h m14 vs m13
+  64.3 (126) / held-out 55.1 (156); vs m12 54.4 (160) / held-out 50.0 (156). m14 >= m13 in every cell. Earlier cuts `_pg`, `_pg2`, `_pr`, `_pcg`, `_pg0`
+  (rows in the ledger) came from intermediate versions of `x_pg.patch` (without `o2_ring_team` / `pd_obj_multi`) and cannot be rebuilt exactly.
 - **23:25 UTC, the user: "improve the bot by A/B testing m13 and m12 on the official maps and on maps you create"** (the final sprint changes the
   map pool). New pools: `maps/pad17` (16 official maps framed by walls: new sizes, same play; `tools/mapgen/pad_map.mjs`), `maps/ctsz` (contest at
   6 new sizes + perturbed copies, `tools/mapgen/perturb.mjs`), `maps/gen2` (24 fresh `gen.mjs` maps, seed 2026), `maps/gold3` (gem-scarce, seeds 31/37).

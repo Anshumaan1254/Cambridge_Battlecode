@@ -172,6 +172,7 @@ struct Params
 	float pd_pack = 0.5f;
 	float pd_elk = 0.3f; // team size 4: Ryth only with elk share >= pd_elk
 	float pd_counter = 1.f;
+	int pd_obj_multi = 1;	   // 1: an objective map also needs the lone gem group to be a multi-camp group (draft.cpp derive_params)
 	int build_style = 2;	   // 0 = old farm builds, 1 = health/durability/treasure builds (ladder-proven),
 							   // sparring proxies: 3 / 4 / 10 = ifish (frontline health then Power / Monster then Power / 3 or 4 by map),
 							   //     9 = Mite (Jungle, Durability in the damage stat, Bruiser health, Power)
@@ -359,7 +360,9 @@ struct Params
 								// fights at the central gold triples decided the game, 6 of our deaths by r59 vs _r2)
 	// Session 9 (agent obj2): objective ring. The 2nd ladder team killed stampede's 17,400-HP group at r54-124 taking 0 damage:
 	// every body stood at Chebyshev 4 from the elks (camps hit within 3) and cast range-4 spells (area spells hit up to 6 camps).
-	int o2_ring = 2;			// objective group with live elks: casters (a range-4 damage/stun/area spell) cast from distance 4 and never step into camp reach
+	int o2_ring = 3;			// objective group with live elks: casters (a range-4 damage/stun/area spell) cast from distance 4 and never step into camp reach
+								// 3: on 60x50 or whenever our team has Prism or Tavi (the parameter draft takes them on objective maps of any size)
+	int o2_ring_team = 5;		// o2_ring 3: only with this many champions per team (obj_pack4, 4 champions: ring 14/30 vs 20/30 without it; 5: 75/90 vs 51/90)
 								// (2 = on stampede only: elsewhere, e.g. ambush, it lost 5 of 11 changed games in session 10)
 	float o2_ring_clear = 160.f; // ring plan ready when the casters' spell damage clears the group within this many rounds
 	float o2_ring_share = 0.5f;	 // value share per caster
@@ -371,7 +374,8 @@ struct Params
 	// Lone-monolith maps (agent contest, session 7): contest (the ladder map we lost 0-1000 with 63 deaths), its ladder copy and gold_mono_*
 	int mono_plan = 1;			// detect them at init (World::mono_mode); everything mono_* needs it (0: the baseline, byte-identical play)
 	float mono_share = 0.9f;	// ... when lone monoliths hold at least this share of the map's gem rate
-	int mono_size50 = 1;		// ... and only on 50x50 maps (1: contest and its copies; the generated monolith-only test maps of other sizes keep legend_m10's play)
+	int mono_size50 = 2;		// ... and only on 50x50 maps (1: contest and its copies; the generated monolith-only test maps of other sizes keep legend_m10's play)
+	float mono_center = 0.45f;	// ... mono_size50 2: instead of the size, every lone monolith at least this far toward the middle (min(d, 1 - d) of the spawn-to-spawn walk)
 	int mono_obj = 0;			// ... plan the lone monoliths with the objective team plan (obj_*; obj_min_attackers=2 left them out)
 	int mono_grouped_until = 0;	// ... play the GROUPED stance (stay together, off their half) until this round
 	int mono_build = 0;			// builds on those maps: 0 = build_style, 3 = the ladder teams' (Durability / Bruiser health, then Power stacks)

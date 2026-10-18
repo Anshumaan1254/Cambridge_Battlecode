@@ -292,7 +292,9 @@ void derive_params()
 	MP.team = std::clamp(F.team, 3, 5);
 	MP.pack_share = F.multi / g;
 	MP.elk_share = F.elk / g;
-	MP.objective = F.gem_groups == 1 && F.mono == 0;
+	// pd_obj_multi: the lone gem group must also be a multi-camp group (stampede and maps/obj: an elk + gem objective). On the gold_elk
+	// maps the only gem group is one elk camp: no objective plan fires there, so the caster draft would farm without its ring.
+	MP.objective = F.gem_groups == 1 && F.mono == 0 && (!P.pd_obj_multi || F.multi >= 1);
 	MP.monolith_only = F.gem_groups == 0 && F.mono > 0;
 	MP.open_small = MP.team <= 3 && F.area >= P.pd_open_area && F.mean_dist >= P.pd_open_dist;
 	pd_type = MP.objective ? 2 : MP.open_small ? 1 : 0;

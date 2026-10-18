@@ -13,7 +13,22 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Current build: `legend_m13` (session 7R, Oct 18, 22:40 UTC): parameter draft
+## Current build: `legend_m14` (session 7R, Oct 18, 23:50 UTC): no map-size rules
+
+`legend_m13` with its two remaining map-size rules replaced by map features, for the final sprint's new map pool: the stampede caster
+ring now runs on any objective map when we drafted Prism or Tavi with 5 champions (was: only 60x50 maps), and the contest plan runs on
+any lone-monolith map whose monoliths stand in the middle (was: only 50x50). On the 17 official maps it plays the same games as m13.
+
+| Map pool (win % vs Mite, ifish, `_px9`, sneaky, `_fA` proxies) | m12 | m13 | **m14** |
+|---|---|---|---|
+| 17 official maps (170 games) | 79.4 | 79.4 | **79.4** (same games) |
+| Official maps at new sizes (16 maps, 160) | 65.6 | 69.4 | **73.1** |
+| Objective maps, resized / transposed stampede (12, 120) | 64.2 | 59.2 | **79.2** |
+| Contest at 6 new sizes + perturbed (13, 130) | 96.2 | 60.0 | **96.2** |
+| 24 fresh generated maps (240) | 66.7 | 66.7 | **66.7** (same games) |
+| Held-out gem-scarce + objective (78 maps, 468 vs Mite, `_px9`, ifish) | 72.0 | 72.0 | **74.6** |
+
+## Previous build: `legend_m13` (session 7R, Oct 18, 22:40 UTC): parameter draft
 
 `legend_m12b` + a parameter draft (`mapdraft` 6): when the map is revealed it is analysed first (team size, share of wolf packs, share of
 elk camps, lone gem group, monoliths only, open small map); the first pick comes from those parameters and every later pick from map fit,

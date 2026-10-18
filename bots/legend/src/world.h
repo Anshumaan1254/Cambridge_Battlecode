@@ -144,6 +144,9 @@ struct World
 	// Lone-monolith map (P.mono_plan, agent contest): (almost) all gem income is in single-camp monoliths (contest, its ladder copy,
 	// gold_mono_*). Everything the monolith plan does is gated by this flag, so every other map plays exactly as before.
 	bool mono_mode = false;
+	float mono_mid = 1.f;	 // lone monoliths: the smallest min(d, 1 - d), d = our spawn's share of the walk between the spawns (0.5 = the middle)
+	int team_champs = 0;	 // champions per team (Cassi & Issac count once)
+	bool ring_comp = false;	 // our team has Prism or Tavi (the parameter draft takes them for the objective ring)
 	float mono_share = 0;		 // share of the map's gem rate (gems / respawn) held by lone monoliths
 	float mono_rate_total = 0, mono_rate_lone = 0;
 	std::vector<int> mono_groups; // the lone monoliths we can reach

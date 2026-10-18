@@ -63,6 +63,16 @@ running or unfinished, and what to do next, so a new agent can continue without 
   top draft Varg, Stellar, C&I, Ryth, Ren (`_L5d`, `LEGEND_DRAFT 9,4,3,0,8`) 51.1 / 52.9, vs `_fA` 62.5, pace 529.5; both (`_L5b3d`) 45.5 / 35.3, `_fA` 63.6, pace 570.5.
   **Still no gain from the top teams' builds or draft, now with x_exec in the brain**: rejected again. Builds would need faster kills and a
   contest plan first (style 3 cannot clear contest's monolith: no health).
+- **Agent `doctrine` done (16:00 UTC)**, notes `experiments/wip/x_doc_NOTES.md`, patches `x_doc.patch` (vs `_m4`) and `x_doc_m5.patch` (vs `_m5a`); switches
+  all off by default: `camp_in_fight` (A5), `spread_vs_splash` (A4), `burst_exit` (A7), `strike_first` (A6), `pair_space` (A9), `support_v2` (A3), `engage_angle`.
+  Nothing beats `_m5a`: best `_xm5c` (`camp_in_fight=3`) vs `_m5a` 51.1 / official 44.1, held-out 49.0, `_fA` 75.0 / 82.4, `_ST` 75.0 / 88.2, pace 521.8
+  (on `_m4` the same switch was +6.8: x_exec + RL already take those fights). burst_exit, strike_first, spread, pair_space, engage_angle: noise or worse;
+  combinations do not add. Diagnosis: the ladder gap (fight deaths 183-34, hit-nobody-back 75% vs 50%, 53% burst deaths) does not exist in our sparring
+  (`_m4` vs `_fA`: 68% vs 63%, damage ratio 0.88), so local tests cannot rank rules aimed at it. `_xm5c` zipped as a ladder A/B candidate
+  (`submissions/candidates/legend_m5_campfight_20261018.zip`).
+- **Conclusion of session 8**: local sparring is exhausted for fight rules; the next signal must come from the ladder (match groups of `legend_m5`,
+  and optionally the campfight candidate, vs the top 3) and from an A100 run on `legend_m5`. Open, not started: Part C draft-time plan / zone farming,
+  Part D contest single-monolith plan, gem-race endgame (S7 task 6).
 - Next for the user: upload `submissions/legend.zip` (legend_m5), queue match groups vs the top 3 and send the zips (`tools/strategy_v2/run_all.py` decodes them); re-run the A100 trainer on this commit (it now trains legend_m5 = `bots/legend`, with `_m4` in its frozen opponents).
 - Agents started 13:30 UTC: `top` (Sonnet): top-style sparring bot `bots/_top` from starter-cpp (notes `experiments/wip/x_top_NOTES.md`,
   patch `x_top.patch` vs starter-cpp); `doctrine` (Opus): fight doctrine A4-A7/A9 on `_m4` (`bots/_x_doc`, notes `x_doc_NOTES.md`, patch `x_doc.patch`).

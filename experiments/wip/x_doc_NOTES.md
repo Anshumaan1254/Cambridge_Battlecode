@@ -72,6 +72,24 @@ Control `_xd0` (= `_x_doc`, all off) vs `_m4` official 17: 50.0, deaths 318-318 
 | Variant | vs `_m5a` | vs `_fA` | vs `_ST` | pace |
 |---|---|---|---|---|
 | `_m5a` reference | - | 76.1 / 79.4 (611-956) | 73.9 / 91.2 (526-849) | 523.4 |
-| `_xm5c` camp_in_fight 3 | 51.1 / 44.1 (644-649) | 75.0 / 82.4 (601-934) | 75.0 / 88.2 (525-886) | 521.8 |
-| `_xm5cs` camp_in_fight 3 + support_v2 1 | **52.3 / 52.9** (614-655) | | | |
+| `_xm5c` camp_in_fight 3 | 51.1 / 44.1 (644-649); held-out 100: 49.0 (1963-2031) | 75.0 / 82.4 (601-934) | 75.0 / 88.2 (525-886) | 521.8 |
+| `_xm5cs` camp_in_fight 3 + support_v2 1 | 52.3 / 52.9 (614-655); held-out 100: 46.0 (2081-2056) | 68.2 / 73.5 (591-897) | 73.9 / 85.3 (486-848) | 521.8 |
 | `_xm5s` support_v2 1 (official 34 only) | 55.9 (320-338) | | | |
+
+Official 34 screens on `_m5a` (vs `_m5a` / vs `_fA`; `_m5a` vs `_fA` official = 79.4, deaths 299-495):
+- `_xm5p` spread_vs_splash 1: 52.9 (277-329) / 64.7 (437-500)
+- `_xm5q` pair_space 1: 55.9 (332-355) / 73.5 (276-489)
+- `_xm5c` camp_in_fight 3: vs `_fA` 82.4 (292-498); `_xm5cs` + support_v2: 73.5 (290-463)
+
+## Verdict (final)
+- Nothing clearly beats `_m5a`. Best = `_xm5c` (`camp_in_fight=3`): 188 games vs `_m5a` (88 distinct + 100 held-out) = 50.0%
+  (official 44.1), third parties unchanged (`_fA` 75.0 / 82.4, `_ST` 75.0 / 88.2), pace 521.8 (-1.6), 0 faults. Not accepted
+  (official < 50). On the `_m4` base the same switch was +: 56.8 / 58.8 and held-out 52.0 (54.3% over 188), `_ST` and pace
+  unchanged; x_exec + the RL subset in `_m5a` seem to absorb it (both make the body take more fights near camps).
+- `_xm5cs` (+ support_v2) passes the 88 (52.3 / 52.9) but held-out 46.0 and `_fA` 68.2 / 73.5 (vs 76.1 / 79.4): rejected.
+- Rejected on the screens: burst_exit (k 1.1, 1.5, no-chaser), strike_first 1 and 2, camp_in_fight 1, pair_space 2, engage_angle
+  (52.9 vs `_m4`, deaths 365-303), spread_vs_splash (official screens fine, 88 vs `_m4` 45.5, `_fA` worse on `_m5a`).
+- Same lesson as x_fight: in mirror matches against our own code family, rules aimed at the top teams' burst and spacing move
+  results by noise-level amounts. The ladder evidence (fights 183-34 deaths, "they hit first" 110-13) is not reproduced by any
+  sparring bot we have (`_top` loses 0-34 to `_m5a`); these switches (all off) are kept for a test against a realistic opponent.
+- Fuel: gen16 rollovers 8 per team rounds 1-3 with cif + spread + burst on (= baseline).

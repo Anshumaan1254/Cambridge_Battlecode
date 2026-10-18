@@ -73,7 +73,10 @@ running or unfinished, and what to do next, so a new agent can continue without 
   (83.0 / 91.2), `_snk` 64.8 / 70.6 (`_m10` 64.8 / 61.8); pace 504.4 (503.8). Third-party mean 74.1 vs 76.1: **fails the user's rule on the Mite cell**
   (29 of 88 games flipped, 20 to losses, spread over generated maps). Open question: real cost (wards are obstacles: our re-wards may block our own
   paths) or selection bias (`_m8`'s draft choices were selected on these proxies)? Held-out check running (`$S/wbh.sh`: `_wb2` and `_m10` vs `_mite`,
-  `_px9` on gold/gold2/obj, 100 games each). Not shipped. C2 bush ghost in the fight estimate, C3 contest bush-ring no-go for lone bodies (for `ct`), C5 expanse far-corner
+  `_px9` on gold/gold2/obj, 100 games each). **Held-out (100 games, maps never used to select `_m8`)**: vs `_mite` `_wb2` **87.0** / `_m10` 79.0,
+  vs `_px9` **74.0** / 66.0, h2h vs `_m10` 51.0: the 88-map Mite drop is mostly selection bias (188 games vs `_mite`: 76.1 vs 77.7; vs `_px9` 73.4 vs 71.8).
+  `_wb3` (early re-ward only with an enemy near) official 34: vs `_m10` 47.1, `_mite` 70.6, `_px9` 79.4, `_ifish` 70.6: worse than `_wb2`, dropped.
+  Running: held-out vs `_m8`, `_ifish`, `_snk` (`$S/wbh2.sh`), then an independent verifier. Not shipped yet. C2 bush ghost in the fight estimate, C3 contest bush-ring no-go for lone bodies (for `ct`), C5 expanse far-corner
   cycle, C6 neutral-camp scoring, C7 earlier banking on 100x100 / 50x65 maps.
 - The user got the zips in chat: `legend_m8` (best measured), then `legend_m10` (current `submissions/legend.zip`, plays `legend_m8`'s games).
 

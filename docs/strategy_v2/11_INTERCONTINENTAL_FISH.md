@@ -2,6 +2,12 @@
 
 > Written as a handoff in session 12. `legend_m12` (= `legend_m11` play, wasm byte-identical, plus the inert switches below) is the build on branch `claude/laughing-curie-3rq6hu`; the zip `legend_final` described in section 0 below was the session-12 candidate before `legend_m11` shipped on the ccr branch (`legend_m11` = the same warding plus the stronger contest blob opening).
 
+## Final check (session 12): which contest plan to ship
+
+On the contest pool (contest + 33 geometry / perturbed copies, 68 games): `_fwc` (ward_bush 2 + GROUPED opening to r300, the `legend_final` zip of section 0) vs `_m11` (ward_bush 2 + blob opening `mono_follow_until` 200) **27.9%**; vs the sneaky-bush proxy `_fwc` 92.6%, `_m11` 97.1%. **`legend_m11` / `legend_m12` is the build to ship; `legend_final` is superseded.**
+
+Why every switch stays off: each was measured switched on and lost (paired opening 35.3 / 38.2, all-map blob 44.1, `mi_chip` 47.1, `mi_deny_gems` 50.0 with `_px9` -5.9, Stellar first 45.5, IC builds 32.4, IC table + builds 29.4, IC farm builds and rows draft slower). Turning any of them on makes the bot worse in our tests.
+
 ## M12 screen on top of legend_m11 (official 34 games; `legend_m11`: vs Mite proxy 76.5, vs `_px9` 79.4)
 
 | Variant (switch on `_m11`) | vs `_m11` | `_mite` | `_px9` | Verdict |

@@ -13,7 +13,15 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Current build: `legend_m12b` (session 7R, Oct 18): ready for the ladder
+## Current build: `legend_m13` (session 7R, Oct 18, 22:40 UTC): parameter draft
+
+`legend_m12b` + a parameter draft (`mapdraft` 6): when the map is revealed it is analysed first (team size, share of wolf packs, share of
+elk camps, lone gem group, monoliths only, open small map); the first pick comes from those parameters and every later pick from map fit,
+team synergy and the enemy's picks so far. No per-map table. It reproduces the old per-map picks on every known map (51/51 official x 3
+enemies, 27/27 generated), so it plays the same games as `legend_m12b` there, and keeps the intended picks on transposed / side-swapped
+copies of the official maps (51/51; the old model 47/51). Details: `submissions/BUILDS.md`, AGENTS.md §S7R.
+
+## Previous build: `legend_m12b` (session 7R, Oct 18): ready for the ladder
 
 `legend_m12b` = `legend_m12` with the contest plan restricted to 50x50 maps (contest and its copies): identical games on all 17 official maps,
 and `legend_m10`'s play on generated monolith-only maps of other sizes (where the plan had lost). The table below is `legend_m12`'s (same games).

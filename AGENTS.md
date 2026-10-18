@@ -23,7 +23,9 @@ running or unfinished, and what to do next, so a new agent can continue without 
   (`_m10` 79.0), `_px9` 74.0 (66.0); gen16 rollovers 8/8. Caveat: on the 88-map pool `_wb2` scored 63.6 vs `_mite` (`_m8` 76.1): held-out reverses it.
   Held-out (100 games, warding alone `_wb2` / `_m10`): vs `_m8` 51.0, `_mite` 87.0 / 79.0, `_px9` 74.0 / 66.0, `_ifish` 83.0 / 80.0, `_snk` 86.0 / 84.0:
   better than `_m10` against every proxy on maps that were never used for selection. `_m11` on the 88: vs `_m10` 53.4, vs `_mite` 65.9.
-  Remaining third-party cells of `_m11` on the 88 still playing (`$S/m11.sh`): add them to the BUILDS row. **New baseline: `_m11`.** Rollback: `legend_m10` zip.
+  **Full `_m11` cells (88 distinct / official 34; `_m8`'s in brackets)**: vs `_m10` 53.4 / 67.6, `_m8` 52.3 / 67.6, `_mite` 65.9 / 76.5 (76.1 / 82.4), `_ifish`
+  69.3 / 70.6 (69.3 / 79.4), `_px9` 71.6 / 79.4 (78.4 / 76.5), `_fA` 77.3 / 76.5 (73.9 / 82.4), `_ST` 85.2 / 91.2 (83.0 / 91.2); deaths lower in every cell;
+  pace 505.5; rollovers 8/8. Third-party mean on the 88 is 73.9 vs 76.1 (official 78.8 vs 82.4): the ladder decides between that and the held-out gains. **New baseline: `_m11`.** Rollback: `legend_m10` zip.
   The opening-gold workflow was stopped to free CPU (its notes: `x_og_NOTES.md`; nothing passed vs the proxies).
 
 - This container (S7's) resumed after the session limit; its agents econ / fight / contest died then. It works on: (1) **`join_marginal`**

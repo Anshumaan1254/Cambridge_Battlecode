@@ -73,7 +73,19 @@ running or unfinished, and what to do next, so a new agent can continue without 
 - **Conclusion of session 8**: local sparring is exhausted for fight rules; the next signal must come from the ladder (match groups of `legend_m5`,
   and optionally the campfight candidate, vs the top 3) and from an A100 run on `legend_m5`. Open, not started: Part C draft-time plan / zone farming,
   Part D contest single-monolith plan, gem-race endgame (S7 task 6).
-- Next for the user: upload `submissions/legend.zip` (legend_m5), queue match groups vs the top 3 and send the zips (`tools/strategy_v2/run_all.py` decodes them); re-run the A100 trainer on this commit (it now trains legend_m5 = `bots/legend`, with `_m4` in its frozen opponents).
+- **Ladder (evening): `legend_m5` vs the top 3, 60 games (51 distinct): 5 wins** (doc `docs/strategy_v2/07_LADDER_M5_18OCT.md`, data
+  `experiments/ladder_m5/`). Burst deaths 52-69% of ours (theirs 17-26%), ranged kills 56-61%, Stellar the top killer, neutral captures 3-4x
+  fewer, half their camp gems, bags at the end equal (banking is not the gap), contest spawn-camped (55-84 deaths).
+- **Agent `proxy` (Opus) done**: notes `experiments/wip/x_px_NOTES.md`. Proxy `_px9` = legend@61fdce4 + `x_px.patch` + `px_mode=2` + draft
+  9,4,3,0,8 (2nd team's): our economy, top-team targeting. Beats `_m5a` 64.7 (official), burst share of our deaths 46%, neutral captures 39 vs 76;
+  death ratio only 1.2x (ladder 2.7x): partly calibrated. Finding: the top teams avoid being hit more than they out-damage (on the ladder
+  `_m5a` deals 5.5k champion damage per game and takes 13.4k; locally it deals ~19k). More aggressive proxies all lost (6-50%).
+- **SHIPPED `legend_m6` (15:30 UTC)** = `_xp4` = `_m5a` + `x_pxfix.patch` + `px_mode=2 camp_in_fight=3` (source hash 6a1a52e4ddb8; zip sha256
+  8f62a7c5…, `submissions/history/legend_m6_20261018.zip`; `bots/legend/src` = `_xp4` + inert code; setup script rebuilds `_px9`, `_xp4`).
+  vs `_m5a` 52.3 / 61.8 (deaths 580-710), held-out 59.0 (188 games: 55.9); vs `_px9` 64.7 (`_m5a` 35.3); `_fA` 72.7 / 82.4, `_ST` 73.9 / 82.4,
+  `_eA` 71.6, `_eB` 79.5, `_eC` 88.6, `_m4` 53.4 / 47.1 (third-party mean 73.3 vs `_m5a` 74.1: level); pace 521.9; 0 faults; rollovers 8 (r1-3).
+  Not helping on top: `burst_exit` (58.8 = no gain), stun-first and ally-spell ablations. **New baseline: `_xp4`.**
+- Next for the user: upload `submissions/legend.zip` (now legend_m6), queue match groups vs the top 3 and send the zips (`tools/strategy_v2/run_all.py` decodes them); re-run the A100 trainer on this commit (it now trains legend_m5 = `bots/legend`, with `_m4` in its frozen opponents).
 - Agents started 13:30 UTC: `top` (Sonnet): top-style sparring bot `bots/_top` from starter-cpp (notes `experiments/wip/x_top_NOTES.md`,
   patch `x_top.patch` vs starter-cpp); `doctrine` (Opus): fight doctrine A4-A7/A9 on `_m4` (`bots/_x_doc`, notes `x_doc_NOTES.md`, patch `x_doc.patch`).
 - Plan (priority): (1) **done: `legend_m5`**;

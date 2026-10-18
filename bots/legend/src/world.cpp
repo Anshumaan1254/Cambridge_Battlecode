@@ -363,6 +363,8 @@ void World::perceive(vec2 me)
 			a.max_hp = info.max_health;
 			a.str = info.strength;
 			a.focus = info.focus;
+			a.channeling = flag(info.state, bc::champion_state::recalling) || flag(info.state, bc::champion_state::submitting_gems) ||
+				flag(info.state, bc::champion_state::teleporting);
 			if (!a.kit_ready)
 			{
 				a.kit = kit_of(bc::champion_designs[static_cast<std::size_t>(a.type)]);

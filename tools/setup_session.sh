@@ -54,13 +54,19 @@ SRC=bots/_leg4 tools/variant.sh _fC build_style=3 obj_min_attackers=1 $PRESS --d
 # _m4x = _m4 + x_exec.patch (strategy v2 A1/A2); _m5a = legend_m5 (session 8) = _m4x + the consistent A100 RL values (experiments/wip/rl_a100_m5a_args.txt)
 SRC=bots/_m4 tools/variant.sh _m4x > /dev/null && (cd bots/_m4x && patch -s -p1 --no-backup-if-mismatch < ../../experiments/wip/x_exec.patch)
 SRC=bots/_m4x tools/variant.sh _m5a $(cat experiments/wip/rl_a100_m5a_args.txt) > /dev/null
+# Session 8, agent proxy: _px = legend@61fdce4 (= _m5a + inert code) + x_px.patch; _px9 = the ladder-calibrated proxy;
+# _x_px = _m5a + x_pxfix.patch; _xp4 = legend_m6 (shipped) = _x_px with px_mode=2 camp_in_fight=3
+tools/snapshot.sh _px 61fdce4 > /dev/null && (cd bots/_px && patch -s -p1 --no-backup-if-mismatch < ../../experiments/wip/x_px.patch)
+SRC=bots/_px tools/variant.sh _px9 px_mode=2 --define "LEGEND_DRAFT 9,4,3,0,8" > /dev/null
+SRC=bots/_m5a tools/variant.sh _x_px > /dev/null && (cd bots/_x_px && patch -s -p1 --no-backup-if-mismatch < ../../experiments/wip/x_pxfix.patch)
+SRC=bots/_x_px tools/variant.sh _xp4 px_mode=2 camp_in_fight=3 > /dev/null
 rm -rf $T
-for b in _rm _ST _m2 _m3 _x_gp _m4 _m4x _m5a _fA _fB _fC legend idle; do cambc build $b > /dev/null && echo "built $b"; done
+for b in _rm _ST _m2 _m3 _x_gp _m4 _m4x _m5a _px9 _xp4 _fA _fB _fC legend idle; do cambc build $b > /dev/null && echo "built $b"; done
 python3 - <<'EOF'
 import sys; sys.path.insert(0, 'tools'); import ledger
 want = {'_rm': '339a961d3427', '_ST': 'ca21cbfe785b', '_eA': '0ee193334b60', '_eB': '654605b27deb', '_eC': '116ccc8b53b1',
 		'_m2': '1684aa2a482c', '_m3': '86c9e8f3de35', '_x_gp': '92e199947185', '_m4': '0dc2a2aac28a',
-		'_m5a': '5620bb02867a', '_fA': '25fe5950b034', '_fB': 'f8e472c342f3', '_fC': 'ef5391dcc92b'}
+		'_m5a': '5620bb02867a', '_xp4': '6a1a52e4ddb8', '_fA': '25fe5950b034', '_fB': 'f8e472c342f3', '_fC': 'ef5391dcc92b'}
 for b, h in want.items():
 	got = ledger.src_hash(b)
 	print(f'{b:5s} {got} {"ok" if got == h else "MISMATCH (expected " + h + ")"}')

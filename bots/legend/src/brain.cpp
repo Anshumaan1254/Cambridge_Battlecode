@@ -774,6 +774,35 @@ void Brain::build_danger()
 	for (const auto& g : W.groups)
 		if (g.st == ST_ALIVE && g.awake && g.hp_total > 0 && !g.harmless && cheb(g.center, pos) <= 10)
 			camp_danger |= g.near;
+	clump.clear();
+	splash_threat = false;
+	if (P.spread_vs_splash)
+	{
+		// A4: Varg's swing splashes radius 1 around its target, area spells hit radius 1: two of ours side by side take
+		// it twice (top-3 replays: 14% of our deaths had Varg splash on the victim and an ally in one swing; theirs 6%).
+		for (const auto& e : W.enemies)
+			if (e.alive && e.visible &&
+				((e.type == CT::varg && cheb(e.pos, pos) <= 4) || (e.kit.aoe >= 0 && (P.spread_vs_splash == 2 || e.ready(e.kit.aoe)) && cheb(e.pos, pos) <= 5)))
+			{
+				splash_threat = true;
+				break;
+			}
+		if (splash_threat)
+			for (const auto& a : W.allies)
+				if (a.handle != self && a.alive && a.visible && cheb(a.pos, pos) <= 3)
+					clump.draw_chebyshev(a.pos, 1.f);
+	}
+	bool pair_clump = false;
+	if (P.pair_space >= 2 && type == CT::cassi && enemy_near)
+		for (const auto& a : W.allies)
+			if (a.handle != self && a.alive && a.visible && a.type == CT::issac && cheb(a.pos, pos) <= 3)
+			{
+				// A9: with enemies near, Cassi's steps avoid the tiles next to Issac (one area spell or Varg swing on
+				// the pair kills both bodies through the link).
+				clump.draw_chebyshev(a.pos, 1.f);
+				pair_clump = true;
+			}
+	g_soft_avoid = (splash_threat || pair_clump) ? &clump : nullptr;
 	alert_zone.clear();
 	const auto& C = comms();
 	if (P.alert_radius > 0 && C.alert_kind == AL_DANGER && C.fresh(round, P.alert_age))
@@ -1210,6 +1239,8 @@ bool Brain::can_support(const Ally& a, const std::vector<Enemy*>& E) const
 {
 	if (a.hp < P.retreat_hp * a.max_hp)
 		return false; // it is walking home, not fighting
+	if (P.support_v2 && a.channeling)
+		return false; // A3: recalling or banking: it cannot hit anyone (and a hit cancels its recall)
 	for (const auto* e : E)
 		if (cheb(a.pos, e->pos) <= P.support_reach)
 			return true;
@@ -1266,9 +1297,14 @@ bool Brain::combat()
 	float our_hp = hp, our_dps = str + focus * best_mod(kit) / 8.f + my_burst / 3.f;
 	float allies_burst = 0;
 	int allies_near = 0;
+	std::array<vec2, 8> side_pos{};
+	int side_n = 0;
+	side_pos[static_cast<std::size_t>(side_n++)] = pos;
 	for (const auto& a : W.allies)
 		if (a.handle != self && a.alive && a.visible && cheb(a.pos, pos) <= 6 && (!P.support_filter || can_support(a, E)))
 		{
+			if (side_n < static_cast<int>(side_pos.size()))
+				side_pos[static_cast<std::size_t>(side_n++)] = a.pos;
 			const float ab = std::max(a.str, a.focus * best_mod(a.kit));
 			our_hp += a.hp;
 			our_dps += P.ally_spell_dps ? a.str + a.focus * best_mod(a.kit) / 8.f + ab / 3.f : a.str * 1.2f;
@@ -1285,6 +1321,45 @@ bool Brain::combat()
 			here |= cheb(e->pos, pos) <= hit_r;
 		if (here)
 			our_hp += max_hp;
+	}
+	if (P.camp_in_fight)
+	{
+		// A5 (port of x_side): awake camps hit the nearest champion within 3 every round, whichever team it is on.
+		// A team still tanking a camp took even fights against fresh arrivals (eight: C&I died r24-27 under the top
+		// wolves; top-3 replays, swirl r14-20: our Ren tanked an elk the enemy woke while fighting 3). Ties count
+		// against us (turn order). 3: only camps hitting an enemy (offensive half); 2: only ours; 1: both.
+		for (const auto& g : W.groups)
+		{
+			if (g.st != ST_ALIVE || !g.awake || g.harmless || cheb(g.center, pos) > 12)
+				continue;
+			for (std::size_t i = 0; i < g.camps.size(); ++i)
+			{
+				if (g.hp[i] <= 0 || g.camps[i].str <= 0)
+					continue;
+				const vec2 c = g.camps[i].pos;
+				int best_d = 4, who = -1; // -1 none, 0 me, 1 ally, 2 enemy
+				for (int k = 0; k < side_n; ++k)
+				{
+					const int dd = cheb(side_pos[static_cast<std::size_t>(k)], c);
+					if (dd < best_d)
+						best_d = dd, who = k == 0 ? 0 : 1;
+				}
+				for (auto* e : E)
+					if (cheb(e->pos, c) < best_d)
+						best_d = cheb(e->pos, c), who = 2;
+				if (who == 2)
+				{
+					if (P.camp_in_fight != 2)
+						our_dps += g.camps[i].str;
+				}
+				else if (who >= 0 && P.camp_in_fight != 3)
+				{
+					their_dps += g.camps[i].str;
+					if (who == 0)
+						incoming += g.camps[i].str;
+				}
+			}
+		}
 	}
 	const float t_kill_them = their_hp / std::max(1.f, our_dps);
 	const float t_kill_us = our_hp / std::max(1.f, their_dps);
@@ -1422,12 +1497,124 @@ bool Brain::combat()
 	// per-turn re-evaluation alone flipped T_FIGHT / T_FLEE under fire (walk in, walk out, hit nobody).
 	if (P.fight_commit && !fight && last_fight_round == round - 1 && adv >= P.fight_commit_margin && hp >= P.fight_commit_hp * max_hp)
 		fight = true;
+	// A7 (burst_exit): leave before the finisher. 40% of our death incidents in the top-3 replays started above 60%
+	// health four rounds before: burst down, not worn down. Only the enemies that can hit us before our next turn
+	// count (one basic attack + their best ready cast each); only when we can still get away and the target does not
+	// die now. Short: next turn, out of their reach, the normal rules decide again.
+	if (fight && P.burst_exit && !killable && can_escape && in_reach && (P.burst_exit != 2 || !chaser))
+	{
+		float burst_next = 0;
+		for (auto* e : E)
+			if (cheb(e->pos, pos) <= reach_of(*e))
+				burst_next += e->str + e->burst();
+		if (hp <= P.burst_exit_k * burst_next)
+			fight = false;
+	}
 	// A bag that wins the game is worth more than any fight we can walk away from.
 	if (fight && P.win_bank && !killable && can_escape && gems > 0 && wins_with(static_cast<int>(gems)))
 		fight = false;
 	// Do not dive their spawn: it heals them and they block us.
 	if (W.enemy_spawn.is_set(tgt->pos) || cheb(tgt->pos, W.enemy_spawn_c) <= 3)
 		fight = fight && killable;
+	if (P.px_mode)
+	{
+		// Proxy of the top teams' fights: the team target is the lowest-health body we can hit this turn (a body the
+		// team kills this turn first: our hit + ready spell + allies next to it), engage at even local power, hit back
+		// when hit, keep fighting once in, leave only low or clearly outmatched.
+		Enemy* pt = nullptr;
+		float pk = 1e9f;
+		const bool spell_up = ready(kit.dmg) || ready(kit.cc) || ready(kit.aoe);
+		for (auto* e : E)
+		{
+			const int de = cheb(pos, e->pos);
+			const bool spell_r = spell_up && de <= 4;
+			if (de > my_reach && !spell_r)
+				continue;
+			if (e->type == CT::ren)
+			{
+				const float reflect = bc::constants::passive_abilities::ren_retaliation_focus_ratio * e->focus;
+				if (hp < 3.f * reflect && e->hp > burst_vs(*e))
+					continue;
+			}
+			float tb = de <= my_reach && can_attack ? str * (ready(kit.reset) ? 2.f : 1.f) : 0.f;
+			if (spell_r)
+				tb += std::max({ ready(kit.dmg) ? focus * kit.dmg_mod : 0.f, ready(kit.cc) ? focus * kit.cc_mod : 0.f, ready(kit.aoe) ? focus * kit.aoe_mod : 0.f });
+			for (const auto& a : W.allies)
+				if (a.handle != self && a.alive && a.visible && a.kit_ready && cheb(a.pos, e->pos) <= std::max(a.kit.attack_range + 1, 4))
+					tb += (cheb(a.pos, e->pos) <= a.kit.attack_range + 1 ? a.str : 0.f) + (P.px_ally_spells ? 0.5f * a.focus * best_mod(a.kit) : 0.f);
+			const bool pair = e->type == CT::cassi || e->type == CT::issac;
+			const float key = (e->hp <= tb ? 0.f : 1e5f) + e->hp - (pair ? 150.f : 0.f) - (e->channeling ? 200.f : 0.f);
+			if (key < pk)
+				pk = key, pt = e;
+		}
+		const bool pkill = pt && pk < 1e5f;
+		if (pt)
+			tgt = pt;
+		if (P.px_mode == 2)
+		{
+			// targeting only: legend's fight decision and exits, plus a team kill this turn always taken
+			if (pkill && !(W.enemy_spawn.is_set(tgt->pos) || cheb(tgt->pos, W.enemy_spawn_c) <= 3))
+				fight = true;
+		}
+		else
+		{
+		fight = false;
+		if (pkill)
+			fight = true;
+		else if (hp < P.px_retreat_hp * max_hp)
+			fight = in_reach && !can_escape && adv >= 0.5f;
+		else if (adv >= P.px_engage && nearest_enemy <= P.px_hunt_r)
+			fight = true;
+		else if (in_reach && adv >= P.px_fightback)
+			fight = true;
+		else if (in_reach && !can_escape && adv >= 0.4f)
+			fight = true;
+		if (!fight && last_fight_round == round - 1 && adv >= P.px_commit && hp >= P.px_retreat_hp * max_hp)
+			fight = true;
+		if (W.enemy_spawn.is_set(tgt->pos) || cheb(tgt->pos, W.enemy_spawn_c) <= 3)
+			fight = fight && pkill;
+		if (fight && P.win_bank && !pkill && can_escape && gems > 0 && wins_with(static_cast<int>(gems)))
+			fight = false;
+		if (fight && !pkill && (P.px_hold > 0 || P.px_burst_wait > 0) && !tgt->channeling && !tgt->tributing)
+		{
+			const int dt = cheb(pos, tgt->pos);
+			const bool spell_now = dt <= 4 && (ready(kit.dmg) || ready(kit.cc) || ready(kit.aoe));
+			if (dt > kit.attack_range && !spell_now)
+			{
+				bool step_in = in_reach;
+				for (auto* e : E)
+					step_in |= cheb(pos, e->pos) - 1 <= reach_of(*e);
+				bool soon = false;
+				if (P.px_burst_wait > 0 && !ready(kit.dmg) && !ready(kit.cc) && !ready(kit.aoe))
+					for (int sl : { kit.dmg, kit.cc, kit.aoe })
+						soon |= sl >= 0 && cd[static_cast<std::size_t>(sl)] > 0 && cd[static_cast<std::size_t>(sl)] <= P.px_burst_wait;
+				if (round - px_hold_round > 1)
+					px_hold_since = round;
+				px_hold_round = round;
+				const int lim = std::max(P.px_hold, soon ? P.px_burst_wait : 0);
+				if (!in_reach && (step_in || soon) && round - px_hold_since < lim)
+				{
+					task = T_FIGHT;
+					last_fight_round = round;
+					engaged = true;
+					return true; // hold here: they step in, we hit first
+				}
+			}
+		}
+		if (!fight && !in_reach)
+		{
+			engaged = nearest_enemy <= 5;
+			if (adv < P.px_flee_adv && nearest_enemy <= P.flee_dist && task != T_CAPTURE)
+			{
+				post_danger(tgt->pos);
+				task = T_FLEE;
+				if (go_home_step(true))
+					return true;
+			}
+			return false;
+		}
+		}
+	}
 	XM(xm_fight(adv, t_kill_us, t_kill_them, our_hp, their_hp, our_dps, their_dps, allies_near, static_cast<int>(E.size()), fight, killable, in_reach,
 		can_escape, isolated, reserve, static_cast<int>(tgt->type), d, incoming, t_die, tgt->hp, backup, str + focus * best_mod(kit) / 8.f + my_burst / 3.f));
 	engaged = fight || in_reach || nearest_enemy <= 5;
@@ -1436,6 +1623,37 @@ bool Brain::combat()
 	// Early warning: an outnumbering group is visible; allies keep away from it.
 	if (!fight && E.size() >= 3 && adv < 1.f)
 		post_danger(tgt->pos);
+	if (fight && (P.strike_first & 2) && kit.ranged && !in_reach && !killable && d > kit.attack_range && !ready(kit.dash) &&
+		!(d <= 4 && (ready(kit.cc) || ready(kit.dmg) || ready(kit.aoe))))
+	{
+		// A6, ranged: walking into range spends this turn's attack (ranged cannot attack after a walk), so the side
+		// that steps in is hit first. Out of their reach, let them come (at most strike_hold rounds per fight).
+		if (round - sf_round > 1)
+			sf_since = round;
+		sf_round = round;
+		if (round - sf_since < P.strike_hold)
+		{
+			task = T_FIGHT;
+			return true;
+		}
+	}
+	if (fight && (P.strike_first & 1) && !in_reach && !killable && my_burst <= 0.f && d > my_reach)
+	{
+		// A6: proactive fight with our burst on cooldown: wait outside their reach (at most strike_hold rounds per
+		// fight) for the opener; whoever hits first wins (top-3 replays: they hit first in 86 of 152 fights; when they
+		// did, our deaths were 97 to their 17).
+		bool soon = false;
+		for (int sl : { kit.dmg, kit.cc, kit.aoe, kit.reset })
+			soon |= sl >= 0 && cd[static_cast<std::size_t>(sl)] > 0 && cd[static_cast<std::size_t>(sl)] <= P.strike_hold;
+		if (round - sf_round > 1)
+			sf_since = round;
+		sf_round = round;
+		if (soon && round - sf_since < P.strike_hold)
+		{
+			task = T_FIGHT;
+			return true; // hold this turn (not in reach: nothing to hit)
+		}
+	}
 	if (fight)
 	{
 		last_fight_round = round;
@@ -1628,6 +1846,48 @@ bool Brain::engage(Enemy& e)
 	{
 		bc::bitboard goal;
 		goal.draw_chebyshev(e.pos, static_cast<float>(kit.attack_range));
+		if (P.spread_vs_splash && splash_threat)
+		{
+			const bc::bitboard g2 = goal & ~clump & ~world().walls;
+			if (!g2.is_empty())
+				goal = g2;
+		}
+		if (P.engage_angle)
+		{
+			// Approach the target from the side its allies cannot reach: the end tile of the walk is outside the next-turn
+			// reach of every other visible enemy when such a ring tile exists (bodies walked into the target's group and
+			// were focused: the visible-enemy count jumped 1 -> 3-5 on the turn they entered reach, x_fight traces).
+			bc::bitboard others;
+			for (const auto& o : world().enemies)
+			{
+				if (&o == &e || !o.alive || !o.visible || cheb(o.pos, e.pos) > 8)
+					continue;
+				int r = o.kit.attack_range + (o.kit.ranged ? 0 : 1) + (o.ready(o.kit.dash) ? 2 : 0);
+				if (o.ready(o.kit.dmg) || o.ready(o.kit.cc) || o.ready(o.kit.aoe))
+					r = std::max(r, 4);
+				others.draw_chebyshev(o.pos, static_cast<float>(r));
+			}
+			const bc::bitboard g2 = goal & ~others & ~world().walls;
+			if (!g2.is_empty())
+				goal = g2;
+		}
+		if (P.pair_space && type == CT::cassi)
+		{
+			// A9: Cassi stands 2-3 from Issac, never next to him (an area spell or Varg splash on the pair kills both:
+			// collision r41/r50 in the top-3 replays). Only when such a tile is free.
+			for (const auto& a : world().allies)
+				if (a.handle != self && a.alive && a.visible && a.type == CT::issac && cheb(a.pos, pos) <= 6)
+				{
+					bc::bitboard ring;
+					ring.draw_chebyshev(a.pos, 3.f);
+					bc::bitboard inner;
+					inner.draw_chebyshev(a.pos, 1.f);
+					const bc::bitboard g2 = goal & ring & ~inner & ~world().walls;
+					if (!g2.is_empty())
+						goal = g2;
+					break;
+				}
+		}
 		if (kit.ranged)
 		{
 			const bool spell_now = d <= 4 && (ready(kit.cc) || ready(kit.dmg) || ready(kit.aoe));
@@ -1685,7 +1945,7 @@ bool Brain::engage(Enemy& e)
 	if (d <= kit.attack_range)
 	{
 		dbg_eng += 10;
-		const bool want_stun = e.channeling || e.kit.ranged == false;
+		const bool want_stun = e.channeling || e.kit.ranged == false || P.px_mode && P.px_stun_first;
 		if (want_stun)
 			cast_unit_champ(kit.cc, ec);
 		if (!cast_done && kit.enhanced_reset && ready(kit.reset))

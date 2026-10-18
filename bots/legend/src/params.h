@@ -349,6 +349,40 @@ struct Params
 	int fight_commit = 1;		// keep fighting the next turn unless the estimate falls below fight_commit_margin or health
 	float fight_commit_margin = 0.7f; // below fight_commit_hp (no engage / flee flip-flop: walking in and out under fire)
 	float fight_commit_hp = 0.3f;
+
+	// Fight doctrine (agent doctrine, session 8; docs/strategy_v2/03 section 1). All default off = legend_m4.
+	int camp_in_fight = 3;		 // A5 (port of x_side): awake camps hit the nearest champion within 3. 3: a camp whose
+								 // nearest body is an enemy adds its strength to our DPS; 2: one hitting us/an ally adds to
+								 // theirs; 1: both. On _ST 3 = 56.2 vs _ST (comp 61.8), 2 = 41.1
+	int burst_exit = 0;			 // A7 (2: only with no melee/dash chaser within 3, i.e. the step really leaves): drop a fight we can walk away from when the enemies that can reach us next turn
+								 // can kill us in one turn (basic attack + best ready cast each), unless the target dies now
+	float burst_exit_k = 1.1f;	 // ... our health <= k x that burst
+	int spread_vs_splash = 0;	 // A4 (2: area casters count with the spell on cooldown too): with an enemy Varg within 4 or a ready area caster within 5, steps avoid tiles next
+								 // to an ally (soft, below enemy reach); melee goal rings skip them when another is free
+	int pair_space = 0;			 // A9 (2: also every step of Cassi with an enemy within 9 avoids tiles next to Issac): Cassi fighting with Issac visible: goal ring at 2-3 from Issac, never adjacent
+	int support_v2 = 0;			 // A3: an ally recalling/banking/teleporting (seen this round) is not fight support
+	int engage_angle = 0;		 // engage(): the walk's end tile avoids the next-turn reach of the target's visible allies when possible
+	int strike_first = 0;		 // A6 (bits): 1 = proactive fight (not in reach) with nothing of ours ready and a spell ready
+								 // within strike_hold rounds: hold; 2 = ranged without dash/spell for this distance: do not
+								 // walk into range (the walk spends the attack), let them come
+	int strike_hold = 2;		 // ... at most this many rounds per fight
+
+	// Sparring proxy of the ladder's top teams (agent proxy, experiments/wip/x_px_NOTES.md). All 0 = legend.
+	int px_mode = 2;			// 1: combat() takes the top teams' fight rules: focus the lowest-health body in reach (a team
+								// kill this turn first), engage at even local power, fight back when hit, commit, retreat late
+	float px_engage = 1.0f;		// engage proactively (walk in) at this local power ratio (ours / theirs, hp x dps sums)
+	int px_hunt_r = 6;			// ... toward an enemy within this many tiles
+	float px_fightback = 0.6f;	// in reach of an enemy: hit back down to this ratio
+	float px_commit = 0.6f;		// fought last turn: keep fighting down to this ratio
+	float px_retreat_hp = 0.25f; // below this health fraction leave unless a kill is on
+	float px_flee_adv = 0.5f;	// not in reach: walk away from a group this much stronger
+	int px_stun_first = 1;		// engage(): in reach, stun the target first whatever it is (chain stuns onto the focus)
+	int px_ally_spells = 1;
+	int px_hold = 0;			// proactive fight, no kill this turn, target out of our reach: when the next step would enter an
+								// enemy's next-turn reach, hold outside it (let them walk in and take the first volley) for at
+								// most this many rounds per fight (ranged must choose between a step and an attack)
+	int px_burst_wait = 0;		// proactive fight with no spell ready: hold outside their reach while a spell is at most this many
+								// rounds from ready (open with the burst)		// the team-kill estimate counts allies' spells at half weight (cooldowns unknown)
 };
 
 #ifdef LEGEND_RUNTIME_PARAMS

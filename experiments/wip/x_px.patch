@@ -1,0 +1,174 @@
+diff -ruN legend/src/brain.cpp _px/src/brain.cpp
+--- legend/src/brain.cpp	2026-10-18 13:37:38.862203039 +0000
++++ _px/src/brain.cpp	2026-10-18 14:29:48.126867524 +0000
+@@ -55,6 +55,8 @@
+ 		const I power = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
+ 		if (P.build_style == 4)
+ 			rep(v, focus ? I::monster_shard_of_focus : I::monster_shard_of_strength, 5);
++		else if (P.build_style == 6)
++			rep(v, I::durability_shard_of_health, 5); // proxy: one health emblem, then Treasure + Power below
+ 		else
+ 			switch (t)
+ 			{
+@@ -78,6 +80,8 @@
+ 				rep(v, I::durability_shard_of_health, 5);
+ 				break;
+ 			}
++		if (P.build_style >= 5 && t != CT::tavi)
++			rep(v, focus ? I::treasure_shard_of_focus : I::treasure_shard_of_strength, 5); // proxy: the 2nd/3rd teams' Treasure emblem
+ 		rep(v, power, 300);
+ 		return v;
+ 	}
+@@ -1428,6 +1432,105 @@
+ 	// Do not dive their spawn: it heals them and they block us.
+ 	if (W.enemy_spawn.is_set(tgt->pos) || cheb(tgt->pos, W.enemy_spawn_c) <= 3)
+ 		fight = fight && killable;
++	if (P.px_mode)
++	{
++		// Proxy of the top teams' fights: the team target is the lowest-health body we can hit this turn (a body the
++		// team kills this turn first: our hit + ready spell + allies next to it), engage at even local power, hit back
++		// when hit, keep fighting once in, leave only low or clearly outmatched.
++		Enemy* pt = nullptr;
++		float pk = 1e9f;
++		const bool spell_up = ready(kit.dmg) || ready(kit.cc) || ready(kit.aoe);
++		for (auto* e : E)
++		{
++			const int de = cheb(pos, e->pos);
++			const bool spell_r = spell_up && de <= 4;
++			if (de > my_reach && !spell_r)
++				continue;
++			if (e->type == CT::ren)
++			{
++				const float reflect = bc::constants::passive_abilities::ren_retaliation_focus_ratio * e->focus;
++				if (hp < 3.f * reflect && e->hp > burst_vs(*e))
++					continue;
++			}
++			float tb = de <= my_reach && can_attack ? str * (ready(kit.reset) ? 2.f : 1.f) : 0.f;
++			if (spell_r)
++				tb += std::max({ ready(kit.dmg) ? focus * kit.dmg_mod : 0.f, ready(kit.cc) ? focus * kit.cc_mod : 0.f, ready(kit.aoe) ? focus * kit.aoe_mod : 0.f });
++			for (const auto& a : W.allies)
++				if (a.handle != self && a.alive && a.visible && a.kit_ready && cheb(a.pos, e->pos) <= std::max(a.kit.attack_range + 1, 4))
++					tb += (cheb(a.pos, e->pos) <= a.kit.attack_range + 1 ? a.str : 0.f) + (P.px_ally_spells ? 0.5f * a.focus * best_mod(a.kit) : 0.f);
++			const bool pair = e->type == CT::cassi || e->type == CT::issac;
++			const float key = (e->hp <= tb ? 0.f : 1e5f) + e->hp - (pair ? 150.f : 0.f) - (e->channeling ? 200.f : 0.f);
++			if (key < pk)
++				pk = key, pt = e;
++		}
++		const bool pkill = pt && pk < 1e5f;
++		if (pt)
++			tgt = pt;
++		if (P.px_mode == 2)
++		{
++			// targeting only: legend's fight decision and exits, plus a team kill this turn always taken
++			if (pkill && !(W.enemy_spawn.is_set(tgt->pos) || cheb(tgt->pos, W.enemy_spawn_c) <= 3))
++				fight = true;
++		}
++		else
++		{
++		fight = false;
++		if (pkill)
++			fight = true;
++		else if (hp < P.px_retreat_hp * max_hp)
++			fight = in_reach && !can_escape && adv >= 0.5f;
++		else if (adv >= P.px_engage && nearest_enemy <= P.px_hunt_r)
++			fight = true;
++		else if (in_reach && adv >= P.px_fightback)
++			fight = true;
++		else if (in_reach && !can_escape && adv >= 0.4f)
++			fight = true;
++		if (!fight && last_fight_round == round - 1 && adv >= P.px_commit && hp >= P.px_retreat_hp * max_hp)
++			fight = true;
++		if (W.enemy_spawn.is_set(tgt->pos) || cheb(tgt->pos, W.enemy_spawn_c) <= 3)
++			fight = fight && pkill;
++		if (fight && P.win_bank && !pkill && can_escape && gems > 0 && wins_with(static_cast<int>(gems)))
++			fight = false;
++		if (fight && !pkill && (P.px_hold > 0 || P.px_burst_wait > 0) && !tgt->channeling && !tgt->tributing)
++		{
++			const int dt = cheb(pos, tgt->pos);
++			const bool spell_now = dt <= 4 && (ready(kit.dmg) || ready(kit.cc) || ready(kit.aoe));
++			if (dt > kit.attack_range && !spell_now)
++			{
++				bool step_in = in_reach;
++				for (auto* e : E)
++					step_in |= cheb(pos, e->pos) - 1 <= reach_of(*e);
++				bool soon = false;
++				if (P.px_burst_wait > 0 && !ready(kit.dmg) && !ready(kit.cc) && !ready(kit.aoe))
++					for (int sl : { kit.dmg, kit.cc, kit.aoe })
++						soon |= sl >= 0 && cd[static_cast<std::size_t>(sl)] > 0 && cd[static_cast<std::size_t>(sl)] <= P.px_burst_wait;
++				if (round - px_hold_round > 1)
++					px_hold_since = round;
++				px_hold_round = round;
++				const int lim = std::max(P.px_hold, soon ? P.px_burst_wait : 0);
++				if (!in_reach && (step_in || soon) && round - px_hold_since < lim)
++				{
++					task = T_FIGHT;
++					last_fight_round = round;
++					engaged = true;
++					return true; // hold here: they step in, we hit first
++				}
++			}
++		}
++		if (!fight && !in_reach)
++		{
++			engaged = nearest_enemy <= 5;
++			if (adv < P.px_flee_adv && nearest_enemy <= P.flee_dist && task != T_CAPTURE)
++			{
++				post_danger(tgt->pos);
++				task = T_FLEE;
++				if (go_home_step(true))
++					return true;
++			}
++			return false;
++		}
++		}
++	}
+ 	XM(xm_fight(adv, t_kill_us, t_kill_them, our_hp, their_hp, our_dps, their_dps, allies_near, static_cast<int>(E.size()), fight, killable, in_reach,
+ 		can_escape, isolated, reserve, static_cast<int>(tgt->type), d, incoming, t_die, tgt->hp, backup, str + focus * best_mod(kit) / 8.f + my_burst / 3.f));
+ 	engaged = fight || in_reach || nearest_enemy <= 5;
+@@ -1685,7 +1788,7 @@
+ 	if (d <= kit.attack_range)
+ 	{
+ 		dbg_eng += 10;
+-		const bool want_stun = e.channeling || e.kit.ranged == false;
++		const bool want_stun = e.channeling || e.kit.ranged == false || P.px_mode && P.px_stun_first;
+ 		if (want_stun)
+ 			cast_unit_champ(kit.cc, ec);
+ 		if (!cast_done && kit.enhanced_reset && ready(kit.reset))
+diff -ruN legend/src/brain.h _px/src/brain.h
+--- legend/src/brain.h	2026-10-18 13:37:38.863315741 +0000
++++ _px/src/brain.h	2026-10-18 14:24:50.670157613 +0000
+@@ -66,6 +66,7 @@
+ 	bool W_dist_home_ok() const;
+ 	bool engaged = false;
+ 	int last_fight_round = -100;
++	int px_hold_since = -100, px_hold_round = -100; // P.px_hold
+ 	Enemy* best_in_reach(const Enemy* skip);
+ 	int dbg_path = 0, dbg_eng = 0; // SPELL_TRACE: which decision used the turn / which engage branch
+ 	bool dbg_hit_other = false;	   // SPELL_TRACE: the melee step-then-hit-another-enemy branch swung
+diff -ruN legend/src/params.h _px/src/params.h
+--- legend/src/params.h	2026-10-18 13:37:39.791686340 +0000
++++ _px/src/params.h	2026-10-18 14:24:50.669217264 +0000
+@@ -349,6 +349,23 @@
+ 	int fight_commit = 1;		// keep fighting the next turn unless the estimate falls below fight_commit_margin or health
+ 	float fight_commit_margin = 0.7f; // below fight_commit_hp (no engage / flee flip-flop: walking in and out under fire)
+ 	float fight_commit_hp = 0.3f;
++
++	// Sparring proxy of the ladder's top teams (agent proxy, experiments/wip/x_px_NOTES.md). All 0 = legend.
++	int px_mode = 0;			// 1: combat() takes the top teams' fight rules: focus the lowest-health body in reach (a team
++								// kill this turn first), engage at even local power, fight back when hit, commit, retreat late
++	float px_engage = 1.0f;		// engage proactively (walk in) at this local power ratio (ours / theirs, hp x dps sums)
++	int px_hunt_r = 6;			// ... toward an enemy within this many tiles
++	float px_fightback = 0.6f;	// in reach of an enemy: hit back down to this ratio
++	float px_commit = 0.6f;		// fought last turn: keep fighting down to this ratio
++	float px_retreat_hp = 0.25f; // below this health fraction leave unless a kill is on
++	float px_flee_adv = 0.5f;	// not in reach: walk away from a group this much stronger
++	int px_stun_first = 1;		// engage(): in reach, stun the target first whatever it is (chain stuns onto the focus)
++	int px_ally_spells = 1;
++	int px_hold = 0;			// proactive fight, no kill this turn, target out of our reach: when the next step would enter an
++								// enemy's next-turn reach, hold outside it (let them walk in and take the first volley) for at
++								// most this many rounds per fight (ranged must choose between a step and an attack)
++	int px_burst_wait = 0;		// proactive fight with no spell ready: hold outside their reach while a spell is at most this many
++								// rounds from ready (open with the burst)		// the team-kill estimate counts allies' spells at half weight (cooldowns unknown)
+ };
+ 
+ #ifdef LEGEND_RUNTIME_PARAMS

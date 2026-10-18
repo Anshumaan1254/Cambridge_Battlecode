@@ -113,6 +113,7 @@ struct Ally
 	bool kit_ready = false;
 	int died_round = -1000; // last death we saw (respawn after respawn_time)
 	int seen_round = -1000; // last round this body saw it (pos is that sighting)
+	bool channeling = false; // recalling, banking or teleporting when last seen (cannot fight)
 };
 
 struct World

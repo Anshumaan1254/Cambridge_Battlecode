@@ -66,6 +66,7 @@ private:
 	bool W_dist_home_ok() const;
 	bool engaged = false;
 	int last_fight_round = -100;
+	int px_hold_since = -100, px_hold_round = -100; // P.px_hold
 	Enemy* best_in_reach(const Enemy* skip);
 	int dbg_path = 0, dbg_eng = 0; // SPELL_TRACE: which decision used the turn / which engage branch
 	bool dbg_hit_other = false;	   // SPELL_TRACE: the melee step-then-hit-another-enemy branch swung
@@ -197,6 +198,9 @@ private:
 	bc::bitboard danger;	  // tiles enemies can hit next turn
 	bc::bitboard camp_danger; // tiles in range of awake camps
 	bc::bitboard alert_zone;  // area an ally reported as dangerous (shared memory)
+	bc::bitboard clump;		  // P.spread_vs_splash: tiles next to an ally while a splash/area threat is near (else empty)
+	bool splash_threat = false;
+	int sf_round = -100, sf_since = -100; // P.strike_first: hold rounds
 	bool enemy_near = false;
 	int enemy_near_d = BIG; // nearest recently seen enemy, minus the rounds since we saw it (it may have closed in)
 	bool enemy_near_field = false; // enemy_near, not counting enemies standing on their own spawn

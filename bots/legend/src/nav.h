@@ -47,3 +47,5 @@ struct Nav
 };
 
 Nav& nav();
+// P.spread_vs_splash: tiles to avoid below enemy reach (next to an ally under a splash threat); null when off.
+inline const bc::bitboard* g_soft_avoid = nullptr;

@@ -13,7 +13,23 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Results of the current build `legend_m5` (session 8, Oct 18; 44 distinct maps × both sides = 88 games per row)
+## Results of the current build `legend_m6` (session 8, Oct 18 evening; 44 distinct maps × both sides = 88 games per row)
+
+`legend_m6` = `legend_m5` + the top teams' targeting, learned from 60 ladder games of `legend_m5` against the top 3
+(`docs/strategy_v2/07_LADDER_M5_18OCT.md`): hit the body we can hit this turn with the lowest health, take every kill the
+team can finish this turn, stun the target first, and count an awake camp that is hitting an enemy as our damage. Tested
+also against `_px9`, a sparring proxy calibrated on those ladder games (it beats `legend_m5` 64.7% on the official maps).
+
+| Opponent | `legend_m6` | deaths (ours-theirs) | `legend_m5` on the same games |
+|---|---|---|---|
+| `legend_m5` (previous ship) | **52.3%** (61.8); held-out maps 59.0% | 580-710 | - |
+| `_px9` ladder-calibrated proxy (official 17) | **64.7%** | 348-352 | 35.3% |
+| `_fA` pressure archetype | 72.7% (82.4) | 561-1015 | 76.1% (79.4) |
+| `legend_st` | 73.9% (82.4) | 465-909 | 73.9% (91.2) |
+| `_eA` / `_eB` / `_eC` archetypes | 71.6% / 79.5% / 88.6% | | 68.2% / 77.3% / 87.5% |
+| `legend_m4` | 53.4% (47.1) | 572-683 | 61.4% (58.8) |
+
+## Results of `legend_m5` (session 8, Oct 18; 44 distinct maps × both sides = 88 games per row)
 
 `legend_m5` = `legend_m4` + strategy-v2 fight execution (`experiments/wip/x_exec.patch`: hit what is in reach before
 walking, melee swings before stepping away, keep fighting once committed) + the 16 parameters the A100 RL run moved

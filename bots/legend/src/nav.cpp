@@ -328,7 +328,7 @@ bool Nav::step_field(vec2& pos, const Field& field, int stop_at, const bc::bitbo
 		const int v = field.get(p);
 		if (v >= here)
 			continue;
-		const int key = v * 4 + (avoid && avoid->is_set(p) ? 3 : 0);
+		const int key = v * 4 + (avoid && avoid->is_set(p) ? 2 : 0) + (g_soft_avoid && g_soft_avoid->is_set(p) ? 1 : 0);
 		cand[static_cast<std::size_t>(n++)] = { key, d };
 	}
 	std::sort(cand.begin(), cand.begin() + n, [](const auto& a, const auto& b) { return a.first < b.first; });
@@ -336,7 +336,7 @@ bool Nav::step_field(vec2& pos, const Field& field, int stop_at, const bc::bitbo
 	// the static field only breaks ties on danger, so bodies walked into enemies just to shorten the route
 	// (ladder audit P1). Try the avoiding dynamic search first; it falls back to the plain route when no safe
 	// path exists, so this never deadlocks.
-	if (P.danger_detour && avoid && n > 0 && (cand[0].first & 3) == 3 && !avoid->is_set(pos) && !fallback_goals.is_empty() &&
+	if (P.danger_detour && avoid && n > 0 && (cand[0].first & 2) == 2 && !avoid->is_set(pos) && !fallback_goals.is_empty() &&
 		bc::fuel_remaining() > static_cast<std::uint64_t>(P.danger_detour_fuel))
 	{
 		if (step_to(pos, fallback_goals, avoid, -1, true))

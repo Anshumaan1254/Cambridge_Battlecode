@@ -266,6 +266,161 @@ bool table_pick(const std::vector<D>& mine)
 	}
 	return false;
 }
+
+// mapdraft 6: map-parameter draft (session 7R, the user's request). At the first draft turn the map is analysed (analyse()) and
+// its parameters derived; the first pick comes from the map type alone (no enemy pick is visible yet); every later pick re-plans
+// the remaining slots from champion priors + map fit + team synergy + the enemy's completed picks (current_draft(enemy) returns
+// the rounds already played), then picks the next planned champion in a fixed order (so a plan equal to the old one keeps the
+// old body order). On the 17 official maps the rules reproduce the per-map choices measured best in sessions 6-10 without map
+// identity: open 3-champion maps (expanse) C&I, Stellar, Varg; 4-champion maps Varg only when >= 50% of our-half groups are
+// multi-camp packs (swirl, rows) else Ryth (interlock, rushbait-v2); one gem group holding all gems (stampede) the caster ring.
+struct MapParams
+{
+	int team = 5;
+	double pack_share = 0, elk_share = 0;
+	bool objective = false, monolith_only = false, open_small = false;
+};
+MapParams MP;
+bool mp_ready = false;
+int pd_type = 0; // 0 default (Ren first), 1 open small-team map (C&I first), 2 objective map (Prism first)
+
+void derive_params()
+{
+	if (!F.ready)
+		analyse();
+	const double g = std::max(1, F.groups);
+	MP.team = std::clamp(F.team, 3, 5);
+	MP.pack_share = F.multi / g;
+	MP.elk_share = F.elk / g;
+	MP.objective = F.gem_groups == 1 && F.mono == 0;
+	MP.monolith_only = F.gem_groups == 0 && F.mono > 0;
+	MP.open_small = MP.team <= 3 && F.area >= P.pd_open_area && F.mean_dist >= P.pd_open_dist;
+	pd_type = MP.objective ? 2 : MP.open_small ? 1 : 0;
+	mp_ready = true;
+}
+
+bool is_caster(D c) { return c == D::stellar || c == D::prism || c == D::tavi || c == D::vesper_vale || c == D::willow; }
+bool is_front(D c) { return c == D::ren || c == D::varg || c == D::ryth || c == D::vendetta || c == D::marcella; }
+
+double prior(D c)
+{
+	switch (c)
+	{
+	case D::ren: return 1.0;
+	case D::stellar: return 0.95;
+	case D::cassi_and_issac: return 0.9;
+	case D::varg: return 0.62;
+	case D::ryth: return 0.6;
+	case D::prism: return 0.36;
+	case D::tavi: return 0.33;
+	case D::vendetta: return 0.3;
+	case D::marcella: return 0.2;
+	case D::vesper_vale: return 0.12;
+	default: return 0.1;
+	}
+}
+
+double pd_score(D c, const std::vector<D>& team, const std::vector<D>& enemy)
+{
+	double v = prior(c);
+	// Map fit.
+	if (MP.objective)
+	{
+		if (c == D::prism || c == D::tavi)
+			v += 0.75; // the ring kills the objective's camps from distance 4
+		if (c == D::stellar)
+			v += 0.1;
+		if (c == D::ryth)
+			v += 0.4; // the ring's tank and area stun
+		if (c == D::ren || c == D::varg)
+			v -= 0.6;
+	}
+	else
+	{
+		if (MP.open_small)
+		{
+			if (c == D::ren)
+				v -= 0.5; // a farming race without early contact: Ren's retaliation earns nothing
+			if (c == D::varg)
+				v += 0.45; // splash on the wolf packs
+		}
+		// Ryth over Varg needs few packs; at team size 4 also elk camps to stun (interlock 0.33, rushbait-v2 0.44): the
+		// generated size-4 maps with elk share <= 0.22 lost 16 of 72 proxy games with Ryth (mapscreen _fw _pd)
+		const bool ryth_map = MP.pack_share < P.pd_pack && (MP.team != 4 || MP.elk_share >= P.pd_elk);
+		if (c == D::varg)
+			v += ryth_map ? -0.05 : 0.15;
+		if (c == D::ryth && ryth_map)
+			v += 0.1;
+		if (c == D::ryth && MP.monolith_only)
+			v += 0.03;
+	}
+	// Team synergy.
+	int fronts = 0, casters = 0;
+	bool pair = false;
+	for (auto t : team)
+		fronts += is_front(t), casters += is_caster(t), pair |= t == D::cassi_and_issac;
+	if (c == D::cassi_and_issac && !pair)
+		v += 0.3; // every top draft has the pair: two bodies, the Cassi heal
+	if (c == D::stellar && casters == 0)
+		v += 0.2; // one ranged carry
+	if (is_front(c) && fronts >= MP.team - 2)
+		v -= 0.4; // at most team - 2 frontliners (the pair and a ranged carry take the rest)
+	// Counters to the enemy's visible picks.
+	int e_cast = 0, e_dive = 0;
+	for (auto e : enemy)
+		e_cast += is_caster(e), e_dive += is_front(e);
+	if (c == D::ryth)
+		v += P.pd_counter * (0.06 * std::max(0, e_cast - 1) + 0.05 * std::max(0, e_dive - 2));
+	if (c == D::varg)
+		v -= P.pd_counter * 0.04 * std::max(0, e_cast - 1);
+	return v;
+}
+
+bool param_pick(const std::vector<D>& mine)
+{
+	if (!mp_ready)
+		derive_params();
+	const std::vector<D> enemy = bc::draft::current_draft(team::enemy);
+	static const D order[] = { D::ren, D::stellar, D::cassi_and_issac, D::varg, D::ryth, D::tavi, D::prism, D::vendetta, D::marcella,
+		D::vesper_vale, D::willow };
+	auto has = [](const std::vector<D>& v, D c) { return std::find(v.begin(), v.end(), c) != v.end(); };
+	if (mine.empty())
+	{
+		// First pick: the map type alone.
+		const D first = pd_type == 2 ? D::prism : pd_type == 1 ? D::cassi_and_issac : D::ren;
+		bc::draft::pick(first);
+		return true;
+	}
+	// Re-plan the remaining slots greedily, then pick the planned champion that comes first in the fixed order.
+	std::vector<D> team = mine, plan;
+	const int slots = MP.team - static_cast<int>(mine.size());
+	for (int k = 0; k < slots; ++k)
+	{
+		D best = D::stellar;
+		double bv = -1e9;
+		for (auto c : order)
+		{
+			if (has(team, c))
+				continue;
+			const double v = pd_score(c, team, enemy);
+			if (v > bv)
+				bv = v, best = c;
+		}
+		team.push_back(best);
+		plan.push_back(best);
+	}
+	for (auto c : order)
+		if (has(plan, c))
+		{
+#ifdef LEGEND_FEATURES
+			std::printf("PD round=%d type=%d pack=%.2f elk=%.2f obj=%d mono=%d open=%d enemy=%d pick=%d\n", static_cast<int>(mine.size()) + 1, pd_type,
+				MP.pack_share, MP.elk_share, (int)MP.objective, (int)MP.monolith_only, (int)MP.open_small, static_cast<int>(enemy.size()), static_cast<int>(c));
+#endif
+			bc::draft::pick(c);
+			return true;
+		}
+	return false;
+}
 } // namespace
 
 void play_draft()
@@ -286,6 +441,17 @@ void play_draft()
 			F.team, F.groups, F.gem, F.gold, F.wolf, F.elk, F.mono, F.multi, F.harmless, F.gem_groups, F.mean_dist, F.area, F.holes, F.altars);
 	}
 #endif
+	if (P.mapdraft == 6)
+	{
+		try
+		{
+			if (param_pick(mine))
+				return;
+		}
+		catch (...)
+		{
+		}
+	}
 	if (P.mapdraft >= 1 && P.mapdraft <= 3)
 	{
 		try

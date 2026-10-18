@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-18 22:15 UTC (S7R: `legend_m12b` shipped); earlier: 2026-10-18 (session 11; `legend_m10` shipped = `legend_m8`'s play with the default-branch ideas switched off; see §S11)**. Rule from the user: update this file and push at every step. Start with **§S11**, then **§S10**, **§S9**, **§S8**,
+- Last updated: **2026-10-18 22:40 UTC (S7R: `legend_m13` shipped: parameter draft); earlier: 2026-10-18 (session 11; `legend_m10` shipped = `legend_m8`'s play with the default-branch ideas switched off; see §S11)**. Rule from the user: update this file and push at every step. Start with **§S11**, then **§S10**, **§S9**, **§S8**,
   **§S7**, **§S7-SV2**, then §000000 (resume protocol), §00000, §0000, §000, §00. **All work stays on branch `ccr-a858cd03-q87cpi`**:
   `git pull` (merge, never force) before every push. The repository's **default branch is `claude/lucid-pasteur-2jiojv`** (Oct 17, its
   bot does not compile); this branch is 142 commits ahead of it. No PR unless the user asks.
@@ -15,6 +15,14 @@ running or unfinished, and what to do next, so a new agent can continue without 
 
 ## S7R. SESSION 7 RESUMED (2026-10-18 20:05 UTC, the original S7 container, live in parallel with S11): read with §S11
 
+- **SHIPPED `legend_m13` (22:40 UTC)** = `_pd2` = `_fc` + the **parameter draft** (`experiments/wip/x_pd.patch`, `mapdraft` 6, hash c8272a7e1846; sha256 8f1ac104…).
+  The user's request: analyse the map first, derive parameters, choose the first pick from them, later picks from the enemy's picks + synergy + map
+  (for the final sprint, where the map pool changes). draft.cpp `derive_params()` / `pd_score()` / `param_pick()`: no per-map table. Accuracy vs the
+  old hardcoded picks: official 17 x 3 enemies 51/51, generated 27/27, `maps/var17` (51 transposed / swapped copies of the official maps) 51/51
+  (old 47/51). Same games as `legend_m12b` on the 88 maps (identical drafts give identical games: checked 68/68). On the 4 copies where the old
+  model broke (rushbait-v2_tr/_swtr, stampede_tr/_swtr): 29/40 vs 23/40 against Mite, ifish, `_snk`, `_px9`, `_fA`. First version `_pd` (Ryth at
+  size 4 whenever packs < 0.5, open map = area >= 4000 or distance >= 30) lost ifish 61.4, `_snk` 60.2: tightened to elk share >= 0.3 at size 4 and
+  area >= 5000 and distance >= 30. Caveat: brain-side special plans are still gated by map size (stampede ring by 60x50, contest plan by 50x50).
 - **SHIPPED `legend_m12b` (22:15 UTC)** = `_fc` = `_fw` + `mono_size50` 1 (`experiments/wip/x_m12b.patch` on `_m10`, hash 531e7331a283; sha256 5650ab96…).
   Confirmation cells of `_fw` found its held-out loss vs `_px9` (56.0 vs `_m10` 66.0) sits entirely on the 24 generated `gold_mono_*` maps (29 vs 39 of 60;
   the other 40 held-out games identical to `_m10`'s). `_fc` gates the contest plan to 50x50 maps: official games identical to `_fw` (34/34 vs Mite, 34/34 vs

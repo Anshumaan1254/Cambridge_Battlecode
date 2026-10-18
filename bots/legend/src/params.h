@@ -162,9 +162,16 @@ struct Params
 							   // 100% of the time, we 19%); 2 = also re-ward after ward_bush_gap rounds when a bush is in reach and our ward is not in it
 	int ward_bush_gap = 3;	   // ... (ward_bush 2)
 	int ward_bush_maps = 1;	   // 0 = ward bushes on every map; 1 = only on lone-monolith (contest-type) maps
-	int mapdraft = 3;		   // 0 = our composition choice; sparring proxies: 1 = Mite's per-map drafts, 2 = ifish's (draft.cpp)
+	int mapdraft = 6;		   // 0 = our composition choice; sparring proxies: 1 = Mite's per-map drafts, 2 = ifish's (draft.cpp)
 							   // 3 = ours with the top teams' choices where they beat ours (rushbait-v2, interlock, expanse; stampede with md_stampede)
 	int md_stampede = 1;	   // mapdraft 3: stampede drafts the 2nd team's casters (Prism, Stellar, C&I, Ryth, Tavi) for the ring plan
+	// mapdraft 6 (parameter draft): open small-team map when area >= pd_open_area and mean group distance >= pd_open_dist; Varg as the
+	// 4th pick when the pack share (multi-camp groups / groups on our half) >= pd_pack; pd_counter scales the enemy-pick counters
+	int pd_open_area = 5000;
+	float pd_open_dist = 30.f;
+	float pd_pack = 0.5f;
+	float pd_elk = 0.3f; // team size 4: Ryth only with elk share >= pd_elk
+	float pd_counter = 1.f;
 	int build_style = 2;	   // 0 = old farm builds, 1 = health/durability/treasure builds (ladder-proven),
 							   // sparring proxies: 3 / 4 / 10 = ifish (frontline health then Power / Monster then Power / 3 or 4 by map),
 							   //     9 = Mite (Jungle, Durability in the damage stat, Bruiser health, Power)

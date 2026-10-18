@@ -26,15 +26,25 @@ running or unfinished, and what to do next, so a new agent can continue without 
   `join_reach` 0 -> 1.2 (farm `_C5`: vs `_rm` 70.5 / 85.3 where `_C4` scored 61.6 / 67.6; direct `_C5` vs `_C4` 50.9 / 52.9, held-out 50.0) and
   `outmatch_solo_adv` 0.6 -> 0.45 (survive `_svI`: vs `_rm` 63.4, `_ST` 63.4 where `_svF` scored 61.6 / 56.2). So **`_m3` = `_m2` + those two values**
   (`SRC=bots/_m2 tools/variant.sh _m3 join_reach=1.2f outmatch_solo_adv=0.45f`). The agents themselves are finished: nothing of theirs is left to rerun.
-- **Running**: `_m3` acceptance with the ledger, opponents in order `_m2 _ST _rm _eA _eB _eC` (56 maps, `--jobs 4`). Check / resume with
-  `python3 tools/ledger.py table _m3 --opps _m2,_ST,_rm,_eA,_eB,_eC --maps 'maps/*.map26a,maps/ladder/*.map26a,maps/comp/*.map26a'`, then
-  `ledger.py run _m3 OPP ...` for any cell not `complete`. Ship rule: `_m3` vs `_m2` >= 50 all and official, and not worse than `_m2` vs `_ST`/`_rm`/archetypes.
+- **`_m3` acceptance done** (ledger, 56 maps / official 17): vs `_m2` **48.2 / 47.1** (deaths 821-819), but better than `_m2` against every
+  third party: `_ST` 68.8 / 64.7 (`_m2` 63.4 / 67.6), `_eA` 79.5 / 88.2 (72.3 / 76.5), `_eB` 76.8 / 88.2 (73.2 / 85.3), `_eC` 83.0 (85.7), `_rm` 62.5 / 73.5 (61.6 / 70.6).
+- **Bug found and fixed: the farm give-up clock** (`giveup_progress`, in `bots/_x_gp` = `_m2` + fix, and `_m4` = `_m3` + fix). `farm()` blacklisted its
+  target when `round - task_since > 2 x eta + 60`, with eta = the walk left (0 at the group) and `task_since` reset only on a target change: any body
+  spending 60+ rounds on one group (heavy pack, heal trips, waiting out a respawn, camp cycling) dropped it for 40 rounds. Now the clock restarts on
+  every hit on the target, capture turn and respawn wait next to it. Unopposed pace (17 official maps): `_m2` 546.6 -> `_x_gp` **526.1**
+  (pilgrimage 763 -> 694, stampede 742 -> 698, eight 426 -> 386, rushbait-v2 646 -> 604; no map slower); `_m4` **524.5**.
+- **`_m4` vs `_m2` (shipped): 58.0 / 58.8** (deaths 770-732), 0 faults. Third-party cells running (`$S/gp.sh`, then `_x_gp` vs `_m2`): ship `_m4` if
+  they are not worse than `_m2`'s. Check: `python3 tools/ledger_sum.py _m4 _m2` (all / official / deaths per cell, no rebuild needed).
 
 | # | Task | State |
 |---|---|---|
 | 1 | Ship the survive + farm merge | **done**: `legend_m2` |
-| 2 | `_m3` (the agents' final defaults) acceptance, ship if better than `_m2` | running |
-| 3 | Not started before: contest single-monolith plan (contest pace ~1074, 0 monolith damage on the ladder), gem-race endgame (`race`), gold rush on gem-scarce maps (`rush`, `x_rush_wip.patch`) | after 2 |
+| 2 | `_m3` / `_m4` acceptance, ship `_m4` if its third-party cells hold | running |
+| 3 | **Agent `econ` (Opus, high)**: farming income vs the real teams (opening: our first captures r55-125, their Varg r27; income to the clearers; contact-aware damage builds: their Varg ends `MsE+PsE8`; body-time waste). Baseline `_m4`, copy `bots/_x_econ`, deliverables `experiments/wip/x_econ.patch` + `x_econ_NOTES.md` | running (started ~11:20 UTC) |
+| 4 | **Agent `contest` (Sonnet, high)**: lone-monolith maps (contest 0-1000 on the ladder, zero monolith damage): detector + feasible monolith cycle / denial, inert elsewhere. Baseline `_m4`, copy `bots/_x_contest`, deliverables `x_contest.patch` + `x_contest_NOTES.md` | running (started ~11:20 UTC) |
+| 5 | Later: gem-race endgame (`race`: close finishes, altar denial; probes in ENGINE_FACTS "Session 5 probes"), deaths at full health (enemies appearing inside reach) | not started |
+- Auto checkpoint: `$S/ckpt.sh` commits and pushes `experiments/wip/x_econ*`, `x_contest*`, the ledger and new tools every 10 minutes
+  (`$S` = this session's scratchpad; lost with the container, which is fine: everything it pushes is in git).
 
 ## 000000. RESUME PROTOCOL (session limits, container restarts): read before running any test
 

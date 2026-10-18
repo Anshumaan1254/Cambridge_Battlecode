@@ -2,7 +2,7 @@
  "_doc": "Test-case groups for es_a100.py. kind=match: shaped match reward; kind=pace: unopposed race vs idle against pace_ref (the ladder winner's finish round on that map in the Oct 18 replays, with legend_st on the map). per_gen = cases sampled per generation (each played on both sides by every candidate); weight = the group's share of the reward; tournament=false keeps a group out of the final tournament. Opponents missing in bots/ are skipped.",
  "groups": [
   {"name": "official_vs_ladder_archetypes", "maps": "maps/comp/*.map26a", "opponents": ["_eA", "_eB", "_eC", "_eD"], "per_gen": 12, "weight": 4.0, "kind": "match"},
-  {"name": "official_vs_frozen", "maps": "maps/comp/*.map26a", "opponents": ["_ST", "_rm", "_self"], "per_gen": 6, "weight": 2.0, "kind": "match"},
+  {"name": "official_vs_frozen", "maps": "maps/comp/*.map26a", "opponents": ["_ST", "_m4", "_rm", "_self"], "per_gen": 6, "weight": 2.0, "kind": "match"},
   {"name": "official_pace", "maps": "maps/comp/*.map26a", "opponents": ["idle"], "per_gen": 4, "weight": 1.5, "kind": "pace"},
   {"name": "regression_fixtures", "fixed": [["maps/comp/stampede.map26a", "_eC"], ["maps/comp/rows.map26a", "_eB"], ["maps/comp/expanse.map26a", "_eB"], ["maps/comp/contest.map26a", "_eC"], ["maps/comp/fragment.map26a", "_eA"], ["maps/comp/eight.map26a", "_eA"]], "per_gen": 2, "weight": 1.0, "kind": "match"},
   {"name": "ladder_and_generated_vs_panel", "maps": "maps/ladder/*.map26a,maps/*.map26a", "opponents": ["_eA", "_eD", "_L0", "_es2", "_r2", "_v6"], "per_gen": 5, "weight": 1.0, "kind": "match", "tournament": false},

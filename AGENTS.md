@@ -32,6 +32,23 @@ running or unfinished, and what to do next, so a new agent can continue without 
   `_m4x` = `_m4` + `x_exec.patch`; `_m4r` = `_m4` + every RL value (not `max_join`); `_m4c` = `_m4` + the consistent subset;
   `_m4xr`, `_m4xc` = `_m4x` + the same. Rebuild: `SRC=bots/_m4 tools/variant.sh _m4x && (cd bots/_m4x && patch -p1 < ../../experiments/wip/x_exec.patch)`,
   then `SRC=bots/_m4 tools/variant.sh _m4r $(cat experiments/wip/rl_a100_all_args.txt)` (args files committed next to the patches).
+- **Round 1 results (13:40 UTC; 88 distinct games per cell; all / official 34 / deaths ours-theirs)**:
+
+| Bot | vs `_m4` | vs `_fA` | vs `_ST` | pace (official 17) |
+|---|---|---|---|---|
+| `_m4` (shipped) | - | 63.6 / 64.7 / 731-787 | 73.9 / 70.6 / 654-817 | 524.5 |
+| `_m4x` (+ x_exec) | 48.9 / 41.2 / 668-572 | 64.8 / 73.5 | 64.8 / 64.7 | 524.5 |
+| `_m4r` (+ all RL) | 47.7 / 32.4 / 433-513 | 54.5 / 44.1 | 61.4 / 61.8 | 528.6 |
+| `_m4c` (+ consistent RL) | 51.1 / 50.0 / 530-595 | 67.0 / 70.6 | 70.5 / 79.4 | 538.1 |
+| `_m4xr` | 50.0 / 44.1 / 439-572 | 60.2 / 55.9 | 70.5 / 67.6 | 528.6 |
+| **`_m4xc`** (+ x_exec + consistent RL) | **55.7** / 47.1 / 559-625 | **70.5 / 79.4** / 610-975 | **80.7 / 91.2** / 507-929 | 538.1 |
+
+  The full RL vector (tuned on `_rm`) does not transfer to `_m4` (its fight values undo the survive patch); x_exec alone does not either.
+  Together, x_exec + the consistent RL subset is the best against every third party. Pace cost +13.6 (pilgrimage +72, ambush +55,
+  expanse +45): drop-one pace screen `_pc_*` (= `_m4c` minus one farm param) running. A100 trainer updated for the next run:
+  `max_join` range 1-4 (was 0-1, which would clip `_m4`'s 3), `_m4` built from its history zip and added to `official_vs_frozen` and validation.
+- Agents started 13:30 UTC: `top` (Sonnet): top-style sparring bot `bots/_top` from starter-cpp (notes `experiments/wip/x_top_NOTES.md`,
+  patch `x_top.patch` vs starter-cpp); `doctrine` (Opus): fight doctrine A4-A7/A9 on `_m4` (`bots/_x_doc`, notes `x_doc_NOTES.md`, patch `x_doc.patch`).
 - Plan (priority): (1) ship the best of these if it beats `_m4` head-to-head and is not worse vs `_ST`/`_fA` or on pace (push first);
   (2) the top-style sparring bot `bots/_top` (05 section 2; Sonnet agent); (3) fight doctrine A4-A7/A9 on the new base (Opus agent, targeted
   disengages only: session 7 showed broad caution loses); (4) Part C/D (draft-time plan, field/contest playbooks); (5) builds/draft package vs `_top`.

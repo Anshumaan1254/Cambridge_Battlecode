@@ -4,7 +4,8 @@ Read this first. It records what has been done on this bot, what was measured, w
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
 - Last updated: **2026-10-18 (session 7)**. Rule from the user: update this file and push at every step. Start with **§S7**
-  (session 7), then §000000 (resume protocol), §00000 (session 6), §0000, §000, §00. **All work stays on branch `ccr-a858cd03-q87cpi`**:
+  (session 7), then **§S7-SV2** (session 7, strategy v2: the top-3 replay study and the new plan, `docs/strategy_v2/`), then §000000
+  (resume protocol), §00000 (session 6), §0000, §000, §00. **All work stays on branch `ccr-a858cd03-q87cpi`**:
   the user said (session 7) not to look at or merge other branches. No PR unless the user asks.
 - Competition: Cambridge Battlecode 2026a (CAMBC), 12 Oct to 18 Nov 2026. C++ bot compiled to wasm.
 - The submitted bot cannot be changed after submission and keeps nothing between matches. All "learning"
@@ -64,6 +65,60 @@ running or unfinished, and what to do next, so a new agent can continue without 
   agents add other pools to the same cells). Pace: `python3 tools/ledger_pace.py BOT... --maps`.
 - Auto checkpoint: `$S/ckpt.sh` commits and pushes `experiments/wip/x_econ*`, `x_contest*`, the ledger and new tools every 10 minutes
   (`$S` = this session's scratchpad; lost with the container, which is fine: everything it pushes is in git).
+
+## S7-SV2. SESSION 7, STRATEGY V2 (2026-10-18, a second session on this branch): the top-3 replay study and the new plan
+
+### Inputs from the user
+- 3 match groups against the top 3 ladder teams (15 games, we are side A in all; ids b26d9db7 = "X", 24706e13 = "Y",
+  8ba81317 = "Z"), `GameRules.md`. Request: find why we are stuck around rank 100 and lose to the top teams, check the rules
+  for unused mechanics, analyse the top teams' play, and write a new strategy (md) plus the supporting documents to
+  implement it, considering k-means, DBSCAN, SVM and other ML / DL / RL ideas.
+
+### Output (all committed on this branch)
+- `docs/strategy_v2/STRATEGY_V2.md` (main plan) + `01_REPLAY_FINDINGS.md`, `02_RULES_GAPS.md`, `03_IMPLEMENTATION_SPEC.md`,
+  `04_ML_AND_CLUSTERING.md`, `05_TEST_AND_SHIP_PLAN.md`, `06_EXPERIMENTS_18OCT.md`, `data/` (generated report, 17 map plans).
+- `tools/strategy_v2/`: `run_all.py` (zips -> report in one command), `decode_dmg.mjs` (decoder with per-step damage),
+  `analyze.py`, `report.py`, `trace.py`, `fight_model.py`, `map_plan.py` (k-medoids zones, DBSCAN hubs, assignment,
+  circuits, map types), `pacesum.py`, `h2hsum.py`. README in the folder.
+- `experiments/wip/x_exec.patch`: fight-execution patch (A1 hit what is in reach before walking, melee swings before stepping
+  away; A2 fight commitment). **Not merged into `bots/legend` and not shipped.**
+- **Baseline note:** every "`legend`" in `docs/strategy_v2/` is `legend_rm` (`_rm`, `bots/legend` at fcf0820). `legend_m4` was shipped in
+  parallel by §S7 while this work ran. The x_exec numbers below are on `_rm`; the re-test on `_m4` is in progress (results will be added here).
+
+### Findings (15 games: 2 wins, banked 7,596 vs 15,312)
+- Fights: we deal 91k and take 192k; body deaths 166 vs 72; even with more bodies in the fight we lose 71 to 37. In 74% of
+  the rounds our champion is hit by a champion it hits nobody back (theirs 55%), mostly walking (633 rounds; 278 with an
+  enemy already in attack range).
+- Items: they get 31.9 damage-stat points per 1,000 gold, we get 20.7; with 1.9x our gold they have 2.8x our damage points.
+  All three: one health emblem per champion, then Power in the damage stat (295 such emblems).
+- Farming: camp gems = alive x camp time x camp damage x conversion = 0.88 x 0.87 x 0.71 x 1.05 = 0.57 of theirs.
+- Not the problem: fuel, focus fire, conversion of damage to gems, unspent gold, wards, draft at 5 picks (our set = Y's on ambush, eight, corners, and we still lost those).
+
+### Measured today (06 has every number)
+- Unopposed pace of `legend`: 579 rounds mean on the 17 official maps; no single setting (6 tried) improved it.
+- `x_exec` vs `legend`: 54.9% over 82 distinct games (official + generated), deaths 611 vs 810; vs `_es2` 73.2% (legend 56.1%),
+  vs `_st` 53.7% (legend 54.9%). Ablation: removing any one of its 3 parts drops it to 49-52%; ship all three. Pace identical to legend.
+  2 lost turns after round 6 in 82 games (Issac r891/r893, ambush side B; legend 0): from the existing farm code in that game
+  state (a fuel floor on the patch's calls gave identical games), not from the patch.
+- `build_style 3` alone 47% (34 official games), Varg-first draft alone 35%, `x_exec` + `build_style 3` vs `x_exec` 44%:
+  the top teams' builds and draft do **not** help inside the current brain on their own.
+- `maps/ladder/` copies official maps (identical games): never count it in head-to-heads (`h2hsum.py` skips it).
+
+### Next steps (STRATEGY_V2 section 6)
+1. Ship `x_exec` as `legend_exec`: the zip is ready in `submissions/candidates/legend_exec_20261018.zip` (sha256 4c0d3446...; plays the
+   same games as the tested build). Apply the patch to `bots/legend`, copy the zip to `legend.zip`, history, BUILDS row; queue match
+   groups vs the top 3, run `run_all.py`.
+2. Part A4-A9 (spacing vs splash, camps in the fight estimate, strike first, leave before the finisher, pair rules).
+3. Part C: port `map_plan.py` to `draft.cpp`, draft memory v3, zone farming; Part D playbooks (field, contest).
+4. Build the top-style sparring bot `bots/_top` (spec in 05 section 2) and use it in every test.
+5. Part B (damage builds, collector rank, Varg-first draft) as one package, tested against `_top`.
+
+### How to resume in a new container
+- `pip install cambc==2.2.5 --break-system-packages`; `cambc init --yes .`; toolchain by hand with
+  `curl --cacert /root/.ccr/ca-bundle.crt`: wasi-sdk-33 (extract `wasi-sdk-33.0-x86_64-linux.tar.gz` into `/root/.cache/cambc/`,
+  rename to `wasi-sdk-33`), `cmake-3.31.8-linux-x86_64.tar.gz` into `/root/.cache/cambc/`, `ninja-linux.zip` (1.12.1) into
+  `/root/.cache/cambc/ninja-1.12.1-linux-x86_64/`. Engine wasm for the decoders: run `cambc view <any replay>` once.
+- Older builds as opponents: unzip `submissions/history/legend_st_20261017.zip` / `legend_es2_20261017.zip` into `bots/_st`, `bots/_es2`.
 
 ## 000000. RESUME PROTOCOL (session limits, container restarts): read before running any test
 

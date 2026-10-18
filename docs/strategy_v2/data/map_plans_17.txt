@@ -1,0 +1,141 @@
+== ambush.txt 100x100 picks 5  groups 12 (home 4, neutral 4)  types RICH_HOME, FIELD (farm out, bank at mid altars)
+   home gem rate 3.0/round (1000 gems in 333 rounds)  neutral 1.56/round  heavy-group gem share 0.0  mean home-group distance 55.0  altar distance 11.2
+   CassiIssac cycle ~ 132 rounds, ~0.91 gems/round, bank at altar (62, 40): 2elk+2gem@54,34(d63)
+   Stellar    cycle ~ 102 rounds, ~1.04 gems/round, bank at altar (37, 59): 1wolf+1elk+2gem@20,43(d52)
+   Ren        cycle ~  98 rounds, ~0.73 gems/round, bank at altar (37, 59): 2elk@30,44(d44)
+   Ryth       cycle ~  87 rounds, ~0.0 gems/round, bank at altar (37, 59): 4gold@28,54(d61)
+   Varg       cycle ~ 105 rounds, ~0.0 gems/round, bank at altar (62, 40): 3gold@41,48(d59) -> 3gold@58,50(d61)
+   DBSCAN (walking eps 10, min 2): 1 hubs of sizes [2]; lone groups (contest points): 2elk+2gem@54,34(d63), 4gold@28,54(d61), 3gold@41,48(d59), 3gold@58,50(d61)
+   far groups left out of the zones (crystal or late targets): 2gem@31,49(d1000000000), 2gem@67,50(d1000000000)
+   draft-memory plan: ~30 bytes of 1024
+== collision.txt 41x41 picks 3  groups 20 (home 9, neutral 2)  types OBJECTIVE, RICH_HOME
+   home gem rate 3.07/round (1000 gems in 326 rounds)  neutral 0.81/round  heavy-group gem share 0.4  mean home-group distance 14.2  altar distance 13.0
+   Stellar    cycle ~ 148 rounds, ~0.98 gems/round, bank at altar (27, 20): 1elk@29,3(d23) -> 3elk@37,2(d31)
+   Varg       cycle ~ 121 rounds, ~0.54 gems/round, bank at altar (27, 20): 1wolf@19,13(d13) -> 1gold@22,16(d16) -> 1wolf@24,18(d18) -> 1wolf@24,22(d18)
+   CassiIssac cycle ~ 107 rounds, ~0.75 gems/round, bank at altar (27, 20): 1wolf@10,5(d4) -> 1gold@12,7(d6) -> 1wolf@15,9(d9) -> 1gold@17,11(d11) -> 1elk@21,3(d15)
+   DBSCAN (walking eps 10, min 2): 1 hubs of sizes [11]; lone groups (contest points): none
+   draft-memory plan: ~37 bytes of 1024
+== contest.txt 50x50 picks 5  groups 14 (home 4, neutral 6)  types OBJECTIVE, CONTEST
+   home gem rate 0.0/round (1000 gems in 100000 rounds)  neutral 1.39/round  heavy-group gem share 1.0  mean home-group distance 20.5  altar distance 18.5
+   Varg       cycle ~  57 rounds, ~0.0 gems/round, bank at altar (25, 24): 3gold@27,17(d21) -> 3gold@30,22(d24)
+   Stellar    cycle ~  79 rounds, ~0.0 gems/round, bank at altar (24, 25): 1gold@5,18(d12) -> 3gold@17,27(d21) -> 3gold@22,30(d24)
+   CassiIssac cycle ~  38 rounds, ~0.0 gems/round, bank at altar (24, 25): 1gold@5,33(d27)
+   Ryth       cycle ~  28 rounds, ~0.0 gems/round, bank at altar (25, 24): 1gold@19,3(d13)
+   Ren        cycle ~  42 rounds, ~0.0 gems/round, bank at altar (25, 24): 1gold@36,9(d30)
+   DBSCAN (walking eps 10, min 2): 1 hubs of sizes [7]; lone groups (contest points): 1gold@19,3(d13)
+   draft-memory plan: ~33 bytes of 1024
+== corners.txt 71x71 picks 5  groups 30 (home 13, neutral 4)  types RICH_HOME
+   home gem rate 5.96/round (1000 gems in 168 rounds)  neutral 0.0/round  heavy-group gem share 0.0  mean home-group distance 18.7  altar distance 14.8
+   Ryth       cycle ~  97 rounds, ~0.74 gems/round, bank at altar (1, 69): 2elk@11,66(d30)
+   Varg       cycle ~ 130 rounds, ~0.17 gems/round, bank at altar (35, 34): 2gold@34,15(d18) -> 2gold@36,15(d20) -> 1wolf@28,13(d19) -> 2gold@34,0(d31) -> 2gold@36,0(d31)
+   CassiIssac cycle ~ 156 rounds, ~0.74 gems/round, bank at altar (1, 1): 1elk@18,22(d10) -> 1elk@12,16(d16) -> 1wolf@16,7(d25) -> 2gold@21,9(d24) -> 1wolf@9,5(d27)
+   Ren        cycle ~  78 rounds, ~0.74 gems/round, bank at altar (35, 34): 1elk@33,32(d17) -> 1wolf@33,36(d17)
+   Stellar    cycle ~ 204 rounds, ~0.93 gems/round, bank at altar (1, 69): 1wolf@10,41(d5) -> 1elk@17,49(d13) -> 1elk@10,53(d17) -> 2elk+1gem@25,59(d23)
+   DBSCAN (walking eps 10, min 2): 3 hubs of sizes [10, 2, 5]; lone groups (contest points): none
+   draft-memory plan: ~50 bytes of 1024
+== eight.txt 41x30 picks 5  groups 8 (home 4, neutral 0)  types OBJECTIVE, RICH_HOME
+   home gem rate 2.95/round (1000 gems in 339 rounds)  neutral 0/round  heavy-group gem share 0.49  mean home-group distance 15.5  altar distance 9.0
+   Stellar    cycle ~  78 rounds, ~0.92 gems/round, bank at altar (20, 15): 2elk@13,3(d15)
+   CassiIssac cycle ~  55 rounds, ~0.79 gems/round, bank at altar (20, 15): 2wolf@18,10(d20)
+   Ren        cycle ~  35 rounds, ~0.49 gems/round, bank at altar (20, 15): 1wolf@9,15(d12)
+   Varg       cycle ~  78 rounds, ~1.68 gems/round, bank at altar (20, 15): 3elk+1gem+1gold@13,25(d15)
+   DBSCAN (walking eps 10, min 2): 1 hubs of sizes [4]; lone groups (contest points): none
+   draft-memory plan: ~25 bytes of 1024
+== elkring.txt 30x30 picks 5  groups 10 (home 5, neutral 0)  types CONTEST
+   home gem rate 2.13/round (1000 gems in 469 rounds)  neutral 0/round  heavy-group gem share 0.0  mean home-group distance 10.0  altar distance 12.0
+   Varg       cycle ~  42 rounds, ~0.55 gems/round, bank at altar (26, 3): 1elk+1gold@9,2(d6)
+   Stellar    cycle ~  57 rounds, ~0.55 gems/round, bank at altar (26, 3): 1elk+1gold@19,2(d16)
+   CassiIssac cycle ~  41 rounds, ~0.55 gems/round, bank at altar (3, 26): 1elk+1gold@3,6(d3)
+   Ryth       cycle ~  52 rounds, ~0.55 gems/round, bank at altar (3, 26): 1elk+1gold@3,12(d9)
+   Ren        cycle ~  58 rounds, ~0.55 gems/round, bank at altar (3, 26): 1elk+1gold@3,19(d16)
+   DBSCAN (walking eps 10, min 2): 1 hubs of sizes [5]; lone groups (contest points): none
+   draft-memory plan: ~28 bytes of 1024
+== expanse.txt 80x80 picks 3  groups 24 (home 11, neutral 2)  types RICH_HOME, FIELD (farm out, bank at mid altars)
+   home gem rate 4.68/round (1000 gems in 214 rounds)  neutral 2.32/round  heavy-group gem share 0.0  mean home-group distance 34.0  altar distance 10.1
+   Stellar    cycle ~ 238 rounds, ~1.51 gems/round, bank at altar (12, 47): 2elk+2gem@8,58(d52) -> 2elk+2gem@8,65(d59) -> 2elk+2gem@8,73(d67)
+   Varg       cycle ~ 140 rounds, ~0.86 gems/round, bank at altar (39, 16): 2elk+2gem@71,4(d64) -> 2gold@54,4(d65)
+   CassiIssac cycle ~ 250 rounds, ~0.58 gems/round, bank at altar (39, 16): 1wolf@5,12(d6) -> 1wolf@5,22(d16) -> 1wolf@17,34(d28) -> 2gold@27,38(d32) -> 2gold@29,26(d25) -> 1elk@25,15(d18) -> 2gold@41,13(d34) -> 2wolf@41,5(d39)
+   DBSCAN (walking eps 10, min 2): 3 hubs of sizes [2, 6, 3]; lone groups (contest points): 2gold@54,4(d65), 2elk+2gem@71,4(d64)
+   draft-memory plan: ~41 bytes of 1024
+== fragment.txt 30x30 picks 3  groups 6 (home 3, neutral 0)  types CONTEST
+   home gem rate 1.3/round (1000 gems in 769 rounds)  neutral 0/round  heavy-group gem share 0.0  mean home-group distance 8.7  altar distance 10.7
+   Varg       cycle ~  37 rounds, ~0.4 gems/round, bank at altar (14, 5): 1wolf+1gold@1,5(d12)
+   CassiIssac cycle ~  32 rounds, ~0.4 gems/round, bank at altar (14, 5): 1wolf+1gold@1,11(d6)
+   Stellar    cycle ~  59 rounds, ~0.89 gems/round, bank at altar (15, 24): 1wolf+1elk@12,15(d8)
+   DBSCAN (walking eps 10, min 2): 1 hubs of sizes [3]; lone groups (contest points): none
+   draft-memory plan: ~22 bytes of 1024
+== interlock.txt 40x40 picks 4  groups 14 (home 5, neutral 4)  types CONTEST
+   home gem rate 1.96/round (1000 gems in 510 rounds)  neutral 1.48/round  heavy-group gem share 0.0  mean home-group distance 15.0  altar distance 11.0
+   Varg       cycle ~  96 rounds, ~0.75 gems/round, bank at altar (36, 12): 2gold@19,2(d16) -> 2elk@28,3(d25)
+   Stellar    cycle ~ 114 rounds, ~0.63 gems/round, bank at altar (3, 27): 2elk@7,29(d28) -> 2gold@3,36(d34)
+   CassiIssac cycle ~  76 rounds, ~0.87 gems/round, bank at altar (3, 27): 1wolf@5,8(d5) -> 1wolf@5,14(d11) -> 1wolf@5,21(d18)
+   Ryth       cycle ~ 119 rounds, ~0.61 gems/round, bank at altar (36, 12): 2elk@31,10(d28) -> 2gold@36,2(d34)
+   DBSCAN (walking eps 10, min 2): 3 hubs of sizes [4, 3, 2]; lone groups (contest points): none
+   draft-memory plan: ~33 bytes of 1024
+== lanes.txt 90x30 picks 5  groups 42 (home 15, neutral 12)  types RICH_HOME, FIELD (farm out, bank at mid altars)
+   home gem rate 5.0/round (1000 gems in 200 rounds)  neutral 4.89/round  heavy-group gem share 0.0  mean home-group distance 32.8  altar distance 8.8
+   Varg       cycle ~ 171 rounds, ~0.6 gems/round, bank at altar (29, 4): 1wolf@36,2(d31) -> 1wolf@36,4(d31) -> 1wolf@36,6(d31) -> 1elk@39,4(d34)
+   Stellar    cycle ~ 214 rounds, ~0.48 gems/round, bank at altar (29, 25): 1gold@36,25(d31) -> 1gold@36,27(d31) -> 1elk@39,25(d34) -> 1wolf@42,25(d37) -> 1wolf@42,27(d37) -> 1wolf@42,23(d37) -> 1gold@36,23(d31)
+   Ryth       cycle ~ 171 rounds, ~0.6 gems/round, bank at altar (29, 4): 1wolf@36,15(d31) -> 1wolf@36,13(d31) -> 1wolf@36,11(d31) -> 1elk@39,13(d34)
+   CassiIssac cycle ~ 165 rounds, ~0.8 gems/round, bank at altar (29, 4): 1wolf@43,11(d38) -> 1wolf@43,13(d38) -> 1wolf@43,15(d38) -> 1wolf@46,13(d41) -> 1wolf@46,11(d41) -> 1wolf@46,15(d41)
+   Ren        cycle ~ 178 rounds, ~0.74 gems/round, bank at altar (29, 4): 1wolf@43,2(d38) -> 1wolf@43,4(d38) -> 1wolf@43,6(d38) -> 1wolf@46,4(d41) -> 1wolf@46,2(d41) -> 1wolf@46,6(d41)
+   DBSCAN (walking eps 10, min 2): 2 hubs of sizes [20, 7]; lone groups (contest points): none
+   draft-memory plan: ~66 bytes of 1024
+== monolith.txt 50x50 picks 5  groups 22 (home 10, neutral 2)  types OBJECTIVE, RICH_HOME
+   home gem rate 3.76/round (1000 gems in 266 rounds)  neutral 2.49/round  heavy-group gem share 0.63  mean home-group distance 19.8  altar distance 10.8
+   Varg       cycle ~  69 rounds, ~0.63 gems/round, bank at altar (4, 1): 2wolf@3,9(d35)
+   CassiIssac cycle ~  92 rounds, ~0.63 gems/round, bank at altar (30, 30): 1wolf@15,46(d10) -> 1elk@13,38(d12) -> 1gold@26,31(d22)
+   Stellar    cycle ~ 100 rounds, ~0.44 gems/round, bank at altar (37, 39): 2wolf@29,46(d24) -> 1gold@36,42(d31) -> 1gold@31,36(d26)
+   Ren        cycle ~  74 rounds, ~0.89 gems/round, bank at altar (19, 19): 1wolf@3,31(d13) -> 2wolf@8,24(d20)
+   Ryth       cycle ~  35 rounds, ~0.49 gems/round, bank at altar (19, 19): 1wolf@3,39(d5)
+   DBSCAN (walking eps 10, min 2): 2 hubs of sizes [5, 4]; lone groups (contest points): 2wolf@3,9(d35)
+   draft-memory plan: ~39 bytes of 1024
+== packs.txt 31x31 picks 3  groups 8 (home 2, neutral 4)  types CONTEST
+   home gem rate 1.4/round (1000 gems in 714 rounds)  neutral 2.89/round  heavy-group gem share 0.0  mean home-group distance 9.0  altar distance 9.0
+   Stellar    cycle ~ 152 rounds, ~1.08 gems/round, bank at altar (28, 6): 2wolf@16,2(d13) -> 2elk@24,2(d21) -> 2gem+2gold@18,12(d15)
+   Varg       cycle ~  97 rounds, ~1.23 gems/round, bank at altar (2, 24): 2gem+2gold@11,17(d14) -> 2elk@6,27(d24)
+   CassiIssac cycle ~  40 rounds, ~0.98 gems/round, bank at altar (2, 6): 2wolf@8,2(d5)
+   DBSCAN (walking eps 10, min 2): 1 hubs of sizes [6]; lone groups (contest points): none
+   draft-memory plan: ~26 bytes of 1024
+== pilgrimage.txt 50x65 picks 5  groups 23 (home 4, neutral 15)  types CONTEST
+   home gem rate 0.85/round (1000 gems in 1176 rounds)  neutral 3.32/round  heavy-group gem share 0.31  mean home-group distance 23.2  altar distance 17.5
+   Ryth       cycle ~ 211 rounds, ~0.68 gems/round, bank at altar (5, 58): 4elk+4gold@23,57(d59) -> 2gold@24,43(d65)
+   Varg       cycle ~ 207 rounds, ~0.44 gems/round, bank at altar (5, 58): 1gold@16,26(d130) -> 1gold@15,37(d141) -> 2wolf+2gem@15,45(d149)
+   Stellar    cycle ~ 214 rounds, ~0.43 gems/round, bank at altar (44, 58): 1gold@33,26(d130) -> 1gold@34,37(d141) -> 2wolf+2gem@33,45(d149)
+   CassiIssac cycle ~ 114 rounds, ~0.6 gems/round, bank at altar (14, 3): 1gold@5,13(d9) -> 1gold@3,22(d18) -> 1gold@5,31(d27) -> 2wolf+1gem+1gold@3,43(d39)
+   Ren        cycle ~ 258 rounds, ~0.0 gems/round, bank at altar (14, 3): 2gold@24,26(d82) -> 2gold@24,11(d97) -> 2gold@24,3(d105) -> 1gold@14,8(d112) -> 1gold@16,16(d120) -> 1gold@35,8(d112) -> 1gold@33,16(d120)
+   DBSCAN (walking eps 10, min 2): 2 hubs of sizes [4, 12]; lone groups (contest points): 2gold@24,26(d82), 2gold@24,43(d65), 4elk+4gold@23,57(d59)
+   draft-memory plan: ~48 bytes of 1024
+== rows.txt 50x50 picks 4  groups 9 (home 4, neutral 1)  types OBJECTIVE, RICH_HOME
+   home gem rate 2.75/round (1000 gems in 364 rounds)  neutral 1.05/round  heavy-group gem share 0.53  mean home-group distance 28.8  altar distance 17.2
+   Varg       cycle ~  46 rounds, ~1.42 gems/round, bank at altar (15, 16): 3wolf@18,3(d12)
+   Stellar    cycle ~  68 rounds, ~0.96 gems/round, bank at altar (15, 16): 3wolf@31,3(d25)
+   CassiIssac cycle ~  86 rounds, ~0.77 gems/round, bank at altar (15, 16): 3wolf@42,3(d36)
+   Ryth       cycle ~  63 rounds, ~0.0 gems/round, bank at altar (34, 33): 3gold@48,16(d42)
+   DBSCAN (walking eps 10, min 2): 1 hubs of sizes [2]; lone groups (contest points): 3wolf@18,3(d12), 3gold@48,16(d42)
+   draft-memory plan: ~25 bytes of 1024
+== rushbait-v2.txt 30x80 picks 4  groups 18 (home 9, neutral 0)  types RICH_HOME
+   home gem rate 3.81/round (1000 gems in 262 rounds)  neutral 0/round  heavy-group gem share 0.0  mean home-group distance 17.3  altar distance 21.3
+   Stellar    cycle ~ 115 rounds, ~0.63 gems/round, bank at altar (15, 79): 1elk@13,50(d11) -> 1elk@13,55(d17)
+   CassiIssac cycle ~  83 rounds, ~0.79 gems/round, bank at altar (14, 0): 1wolf@13,21(d16) -> 1wolf@13,16(d21) -> 1wolf@13,12(d25)
+   Ryth       cycle ~ 132 rounds, ~0.55 gems/round, bank at altar (15, 79): 1elk@13,60(d22) -> 1elk@13,65(d27)
+   Varg       cycle ~  69 rounds, ~0.64 gems/round, bank at altar (14, 0): 1wolf@13,31(d6) -> 1wolf@13,26(d11)
+   DBSCAN (walking eps 10, min 2): 1 hubs of sizes [5]; lone groups (contest points): 1elk@13,50(d11), 1elk@13,55(d17), 1elk@13,60(d22), 1elk@13,65(d27)
+   draft-memory plan: ~35 bytes of 1024
+== stampede.txt 60x50 picks 5  groups 13 (home 5, neutral 3)  types OBJECTIVE, CONTEST
+   home gem rate 0.0/round (1000 gems in 100000 rounds)  neutral 1.99/round  heavy-group gem share 1.0  mean home-group distance 29.6  altar distance 21.0
+   Stellar    cycle ~ 222 rounds, ~1.62 gems/round, bank at altar (31, 23): 6elk+6gem@56,23(d55)
+   Varg       cycle ~  46 rounds, ~0.0 gems/round, bank at altar (31, 23): 4gold@2,24(d26)
+   Ryth       cycle ~  52 rounds, ~0.0 gems/round, bank at altar (31, 23): 4gold@18,24(d26)
+   Ren        cycle ~  56 rounds, ~0.0 gems/round, bank at altar (31, 23): 2gold@13,1(d10) -> 2gold@24,1(d21)
+   CassiIssac cycle ~  94 rounds, ~0.0 gems/round, bank at altar (31, 23): 2gold@34,1(d31) -> 2gold@42,1(d39) -> 2gold@50,1(d47)
+   DBSCAN (walking eps 10, min 2): 1 hubs of sizes [5]; lone groups (contest points): 6elk+6gem@56,23(d55), 4gold@2,24(d26), 4gold@18,24(d26)
+   draft-memory plan: ~32 bytes of 1024
+== swirl.txt 45x30 picks 4  groups 22 (home 1, neutral 20)  types CONTEST
+   home gem rate 0.0/round (1000 gems in 100000 rounds)  neutral 16.73/round  heavy-group gem share 0.4  mean home-group distance 5.0  altar distance 3.0
+   CassiIssac cycle ~ 374 rounds, ~1.41 gems/round, bank at altar (23, 10): 2elk+2gem@18,0(d32) -> 4elk+2gem@12,1(d38) -> 3wolf+1elk+2gem@5,6(d38) -> 3wolf+1gold@2,12(d33)
+   Ryth       cycle ~ 346 rounds, ~1.53 gems/round, bank at altar (21, 19): 2elk+2gem@25,28(d31) -> 4elk+2gem@31,26(d37) -> 3wolf+1elk+2gem@38,21(d40) -> 3wolf+1gold@41,16(d35)
+   Stellar    cycle ~ 309 rounds, ~1.09 gems/round, bank at altar (23, 10): 1gold@20,8(d5) -> 1elk+3gold@19,13(d5) -> 4wolf@13,12(d11) -> 1gold@8,18(d17) -> 2elk+2gold@7,23(d17) -> 2elk+1gem@13,27(d21) -> 2wolf+1gold@1,18(d26)
+   Varg       cycle ~ 241 rounds, ~1.39 gems/round, bank at altar (21, 19): 1elk+3gold@24,15(d7) -> 4wolf@30,16(d13) -> 1gold@36,11(d19) -> 2elk+2gold@36,5(d19) -> 2elk+1gem@30,1(d22) -> 2wolf+1gold@43,9(d28)
+   DBSCAN (walking eps 10, min 2): 1 hubs of sizes [21]; lone groups (contest points): none
+   draft-memory plan: ~49 bytes of 1024

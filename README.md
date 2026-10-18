@@ -6,6 +6,7 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | Read this | For |
 |---|---|
 | [AGENTS.md](AGENTS.md) | **handoff context for AI agents**: status, everything done and measured, setbacks, open work, next steps |
+| [docs/strategy_v2/STRATEGY_V2.md](docs/strategy_v2/STRATEGY_V2.md) | **the new strategy (18 Oct)**: why we lose to the top 3 teams, the plan, the rules we miss, the implementation spec, ML/clustering, tests |
 | [docs/STRATEGY.md](docs/STRATEGY.md) | how the game is won, hidden techniques, traps, the meta and its counters, the final strategy |
 | [docs/ENGINE_FACTS.md](docs/ENGINE_FACTS.md) | every rule we verified on the real engine (with evidence) and fuel costs |
 | [docs/HLD.md](docs/HLD.md) | architecture: modules, turn pipeline, data model, navigation, comms, fuel budget |

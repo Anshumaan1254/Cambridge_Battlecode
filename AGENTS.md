@@ -95,8 +95,15 @@ running or unfinished, and what to do next, so a new agent can continue without 
     Stellar, Cassi, Issac and Varg already buy Monster in the damage stat first.
   - Per-map screen of Mite's and ifish's whole draft tables (`_mdM`, `_mdI`, official 17 vs 7 opponents): no map better than `_m8` beyond +-3 of 14.
   - Doc: `docs/strategy_v2/09_IFISH_VS_MITE.md`.
-- Running: re-screen of the off-by-default fight switches vs `_m8` (`_fs_*`: burst_exit 1/2, spread_vs_splash 1/2, strike_first 1/3,
-  pair_space 1/2, support_v2, engage_angle, open_first 1/3); a winner must then hold against the third parties and held-out maps.
+- Fight switches re-screened vs `_m8` (`_fs_*`, 88 distinct / official): burst_exit 1 / 2 47.7 / 47.1 both; spread_vs_splash 1 53.4 / 50.0,
+  2 50.0 / 47.1; **strike_first 1 59.1 / 61.8**, 3 45.5 / 47.1; pair_space 1 / 2 47.7; support_v2 51.1 / 47.1; engage_angle 46.6 / 41.2;
+  open_first 1 50.0, 3 48.9. Confirmation of the two best (third parties, `_m8`'s cell in brackets): strike_first 1: `_mite` 69.3 (76.1),
+  `_ifish` 64.8 (69.3), `_px9` 64.8 (78.4), `_fA` 72.7 (73.9), `_ST` 79.5 (83.0), `_xp4` 64.8 (68.2), held-out vs `_m8` -> 188 games 50.0:
+  **non-transitive (beats our previous build, loses to everyone else, the Mite proxy included): rejected**. spread_vs_splash 1: 188 games 54.3,
+  third parties -2 to -8 except `_xp4` level: rejected.
+- Draft (the user's message 3): safest pick first, counter the enemy's visible picks (`current_draft(team::enemy)` returns the completed
+  rounds, so our last pick sees their first 3-4), then the map. Step 1 running: which 5th pick (`last_pick`: Tavi `_lpT`, Prism `_lpP`,
+  Vendetta `_lpV`, Marcella `_lpM`, instead of Ryth) does best against which enemy composition (`_mite`, `_ifish`, `_px9`, `_fA`, `_m8`).
 - Still open from S9: contest (spawn-camped), neutral control / gold routing, gem-race endgame, fight micro re-tests vs the new proxies.
 
 ## S9. SESSION 9 (2026-10-18 15:15 UTC, new container): read this first

@@ -52,7 +52,8 @@ running or unfinished, and what to do next, so a new agent can continue without 
   source hash 5620bb02867a (`tools/setup_session.sh` rebuilds `_m4x` and `_m5a`). 88 distinct games / official 34: vs `_m4` **61.4 / 58.8** (deaths 565-673),
   `_fA` 76.1 / 79.4, `_ST` 73.9 / 91.2, `_eA` 68.2 / 76.5, `_rm` 65.9 / 76.5, `_m2` 53.4 / 55.9, `_eB` 77.3 / 94.1, `_eC` 87.5 / 88.2 (mean of the 7
   third parties 71.8; `_m4` 70.0); 0 faults; gen16 rollovers 8 per team (rounds 1-3). `bots/legend/src` = `_m5a` + the inert 78c32bf code.
-  **New baseline for every agent: `_m5a`.** Held-out (gold, gold2, obj; 100 games) vs `_m4` running.
+  **New baseline for every agent: `_m5a`.** Held-out (gold, gold2, obj; 100 games) vs `_m4`: **59.0** (deaths 1707-2144).
+- Next for the user: upload `submissions/legend.zip` (legend_m5), queue match groups vs the top 3 and send the zips (`tools/strategy_v2/run_all.py` decodes them); re-run the A100 trainer on this commit (it now trains legend_m5 = `bots/legend`, with `_m4` in its frozen opponents).
 - Agents started 13:30 UTC: `top` (Sonnet): top-style sparring bot `bots/_top` from starter-cpp (notes `experiments/wip/x_top_NOTES.md`,
   patch `x_top.patch` vs starter-cpp); `doctrine` (Opus): fight doctrine A4-A7/A9 on `_m4` (`bots/_x_doc`, notes `x_doc_NOTES.md`, patch `x_doc.patch`).
 - Plan (priority): (1) **done: `legend_m5`**;

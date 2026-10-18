@@ -22,10 +22,21 @@ running or unfinished, and what to do next, so a new agent can continue without 
   54.5 / 47.1 (deaths 665-652); `_mite` 76.1 / 79.4 (76.1 / 82.4); **`_ifish` 58.0 / 52.9 (69.3 / 79.4)**; **`_px9` 68.2 / 55.9 (78.4 / 76.5)**; `_fA` 79.5 / 79.4
   (73.9 / 82.4); `_ST` 81.8 / 85.3 (83.0 / 91.2); `_xp4` 70.5 / 58.8 (68.2 / 79.4); third-party mean 72.4 vs 74.8 (official much worse); pace 500.9 (503.8).
   Fewer helpers on claimed camps saves walking but loses the fights the Ren-first proxies bring: a farming gain that costs contact strength.
-  (2) **Running (workflow `contest-and-neutral`, ~20:20 UTC)** on baseline `_m10`: agent `ct` (Sonnet) = contest (S10.5 #2; copy `bots/_x_ct`, variants `_ct*`,
-  notes `experiments/wip/x_ct_NOTES.md`, patch `x_ct.patch`) and agent `nc` (Opus) = neutral camp control under opposition (S10.5 #3; `bots/_x_nc`, `_nc*`,
-  `x_nc_NOTES.md`, `x_nc.patch`); each ship claim then goes to an independent verifier (recompute cells, inertness, rollovers, code review).
-  **S11 keeps the `mi_*` idea screen**; do not duplicate either way.
+  (2) **The user's rules (S7R, 20:30 UTC)**: "don't lose in strategy to legend_m8 while incorporating the good drafts" (every candidate needs >= 50
+  head-to-head vs `_m8` and `_m10` on the 88 distinct and the official 34, and not worse vs the third parties) and "prioritize gold at the start of
+  rounds so champions upgrade early". The workflow `contest-and-neutral` was stopped (neutral control had built nothing yet) and replaced by
+  **`opening-gold-and-contest`** (~20:35 UTC): agent `og` (Opus) = opening economy (copy `bots/_x_og`, variants `_og*`, notes `experiments/wip/x_og_NOTES.md`,
+  patch `x_og.patch`) and agent `ct` (Sonnet) = contest, continuing from `bots/_x_ct` (`experiments/wip/x_ct.patch`: the mono_* detector and switches
+  ported onto `_m10`) and variants `_ct0`-`_ct5`, test maps `maps/ct/`; each ship claim then goes to an independent verifier.
+  Opening evidence (sneaky games, `experiments/sneaky_oct18/analysis/body.csv`): our first emblem median Cassi r437 (theirs r250), Issac r236 (r142),
+  Ryth r219 (r99), Stellar r194 (r191), Ren r66, Varg r70; gold by r150 Cassi 64 / Issac 66 (theirs 121 / 159): gold piles on Ren and Varg.
+  (3) **Sneaky-bush draft** (the user's upload, 17 distinct games vs `legend_m8`/`m10`, we won 5; `experiments/sneaky_oct18/`, report in `analysis/`):
+  their per-map table is `mapdraft` 4 / the `md_sneaky` bit mask (bit = OfficialMap id) in `experiments/wip/x_sn.patch` (on `_m10`; control 34/34 games
+  identical). Their builds = Mite style (`build_style` 9). Proxy `_snk` = `_x_sn` + `mapdraft=4 build_style=9`; candidate `_snd` = `_x_sn` + `mapdraft=4`.
+  Running: per-map screen on the 11 maps where their draft differs (collision, contest, corners, eight, elkring, interlock, monolith, rows, rushbait-v2,
+  stampede, swirl), `_snd` and `_m10` vs 18 opponents both sides (`$S/sneaky_screen.sh`; `python3 tools/mapscreen.py _m10 _snd --opps ...`). First cells:
+  `_snd` vs `_m10` 8/22 on those maps. Then: adopt only maps that win clearly (and not vs the top proxies), full acceptance under the user's rule.
+  A workflow `sneaky-bush-study` (Sonnet + Haiku, no games) writes `docs/strategy_v2/10_SNEAKY_BUSH.md` (bush play, same-draft losses) and checks the table.
 - The user got the zips in chat: `legend_m8` (best measured), then `legend_m10` (current `submissions/legend.zip`, plays `legend_m8`'s games).
 
 ## S11. SESSION 11 (2026-10-18, same container as S10): read this first

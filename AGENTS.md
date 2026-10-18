@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-17 23:55 UTC (session 6)**. Rule from the user: update this file and push at every step. Start with **§00000** (session 6), then **§0000**, **§000**, **§00** below. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
+- Last updated: **2026-10-18 01:40 UTC (session 6)**. Rule from the user: update this file and push at every step. Start with **§00000** (session 6), then **§0000**, **§000**, **§00** below. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
 - **Two sessions are live on this branch (20:00 UTC)**: session 4 (container with `/tmp/ev/fp_*`, still running its full
   panels: `_ST`, `_rm`, `_rs3`, `_rnr` done, `_rnd` running, then `_rmx`, `_x_side`, `_rmxp`; results written into §000) and
   session 5 (§0000). Before pushing: `git pull --rebase`. Do not duplicate each other's panels: see §000 for session 4's numbers.
@@ -21,7 +21,9 @@ running or unfinished, and what to do next, so a new agent can continue without 
   **1 win, 16 losses**; deaths 232 vs 50; camp gems 7,938 vs 16,210; gold 39.6k vs 87k; Cassi & Issac 118 of our 232 body deaths;
   contest 0-1000 with zero monolith damage; pilgrimage our Ren 0 gems all game; rows our first captures split; only win stampede 1080-0).
   Summary and what was done with it: §00000.2 below.
-- **Shipped (23:55 UTC): `legend_s6`** = `submissions/legend.zip` (sha256 160fe594…, row in BUILDS.md): 54.5% vs `legend_st` on the 56 maps, 55.9 official.
+- **Shipped (Oct 18, ~01:40 UTC): `legend_s7`** = `legend_s6` + contest plan + pair veto (BUILDS.md row): vs `legend_s6` 50.0 (deaths -9%), vs `legend_st` 56.2,
+  vs `_r2` 82.1 (`legend_s6` 72.3), pace 565.2. Frozen locally as `bots/_s7`.
+- Previous ship (23:55 UTC): `legend_s6` = `submissions/legend.zip` (sha256 160fe594…, row in BUILDS.md): 54.5% vs `legend_st` on the 56 maps, 55.9 official.
   Before that ship: **`bots/legend` = session 5's stacked candidate `_rmxp`** (= `_rm` + `x_side.patch`
   (`camp_in_fight=3`) + `x_pace.patch` (`bank_first=0`, `obj_min_hp` 4500, `obj_share` 0.7, `obj_max_groups` 8)) **+ `dist_landmark`** (below).
   Frozen locally as `bots/_b6` (baseline of session-6 A/Bs; wasm identical to `_lbxp`).
@@ -57,6 +59,9 @@ running or unfinished, and what to do next, so a new agent can continue without 
   576.2 -> 568.9, vs `_b6` 49.1 on the 56 maps. **Merged into `bots/legend` (not shipped yet)**. The contest opening fight is not solved: the kill
   difference in rounds 1-150 predicts the game (72% vs 23%); 56% of deaths happen while fleeing (`can_escape` ignores enemies joining during the walk
   home). Notes: `experiments/wip/x_contest6_NOTES.md`.
+- **Agent `pair6` (Opus, done)**: `pair_veto` (margin 0.8): over `_r2 _v6 _hunt2 _devci _L0` deaths per game 9.16 -> 8.17, pair deaths
+  2.46 -> 2.03, wins 87.5 -> 88.0; 65% of pair deaths began as an escapable fight on one visible enemy, more came from the fog. Merged.
+  Next idea from it: a prior for alive enemies not seen recently. Notes `experiments/wip/x_pair6_NOTES.md`.
 - Rejected on pace (17 official maps vs idle): `build_style 3` (the ladder team's health-first builds) 606.1; draft Stellar, C&I, Varg, Ren, Ryth 584.9.
 
 ## 0000. SESSION 5: CURRENT POSITION (started 2026-10-17 19:46 UTC in a new container): read this first, then §000

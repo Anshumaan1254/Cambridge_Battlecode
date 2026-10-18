@@ -35,8 +35,9 @@ What changed and why: [docs/STRATEGY.md](docs/STRATEGY.md) §1. How the bot lear
 
 ## Ready-to-submit ZIP
 
-Current: **`legend_s6`** (Oct 17, session 6): 54.5% head-to-head vs the previous ship `legend_st` (55.9% on the 17 official maps),
-fewer lost opening turns (168 -> 46 on the official maps) and no deaths to camps in unopposed official-map games.
+Current: **`legend_s7`** (Oct 18, session 6): 56.2% head-to-head vs `legend_st` (the build in the 17-game ladder report), 82% vs `_r2`
+with 29% fewer deaths than `legend_s6`, fewer lost opening turns (168 -> 46 on the official maps), no deaths to camps in unopposed
+official-map games, a team monolith plan on contest-like maps, and Cassi & Issac skip fights they would die in.
 
 [`submissions/legend.zip`](submissions/legend.zip) is `cambc bundle legend` output (the bot's `src/` only).
 Upload it on the platform's Submissions page, or submit from the CLI with `cambc login && cambc submit legend`.

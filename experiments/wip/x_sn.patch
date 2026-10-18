@@ -1,0 +1,53 @@
+diff -ruN _m10/src/draft.cpp _x_sn/src/draft.cpp
+--- _m10/src/draft.cpp	2026-10-18 20:14:34.305769743 +0000
++++ _x_sn/src/draft.cpp	2026-10-18 20:23:05.565759679 +0000
+@@ -247,12 +247,22 @@
+ 	{ -1 }, { -1 }, { -1 }, { -1 }, { -1 }, { -1 }, { 3, 4, 9, -1, -1 }, { -1 }, { 8, 4, 3, 0, -1 }, { -1 }, { -1 }, { -1 },
+ 	{ -1 }, { -1 }, { 8, 4, 3, 0, -1 }, { 5, 4, 3, 0, 10 }, { -1 } };
+ 
++// mapdraft 4 (and md_sneaky bits on mapdraft 3): the per-map drafts of the "sneaky bush camper" ladder team, read from its 17
++// distinct games against legend_m8/m10 (Oct 18 upload; it won 12). Tavi as the 4th/5th pick on corners, eight, monolith,
++// rushbait-v2, elkring; Willow on elkring, stampede, contest; Vendetta on rows; casters on contest and interlock.
++constexpr int SNEAKY[][5] = {
++	{ 8, 4, 3, 0, 9 }, { 4, 10, 8, -1, -1 }, { 10, 7, 4, 8, 5 }, { 8, 4, 3, 10, 0 }, { 4, 3, 8, 10, 0 }, { 3, 4, 7, 8, 10 },
++	{ 3, 4, 9, -1, -1 }, { 8, 4, 3, -1, -1 }, { 10, 4, 5, 8, -1 }, { 3, 8, 4, 0, 9 }, { 0, 3, 4, 9, 10 }, { 8, 4, 3, -1, -1 },
++	{ 8, 4, 3, 0, 9 }, { 3, 4, 9, 2, -1 }, { 3, 4, 9, 10, -1 }, { 4, 5, 7, 0, 10 }, { 8, 4, 3, 0, -1 },
++	{ 8, 4, 3, -1, -1 }, { 8, 4, 3, 0, -1 }, { 8, 4, 3, 0, 9 } };
++
+ bool table_pick(const std::vector<D>& mine)
+ {
+ 	const int om = official_map();
+-	if (P.mapdraft == 3 && (om < 0 || OURS[om][0] < 0 || (om == OM_STAMPEDE && !P.md_stampede)))
++	const bool snk = P.mapdraft == 4 || (P.mapdraft == 3 && om >= 0 && ((P.md_sneaky >> om) & 1));
++	if (P.mapdraft == 3 && !snk && (om < 0 || OURS[om][0] < 0 || (om == OM_STAMPEDE && !P.md_stampede)))
+ 		return false;
+-	const int (*T)[5] = P.mapdraft == 3 ? OURS : P.mapdraft == 1 ? MITE : IFISH;
++	const int (*T)[5] = snk ? SNEAKY : P.mapdraft == 3 ? OURS : P.mapdraft == 1 ? MITE : IFISH;
+ 	const int ts = std::clamp(static_cast<int>(bc::draft::team_size()), 3, 5);
+ 	const int* row = T[om >= 0 ? om : 17 + ts - 3];
+ 	for (int k = 0; k < 5 && row[k] >= 0; ++k)
+@@ -286,7 +296,7 @@
+ 			F.team, F.groups, F.gem, F.gold, F.wolf, F.elk, F.mono, F.multi, F.harmless, F.gem_groups, F.mean_dist, F.area, F.holes, F.altars);
+ 	}
+ #endif
+-	if (P.mapdraft >= 1 && P.mapdraft <= 3)
++	if (P.mapdraft >= 1 && P.mapdraft <= 4)
+ 	{
+ 		try
+ 		{
+diff -ruN _m10/src/params.h _x_sn/src/params.h
+--- _m10/src/params.h	2026-10-18 20:14:34.732267617 +0000
++++ _x_sn/src/params.h	2026-10-18 20:23:05.566157164 +0000
+@@ -154,9 +154,11 @@
+ 	float mi_kite_max_kill = 40.f; // ... and a kill within this many rounds
+ 	int mi_chip = 0;			   // an idle damage spell hits a camp within 4 while passing (camps never heal)
+ 	int mi_close_in = 0;		   // in range by the group field but no live camp in sight (walls block vision): walk closer
+-	int mapdraft = 3;		   // 0 = our composition choice; sparring proxies: 1 = Mite's per-map drafts, 2 = ifish's (draft.cpp)
++	int mapdraft = 3;		   // 0 = our composition choice; sparring proxies: 1 = Mite's per-map drafts, 2 = ifish's, 4 = sneaky bush's (draft.cpp)
+ 							   // 3 = ours with the top teams' choices where they beat ours (rushbait-v2, interlock, expanse; stampede with md_stampede)
+ 	int md_stampede = 1;	   // mapdraft 3: stampede drafts the 2nd team's casters (Prism, Stellar, C&I, Ryth, Tavi) for the ring plan
++	int md_sneaky = 0;		   // mapdraft 3: bit om (draft.h OfficialMap) set = draft the sneaky-bush team's choice on that official map
++							   // (mapdraft 4 = their table everywhere: the draft of the sparring proxy _snk)
+ 	int build_style = 2;	   // 0 = old farm builds, 1 = health/durability/treasure builds (ladder-proven),
+ 							   // sparring proxies: 3 / 4 / 10 = ifish (frontline health then Power / Monster then Power / 3 or 4 by map),
+ 							   //     9 = Mite (Jungle, Durability in the damage stat, Bruiser health, Power)

@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-18 18:00 UTC (session 10; container clock)**. Rule from the user: update this file and push at every step. Start with **§S10**, then **§S9**, **§S8**,
+- Last updated: **2026-10-18 18:15 UTC (session 10; container clock; `legend_m8` shipped)**. Rule from the user: update this file and push at every step. Start with **§S10**, then **§S9**, **§S8**,
   **§S7**, **§S7-SV2**, then §000000 (resume protocol), §00000, §0000, §000, §00. **All work stays on branch `ccr-a858cd03-q87cpi`**:
   `git pull` (merge, never force) before every push. Other branches (`ccr-b9ffa7d9-hvk1ud`, `claude/battlecode-bot-optimization-0ixvxa`:
   parallel sessions that shipped `legend_s6/s7/s7a` from the old fork 7e444b0) are older lineages; their fixes were ported here in S7-S8.
@@ -66,9 +66,26 @@ running or unfinished, and what to do next, so a new agent can continue without 
   overall. `_m7` loses to the proxies where they use a map plan we lack: rushbait-v2 (both sides vs `_mite`; both top teams draft Ryth at
   size 4), swirl B, stampede B (Mite's ring), expanse (ifish's C&I, Stellar, Varg + Monster), lanes A, elkring B.
 
-### S10.3 Candidates (code `_x_c1` = `_x_mt` + `mapdraft` 3 / `md_stampede`; control `_x_c1` defaults vs `_mite`: 86 of 88 games identical to `_m7`)
-- `_cA` = `mapdraft=3` (Ryth instead of Varg on swirl / rushbait-v2 / interlock, C&I, Stellar, Varg on expanse); `_cB` = `_cA` + Mite's
-  stampede (casters + `o2_ring=1 o2_ring_melee=1`); `_cR` = `o2_ring=1` with our draft. Panel vs `_m7 _mite _ifish _px9 _fA _ST` running.
+### S10.3 Candidates and the ship (code `_x_c1` = `_x_mt` + `x_m8.patch`; control `_x_c1` defaults vs `_mite`: 86 of 88 games identical to `_m7`)
+- `_cA` = `mapdraft=3` (Ryth instead of Varg on swirl / rushbait-v2 / interlock, C&I, Stellar, Varg on expanse): vs `_m7` 53.4 / 55.9; on the
+  4 maps 32/40 vs `_m7`'s 22/40 against 5 third parties (rushbait 8/10 vs 3/10, expanse 10/10 vs 7/10, interlock 9/10 vs 6/10, swirl 5/10 vs 6/10).
+- `_cB` = `_cA` + Mite's stampede (casters + `o2_ring=1`): stampede 11/12 vs 7/12, but **the ring also fires on ambush** (objective mode):
+  -5 wins in 11 changed games. `_cR` (`o2_ring=1`, our draft): same as `_m7`. `o2_ring_melee` changes nothing.
+- `o2_ring=2` = ring only on stampede. First version called `official_map()` inside `group_score`: the extra fuel changed games on 15 maps
+  (fuel-floored group scoring is chaotic), net -14 outside stampede. **Gate by `W.W == 60 && W.H == 50` (no host call)**: only stampede
+  and fuel noise change (`_cS2`). Swirl with Ryth: 6/12 vs 7/12 and 90 rounds slower unopposed -> swirl keeps our draft (`_cS3`).
+- **SHIPPED `legend_m8` (18:10 UTC)** = `_cS3` = `_m8` (source hash 540e17bfe5a4; zip sha256 710bc048…, `submissions/history/legend_m8_20261018.zip`;
+  `bots/legend/src` = `_cS3` + the inert `LEGEND_RUNTIME_PARAMS` block: **wasm byte-identical to `_cS3`**). 88 distinct / official 34:
+  vs `_m7` **53.4 / 55.9** (deaths 641-653), held-out 48.0 (inert there: 85 of 100 games identical to `_m7`'s vs `_xp4`); `_mite` 76.1 / 82.4
+  (`_m7` 75.0 / 73.5), `_ifish` 69.3 / 79.4 (65.9 / 67.6), `_px9` 78.4 / 76.5 (73.9 / 67.6), `_fA` 73.9 / 82.4 (70.5 / 73.5), `_xp4` 68.2 / 79.4
+  (63.8 / 70.6), `_ST` 83.0 / 91.2 (78.4 / 82.4); changed maps 44/48 vs 26/48; pace **503.8** (520.9; stampede 471/479 vs 704/765); 0 faults;
+  rollovers unchanged. Ledger rows under `_cS3_vs_*` and `_m8_vs_*`. **New baseline: `_m8`** (`tools/setup_session.sh` rebuilds it, `_mite`, `_ifish`).
+
+### S10.4 The user's requests after the ship (message 2 of session 10) and what is left
+- Shop when **near our spawn** (not only on it), **emblem order by benefit to the team** (e.g. Stellar's damage first if it clears camps
+  faster), win efficiently (reach 1000 first) rather than by dominance, champions play for the team, small changes only, and **judge every
+  change head-to-head against the previous bot** (`_m8`). In progress.
+- Still open from S9: contest (spawn-camped), neutral control / gold routing, gem-race endgame, fight micro re-tests vs the new proxies.
 
 ## S9. SESSION 9 (2026-10-18 15:15 UTC, new container): read this first
 

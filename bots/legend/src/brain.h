@@ -97,6 +97,11 @@ private:
 	int obj_gather_since = -1, obj_gather_group = -1;
 	mutable bool sc_team = false; // the last group_score used the objective team plan (the solo plan failed)
 	bool task_team = false;		  // ... for the current farm target
+	mutable bool sc_ring = false; // the last group_score used the objective ring plan (o2_ring)
+	bool task_ring = false;		  // ... for the current farm target
+	float ring_dps(const Kit& k, float foc, const Group& g) const;
+	bool ring_ready(const Group& g, float hp_left, float& kill) const;
+	bool ring_farm(Group& g, bool respawning = false);
 	bool hop_task(int gid);
 	bool has_crystal() const;
 	int tp_hop = -1, tp_hop_since = 0;

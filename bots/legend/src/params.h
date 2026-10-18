@@ -129,18 +129,19 @@ struct Params
 	int endgame_margin = 12;   // extra rounds of slack for the final tribute
 	int endgame_alarm = 800;   // their score from which stopping their tributes overrides everything
 
+	int mapdraft = 3;		   // 0 = our composition choice; sparring proxies: 1 = Mite's per-map drafts, 2 = ifish's (draft.cpp)
+							   // 3 = ours with the top teams' choices where they beat ours (rushbait-v2, interlock, expanse; stampede with md_stampede)
+	int md_stampede = 1;	   // mapdraft 3: stampede drafts the 2nd team's casters (Prism, Stellar, C&I, Ryth, Tavi) for the ring plan
 	int build_style = 2;	   // 0 = old farm builds, 1 = health/durability/treasure builds (ladder-proven),
+							   // sparring proxies: 3 / 4 / 10 = ifish (frontline health then Power / Monster then Power / 3 or 4 by map),
+							   //     9 = Mite (Jungle, Durability in the damage stat, Bruiser health, Power)
 							   // 2 = value-model builds (tools/analysis/item_value.py): Bruiser over Power, early Treasure
 							   //     on the rich farmers, survival first on Cassi & Issac, builds that never run out
 	int rich_treasure_first = 0; // build_style 2: Ren and Stellar open with Treasure (1) or with r2's first emblem
 							   // (Ren Jungle health, Stellar Monster) and Treasure second (0); vs _v6 on the ladder
 							   // maps: 1 won 19/24 (gems +8,623), 0 won 21/24 (+9,385, deaths 441-670)
 	int ci_health_first = 0;   // build_style 2: Cassi & Issac buy health first (1) or Monster damage first (0);
-							   // vs _v6 on the ladder maps: 1 won 19/24 (gems +8,623, deaths 495-660), 0 won 16/24 (+3,449, 560-550).
-							   // Session 9 (agent econ2): 0 since legend_m7. The top ladder teams' Cassi has 195-248 focus at r300,
-							   // ours had 70 (doc 08 section 3); 0 gives 125. On legend_m6: vs legend_m6 58.0 (88 distinct games;
-							   // official 58.8), held-out 54.0; with aoe_cast5=3 (= legend_m7) 65.9 / 70.6, held-out 62.0.
-							   // The top teams' full orders (Treasure/Jungle/Durability in the damage stat, then Power) lost 34-48%.
+							   // vs _v6 on the ladder maps: 1 won 19/24 (gems +8,623, deaths 495-660), 0 won 16/24 (+3,449, 560-550)
 	int monster_in_dps = 1;	   // count the Monster emblem's +10% camp damage in the kill-time model
 
 	// Shopping and home trips (heal + shop + bank near spawn; recall makes them cheap)
@@ -316,6 +317,16 @@ struct Params
 	int obj_open_rounds = 0;	// objective map opening: before this round skip gold groups that are not clearly ours
 	int obj_open_margin = 4;	// ... (enemy spawn less than this many steps farther than ours; contest: the opening
 								// fights at the central gold triples decided the game, 6 of our deaths by r59 vs _r2)
+	// Session 9 (agent obj2): objective ring. The 2nd ladder team killed stampede's 17,400-HP group at r54-124 taking 0 damage:
+	// every body stood at Chebyshev 4 from the elks (camps hit within 3) and cast range-4 spells (area spells hit up to 6 camps).
+	int o2_ring = 2;			// objective group with live elks: casters (a range-4 damage/stun/area spell) cast from distance 4 and never step into camp reach
+								// (2 = on stampede only: elsewhere, e.g. ambush, it lost 5 of 11 changed games in session 10)
+	float o2_ring_clear = 160.f; // ring plan ready when the casters' spell damage clears the group within this many rounds
+	float o2_ring_share = 0.5f;	 // value share per caster
+	int o2_ring_min = 2;		 // at least this many living casters (including us)
+	int o2_ring_melee = 0;		 // 1: bodies that are not casters (melee kits) never take the all-in team plan while the ring is on
+	float o2_ring_mindps = 0.f;	 // a caster whose spell damage per round is below this stays out of the ring plan (Ren's stun is 15.6, Cassi's 17.5)
+
 
 	// Stuck champions (tools/analysis/stuck.mjs; experiments/wip/x_stuck_NOTES.md)
 	int stuck_live_goal = 1;	 // farming without the group's field: walk to tiles in range of live camps, not of any
@@ -393,10 +404,7 @@ struct Params
 								// map, combat()'s reach/incoming, the channel stun check, engage_angle. 2: also walk-compatible
 								// spells (Cassi's stun) range + 1. 3: only the danger map for routes (combat() stays at 4)
 	int aoe_cast5 = 3;			// F2: our area spells aim at a tile within range whose radius catches the target (reach 5), most
-								// enemies first: engage() (ranged), cast_on_nearer, px targeting reach, killable. Bit 2: at d <= 4 an
-								// area catching 2+ enemies goes before the single-target spell. Top teams land 20-28% of their spell
-								// damage at distance 5, we landed 3-8%; with 3: 21% (kpi_local vs _px9). On legend_m6: vs legend_m6
-								// 54.5 (official 58.8), held-out 60.0, vs the reach-5 proxy _f2q 53.4 (legend_m6 44.3)
+								// enemies first: engage() (ranged), cast_on_nearer, px targeting reach, killable
 	int open_first = 0;			// F3 (bits): 1 = after a fight step, cast a walk-compatible spell that now reaches the target
 								// (Cassi's stun: walk + stun = the opener); 2 = proactive fight, no cast/attack possible this turn
 								// (ranged, an opener of ours ready): when the step enters an enemy's next-turn reach, hold at the

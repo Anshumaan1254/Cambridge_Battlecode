@@ -189,6 +189,85 @@ int choose_comp()
 }
 } // namespace
 
+int official_map()
+{
+	static int cached = -2;
+	if (cached != -2)
+		return cached;
+	cached = OM_NONE;
+	try
+	{
+		const int w = bc::map::width(), h = bc::map::height();
+		int gem = 0, wolf = 0;
+		for (const auto& g : bc::map::camp_groups())
+			for (const auto& c : g.camps())
+				gem += c.kind() == bc::camp_type::gem_cluster, wolf += c.kind() == bc::camp_type::wolf;
+		struct M { int w, h, id; };
+		static const M T[] = { { 100, 100, OM_AMBUSH }, { 41, 41, OM_COLLISION }, { 71, 71, OM_CORNERS }, { 41, 30, OM_EIGHT },
+			{ 80, 80, OM_EXPANSE }, { 40, 40, OM_INTERLOCK }, { 90, 30, OM_LANES }, { 31, 31, OM_PACKS }, { 50, 65, OM_PILGRIMAGE },
+			{ 30, 80, OM_RUSHBAIT }, { 60, 50, OM_STAMPEDE }, { 45, 30, OM_SWIRL } };
+		for (const auto& m : T)
+			if (m.w == w && m.h == h)
+				cached = m.id;
+		if (w == 50 && h == 50) // contest: monoliths and gold only; monolith: 8 gem clusters a side; rows: 1
+			cached = gem == 0 ? OM_CONTEST : gem >= 10 ? OM_MONOLITH : OM_ROWS;
+		if (w == 30 && h == 30) // elkring: elks and gold only
+			cached = wolf == 0 ? OM_ELKRING : OM_FRAGMENT;
+	}
+	catch (...)
+	{
+	}
+	return cached;
+}
+
+namespace
+{
+// Sparring proxies (mapdraft 1 and 2): the per-map drafts of the two top ladder teams, read from 33 of their ladder games
+// (experiments/interwin_oct18: the 13 games between them; experiments/ladder_m5, experiments/ladder_top3). Both draft the
+// same way every time on a map, whoever the opponent is. Order: OfficialMap; then the defaults by team size 3, 4, 5.
+// Draft ids: Ryth 0, Vesper 1, Vendetta 2, C&I 3, Stellar 4, Prism 5, Marcella 6, Willow 7, Ren 8, Varg 9, Tavi 10.
+constexpr int MITE[][5] = {
+	{ 9, 4, 3, 10, 8 }, { 9, 0, 3, -1, -1 }, { 5, 4, 3, 0, 10 }, { 9, 4, 3, 0, 10 }, { 9, 4, 3, 0, 10 }, { 9, 4, 3, 0, 10 },
+	{ 8, 4, 3, -1, -1 }, { 9, 4, 3, -1, -1 }, { 9, 0, 3, 4, -1 }, { 9, 4, 3, 10, 8 }, { 9, 4, 3, 0, 10 }, { 8, 4, 3, -1, -1 },
+	{ 9, 4, 3, 10, 8 }, { 9, 0, 3, 8, -1 }, { 9, 0, 3, 4, -1 }, { 5, 4, 3, 0, 10 }, { 9, 0, 3, 4, -1 },
+	{ 9, 4, 3, -1, -1 }, { 9, 0, 3, 4, -1 }, { 9, 4, 3, 0, 10 } };
+constexpr int IFISH[][5] = {
+	{ 8, 4, 3, 0, 9 }, { 8, 4, 3, -1, -1 }, { 4, 10, 5, 3, 8 }, { 8, 4, 3, 0, 9 }, { 8, 4, 3, 0, 9 }, { 8, 4, 3, 0, 9 },
+	{ 3, 4, 9, -1, -1 }, { 8, 4, 3, -1, -1 }, { 8, 4, 3, 0, -1 }, { 8, 4, 3, 0, 9 }, { 8, 4, 3, 0, 9 }, { 8, 4, 3, -1, -1 },
+	{ 8, 4, 3, 0, 9 }, { 3, 4, 9, 8, -1 }, { 8, 4, 3, 0, -1 }, { 4, 10, 5, 3, 8 }, { 8, 4, 3, 0, -1 },
+	{ 8, 4, 3, -1, -1 }, { 8, 4, 3, 0, -1 }, { 8, 4, 3, 0, 9 } };
+
+// mapdraft 3: our composition, except on the official maps where the top teams' choice beat ours in our own brain
+// (session 10; 6 third-party opponents x 2 sides per map, 88-game cells): Ryth, not Varg, as the fourth pick on rushbait-v2
+// and interlock (both top teams draft it; ifish keeps Varg on rows), C&I, Stellar, Varg on expanse (ifish), and on stampede
+// the 2nd team's all-caster draft for the ring plan (md_stampede; o2_ring clears the 6-elk objective from distance 4).
+// On those four maps: 44 of 48 games won vs 26 for our own draft. Swirl with Ryth: 6 of 12 vs 7 and 90 rounds slower
+// unopposed (Varg's splash on its 12 wolf packs), so swirl keeps ours.
+constexpr int OURS[][5] = {
+	{ -1 }, { -1 }, { -1 }, { -1 }, { -1 }, { -1 }, { 3, 4, 9, -1, -1 }, { -1 }, { 8, 4, 3, 0, -1 }, { -1 }, { -1 }, { -1 },
+	{ -1 }, { -1 }, { 8, 4, 3, 0, -1 }, { 5, 4, 3, 0, 10 }, { -1 } };
+
+bool table_pick(const std::vector<D>& mine)
+{
+	const int om = official_map();
+	if (P.mapdraft == 3 && (om < 0 || OURS[om][0] < 0 || (om == OM_STAMPEDE && !P.md_stampede)))
+		return false;
+	const int (*T)[5] = P.mapdraft == 3 ? OURS : P.mapdraft == 1 ? MITE : IFISH;
+	const int ts = std::clamp(static_cast<int>(bc::draft::team_size()), 3, 5);
+	const int* row = T[om >= 0 ? om : 17 + ts - 3];
+	for (int k = 0; k < 5 && row[k] >= 0; ++k)
+	{
+		const auto c = static_cast<D>(row[k]);
+		if (std::find(mine.begin(), mine.end(), c) == mine.end())
+		{
+			bc::draft::pick(c);
+			return true;
+		}
+	}
+	return false;
+}
+} // namespace
+
 void play_draft()
 {
 	const auto mine = bc::draft::current_draft(team::ally);
@@ -207,6 +286,17 @@ void play_draft()
 			F.team, F.groups, F.gem, F.gold, F.wolf, F.elk, F.mono, F.multi, F.harmless, F.gem_groups, F.mean_dist, F.area, F.holes, F.altars);
 	}
 #endif
+	if (P.mapdraft >= 1 && P.mapdraft <= 3)
+	{
+		try
+		{
+			if (table_pick(mine))
+				return;
+		}
+		catch (...)
+		{
+		}
+	}
 #ifdef LEGEND_DRAFT
 	// Forced composition for experiments: picks in this order (champion_draft values).
 	{

@@ -1,5 +1,6 @@
 #include "brain.h"
 #include "learn.h"
+#include "draft.h"
 #ifdef LEGEND_TRACE
 #include <map>
 #endif
@@ -44,16 +45,16 @@ void cycle(std::vector<I>& v, std::initializer_list<I> blocks, int n)
 std::vector<I> build_for(CT t)
 {
 	std::vector<I> v;
-	if (P.build_style >= 3)
+	if (P.build_style >= 3 && P.build_style <= 4 || P.build_style == 10)
 	{
-		// The ladder teams that beat legend_st 16-1 (Oct 18 replays, tools/analysis/ladder_econ.mjs) all build alike:
-		// one Durability health emblem (-10% damage taken) and, on the frontline, a Bruiser health emblem early
-		// (their Ren: 1,900 max health by r100 on fragment), then Power emblems in the damage stat for the rest of the
-		// game (Power counts as six points and stacks; passives do not): Ren PfE12+DhE+BhE, Issac PsE8+DhE by r450.
-		// Style 4 is their farming profile (rows, expanse: no deaths on either side): Monster in the damage stat, then Power.
+		// ifish (1st on the ladder; sparring proxy): one Durability health emblem and, on the frontline, a Bruiser health
+		// emblem early (their Ren: 1,900 max health by r100), then Power in the damage stat for the rest of the game. On
+		// its no-contact farming maps (rows, expanse: 0 deaths either side) Monster in the damage stat, then Power (style 4).
+		const int om = official_map();
+		const int style = P.build_style == 10 ? (om == OM_ROWS || om == OM_EXPANSE ? 4 : 3) : P.build_style;
 		const bool focus = t == CT::ren || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
 		const I power = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
-		if (P.build_style == 4)
+		if (style == 4)
 			rep(v, focus ? I::monster_shard_of_focus : I::monster_shard_of_strength, 5);
 		else
 			switch (t)
@@ -79,6 +80,27 @@ std::vector<I> build_for(CT t)
 				break;
 			}
 		rep(v, power, 300);
+		return v;
+	}
+	if (P.build_style == 9)
+	{
+		// Mite (2nd on the ladder; sparring proxy), from its emblem timings in 33 ladder games: Jungle (-30% camp damage
+		// taken) then Durability in the damage stat, one Bruiser health, then Power in the damage stat forever. Ren and
+		// Ryth farm on strength on the small-team pack maps (packs Ren JsE r21, 10-12 captures; rows, rushbait-v2 Ryth),
+		// on focus elsewhere. Contest (no gem income: the game is decided on gold earned): Treasure first.
+		const int om = official_map();
+		const bool str_maps = om == OM_PACKS || om == OM_ROWS || om == OM_RUSHBAIT || om == OM_SWIRL || om == OM_INTERLOCK
+			|| om == OM_COLLISION || om == OM_FRAGMENT || om == OM_EXPANSE;
+		bool focus = t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
+		if (t == CT::ren || t == CT::ryth)
+			focus = !str_maps;
+		const I ju = focus ? I::jungle_shard_of_focus : I::jungle_shard_of_strength;
+		const I du = focus ? I::durability_shard_of_focus : I::durability_shard_of_strength;
+		const I pw = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
+		rep(v, om == OM_CONTEST ? (focus ? I::treasure_shard_of_focus : I::treasure_shard_of_strength) : ju, 5);
+		rep(v, du, 5);
+		rep(v, I::bruiser_shard_of_health, 5);
+		rep(v, pw, 300);
 		return v;
 	}
 	if (P.build_style == 2)
@@ -2785,6 +2807,121 @@ bool Brain::obj_team_ready(const Group& g, float hp_left, float& kill) const
 	return kill <= P.obj_clear_max && taken <= P.obj_absorb * pool;
 }
 
+float Brain::ring_dps(const Kit& k, float foc, const Group& g) const
+{
+	// Spell damage per round from distance 4 (outside every camp's reach of 3): damage, damaging stuns and area spells that
+	// reach 4. Area spells (radius 1) hit every camp next to the target: up to 6 on stampede's elks and gem clusters.
+	float d = 0;
+	if (k.dmg >= 0 && k.dmg_range >= 4.f)
+		d += foc * k.dmg_mod;
+	if (k.cc >= 0 && k.cc_range >= 4.f && k.cc_mod > 0)
+		d += foc * k.cc_mod;
+	if (k.aoe >= 0 && k.aoe_range >= 4.f)
+		d += foc * k.aoe_mod * (k.aoe_radius >= 1.f ? std::min(g.cluster, 4.f) : 1.f);
+	return d / 8.f;
+}
+
+bool Brain::ring_ready(const Group& g, float hp_left, float& kill) const
+{
+	auto& W = world();
+	float tot = ring_dps(kit, focus, g);
+	if (tot <= 0 || tot < P.o2_ring_mindps)
+		return false;
+	int n = 1;
+	const auto mine = bc::champion_designs[static_cast<std::size_t>(type)].base_stats();
+	const float growth = std::max(1.f, str / std::max(1.f, mine.base_strength));
+	for (int i = 0; i < static_cast<int>(W.allies.size()); ++i)
+	{
+		const auto& a = W.allies[static_cast<std::size_t>(i)];
+		if (i == W.my_index || !a.alive)
+			continue;
+		const auto s = bc::champion_designs[static_cast<std::size_t>(a.type)].base_stats();
+		const float f = a.visible && a.focus > 0 ? a.focus : s.base_focus * growth;
+		const float d = ring_dps(a.kit, f, g);
+		if (d > 0 && d >= P.o2_ring_mindps)
+			tot += d, ++n;
+	}
+	if (n < P.o2_ring_min)
+		return false;
+	kill = hp_left / tot;
+	return kill <= P.o2_ring_clear;
+}
+
+bool Brain::ring_farm(Group& g, bool respawning)
+{
+	// Distance-4 ring around the camps that hit back: cast range-4 spells, swing at what is within 3 (gem clusters
+	// only, by construction), never step into reach. Camps never heal, so slow damage is still progress.
+	auto& W = world();
+	bc::bitboard hit4, hit3;
+	bool any = false;
+	for (std::size_t i = 0; i < g.camps.size(); ++i)
+		if ((respawning || (g.hp[i] > 0 && (W.camp_occ.is_set(g.camps[i].pos) || !W.vis.is_set(g.camps[i].pos)))) && g.camps[i].str > 0)
+		{
+			any = true;
+			hit4.draw_chebyshev(g.camps[i].pos, 4.f);
+			hit3.draw_chebyshev(g.camps[i].pos, 3.f);
+		}
+#ifdef LEGEND_TRACE
+	debug_block({ if (round % 10 == 0) std::printf("RG r=%d %d any=%d\n", round, static_cast<int>(type), (int)any); });
+#endif
+	if (!any)
+		return false;
+	bc::bitboard goal = hit4;
+	goal &= ~hit3;
+	goal &= ~W.walls;
+	goal &= ~g.mask;
+#ifdef LEGEND_TRACE
+	debug_block({ if (round % 10 == 0) std::printf("RG2 r=%d %d empty=%d\n", round, static_cast<int>(type), (int)goal.is_empty()); });
+#endif
+	if (goal.is_empty())
+		return false;
+	if (!goal.is_set(pos))
+	{
+		task = T_FARM;
+		const bool st_ok = step(goal, !hit3.is_set(pos), true);
+#ifdef LEGEND_TRACE
+		debug_block({ std::printf("RF r=%d %d off pos=(%d,%d) step=%d in3=%d\n", round, static_cast<int>(type), pos.x, pos.y, (int)st_ok, (int)hit3.is_set(pos)); });
+#endif
+		if (st_ok)
+			return true;
+		return go_group(g, 4, true);
+	}
+	task = T_FARM;
+	ust_anchor = pos; // waiting out a cooldown on the ring is not being stuck
+	ust_since = round;
+	const bool save_cc = enemy_near_d <= P.hold_cc_dist;
+	const bool hold_spells = enemy_near_d <= P.hold_spell_dist && P.hold_spells_near_enemies;
+	bool did = false;
+	if (!hold_spells && !cast_done)
+	{
+		std::size_t t = g.camps.size();
+		float bk = 1e30f;
+		for (std::size_t i = 0; i < g.camps.size(); ++i)
+		{
+			if (g.hp[i] <= 0 || g.camps[i].str <= 0 || cheb(pos, g.camps[i].pos) > 4 || !W.camp_occ.is_set(g.camps[i].pos))
+				continue;
+			if (g.hp[i] < bk)
+				bk = g.hp[i], t = i;
+		}
+		if (t < g.camps.size() && spells_on_camp(g, t, save_cc))
+			did = true;
+	}
+	std::size_t t = g.camps.size();
+	float bk = 1e30f;
+	for (std::size_t i = 0; i < g.camps.size(); ++i)
+		if (g.hp[i] > 0 && W.camp_occ.is_set(g.camps[i].pos) && cheb(pos, g.camps[i].pos) <= kit.attack_range && g.hp[i] < bk)
+			bk = g.hp[i], t = i;
+	if (t < g.camps.size() && attack_chain_camp(g, t))
+		did = true;
+	if (did)
+		task_progress = round;
+#ifdef LEGEND_TRACE
+	debug_block({ if (round % 10 == 0) { std::printf("RF r=%d %d on pos=(%d,%d) did=%d live_hit=%d\n", round, static_cast<int>(type), pos.x, pos.y, (int)did, (int)any);
+		for (std::size_t i = 0; i < g.camps.size(); ++i) if (g.hp[i] > 0) std::printf("RC %zu (%d,%d) hp=%.0f str=%.0f occ=%d vis=%d\n", i, g.camps[i].pos.x, g.camps[i].pos.y, g.hp[i], g.camps[i].str, (int)W.camp_occ.is_set(g.camps[i].pos), (int)W.vis.is_set(g.camps[i].pos)); } });
+#endif
+	return true;
+}
+
 float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_override) const
 {
 	if (need_pair)
@@ -2891,6 +3028,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 		break;
 	}
 	sc_team = false;
+	sc_ring = false;
 	if (g.st != ST_REWARD)
 	{
 		eta = d_adj;
@@ -3011,9 +3149,19 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			t += static_cast<float>(trips * trip_cost(g));
 			return true;
 		};
-		float team_kill = 0;
+		float team_kill = 0, ring_kill = 0;
 		const bool solo_ok = plan(ally_dps, melee_ally, time);
-		if (!solo_ok && W.obj_mode && g.objective && P.obj_team && g.attackers >= P.obj_team_attackers && (sc_obj_focus < 0 || sc_obj_focus == g.id) &&
+		bool ring_ok = false;
+		if (P.o2_ring && (P.o2_ring != 2 || (W.W == 60 && W.H == 50)) && W.obj_mode && g.objective && g.attackers >= 1 && (sc_obj_focus < 0 || sc_obj_focus == g.id))
+			ring_ok = ring_ready(g, hp_left, ring_kill);
+		if (ring_ok)
+		{
+			// Objective map: the casters clear it from distance 4 without taking a hit (the 2nd ladder team's stampede opening).
+			sc_ring = true;
+			time = static_cast<float>(d_adj + wait) + ring_kill + 6.f;
+			share = P.o2_ring_share;
+		}
+		else if (!solo_ok && W.obj_mode && g.objective && P.obj_team && g.attackers >= P.obj_team_attackers && (sc_obj_focus < 0 || sc_obj_focus == g.id) &&
 			obj_team_ready(g, hp_left, team_kill))
 		{
 			// Objective map: too heavy for us and the bodies already on it, but not for the whole team.
@@ -3322,7 +3470,7 @@ void Brain::farm()
 		}
 	}
 	int best = -1, best_eta = BIG;
-	bool best_pair = false, best_team = false;
+	bool best_pair = false, best_team = false, best_ring = false;
 	float best_s = 0;
 #ifdef LEGEND_TRACE
 	std::map<int, float> tr_sc;
@@ -3360,7 +3508,7 @@ void Brain::farm()
 #endif
 				return;
 			}
-			const bool tm = sc_team;
+			const bool tm = sc_team, rg = sc_ring;
 #ifdef LEGEND_TRACE
 			tr_sc[g.id] = s;
 #endif
@@ -3369,7 +3517,7 @@ void Brain::farm()
 			else if (P.flip_window > 0 && g.id == left_group && round - left_round <= P.flip_window)
 				s /= P.flip_margin; // going back to a target we just left: A-B-A-B flips walk in place
 			if (s > best_s)
-				best_s = s, best = g.id, best_eta = eta, best_pair = np, best_team = tm;
+				best_s = s, best = g.id, best_eta = eta, best_pair = np, best_team = tm, best_ring = rg;
 		};
 		if (task_group >= 0 && task_group < static_cast<int>(W.groups.size()))
 			consider(W.groups[static_cast<std::size_t>(task_group)]);
@@ -3553,6 +3701,7 @@ void Brain::farm()
 	}
 	Group& g = W.groups[static_cast<std::size_t>(best)];
 	task_team = best_team;
+	task_ring = best_ring;
 	if (best_team && g.st != ST_REWARD && hp < P.obj_go_hp * max_hp && !W.ally_spawn.is_set(pos) &&
 		nav().group_dist(g, pos) > P.obj_go_far)
 	{
@@ -3584,7 +3733,13 @@ void Brain::farm()
 	case ST_RESPAWN:
 		task = T_WAIT;
 		if (g.ready_round - round > 0)
-			wait_group(g);
+		{
+			// Ring bodies wait outside the camps' reach: a respawned elk hits whoever stands on its tile's neighbours.
+			if (!(world().obj_mode && g.objective && P.o2_ring && task_ring && ring_farm(g, true)))
+				wait_group(g);
+			else
+				task = T_WAIT;
+		}
 		else
 			farm_group(g);
 		break;
@@ -3830,6 +3985,8 @@ bool Brain::farm_group(Group& g)
 	auto& W = world();
 	const bool obj = W.obj_mode && g.objective;
 	const bool obj_first = obj && P.obj_attackers_first;
+	if (obj && P.o2_ring && task_ring && g.id == task_group && ring_farm(g))
+		return true;
 	if (obj && task_team && P.obj_gather > 1 && g.st == ST_ALIVE && !g.awake && g.hp_total / std::max(10.f, dps_on(g)) > P.obj_solo_rounds)
 	{
 		// Objective: bodies arriving one by one were worn down by the camps (6 elks hit for 360 a round) and

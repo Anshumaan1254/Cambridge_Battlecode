@@ -63,13 +63,22 @@ SRC=bots/_x_px tools/variant.sh _xp4 px_mode=2 camp_in_fight=3 > /dev/null
 # Session 9: _m7 = legend_m7 (shipped) = _xp4 + x_m7.patch (fight2's area casts from 5, aoe_cast5=3, + ci_health_first=0);
 # _f2q = the reach-5 proxy (_px9 + x_f2.patch with aoe_cast5=3 open_first=1; one engage_angle hunk does not apply: fine)
 SRC=bots/_xp4 tools/variant.sh _m7 > /dev/null && (cd bots/_m7 && patch -s -p1 --no-backup-if-mismatch < ../../experiments/wip/x_m7.patch)
+# Session 10: _x_mt = _m7 + obj2's ring plan (x_o2.patch, off) + the top-team proxy code (x_proxy_mi.patch: official_map,
+# per-map drafts, build styles 9/10); proxies _mite (2nd team) and _ifish (1st); _x_c1 = _x_mt + x_m8.patch (mapdraft 3,
+# md_stampede, o2_ring 2); _m8 = legend_m8 (shipped) = _x_c1 with mapdraft=3 md_stampede=1 o2_ring=2 (ledger name also _cS3)
+SRC=bots/_m7 tools/variant.sh _x_mt > /dev/null && (cd bots/_x_mt && patch -s -p1 --no-backup-if-mismatch < ../../experiments/wip/x_o2.patch && patch -s -p1 --no-backup-if-mismatch < ../../experiments/wip/x_proxy_mi.patch)
+SRC=bots/_x_mt tools/variant.sh _mite mapdraft=1 build_style=9 o2_ring=1 o2_ring_melee=1 > /dev/null
+SRC=bots/_x_mt tools/variant.sh _ifish mapdraft=2 build_style=10 > /dev/null
+SRC=bots/_x_mt tools/variant.sh _x_c1 > /dev/null && (cd bots/_x_c1 && patch -s -p1 --no-backup-if-mismatch < ../../experiments/wip/x_m8.patch)
+SRC=bots/_x_c1 tools/variant.sh _m8 mapdraft=3 md_stampede=1 o2_ring=2 > /dev/null
+SRC=bots/_m8 tools/variant.sh _cS3 > /dev/null
 rm -rf $T
-for b in _rm _ST _m2 _m3 _x_gp _m4 _m4x _m5a _px9 _xp4 _m7 _fA _fB _fC legend idle; do cambc build $b > /dev/null && echo "built $b"; done
+for b in _rm _ST _m2 _m3 _x_gp _m4 _m4x _m5a _px9 _xp4 _m7 _fA _fB _fC _mite _ifish _m8 _cS3 legend idle; do cambc build $b > /dev/null && echo "built $b"; done
 python3 - <<'EOF'
 import sys; sys.path.insert(0, 'tools'); import ledger
 want = {'_rm': '339a961d3427', '_ST': 'ca21cbfe785b', '_eA': '0ee193334b60', '_eB': '654605b27deb', '_eC': '116ccc8b53b1',
 		'_m2': '1684aa2a482c', '_m3': '86c9e8f3de35', '_x_gp': '92e199947185', '_m4': '0dc2a2aac28a',
-		'_m5a': '5620bb02867a', '_xp4': '6a1a52e4ddb8', '_m7': '61dd9019869d', '_fA': '25fe5950b034', '_fB': 'f8e472c342f3', '_fC': 'ef5391dcc92b'}
+		'_m5a': '5620bb02867a', '_xp4': '6a1a52e4ddb8', '_m7': '61dd9019869d', '_mite': '688b37be81e3', '_ifish': '6fde429be694', '_m8': '540e17bfe5a4', '_cS3': '540e17bfe5a4', '_fA': '25fe5950b034', '_fB': 'f8e472c342f3', '_fC': 'ef5391dcc92b'}
 for b, h in want.items():
 	got = ledger.src_hash(b)
 	print(f'{b:5s} {got} {"ok" if got == h else "MISMATCH (expected " + h + ")"}')

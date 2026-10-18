@@ -13,7 +13,27 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Results of the current build `legend_m7` (session 9, Oct 18; 44 distinct maps × both sides = 88 games per row)
+## Results of the current build `legend_m8` (session 10, Oct 18; 44 distinct maps × both sides = 88 games per row)
+
+`legend_m8` = `legend_m7` + what the two top teams do against each other (13 games of Intercontinental Fish vs Mite,
+`experiments/interwin_oct18/`): both draft from a fixed per-map table, and where their choice beat ours in our own brain we
+take it: Ryth instead of Varg on rushbait-v2 and interlock, Cassi & Issac, Stellar, Varg on expanse, and on stampede Mite's
+all-caster draft (Prism, Stellar, Cassi & Issac, Ryth, Tavi) clearing the 6-elk objective from distance 4 (the ring plan),
+as Mite did to beat ifish 1080-0 and 1008-0. Everywhere else the bot is unchanged. Pace 503.8 rounds (`legend_m7` 520.9;
+stampede 471/479 instead of 704/765). On those four maps it wins 44 of 48 games against six opponents (`legend_m7`: 26).
+Sparring proxies of the two teams (their per-map drafts and builds, Mite's stampede plan) are `_mite` and `_ifish`.
+
+| Opponent | `legend_m8` | deaths (ours-theirs) | `legend_m7` on the same games |
+|---|---|---|---|
+| `legend_m7` (previous ship) | **53.4%** (55.9); held-out maps 48.0% (the change does not act there: 85% of games identical) | 641-653 | - |
+| `_mite` (Mite proxy) | **76.1%** (82.4) | 588-806 | 75.0% (73.5) |
+| `_ifish` (ifish proxy) | **69.3%** (79.4) | 638-649 | 65.9% (67.6) |
+| `_px9` ladder-calibrated proxy | **78.4%** (76.5) | 589-682 | 73.9% (67.6) |
+| `_fA` pressure archetype | **73.9%** (82.4) | 687-920 | 70.5% (73.5) |
+| `legend_m6` | **68.2%** (79.4) | 584-725 | 63.8% (70.6) |
+| `legend_st` | **83.0%** (91.2) | 491-899 | 78.4% (82.4) |
+
+## Results of `legend_m7` (session 9, Oct 18; 44 distinct maps × both sides = 88 games per row)
 
 `legend_m7` = `legend_m6` + two changes taken from 15 games of the top 3 teams playing **each other**
 (`docs/strategy_v2/08_TOP3_VS_TOP3.md`): area spells (Stellar, Prism) are aimed so their radius catches enemies at

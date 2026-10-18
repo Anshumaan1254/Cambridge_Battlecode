@@ -13,7 +13,27 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Results of the current build `legend_m4` (session 7, Oct 18; 56 maps × both sides = 112 games per row)
+## Results of the current build `legend_m5` (session 8, Oct 18; 44 distinct maps × both sides = 88 games per row)
+
+`legend_m5` = `legend_m4` + strategy-v2 fight execution (`experiments/wip/x_exec.patch`: hit what is in reach before
+walking, melee swings before stepping away, keep fighting once committed) + the 16 parameters the A100 RL run moved
+consistently (fight/flee thresholds, threat memory, bigger bags, defence of our half; `experiments/wip/rl_a100_m5a_args.txt`,
+analysis in `experiments/rl_a100_20261018/`). Pace 523.4 rounds to 1000 gems (unopposed, 17 official maps). The 44 maps are
+the 17 official ones plus the 27 generated ones (no `maps/ladder/` copies, which replay official maps). Official-map rates
+in brackets. Every game is in `experiments/results/ledger/` (`python3 tools/ledger_sum.py --pool 'maps/*.map26a,maps/comp/*.map26a' _m5a`).
+
+| Opponent | `legend_m5` | deaths (ours-theirs) | `legend_m4` on the same games |
+|---|---|---|---|
+| `legend_m4` (previous ship) | **61.4%** (58.8) | 565-673 | - |
+| `_fA` pressure archetype on `legend_m4` code | **76.1%** (79.4) | 611-956 | 63.6% (64.7) |
+| `legend_st` (on the ladder Oct 18: 1 win in 17) | 73.9% (91.2) | 526-849 | 73.9% (70.6) |
+| `legend_rm` | 65.9% (76.5) | 521-862 | 63.6% (79.4) |
+| `legend_m2` | 53.4% (55.9) | 603-595 | 56.8% (58.8) |
+| `_eA` Ren-first pressure archetype | 68.2% (76.5) | 710-1109 | 70.5% (94.1) |
+| `_eB` C&I-first farming archetype | 77.3% (94.1) | 534-976 | 79.5% (94.1) |
+| `_eC` caster objective archetype | 87.5% (88.2) | 516-1043 | 81.8% (91.2) |
+
+## Results of `legend_m4` (session 7, Oct 18; 56 maps × both sides = 112 games per row)
 
 `legend_m4` = `legend_rm` + the `survive` agent's early retreat from outmatched groups (and from one stronger enemy;
 Cassi & Issac leave earlier; Ren's retaliation counted) + the `farm` agent's farming fixes (no split rewards, the

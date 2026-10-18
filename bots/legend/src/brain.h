@@ -65,6 +65,8 @@ private:
 	int race_state = 0; // 0 even or ahead, 1 behind and we win fights (contest gems), 2 behind and we do not (pure gem pace) // round the current tribute started and its length
 	bool W_dist_home_ok() const;
 	bool engaged = false;
+	int last_fight_round = -100;
+	Enemy* best_in_reach(const Enemy* skip);
 	int dbg_path = 0, dbg_eng = 0; // SPELL_TRACE: which decision used the turn / which engage branch
 	bool dbg_hit_other = false;	   // SPELL_TRACE: the melee step-then-hit-another-enemy branch swung
 	bool safe_to_recall() const;

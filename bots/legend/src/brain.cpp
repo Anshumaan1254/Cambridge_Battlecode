@@ -1418,6 +1418,10 @@ bool Brain::combat()
 		else if (P.stay_veto && fight && !killable && can_escape && hp <= worst)
 			fight = false;
 	}
+	// Fight commitment: having fought last turn, keep at it unless the estimate dropped clearly or we are low. The
+	// per-turn re-evaluation alone flipped T_FIGHT / T_FLEE under fire (walk in, walk out, hit nobody).
+	if (P.fight_commit && !fight && last_fight_round == round - 1 && adv >= P.fight_commit_margin && hp >= P.fight_commit_hp * max_hp)
+		fight = true;
 	// A bag that wins the game is worth more than any fight we can walk away from.
 	if (fight && P.win_bank && !killable && can_escape && gems > 0 && wins_with(static_cast<int>(gems)))
 		fight = false;
@@ -1434,6 +1438,7 @@ bool Brain::combat()
 		post_danger(tgt->pos);
 	if (fight)
 	{
+		last_fight_round = round;
 		comms().post(AL_RALLY, tgt->pos, round);
 		learner().on_fight(round);
 		task = T_FIGHT;
@@ -1443,6 +1448,11 @@ bool Brain::combat()
 	{
 		post_danger(tgt->pos);
 		task = T_FLEE;
+		// Melee may attack and walk in one turn: swing at an adjacent enemy before stepping away (the step usually
+		// leaves it out of reach, so swinging after the step hit nothing).
+		if (P.exec_flee_hit && !kit.ranged && can_attack)
+			if (Enemy* o = best_in_reach(nullptr))
+				attack_unit(*o->ch);
 		// A stun on the closest melee chaser buys a free step (only stuns that still let us walk).
 		for (auto* e : E)
 			if (e->ch && !kit.cc_excl && (!e->kit.ranged || e->ready(e->kit.dash)) && cheb(pos, e->pos) <= static_cast<int>(kit.cc_range) && ready(kit.cc))
@@ -1552,6 +1562,26 @@ void Brain::post_danger(vec2 at)
 	C.post(AL_DANGER, at, round);
 }
 
+Enemy* Brain::best_in_reach(const Enemy* skip)
+{
+	auto& W = world();
+	Enemy* best = nullptr;
+	float bv = -1;
+	for (auto& o : W.enemies)
+	{
+		if (&o == skip || !o.ch || !o.alive || !o.visible || cheb(pos, o.pos) > kit.attack_range)
+			continue;
+		if (W.enemy_spawn.is_set(o.pos) && o.max_hp > burst_vs(o) + 1.f)
+			continue;
+		if (o.type == CT::ren && hp <= 2.5f * bc::constants::passive_abilities::ren_retaliation_focus_ratio * o.focus && o.hp > str)
+			continue;
+		const float v = (60.f + ((o.type == CT::cassi || o.type == CT::issac) ? 60.f : 0.f) + static_cast<float>(o.gems)) / std::max(50.f, o.hp);
+		if (v > bv)
+			bv = v, best = &o;
+	}
+	return best;
+}
+
 bool Brain::engage(Enemy& e)
 {
 	if (!e.ch)
@@ -1569,6 +1599,29 @@ bool Brain::engage(Enemy& e)
 	}
 	auto& ec = *e.ch;
 	int d = cheb(pos, e.pos);
+	if (P.exec_hit_first && d > kit.attack_range && can_attack)
+	{
+		// The team target is out of reach but another enemy is in reach: a turn spent walking under fire deals nothing.
+		if (Enemy* o = best_in_reach(&e))
+		{
+			if (kit.ranged)
+			{
+				if (!cast_done && !cast_unit_champ(kit.dmg, *o->ch))
+					cast_unit_champ(kit.cc, *o->ch);
+				if (attack_unit(*o->ch))
+				{
+					std::int32_t alive_flag = 1;
+					bc::detail::sdk_champion_is_alive(o->handle, &alive_flag);
+					if (alive_flag && !cast_done && ready(kit.reset) && cast_self(kit.reset))
+						attack_unit(*o->ch);
+				}
+				dbg_eng = 30;
+				return true;
+			}
+			attack_unit(*o->ch); // melee: then still walk toward the target below
+			dbg_eng = 31;
+		}
+	}
 	if (d > 4 && cast_on_nearer(e))
 		return true;
 	if (d > kit.attack_range)

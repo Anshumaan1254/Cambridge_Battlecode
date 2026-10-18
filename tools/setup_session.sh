@@ -51,13 +51,16 @@ PRESS="fight_margin=1.1f isolated_fight_adv=1.2f steal_hp_frac=0.4f enemy_half_p
 SRC=bots/_leg4 tools/variant.sh _fA build_style=3 $PRESS gank_bag=15 q0_push=0.5f --define "LEGEND_DRAFT 8,4,3,0,9" > /dev/null
 SRC=bots/_leg4 tools/variant.sh _fB build_style=4 max_join=0 deny_bonus=0.f --define "LEGEND_DRAFT 3,4,9,8,0" > /dev/null
 SRC=bots/_leg4 tools/variant.sh _fC build_style=3 obj_min_attackers=1 $PRESS --define "LEGEND_DRAFT 4,10,5,3,8" > /dev/null
+# _m4x = _m4 + x_exec.patch (strategy v2 A1/A2); _m5a = legend_m5 (session 8) = _m4x + the consistent A100 RL values (experiments/wip/rl_a100_m5a_args.txt)
+SRC=bots/_m4 tools/variant.sh _m4x > /dev/null && (cd bots/_m4x && patch -s -p1 --no-backup-if-mismatch < ../../experiments/wip/x_exec.patch)
+SRC=bots/_m4x tools/variant.sh _m5a $(cat experiments/wip/rl_a100_m5a_args.txt) > /dev/null
 rm -rf $T
-for b in _rm _ST _m2 _m3 _x_gp _m4 _fA _fB _fC legend idle; do cambc build $b > /dev/null && echo "built $b"; done
+for b in _rm _ST _m2 _m3 _x_gp _m4 _m4x _m5a _fA _fB _fC legend idle; do cambc build $b > /dev/null && echo "built $b"; done
 python3 - <<'EOF'
 import sys; sys.path.insert(0, 'tools'); import ledger
 want = {'_rm': '339a961d3427', '_ST': 'ca21cbfe785b', '_eA': '0ee193334b60', '_eB': '654605b27deb', '_eC': '116ccc8b53b1',
 		'_m2': '1684aa2a482c', '_m3': '86c9e8f3de35', '_x_gp': '92e199947185', '_m4': '0dc2a2aac28a',
-		'_fA': '25fe5950b034', '_fB': 'f8e472c342f3', '_fC': 'ef5391dcc92b'}
+		'_m5a': '5620bb02867a', '_fA': '25fe5950b034', '_fB': 'f8e472c342f3', '_fC': 'ef5391dcc92b'}
 for b, h in want.items():
 	got = ledger.src_hash(b)
 	print(f'{b:5s} {got} {"ok" if got == h else "MISMATCH (expected " + h + ")"}')

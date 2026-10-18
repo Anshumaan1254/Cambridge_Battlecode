@@ -31,7 +31,7 @@ struct Params
 									 // 2 (default): no exemption, but a group never seen is discounted from round 0 (no cliff at r61 either).
 									 // Head-to-head vs _rm (56 maps, with no_split, obj_focus and the pace patch): 1 -> 48.2 (official 44.1, deaths
 									 // 1255-1101: bodies kept walking into the enemy half); 2 -> 54.5 (58.8, deaths 1055-1287). Pace 559.0 vs 563.1
-	float target_threat_adv = 1.305f;	 // skip camps where recently seen enemies beat us (and allies there) (ES: 1.1 -> 1.305)
+	float target_threat_adv = 1.4942f;	 // skip camps where recently seen enemies beat us (and allies there) (ES: 1.1 -> 1.305)
 
 	// Farming model corrections (prediction audit, tools/analysis/xm_audit.mjs on 48 traced games vs _v6 and _hunt2)
 	int math_eta = 1;				 // travel = steps to attack range (ranged: 3), dash kits 10 tiles per 8 rounds
@@ -60,15 +60,15 @@ struct Params
 	float camp_hp_reserve = 0.18f;	 // keep this fraction of max health after a camp fight
 	float fight_margin = 1.30f;		 // engage proactively when our kill time beats theirs by this factor
 	float fight_back_margin = 0.873f; // when they can already hit us, fight back unless this outmatched (ES: 0.75 -> 0.873)
-	float cornered_margin = 0.634f;	 // chasers we cannot outrun: hit back unless the advantage is below this (ES: 0.45 -> 0.634)
+	float cornered_margin = 0.7409f;	 // chasers we cannot outrun: hit back unless the advantage is below this (ES: 0.45 -> 0.634)
 	float far_enemy_weight = 1.0f;	 // visible enemies beyond reach+2 count this much in the fight estimate
 	int ally_spell_dps = 1;			 // count allies' spells in our damage (else basic attacks only)
 	int spawn_heal_bonus = 1;		 // on our spawn, count one more health bar (we heal fully)
 	int bag_caution = 40;			 // carrying this many gems, avoid even fights we can escape
-	int backup_radius = 8;			 // allies (seen, or claiming a camp) this close count as backup
-	float isolated_fight_adv = 1.428f; // alone, start a fight only at this advantage (or a sure kill) (ES: 1.6 -> 1.428)
-	float isolated_flee_adv = 1.1f;	 // alone and weaker than this: walk away as soon as they are in sight
-	int flee_dist = 7;				 // ... when the nearest enemy is this close
+	int backup_radius = 5;			 // allies (seen, or claiming a camp) this close count as backup
+	float isolated_fight_adv = 1.2335f; // alone, start a fight only at this advantage (or a sure kill) (ES: 1.6 -> 1.428)
+	float isolated_flee_adv = 1.5000f;	 // alone and weaker than this: walk away as soon as they are in sight
+	int flee_dist = 5;				 // ... when the nearest enemy is this close
 	// Survival vs grouped invaders (agent survive, session 6; experiments/wip/x_survive_NOTES.md). Ladder: 232 deaths vs 50 in
 	// 17 games; the killers were within 8 tiles for 7+ rounds before 75% of them. Recommended set (_svF) vs _rm, 56 maps,
 	// 112 games: 61.6% head-to-head (official 64.7), deaths 881-1301; vs _ST 56.2 (_rm 54.5), _eA 69.6 (_rm 57.1); held-out pool
@@ -88,7 +88,7 @@ struct Params
 	int ren_reflect = 1;			 // combat(): a fight on Ren counts its retaliation (0.2 x focus per hit) on each of our hitters
 	int threat_score_memory = 8;	 // group_score: enemies seen this many rounds ago still guard the camps within 8 of them
 									 // (20: 50.0 vs _rm, more deaths; alert_radius 8 for the team DANGER alert: 47.1, more deaths)
-	float reserve_margin = 0.5f;	 // half the team dead: extra advantage needed to fight
+	float reserve_margin = 0.3284f;	 // half the team dead: extra advantage needed to fight
 	int stay_rule = 0;				 // off: all three on (+ ES params) = 49.1% vs this build, fewer deaths (1301 vs 1504) but
 									 // lower panel mean (vs _r2 67.0 vs 78.6, _L0 58.9 vs 67.0); without stay_veto 41.1%
 									 // rule: stay in a fight when our health > the enemies' worst damage until the target dies, with
@@ -111,15 +111,15 @@ struct Params
 	int win_bank = 1;				 // A/B: neutral (50.0% vs base; 56.2 vs 55.4 with support_filter)				 // a bag that wins the game goes to the nearest altar: no capture-recall away from it, no
 									 // retreat home with it (ladder interlock: Ren recalled with 72 gems 3 steps from an altar
 									 // and lost 976-1056)
-	int deficit_defend = 1;			 // this many more enemies alive than allies: defensive play
+	int deficit_defend = 3;			 // this many more enemies alive than allies: defensive play
 	int deficit_escort = 2;			 // ... this many: a respawned champion waits on spawn for the next ally
 	int escort_wait = 15;			 // max rounds to wait on spawn for an escort
-	int threat_memory = 4;			 // rounds an unseen enemy is still assumed nearby
+	int threat_memory = 7;			 // rounds an unseen enemy is still assumed nearby
 	int alert_radius = 0;			 // allies avoid this radius around a reported danger
 	int alert_age = 12;				 // rounds a danger report stays valid
 
 	// Tribute
-	int tribute_min = 34;	   // carry at least this many gems before a dedicated altar trip
+	int tribute_min = 54;	   // carry at least this many gems before a dedicated altar trip
 	int early_round = 150;	   // before this round ...
 	int early_tribute_min = 22; // ... bank from this bag size (first gold and safety sooner)
 	int tribute_near = 5;	   // tribute anything when an altar is this close
@@ -148,7 +148,7 @@ struct Params
 	int recall_min_dist = 5;   // recall instead of walking when spawn is farther than this
 	int cap_recall_min_home = 8;  // recall while capturing when spawn is farther than this ...
 	float cap_recall_hp = 0.610f;  // ... and health is below this fraction, (ES: 0.75 -> 0.61)
-	int cap_recall_gold = 90;     // ... or gold after the capture reaches this (shopping),
+	int cap_recall_gold = 60;     // ... or gold after the capture reaches this (shopping),
 								  // ... or the bag after the capture reaches tribute_min
 	int hold_spells_near_enemies = 1; // no spells on camps while enemies are near (keep burst for them)
 	// ... "near" means a recently seen enemy within this many tiles (minus the rounds since we saw it). Measured
@@ -196,7 +196,7 @@ struct Params
 	int learn_fight = 1;			 // fight calibration on/off
 	int learn_window = 40;			 // rounds per stance evaluation window
 	float learn_rate = 0.5f;		 // step size of the stance value update
-	float kill_gems = 25.f;			 // stance reward per enemy death, in gems (bag + 60 rounds of their farming)
+	float kill_gems = 40.1472f;			 // stance reward per enemy death, in gems (bag + 60 rounds of their farming)
 	float death_gems = 45.f;		 // stance punishment per ally death, in gems (heavier: we also pay them 50 gold)
 	float reward_scale = 40.f;		 // gems per window that count as reward 1
 	float ucb_c = 0.f;				 // exploration bonus (UCB1); 0.3 cost ~2 points over 540 games (a game has ~25 windows)
@@ -204,7 +204,7 @@ struct Params
 	float q0_spread = 0.3f;			 // optimistic prior values per stance (SPREAD starts preferred)
 	float q0_grouped = 0.f;
 	float q0_push = -0.718f; // ES: -0.2 -> -0.718
-	float ctx_invaded = 0.6f;		 // preference for GROUPED per ally death on our half in the last window
+	float ctx_invaded = 0.0075f;		 // preference for GROUPED per ally death on our half in the last window
 	float ctx_fights = 0.3f;		 // preference for PUSH per (kills - deaths) in the last window
 	float stance_hysteresis = 0.15f; // keep the current stance unless another is better by this
 	float pain_death = 1.0f;		 // pain added where an ally died
@@ -212,7 +212,7 @@ struct Params
 	float pain_kill_relief = 0.6f;	 // pain removed where an enemy died near us
 	float pain_half_life = 50.f;	 // rounds
 	float pain_w = 8.f;				 // farming-score rounds added per unit of pain at a camp
-	float fight_learn_rate = 0.235f;	 // fight-estimate change per death after a fight / kill after a fight (ES: 0.15 -> 0.235)
+	float fight_learn_rate = 0.3262f;	 // fight-estimate change per death after a fight / kill after a fight (ES: 0.15 -> 0.235)
 	float fight_bias_max = 0.3f;	 // max boldness (log scale); caution may go to twice this
 	int group_radius = 12;			 // GROUPED: camps farther than this from allies' camps cost extra
 	float group_far_w = 0.8f;		 // ... rounds per tile beyond the radius
@@ -256,7 +256,7 @@ struct Params
 	int race_mode = 1;
 	int race_sample = 25;			// sample both banked totals every this many rounds (8 samples kept)
 	int race_from = 150;			// not before this round
-	int race_margin = 40;			// behind = they finish this many rounds before us
+	int race_margin = 73;			// behind = they finish this many rounds before us
 	int race_death_slack = 2;		// "fights go well": enemy deaths + this >= our deaths, and not outnumbered now
 	float race_gold = 0.3f;
 	float race_deny = 0.5f;
@@ -269,7 +269,7 @@ struct Params
 								// OFF (agent pace): unopposed pace on 56 maps 472.7 -> 469.7 with it off (official 17: 574.3 -> 567.6; pilgrimage -123,
 								// rushbait-v2 -48, interlock -19; ambush/monolith/collision +16..+24 are map noise).
 	int bank_first_margin = 2;	// ... by at least this many steps (nearest-altar walk + recall_time + margin <= spawn altar walk)
-	float bank_trip_w = 1.0f;	// bank threshold rises by this many gems per step of bank trip beyond bank_trip_free
+	float bank_trip_w = 1.7394f;	// bank threshold rises by this many gems per step of bank trip beyond bank_trip_free
 	int bank_trip_free = 12;	// bank trips up to this many steps keep the plain threshold
 	float bank_trip_cap = 2.0f;	// ... and the threshold never exceeds this multiple of the plain one
 	int bank_ignore_spawn = 1;	// "bank before a risky fight" ignores enemies standing on their own spawn
@@ -340,6 +340,15 @@ struct Params
 	int gank_bag = 25;			 // chase a visible carrier with at least this many gems
 	float deny_hp_frac = 0.6f;	 // contest an enemy's capture (step on its tiles) from this health fraction
 	float deny_capture_mult = 1.3f; // value multiplier for contesting an enemy's capture
+
+	// Fight execution (strategy v2, replay audit of 15 top-team games: 74% of the rounds our champions were hit by
+	// champions they dealt no champion damage back; 636 of those rounds they walked, 278 with an enemy already in reach)
+	int exec_hit_first = 1;		// engage(): the chosen target is out of reach but another enemy is in reach: hit that one now
+								// (ranged: attack/cast and stand; melee: attack, then still step toward the target)
+	int exec_flee_hit = 1;		// fleeing melee champions swing at an adjacent enemy before the step (melee may attack and move)
+	int fight_commit = 1;		// keep fighting the next turn unless the estimate falls below fight_commit_margin or health
+	float fight_commit_margin = 0.7f; // below fight_commit_hp (no engage / flee flip-flop: walking in and out under fire)
+	float fight_commit_hp = 0.3f;
 };
 
 #ifdef LEGEND_RUNTIME_PARAMS

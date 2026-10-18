@@ -49,6 +49,17 @@ running or unfinished, and what to do next, so a new agent can continue without 
 | 4 | **Agent `contest` (Sonnet, high)**: lone-monolith maps (contest 0-1000 on the ladder, zero monolith damage): detector + feasible monolith cycle / denial, inert elsewhere. Baseline `_m4`, copy `bots/_x_contest`, deliverables `x_contest.patch` + `x_contest_NOTES.md` | running (started ~11:20 UTC) |
 | 5 | **Agent `fight` (Opus, high)**: deaths and kills vs pressure teams (enemy memory in combat(): adv flickers with visibility; burst deaths from bushes; cornered fights; chasers; punishing their weak C&I partner; focus fire). Baseline `_m4`, opponents incl. **`_fA _fB _fC`** = the archetypes rebuilt on `legend_m4` code (setup script). Copy `bots/_x_fight`, deliverables `x_fight.patch` + `x_fight_NOTES.md` | running (started ~10:50 container clock) |
 | 6 | Later: gem-race endgame (`race`: close finishes, altar denial; probes in ENGINE_FACTS "Session 5 probes"), deaths at full health (enemies appearing inside reach) | not started |
+- **Checkpoint 11:15 (container clock), agents' notes** (details in `experiments/wip/x_{econ,fight,contest}_NOTES.md`):
+  - `econ`: `_m4` unopposed already collects camp gems about as fast as the ladder teams did *contested* on their half (r100-300 level or ahead on
+    11 of 17 maps; behind at r100 on collision, expanse, interlock, lanes, packs, rows). **The ladder gem gap is mostly contact** (deaths, chases), plus
+    the opening on those 6 maps. 24.3% of alive body-rounds are in target segments that produce nothing. Build tweaks (`econ_build`), bigger bags,
+    `heavy_team`, `join_age`, `max_wait`: noise or worse. Promising: `join_marginal` (joiner value = claimers' rounds saved; waste 25% -> 13.6% on
+    expanse) and `claim_release`. New tools `tools/econ/cycles.mjs`, `tools/econ/waste.mjs`.
+  - `fight`: 53 of the 73 ladder deaths at 75%+ health are Cassi or Issac (the healthy partner dies with the weak one). Traced `_m4` vs `_fA`: being
+    without escape kills (~40% death within 8 rounds); once there, fighting trades better than fleeing. `_m4` vs `_fA` 64.7 (official 17).
+    Switches built (`fight_mem`, `pair_pool`, `kill_reach`, `fight_smooth`, `flee_fail_turns`, `flee_hold`): 34-game screens all within noise so far.
+  - `contest`: detector `mono_mode` (share of gem rate in single-camp monoliths >= 0.9) fires on contest, its ladder copy and the 12 `gold_mono_*` maps
+    only. Contest is decided by r100-200 (one team wiped, then spawn-camped).
 - Summaries: `python3 tools/ledger_sum.py [--maps] [--pool GLOBS|all] BOT` (all / official / deaths per cell, no rebuild; default pool = the 56 maps:
   agents add other pools to the same cells). Pace: `python3 tools/ledger_pace.py BOT... --maps`.
 - Auto checkpoint: `$S/ckpt.sh` commits and pushes `experiments/wip/x_econ*`, `x_contest*`, the ledger and new tools every 10 minutes

@@ -1,0 +1,236 @@
+diff -ruN _m10/src/brain.cpp _x_ic/src/brain.cpp
+--- _m10/src/brain.cpp	2026-10-18 21:11:24.598508444 +0000
++++ _x_ic/src/brain.cpp	2026-10-18 21:32:32.714244102 +0000
+@@ -45,6 +45,53 @@
+ std::vector<I> build_for(CT t)
+ {
+ 	std::vector<I> v;
++	if (P.build_style == 11)
++	{
++		// Intercontinental Fish (Oct 18 upload: 30 games, 25 won against Mite, sneaky-bush and three others), modal emblem order
++		// per champion: Stellar PfE r66 (median), HhE, DhE, then PfE forever (1,500 health and 250 focus at r300; ours 750 / 190);
++		// Issac and Varg the same on strength; Ren and Ryth BhE, DhE, then Power; Cassi PfE, DfE, BhE, BhE. Rows and expanse
++		// (farm races without contact): Monster in the damage stat, then Power. Home (recall in 3 turns) goes to the collectors.
++		const int om = official_map();
++		const bool farm_map = om == OM_ROWS || om == OM_EXPANSE;
++		const bool focus = t == CT::ren || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
++		const I power = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
++		if (farm_map)
++			rep(v, focus ? I::monster_shard_of_focus : I::monster_shard_of_strength, 5);
++		else
++			switch (t)
++			{
++			case CT::stellar:
++			case CT::issac:
++			case CT::varg:
++			case CT::prism:
++				rep(v, power, 5);
++				rep(v, I::home_shard_of_health, 5);
++				rep(v, I::durability_shard_of_health, 5);
++				break;
++			case CT::ren:
++			case CT::ryth:
++			case CT::marcella:
++				rep(v, I::bruiser_shard_of_health, 5);
++				rep(v, I::durability_shard_of_health, 5);
++				break;
++			case CT::cassi:
++				rep(v, power, 5);
++				rep(v, I::durability_shard_of_focus, 5);
++				rep(v, I::bruiser_shard_of_health, 5);
++				rep(v, I::bruiser_shard_of_health, 5);
++				break;
++			case CT::tavi:
++				rep(v, om == OM_CONTEST ? I::treasure_shard_of_focus : power, 5);
++				rep(v, I::durability_shard_of_focus, 5);
++				break;
++			default:
++				rep(v, power, 5);
++				rep(v, I::durability_shard_of_health, 5);
++				break;
++			}
++		rep(v, power, 300);
++		return v;
++	}
+ 	if (P.build_style >= 3 && P.build_style <= 4 || P.build_style == 10)
+ 	{
+ 		// ifish (1st on the ladder; sparring proxy): one Durability health emblem and, on the frontline, a Bruiser health
+@@ -103,6 +150,19 @@
+ 		rep(v, pw, 300);
+ 		return v;
+ 	}
++	if (P.build_style == 2 && P.farm_build)
++	{
++		// Farm races (rows, expanse: no champion contact in any of the top teams' games there): survival items are never used, so
++		// every point goes to camp damage. Map size first so the other maps pay two host calls, not the camp scan of official_map.
++		const int w = bc::map::width(), h = bc::map::height();
++		if ((w == 80 && h == 80 && official_map() == OM_EXPANSE) || (w == 50 && h == 50 && official_map() == OM_ROWS))
++		{
++			const bool focus = t == CT::ren || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
++			rep(v, focus ? I::monster_shard_of_focus : I::monster_shard_of_strength, 5);
++			rep(v, focus ? I::power_shard_of_focus : I::power_shard_of_strength, 300);
++			return v;
++		}
++	}
+ 	if (P.build_style == 2)
+ 	{
+ 		// Value-model builds (tools/analysis/item_value.py, calibrated on 36 r2 games). Every shard adds one point
+@@ -807,6 +867,14 @@
+ 		{
+ 			break;
+ 		}
++		if (!has_home && item == I::home_shard_of_health)
++		{
++			// Home emblem (recall in 3 turn ends, ENGINE_FACTS): the capture-recall timing must start it 2 rounds later.
++			int h = 0;
++			for (std::size_t i = 0; i < build_idx; ++i)
++				h += build[i] == I::home_shard_of_health;
++			has_home = h >= 5;
++		}
+ 	}
+ 	// A spare altar lock once the first emblem is done (consumables only on spawn or while dead).
+ 	if ((on_spawn || !alive) && build_idx >= 5 && gold >= 10)
+@@ -2327,7 +2395,7 @@
+ 	if (dh >= BIG || dh <= (P.home_edge_fix ? 0 : 2))
+ 		return false;
+ 	const bool can_recall = dh > P.recall_min_dist && safe_to_recall();
+-	const int cost = can_recall ? static_cast<int>(bc::constants::recall_time) : dh;
++	const int cost = can_recall ? recall_turns() : dh;
+ 	const bool shopper = type != CT::tavi && build_idx < build.size();
+ 	const int shards = shopper ? static_cast<int>(gold / 30) : 0;
+ 	const bool hurt = hp < P.home_hp * max_hp;
+@@ -2657,7 +2725,7 @@
+ 	// flip the choice each round and the champion oscillated in place for hundreds of rounds.
+ 	const bool committed = P.sticky_tribute && task == T_TRIBUTE && static_cast<int>(gems) >= 10;
+ 	// Recall and bank at the altar next to spawn when that beats walking (and heals and shops on the way).
+-	const int via_home = static_cast<int>(bc::constants::recall_time) + W.spawn_altar_d;
++	const int via_home = recall_turns() + W.spawn_altar_d;
+ 	const bool recall_bank = W.dist_home(pos) > P.recall_min_dist && via_home + 2 < dist && safe_to_recall() && !endgame;
+ 	// A long bank trip is worth a bigger bag: the threshold rises with the cheapest way to an altar from here,
+ 	// so a body far from every altar keeps farming and banks when its route passes close to one.
+@@ -2865,7 +2933,7 @@
+ {
+ 	// Heal at spawn and come back: recall (5 turn ends, 3 with Home) beats walking once spawn is far.
+ 	const int hd = std::min(g.d_home_c, 60);
+-	const int recall = static_cast<int>(bc::constants::recall_time);
++	const int recall = recall_turns();
+ 	return 2 + std::min(2 * hd, recall + hd);
+ }
+ 
+@@ -4056,7 +4124,7 @@
+ 		// Strong ladder teams do this after almost every capture far from home.
+ 		// Capture lands at the start of round since + capture_time + 1; a recall started in round R lands at
+ 		// R + recall_time. Start it so both land together (never earlier: an early teleport loses the reward).
+-		const int recall_t = static_cast<int>(bc::constants::recall_time) - (has_home ? 2 : 0);
++		const int recall_t = recall_turns();
+ 		const int start_at = capture_since + static_cast<int>(bc::constants::capture_time) + 1 - recall_t;
+ 		if (round >= std::max(capture_since + 1, start_at) && W_dist_home_ok() && safe_to_recall())
+ 		{
+@@ -4079,7 +4147,7 @@
+ 				return true;
+ 			}
+ 			const bool bank_here = P.bank_first && adist < BIG && spawn_altar < BIG &&
+-				adist + static_cast<int>(bc::constants::recall_time) + P.bank_first_margin <= spawn_altar;
++				adist + recall_turns() + P.bank_first_margin <= spawn_altar;
+ 			const bool bag = static_cast<int>(gems) + g.gems >= bank_min(std::min(adist, spawn_altar < BIG ? 1 + spawn_altar : BIG));
+ 			if (bag && bank_here && !hurt)
+ 			{
+diff -ruN _m10/src/brain.h _x_ic/src/brain.h
+--- _m10/src/brain.h	2026-10-18 21:11:24.598454814 +0000
++++ _x_ic/src/brain.h	2026-10-18 21:25:04.476464895 +0000
+@@ -136,7 +136,8 @@
+ 	void refresh_item_flags() const;
+ 	mutable std::size_t item_flags_idx = static_cast<std::size_t>(-1);
+ 	mutable bool jungle_ok = false, durability_ok = false, monster_ok = false;
+-	bool has_home = false; // Home emblem (faster recall); we never buy it, kept for the capture-recall timing
++	bool has_home = false; // Home emblem owned (build_style 11 buys it): recall lands in 3 turn ends instead of 5
++	int recall_turns() const { return static_cast<int>(bc::constants::recall_time) - (has_home ? 2 : 0); }
+ #ifdef XM_TRACE
+ 	// Prediction audit state (all updated inside debug_block, so it costs no fuel and changes no decision).
+ 	mutable ScoreParts* xm_sp = nullptr;
+diff -ruN _m10/src/draft.cpp _x_ic/src/draft.cpp
+--- _m10/src/draft.cpp	2026-10-18 21:11:24.598245855 +0000
++++ _x_ic/src/draft.cpp	2026-10-18 21:33:05.099597675 +0000
+@@ -247,14 +247,32 @@
+ 	{ -1 }, { -1 }, { -1 }, { -1 }, { -1 }, { -1 }, { 3, 4, 9, -1, -1 }, { -1 }, { 8, 4, 3, 0, -1 }, { -1 }, { -1 }, { -1 },
+ 	{ -1 }, { -1 }, { 8, 4, 3, 0, -1 }, { 5, 4, 3, 0, 10 }, { -1 } };
+ 
++// mapdraft 5: Intercontinental Fish, Oct 18 upload (experiments/ic_oct18: 30 games vs Mite, sneaky-bush and three other teams,
++// 25 won). The old ifish table with Stellar picked first (body 0) and Stellar, Prism, C&I, Varg on rows. Lanes is not in the
++// upload: their 5-map draft is assumed.
++constexpr int ICF[][5] = {
++	{ 4, 8, 3, 0, 9 }, { 4, 8, 3, -1, -1 }, { 4, 10, 5, 3, 8 }, { 4, 8, 3, 0, 9 }, { 4, 8, 3, 0, 9 }, { 4, 8, 3, 0, 9 },
++	{ 3, 4, 9, -1, -1 }, { 4, 8, 3, -1, -1 }, { 4, 8, 3, 0, -1 }, { 4, 8, 3, 0, 9 }, { 4, 8, 3, 0, 9 }, { 4, 8, 3, -1, -1 },
++	{ 4, 8, 3, 0, 9 }, { 4, 5, 3, 9, -1 }, { 4, 8, 3, 0, -1 }, { 4, 10, 5, 3, 8 }, { 4, 8, 3, 0, -1 },
++	{ 4, 8, 3, -1, -1 }, { 4, 8, 3, 0, -1 }, { 4, 8, 3, 0, 9 } };
++
+ bool table_pick(const std::vector<D>& mine)
+ {
+ 	const int om = official_map();
+-	if (P.mapdraft == 3 && (om < 0 || OURS[om][0] < 0 || (om == OM_STAMPEDE && !P.md_stampede)))
++	const bool ic_rows = P.mapdraft == 3 && P.md_rows && om == OM_ROWS;
++	if (P.mapdraft == 3 && !ic_rows && (om < 0 || OURS[om][0] < 0 || (om == OM_STAMPEDE && !P.md_stampede)))
+ 		return false;
+-	const int (*T)[5] = P.mapdraft == 3 ? OURS : P.mapdraft == 1 ? MITE : IFISH;
++	const int (*T)[5] = P.mapdraft == 3 ? OURS : P.mapdraft == 1 ? MITE : P.mapdraft == 5 ? ICF : IFISH;
+ 	const int ts = std::clamp(static_cast<int>(bc::draft::team_size()), 3, 5);
+-	const int* row = T[om >= 0 ? om : 17 + ts - 3];
++	const int* row = ic_rows ? ICF[OM_ROWS] : T[om >= 0 ? om : 17 + ts - 3];
++	// stellar_first: IC's pick order. The first pick is body 0, which captures shared rewards and wins claim ties in our brain
++	// (group_score): their Stellar takes 1.36 captures per 100 alive rounds and its first emblem at r66 (median), ours 0.72 and r170.
++	if (P.stellar_first && std::find(row, row + 5, 4) != row + 5 && (P.stellar_first >= 2 || om != OM_EXPANSE)
++		&& std::find(mine.begin(), mine.end(), D::stellar) == mine.end())
++	{
++		bc::draft::pick(D::stellar);
++		return true;
++	}
+ 	for (int k = 0; k < 5 && row[k] >= 0; ++k)
+ 	{
+ 		const auto c = static_cast<D>(row[k]);
+@@ -286,7 +304,7 @@
+ 			F.team, F.groups, F.gem, F.gold, F.wolf, F.elk, F.mono, F.multi, F.harmless, F.gem_groups, F.mean_dist, F.area, F.holes, F.altars);
+ 	}
+ #endif
+-	if (P.mapdraft >= 1 && P.mapdraft <= 3)
++	if ((P.mapdraft >= 1 && P.mapdraft <= 3) || P.mapdraft == 5)
+ 	{
+ 		try
+ 		{
+@@ -345,6 +363,14 @@
+ 	else
+ #endif
+ 		plan = COMPS[static_cast<std::size_t>(chosen)].picks;
++	if (P.stellar_first)
++	{
++		// IC's pick order on the composition path too (table_pick does it for the table maps): Stellar first, the rest in order.
++		const auto end = plan.begin() + std::clamp(static_cast<int>(bc::draft::team_size()), 3, 5);
++		auto it = std::find(plan.begin(), end, D::stellar);
++		if (it != end)
++			std::rotate(plan.begin(), it, it + 1);
++	}
+ 	for (auto c : plan)
+ 		if (std::find(mine.begin(), mine.end(), c) == mine.end())
+ 		{
+diff -ruN _m10/src/params.h _x_ic/src/params.h
+--- _m10/src/params.h	2026-10-18 21:11:25.102769526 +0000
++++ _x_ic/src/params.h	2026-10-18 21:32:28.090243948 +0000
+@@ -157,9 +157,19 @@
+ 	int mapdraft = 3;		   // 0 = our composition choice; sparring proxies: 1 = Mite's per-map drafts, 2 = ifish's (draft.cpp)
+ 							   // 3 = ours with the top teams' choices where they beat ours (rushbait-v2, interlock, expanse; stampede with md_stampede)
+ 	int md_stampede = 1;	   // mapdraft 3: stampede drafts the 2nd team's casters (Prism, Stellar, C&I, Ryth, Tavi) for the ring plan
++							   // mapdraft 5: the Intercontinental Fish table of Oct 18 (30 games, 25 won: Stellar first everywhere but
++							   // expanse, Stellar, Prism, C&I, Varg on rows; experiments/ic_oct18)
++	int stellar_first = 0;	   // 1: whatever the draft plan, Stellar is picked first (body 0: it captures shared rewards and wins claim
++							   // ties), the rest keep their order; expanse keeps C&I first (as IC). 2: also on expanse
++	int md_rows = 0;		   // mapdraft 3: rows drafts IC's Stellar, Prism, C&I, Varg (Prism instead of Ren; same pick order as ours otherwise)
++	int farm_build = 0;		   // build_style 2: on rows and expanse (farm races, 0 deaths in every top-team game) every champion buys Monster
++							   // in its damage stat, then Power in it forever (IC on those maps: Cassi 430 focus at r300 on expanse, ours 160)
+ 	int build_style = 2;	   // 0 = old farm builds, 1 = health/durability/treasure builds (ladder-proven),
+ 							   // sparring proxies: 3 / 4 / 10 = ifish (frontline health then Power / Monster then Power / 3 or 4 by map),
+ 							   //     9 = Mite (Jungle, Durability in the damage stat, Bruiser health, Power)
++							   //     11 = Intercontinental Fish, Oct 18 (Stellar / Issac / Varg Power, Home health, Durability health,
++							   //          Power; Ren / Ryth Bruiser and Durability health, Power; Cassi Power, Durability focus, Bruiser
++							   //          health; Monster then Power on rows and expanse)
+ 							   // 2 = value-model builds (tools/analysis/item_value.py): Bruiser over Power, early Treasure
+ 							   //     on the rich farmers, survival first on Cassi & Issac, builds that never run out
+ 	int rich_treasure_first = 0; // build_style 2: Ren and Stellar open with Treasure (1) or with r2's first emblem

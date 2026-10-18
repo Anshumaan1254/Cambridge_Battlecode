@@ -1,0 +1,35 @@
+diff -ruN _m11/src/brain.cpp _x_po/src/brain.cpp
+--- _m11/src/brain.cpp	2026-10-18 21:30:02.848132272 +0000
++++ _x_po/src/brain.cpp	2026-10-18 21:52:03.212096712 +0000
+@@ -3265,6 +3265,20 @@
+ 			follow_g = true;
+ 		}
+ 	}
++	// Paired opening (pair_open_until; handoff from session 12): the #1 ladder team's melee bodies farm with an ally 84-93% of the time
++	// before r200 (ours 52-70%). Before that round, on maps without the contest blob, bodies pair up (0-1 Ren + Stellar, 2-3 Cassi + Issac,
++	// 4-5 Varg + Ryth): the higher index farms the group its living, claiming partner farms.
++	if (!follow_g && P.pair_open_until > 0 && round < P.pair_open_until && !(P.mono_follow_until > 0 && W.mono_mode))
++	{
++		const int partner = W.my_index ^ 1;
++		if (partner < W.my_index && partner < static_cast<int>(W.allies.size()) && W.allies[static_cast<std::size_t>(partner)].alive &&
++			C.claim[static_cast<std::size_t>(partner)] >= 0)
++		{
++			if (g.id != C.claim[static_cast<std::size_t>(partner)])
++				{ WHY(14); return -1; }
++			follow_g = true;
++		}
++	}
+ 	const int d_tile = d_override >= 0 ? d_override : nav().group_dist(g, pos);
+ 	if (d_tile >= BIG)
+ 		{ WHY(3); return -1; }
+diff -ruN _m11/src/params.h _x_po/src/params.h
+--- _m11/src/params.h	2026-10-18 21:30:02.873449958 +0000
++++ _x_po/src/params.h	2026-10-18 21:52:03.212365855 +0000
+@@ -375,6 +375,7 @@
+ 	int mono_rg_fight_r = 3;	 // an enemy this close: combat() decides instead of walking home
+ 	int mono_gmask = 15;		// which parts of the GROUPED stance apply while mono_grouped_until forces it: 1 enemy-half penalty x2, 2 deny bonus x0.5, 4 isolated fight +0.3, 8 stay near allies' claims
+ 	int mono_follow_until = 200;	// opening: bodies farm the group the lowest-index living claimant farms (one blob) until this round
++	int pair_open_until = 0;	// every other map, opening: bodies pair up (0-1, 2-3, 4-5) and the higher index farms its partner's group until this round
+ 	float mono_group_w = 0.f;	// cohesion (with mono_grouped_until): rounds of extra cost per tile beyond mono_group_r from the nearest ally's claimed group
+ 	int mono_group_r = 8;
+ 	int mono_open_rounds = 0;	// opening: before this round skip groups on the enemy's half (the enemy's triples at 25 steps from us: on contest

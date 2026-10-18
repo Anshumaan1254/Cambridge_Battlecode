@@ -35,8 +35,27 @@ running or unfinished, and what to do next, so a new agent can continue without 
   identical). Their builds = Mite style (`build_style` 9). Proxy `_snk` = `_x_sn` + `mapdraft=4 build_style=9`; candidate `_snd` = `_x_sn` + `mapdraft=4`.
   Running: per-map screen on the 11 maps where their draft differs (collision, contest, corners, eight, elkring, interlock, monolith, rows, rushbait-v2,
   stampede, swirl), `_snd` and `_m10` vs 18 opponents both sides (`$S/sneaky_screen.sh`; `python3 tools/mapscreen.py _m10 _snd --opps ...`). First cells:
-  `_snd` vs `_m10` 8/22 on those maps. Then: adopt only maps that win clearly (and not vs the top proxies), full acceptance under the user's rule.
+  `_snd` vs `_m10` 8/22 on those maps. **Screen done** (17 opponents x 2 sides = 34 games per map; wins `_snd` / `_m10`; top proxies `_mite _ifish _px9`):
+  contest **27 / 21 (+6)**, top 3 / 4, h2h 2/2; collision 28 / 25 (+3), top 5 / 4, h2h 1/2; stampede 31 / 31; interlock 26 / 29; eight 25 / 29; corners 22 / 28;
+  rushbait-v2 21 / 27; swirl 18 / 24; monolith 19 / 26; elkring 19 / 27; **rows 20 / 33**; all 256 / 300 (-44), top 34 / 53. Their draft loses inside our
+  brain on 8 of 11 maps (Tavi, Willow and Vendetta are played worse by our code than the champions they replace); only contest (their caster
+  draft Tavi, Willow, Stellar, Ren, Prism) and maybe collision gain. Candidates: `_sdc` (`md_sneaky=4`: contest), `_sdl` (`=2`: collision),
+  **`_sdC` (`=6`: both)**; running (`$S/sdc.sh`): `_sdc` vs 10 opponents on the contest geometry variants `maps/ct/contest_{sw,tr,swtr}` (more
+  contest samples), then `_sdC` full acceptance vs `_m10 _m8 _mite _ifish _px9 _fA _ST _snk` (88 distinct) and pace.
+  **Contest draft rejected**: on the contest geometry variants (`maps/ct/contest_{sw,tr,swtr}`, 10 opponents, 54 games) `_sdc` won 25 vs `_m10`'s 36
+  (top proxies 8 vs 11; h2h vs `_m10` 1/6): the official-map +6 is specific to that one layout. `_sdC` acceptance stopped (moot). Collision: same check
+  on `maps/cl/collision_{sw,tr,swtr}` (made with `tools/mapgen/swap_sides.mjs`) for `_sdl` before any acceptance.
+  **Collision draft rejected** too: 33 vs 37 wins (54 games; top proxies 10 vs 13; h2h 2/6). **Verdict: no sneaky-bush draft choice improves our bot**
+  on any map once checked on more than one layout; `legend_m10`'s draft stays. `_snk` joins the sparring panel (`_m10` vs `_snk` on their 11 maps 12/22).
   A workflow `sneaky-bush-study` (Sonnet + Haiku, no games) writes `docs/strategy_v2/10_SNEAKY_BUSH.md` (bush play, same-draft losses) and checks the table.
+  (4) **Opening agent `og` so far** (`experiments/wip/x_og_NOTES.md`): shop lag after the first affordable emblem is 0-1 round already (nothing to gain);
+  `og_poor_collect` (poorer body collects before r400) **38.2** official vs `_m10`: gold spreads (Cassi's first emblem r200 vs r352) but team gold falls
+  148.5k -> 130.7k (Ren is the fastest, Treasure-boosted collector): rejected. `og_gold_mult` 2.5 (gold x2.5 while a body owns < 150, until r300)
+  **55.9** official vs `_m10` (deaths 325-369): the effect is earlier gold-cluster targets, not earlier emblems; full cells running.
+  (5) **Contest agent `ct` so far** (`experiments/wip/x_ct_NOTES.md`): games are bimodal: whoever wins the first centre clash (r30-60) snowballs; our
+  bodies arrive one by one. Contest pool CT4 (contest + `maps/ct`, 20 games; vs `_snk` / `_mite` / `_ifish` / `_px9` / `_m8` / `_fA`): `_ct0` (= `_m10`
+  play) 30/60/50/50/50/75; skip the enemy half to r150/r300 (`_ct1`/`_ct2`): worse (passivity loses); **GROUPED stance to r150 (`_ct3`)
+  75/55/60/55/65/85, to r300 (`_cw1`) 70/55/70/55/65/90**. Confirming on CT34 (contest + 33 perturbed copies, 68 games); then inertness on the 88.
 - The user got the zips in chat: `legend_m8` (best measured), then `legend_m10` (current `submissions/legend.zip`, plays `legend_m8`'s games).
 
 ## S11. SESSION 11 (2026-10-18, same container as S10): read this first

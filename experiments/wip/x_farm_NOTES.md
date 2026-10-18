@@ -64,6 +64,11 @@ Pace = round at which our team banks 1000 gems vs `idle` (mean of both sides; a 
 - After `_C2` (in `_x_farm`, under test as `_C3`): `varg_splash_pos` (Varg steps next to the camp with the most live neighbours: rows pack 31,4 cleared
   r33-r50 by 4 bodies, Varg 3 captures from r55) and `no_split` in `go_home` (step off the reward tiles before a recall when an ally stands on the
   group: the remaining 2 splits on pilgrimage/ambush were a hurt Varg recalling from the tiles next to Cassi).
+- `_C2` held-out (`maps/gold,gold2,obj`, 100 games) vs `_rm`: 56.0.
+- **`_C3` (= `_C2` + `varg_splash_pos` + recall step-off) = current `_x_farm`**: pace **546.8** (pilgrimage 817 -> 765, swirl 314 -> 284, rows 398 -> 390,
+  stampede 771 -> 751, ambush 533 -> 546); vs `_rm` 56.2 / 67.6 (deaths 1018-1266). Panel running.
+- Objective-mode coverage with `obj_focus` (pace on `_C3`): `obj_max_groups` 16 547.9 (swirl 284 -> 304); `obj_share` 0.55 545.7 (eight 416 -> 361 but expanse
+  611 -> 651); both 546.8. Noise: left at 8 / 0.7.
 
 ## Tools (new files, agent farm)
 - `tools/farm/pack_watch.mjs FILE X,Y FROM TO [R]`: per round, health of the pack at (X,Y) and the champions near it (both teams).

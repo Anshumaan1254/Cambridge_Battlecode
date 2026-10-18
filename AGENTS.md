@@ -48,6 +48,10 @@ running or unfinished, and what to do next, so a new agent can continue without 
   **Collision draft rejected** too: 33 vs 37 wins (54 games; top proxies 10 vs 13; h2h 2/6). **Verdict: no sneaky-bush draft choice improves our bot**
   on any map once checked on more than one layout; `legend_m10`'s draft stays. `_snk` joins the sparring panel (`_m10` vs `_snk` on their 11 maps 12/22).
   A workflow `sneaky-bush-study` (Sonnet + Haiku, no games) writes `docs/strategy_v2/10_SNEAKY_BUSH.md` (bush play, same-draft losses) and checks the table.
+  (4) **Opening agent `og` so far** (`experiments/wip/x_og_NOTES.md`): shop lag after the first affordable emblem is 0-1 round already (nothing to gain);
+  `og_poor_collect` (poorer body collects before r400) **38.2** official vs `_m10`: gold spreads (Cassi's first emblem r200 vs r352) but team gold falls
+  148.5k -> 130.7k (Ren is the fastest, Treasure-boosted collector): rejected. `og_gold_mult` 2.5 (gold x2.5 while a body owns < 150, until r300)
+  **55.9** official vs `_m10` (deaths 325-369): the effect is earlier gold-cluster targets, not earlier emblems; full cells running.
 - The user got the zips in chat: `legend_m8` (best measured), then `legend_m10` (current `submissions/legend.zip`, plays `legend_m8`'s games).
 
 ## S11. SESSION 11 (2026-10-18, same container as S10): read this first

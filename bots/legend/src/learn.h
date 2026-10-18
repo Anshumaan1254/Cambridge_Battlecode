@@ -49,6 +49,7 @@ struct Learner
 
 	// ---- fight calibration (per body)
 	float fight_bias = 0.f;			// log-scale multiplier on the advantage estimate
+	std::vector<float> enemy_burst; // mi_learn_burst: the biggest one-round damage each enemy has dealt this body
 	int fight_round = -1000;		// last round we chose to fight
 	bool was_alive = true;
 

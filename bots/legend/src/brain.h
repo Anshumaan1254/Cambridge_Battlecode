@@ -99,6 +99,17 @@ private:
 	bool task_team = false;		  // ... for the current farm target
 	mutable bool sc_ring = false; // the last group_score used the objective ring plan (o2_ring)
 	bool task_ring = false;		  // ... for the current farm target
+	// Session 11 ideas from the default branch (mi_* params)
+	mutable bool sc_relaxed = false, sc_kite = false; // group_score: relaxed limits pass; the last score used the kite plan
+	bool task_kite = false;
+	int mi_last_round = -10, mi_sticky_until = -1;
+	float mi_camp_in = 0, mi_camp_in_prev = 0;
+	std::array<int, 8> mi_switch_log{ -1000, -1000, -1000, -1000, -1000, -1000, -1000, -1000 };
+	std::size_t mi_switch_pos = 0;
+	float kite_dps(const Group& g) const;
+	bool kite_group(Group& g);
+	void chip_passing();
+	void learn_burst();
 	float ring_dps(const Kit& k, float foc, const Group& g) const;
 	bool ring_ready(const Group& g, float hp_left, float& kill) const;
 	bool ring_farm(Group& g, bool respawning = false);

@@ -3,16 +3,40 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-18 20:10 UTC (session 10; container clock; `legend_m8` shipped; pending list in §S10.5)**. Rule from the user: update this file and push at every step. Start with **§S10**, then **§S9**, **§S8**,
+- Last updated: **2026-10-18 (session 11; `legend_m9` shipped at the user's request before full testing; see §S11)**. Rule from the user: update this file and push at every step. Start with **§S11**, then **§S10**, **§S9**, **§S8**,
   **§S7**, **§S7-SV2**, then §000000 (resume protocol), §00000, §0000, §000, §00. **All work stays on branch `ccr-a858cd03-q87cpi`**:
-  `git pull` (merge, never force) before every push. Other branches (`ccr-b9ffa7d9-hvk1ud`, `claude/battlecode-bot-optimization-0ixvxa`:
-  parallel sessions that shipped `legend_s6/s7/s7a` from the old fork 7e444b0) are older lineages; their fixes were ported here in S7-S8.
-  No PR unless the user asks.
+  `git pull` (merge, never force) before every push. The repository's **default branch is `claude/lucid-pasteur-2jiojv`** (Oct 17, its
+  bot does not compile); this branch is 142 commits ahead of it. No PR unless the user asks.
 - Competition: Cambridge Battlecode 2026a (CAMBC), 12 Oct to 18 Nov 2026. C++ bot compiled to wasm.
 - The submitted bot cannot be changed after submission and keeps nothing between matches. All "learning"
   is either offline (training parameters before submission) or in-match (adapting inside one game).
 
 ---
+
+## S11. SESSION 11 (2026-10-18, same container as S10): read this first
+
+- The user asked (1) whether the new bot was pushed (yes: `legend_m8`; GitHub's front page shows the default branch
+  `claude/lucid-pasteur-2jiojv`, which this branch is 142 commits ahead of), (2) "push the main changes that give better tradeoffs
+  into the ccr branch", then (3) **"for now first push the ideas into the bot and if they are detrimental I will notify you"**.
+- The default branch: its last bot commit a25ae20 (Oct 17 merge of laughing-curie into lucid-pasteur) **does not compile**
+  (`brain.cpp` calls `team_update`, `learn_observe`, `chip_passing`, `camp_in` that its headers lack). Its last coherent bot,
+  the Oct 16 "round-2" bot b5d4e56 (`_r2main`), plays **8.0% vs `_m8`** (official 2.9, deaths 979-320) and 10.2% vs `_mite`.
+  Its non-bot files (`docs/LADDER_LOSSES.md`, `tools/stall_audit.py`, `tools/raw_summary.py`, `tools/mapgen/replica.mjs`, 2 replica maps,
+  5 ladder match JSONs) are not merged here.
+- **Shipped `legend_m9`** (`submissions/legend.zip` sha256 58e567ef…, `submissions/history/legend_m9_20261018.zip`) = `_m9` = `_m8` +
+  `experiments/wip/x_mi.patch` (source hash 0df32fa5ee2d; `bots/legend/src` = it + the inert `LEGEND_RUNTIME_PARAMS` block, wasm
+  byte-identical). The default branch's ideas, ported onto `legend_m8`, one `mi_*` switch each, all on: `mi_health_emblem` (Durability
+  health as the 2nd emblem), `mi_learn_burst` (each enemy's biggest one-round hit on us, used in `combat()` while its spells are up),
+  `mi_lethal` (leave an escapable fight when such a hit would kill us), `mi_cd_slack` 1 and `mi_walk_cast` (danger map), `mi_endgame_bank`
+  200, `mi_learn_fight` 1.2 (fight record caution), `mi_learn_race` (banking-rate race), `mi_island_bank` 60, `mi_recall_shop` 300,
+  `mi_relaxed` (rescore with 3x limits instead of idling), `mi_two_bodies`, `mi_deny_gems`, `mi_flip_guard`, `mi_kite` (spells from
+  distance 4), `mi_chip` (idle spells on camps while passing), `mi_close_in`. Not ported (we already have our own version): danger detour,
+  progress-aware give-up clock, camp damage in fights, the round-2 bot's farm calibration multipliers.
+- Checks before the push: control `_mi0` (all switches 0) vs `_m8` 50.0 with identical games (deaths 360-360); `_mi1` (= `_m9`) vs `_m8`
+  **35.3% on the 34 official games** (deaths 371-358), 0 faults, rollovers unchanged (gen16 8/8, stampede 1/1, lanes 6/6, ambush 7 vs 6).
+  **Locally the combined ideas look detrimental**; the user will judge on the ladder. Rollback: `submissions/history/legend_m8_20261018.zip`.
+- Next (running after the push): 88-game cells of `_m9` vs `_m8`, `_mite`, `_ifish`, `_px9`, then leave-one-out ablations (`_m9` with one
+  `mi_*` switch off) to find which ideas cost the most; report to the user, who decides what stays.
 
 ## S10. SESSION 10 (2026-10-18 17:20 UTC, new container): read this first
 

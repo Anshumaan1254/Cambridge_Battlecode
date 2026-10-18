@@ -369,6 +369,25 @@ void Brain::init()
 	const auto abl = me.abilities();
 	ab.assign(abl.begin(), abl.end());
 	build = build_for(type);
+	if (P.mi_health_emblem)
+	{
+		// mi_health_emblem (default branch): a Durability health emblem (-10% damage taken, +5 health points) right after the
+		// first emblem. Builds that already have one further down move it up; the others insert one.
+		const I dh = I::durability_shard_of_health;
+		std::size_t at = build.size();
+		for (std::size_t i = 0; i + 5 <= build.size(); i += 5)
+			if (build[i] == dh)
+			{
+				at = i;
+				break;
+			}
+		if (at != 0 && at != 5 && build.size() >= 5)
+		{
+			if (at < build.size())
+				build.erase(build.begin() + static_cast<std::ptrdiff_t>(at), build.begin() + static_cast<std::ptrdiff_t>(at + 5));
+			build.insert(build.begin() + 5, 5, dh);
+		}
+	}
 	auto& W = world();
 	W.dash_kit = kit.dash >= 0;
 	W.init_static();
@@ -491,6 +510,8 @@ void Brain::turn()
 			}
 	}
 	build_danger();
+	if (P.mi_learn_burst || P.mi_lethal)
+		learn_burst();
 	XM(xm_pre());
 
 	if (flag(state, bc::champion_state::recalling) || flag(state, bc::champion_state::submitting_gems) ||
@@ -581,6 +602,8 @@ void Brain::turn()
 	});
 #endif
 
+	if (P.mi_chip)
+		chip_passing();
 	place_ward(false);
 	update_priority();
 	if (P.unstick_rounds > 0)
@@ -605,6 +628,39 @@ void Brain::turn()
 #endif
 	C.write_self(W.my_index, (task == T_FARM || task == T_CAPTURE || task == T_WAIT) ? task_group : -1);
 	last_hp = hp;
+}
+
+// mi_learn_burst (default branch): attribute the champion damage we took since our last turn (health lost minus what the
+// camps in reach could deal) to the most threatening visible enemy within 5, and remember each enemy's biggest such hit:
+// its real burst, items included, which the model (base stats x modifiers) underestimates once it has bought Power.
+void Brain::learn_burst()
+{
+	auto& W = world();
+	auto& L = learner();
+	if (L.enemy_burst.size() != W.enemies.size())
+		L.enemy_burst.assign(W.enemies.size(), 0.f);
+	if (mi_last_round == round - 1)
+	{
+		const float took = last_hp - hp - mi_camp_in_prev;
+		if (took > 30.f)
+		{
+			int who = -1;
+			float best = -1;
+			for (std::size_t i = 0; i < W.enemies.size(); ++i)
+			{
+				const auto& e = W.enemies[i];
+				if (!e.alive || !e.visible || cheb(e.pos, pos) > 5)
+					continue;
+				const float threat = e.str + e.focus * best_mod(e.kit);
+				if (threat > best)
+					best = threat, who = static_cast<int>(i);
+			}
+			if (who >= 0)
+				L.enemy_burst[static_cast<std::size_t>(who)] = std::max(L.enemy_burst[static_cast<std::size_t>(who)], took);
+		}
+	}
+	mi_last_round = round;
+	mi_camp_in_prev = mi_camp_in;
 }
 
 void Brain::remember_positions()
@@ -796,15 +852,18 @@ void Brain::build_danger()
 			continue;
 		// Cooldowns are known while visible; an unseen enemy is assumed to have everything ready.
 		const bool fresh = age == 0;
-		const bool dash_up = e.kit.dash >= 0 && (!fresh || e.ready(e.kit.dash));
-		const bool spell_up = (e.kit.dmg >= 0 && (!fresh || e.ready(e.kit.dmg))) || (e.kit.cc >= 0 && (!fresh || e.ready(e.kit.cc))) ||
-			(e.kit.aoe >= 0 && (!fresh || e.ready(e.kit.aoe)));
+		// mi_cd_slack (default branch): a spell coming off cooldown next turn is as good as up (we move once before it acts).
+		auto up = [&](int slot) { return slot >= 0 && (!fresh || e.cd[static_cast<std::size_t>(slot)] <= P.mi_cd_slack); };
+		const bool dash_up = up(e.kit.dash);
+		const bool spell_up = up(e.kit.dmg) || up(e.kit.cc) || up(e.kit.aoe);
+		// mi_walk_cast: a spell that does not end the move can follow a step, so it reaches one tile further.
+		const bool walk_cast = (up(e.kit.dmg) && !e.kit.dmg_excl) || (up(e.kit.cc) && !e.kit.cc_excl) || (up(e.kit.aoe) && !e.kit.aoe_excl);
 		int reach = e.kit.attack_range + (e.kit.ranged ? 0 : 1) + (dash_up ? 2 : 0);
 		const int reach0 = std::max(reach, spell_up ? 4 : 0) + age;
 		if (P.aoe_reach5)
 			reach = std::max(reach, enemy_spell_reach(e, !fresh));
 		else if (spell_up)
-			reach = std::max(reach, 4);
+			reach = std::max(reach, 4 + (P.mi_walk_cast && walk_cast ? 1 : 0));
 		reach += age;
 		danger.draw_chebyshev(e.pos, static_cast<float>(reach));
 		if (P.aoe_reach5 == 3)
@@ -821,9 +880,16 @@ void Brain::build_danger()
 		}
 		enemy_near_d = std::min(enemy_near_d, std::max(0, ed - age));
 	}
+	mi_camp_in = 0;
 	for (const auto& g : W.groups)
 		if (g.st == ST_ALIVE && g.awake && g.hp_total > 0 && !g.harmless && cheb(g.center, pos) <= 10)
+		{
 			camp_danger |= g.near;
+			if ((P.mi_learn_burst || P.mi_lethal) && g.near.is_set(pos))
+				for (std::size_t i = 0; i < g.camps.size(); ++i)
+					if (g.hp[i] > 0 && cheb(g.camps[i].pos, pos) <= 3)
+						mi_camp_in += g.camps[i].str; // what the camps could have hit us for (learn_burst subtracts it)
+		}
 	clump.clear();
 	splash_threat = false;
 	if (P.spread_vs_splash)
@@ -1351,11 +1417,23 @@ bool Brain::combat()
 	// group half (they arrive a turn or two later). Stuns cost us a turn: count ready stuns as damage.
 	float their_hp = 0, their_dps = 0, incoming = 0;
 	int stunners = 0;
+	float lethal = 0; // mi_lethal: the biggest hit a nearby enemy with its spells up has already landed on us
+	auto& LB = learner();
 	for (auto* e : E)
 	{
 		const int d = cheb(e->pos, pos);
 		const float w = d <= reach_of(*e) + 2 ? 1.f : P.far_enemy_weight;
-		float dps = e->str + e->focus * best_mod(e->kit) / 8.f + e->burst() / 3.f;
+		float eb = e->burst();
+		const std::size_t ei = static_cast<std::size_t>(e - W.enemies.data());
+		if ((P.mi_learn_burst || P.mi_lethal) && ei < LB.enemy_burst.size() && (e->ready(e->kit.dmg) || e->ready(e->kit.cc) || e->ready(e->kit.aoe)))
+		{
+			// Its real burst (items included) replaces the model while its spells are up (default branch).
+			if (P.mi_learn_burst)
+				eb = std::max(eb, LB.enemy_burst[ei]);
+			if (d <= 5)
+				lethal = std::max(lethal, LB.enemy_burst[ei]);
+		}
+		float dps = e->str + e->focus * best_mod(e->kit) / 8.f + eb / 3.f;
 		if (e->ready(e->kit.cc) || (e->ready(e->kit.aoe) && e->kit.aoe_stuns))
 			++stunners, dps *= 1.15f;
 		their_hp += w * e->hp;
@@ -1549,6 +1627,9 @@ bool Brain::combat()
 	// triggered by the partner below 25% health, the other partner healthy (73% above 75%) and 7+ tiles away).
 	const float low_hp = (type == CT::cassi || type == CT::issac) ? P.pair_low_hp : 0.25f;
 	if (fight && !killable && can_escape && (hp < low_hp * max_hp || (static_cast<int>(gems) >= P.bag_caution && adv < 1.5f)))
+		fight = false;
+	// mi_lethal (default branch): it has shown it can kill us from here; leave unless the kill is ours first.
+	if (P.mi_lethal && fight && !killable && !(in_reach && !can_escape) && lethal >= hp)
 		fight = false;
 	if (fight && reserve && !(killable && adv >= 1.f) && adv < fight_margin + P.reserve_margin && can_escape)
 		fight = false;
@@ -2401,6 +2482,15 @@ void Brain::update_mode()
 			fight_margin += 0.4f;
 			isolated_fight_adv += 0.3f;
 		}
+		if (P.mi_learn_fight > 0)
+		{
+			// Fight record (default branch): losing exchanges -> engage less and stay off their half; winning -> press.
+			const float p = (static_cast<float>(W.enemy_deaths) + 3.f) / (static_cast<float>(W.enemy_deaths + W.ally_deaths) + 6.f);
+			const float caution = std::clamp(1.f + (0.5f - p) * P.mi_learn_fight, 0.8f, 1.4f);
+			fight_margin *= caution;
+			enemy_half_penalty *= caution * caution;
+			deny_bonus *= std::clamp(2.f * p, 0.5f, 1.4f);
+		}
 	}
 	const int ours = static_cast<int>(bc::global_submitted_gems(team::ally));
 	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
@@ -2433,6 +2523,14 @@ void Brain::update_mode()
 		deny_bonus += 0.6f;
 		enemy_half_penalty *= 0.4f;
 	}
+	if (P.mi_endgame_bank > 0)
+	{
+		// Near the end only banked gems count (default branch): bank smaller bags the closer either team is to winning.
+		const int top = std::max(ours, theirs);
+		const int goal = static_cast<int>(bc::constants::winning_gems);
+		if (top >= goal - P.mi_endgame_bank)
+			tribute_min = std::max(1, std::min(tribute_min, tribute_min * (goal - top) / P.mi_endgame_bank));
+	}
 	race_state = 0;
 	if (P.race_mode)
 	{
@@ -2458,6 +2556,20 @@ void Brain::update_mode()
 			const float t_us = static_cast<float>(std::max(0, static_cast<int>(bc::constants::winning_gems) - ours - carried)) / rate_us;
 			const float t_them = static_cast<float>(std::max(0, static_cast<int>(bc::constants::winning_gems) - theirs)) / rate_them;
 			const bool they_finish = static_cast<float>(round) + t_them < static_cast<float>(bc::constants::max_rounds);
+			if (P.mi_learn_race && round > P.mi_race_after)
+			{
+				// Learned race (default branch), on banked gems only: losing it by a clear margin -> farming harder will not
+				// catch up, take their gems; winning it -> no need for even fights.
+				const float eo = static_cast<float>(std::max(0, static_cast<int>(bc::constants::winning_gems) - ours)) / rate_us;
+				const float et = static_cast<float>(std::max(0, static_cast<int>(bc::constants::winning_gems) - theirs)) / rate_them;
+				if (et < P.mi_race_ratio * eo)
+				{
+					deny_bonus += 0.4f;
+					enemy_half_penalty *= 0.6f;
+				}
+				else if (eo < P.mi_race_ratio * et)
+					fight_margin += 0.15f;
+			}
 			if (they_finish && t_them + static_cast<float>(P.race_margin) < t_us)
 			{
 				const bool fights_ok = W.enemy_deaths + P.race_death_slack >= W.ally_deaths && deficit <= 0;
@@ -2513,6 +2625,26 @@ bool Brain::tribute(bool force)
 	if (gems == 0)
 		return false;
 	auto& W = world();
+	if (P.mi_island_bank > 0 && inside_island())
+	{
+		// No altar inside an island (default branch): recall out (the bag is kept) once it is worth banking.
+		const bool wins = bc::global_submitted_gems(team::ally) + gems >= bc::constants::winning_gems;
+		const bool late = round >= static_cast<int>(bc::constants::max_rounds) - 150;
+		if ((force || wins || late || static_cast<int>(gems) >= P.mi_island_bank) && !in_awake_camp_range() && !danger.is_set(pos))
+		{
+			try
+			{
+				bc::self().recall();
+				task = T_HOME;
+				tp_island = -1;
+				return true;
+			}
+			catch (...)
+			{
+			}
+		}
+		return false;
+	}
 	int dist = BIG;
 	const int a = nearest_altar(dist);
 	if (a < 0 || dist >= BIG)
@@ -2578,6 +2710,10 @@ bool Brain::shop_trip()
 	if (type == CT::tavi || build_idx >= build.size())
 		return false;
 	const int dh = W.dist_home(pos);
+	// A big purse is a big power spike (default branch): recall for it when nothing can interrupt the channel.
+	if (P.mi_recall_shop > 0 && static_cast<int>(gold) >= P.mi_recall_shop && task != T_CAPTURE && !reward_here() && !enemy_near && !in_awake_camp_range() &&
+		!danger.is_set(pos) && static_cast<int>(gems) < tribute_min && !inside_island() && tp_island < 0)
+		return go_home();
 	const bool rich = static_cast<int>(gold) >= P.shop_gold && dh <= P.shop_trip_max;
 	const bool hurt_and_rich = gold >= 90 && hp < 0.6f * max_hp && dh <= P.shop_trip_max;
 	if (!rich && !hurt_and_rich)
@@ -2922,6 +3058,96 @@ bool Brain::ring_farm(Group& g, bool respawning)
 	return true;
 }
 
+// mi_kite (default branch): our spell damage per round from distance 4, outside every camp's reach of 3. Area spells hit
+// every camp within their radius of the target.
+float Brain::kite_dps(const Group& g) const
+{
+	if (g.harmless)
+		return 0;
+	const bool fresh = g.st != ST_ALIVE;
+	int cluster = 1;
+	for (std::size_t i = 0; i < g.camps.size(); ++i)
+	{
+		if (!fresh && g.hp[i] <= 0)
+			continue;
+		int n = 1;
+		for (std::size_t j = 0; j < g.camps.size(); ++j)
+			if (j != i && (fresh || g.hp[j] > 0) && cheb(g.camps[i].pos, g.camps[j].pos) <= static_cast<int>(kit.aoe_radius))
+				++n;
+		cluster = std::max(cluster, n);
+	}
+	float per8 = 0;
+	if (kit.dmg >= 0 && kit.dmg_range >= 4)
+		per8 += focus * kit.dmg_mod;
+	if (kit.aoe >= 0 && kit.aoe_range >= 4)
+		per8 += focus * kit.aoe_mod * static_cast<float>(cluster);
+	if (kit.cc >= 0 && kit.cc_range >= 4)
+		per8 += focus * kit.cc_mod;
+	return per8 / 8.f; // cooldowns are 8 rounds
+}
+
+// Stand at Chebyshev 4 from a live camp and out of range 3 of all of them; cast every damage spell that is up.
+bool Brain::kite_group(Group& g)
+{
+	auto& W = world();
+	const bool fresh = g.st != ST_ALIVE;
+	bc::bitboard ring, inner;
+	std::size_t target = g.camps.size();
+	float target_key = 1e30f;
+	for (std::size_t i = 0; i < g.camps.size(); ++i)
+	{
+		if (!fresh && g.hp[i] <= 0)
+			continue;
+		ring.draw_chebyshev(g.camps[i].pos, 4.f);
+		inner.draw_chebyshev(g.camps[i].pos, 3.f);
+		const int d = cheb(pos, g.camps[i].pos);
+		if (d <= 4 && W.camp_occ.is_set(g.camps[i].pos) && g.hp[i] < target_key)
+			target_key = g.hp[i], target = i;
+	}
+	ring &= ~inner;
+	ring &= ~W.walls;
+	if (ring.is_empty())
+		return false;
+	if (!ring.is_set(pos))
+	{
+		if (inner.is_set(pos))
+			return step(ring, true, false); // too close (arrived from the wrong side or it respawned around us): back out
+		if (nav().group_dist(g, pos) > 6)
+			go_group(g, 4, true);
+		else
+			step(ring, true, true);
+		return true;
+	}
+	task = T_FARM;
+	if (target < g.camps.size() && !cast_done)
+		spells_on_camp(g, target, enemy_near);
+	return true;
+}
+
+// mi_chip (default branch): camps never heal, so a spell that is up and would otherwise idle is free progress on a group
+// we will farm later. Not on enemy-half groups the enemy touched in the last 30 rounds (no finishing camps for them).
+void Brain::chip_passing()
+{
+	if (cast_done || !can_cast || enemy_near || task == T_FIGHT || task == T_FLEE)
+		return;
+	const bool dmg_up = kit.dmg >= 0 && ready(kit.dmg) && kit.dmg_mod > 0 && (!kit.dmg_excl || can_move);
+	const bool aoe_up = kit.aoe >= 0 && ready(kit.aoe) && kit.aoe_mod > 0 && (!kit.aoe_excl || can_move);
+	if (!dmg_up && !aoe_up)
+		return;
+	auto& W = world();
+	for (auto& g : W.groups)
+	{
+		if (g.st != ST_ALIVE || g.harmless || g.hp_total <= 0 || cheb(g.center, pos) > 6)
+			continue;
+		if (!g.ours && round - g.enemy_round < 30)
+			continue;
+		for (std::size_t i = 0; i < g.camps.size(); ++i)
+			if (g.hp[i] > 0 && W.camp_occ.is_set(g.camps[i].pos) && cheb(pos, g.camps[i].pos) <= 4)
+				if (spells_on_camp(g, i, true))
+					return;
+	}
+}
+
 float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_override) const
 {
 	if (need_pair)
@@ -3017,7 +3243,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 	case ST_RESPAWN:
 	{
 		const int avail = g.ready_round - round;
-		if (avail > d_adj + (W.obj_mode && g.objective ? P.obj_max_wait : P.max_wait))
+		if (avail > d_adj + (W.obj_mode && g.objective ? P.obj_max_wait : P.max_wait) * (sc_relaxed ? 3 : 1))
 			{ WHY(5); return -1; }
 		wait = std::max(0, avail - d_adj);
 		hp_left = g.max_hp;
@@ -3037,7 +3263,8 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			// Join only packs too heavy for one body; never a third body except on a monolith.
 			const float solo_rounds = hp_left / std::max(10.f, ally_dps);
 			const bool heavy = g.monolith || g.elk || (!g.harmless && (solo_rounds > P.join_min_rounds || g.attackers >= 2));
-			if (!heavy || (claimers >= (g.monolith ? 4 : 1 + P.max_join) && !(W.obj_mode && g.objective && P.obj_team)))
+			const int max_join = P.mi_two_bodies ? std::min(P.max_join, 1) : P.max_join; // mi_two_bodies (default branch)
+			if (!heavy || (claimers >= (g.monolith ? 4 : 1 + max_join) && !(W.obj_mode && g.objective && P.obj_team)))
 				{ WHY(6); return -1; }
 			// A joiner that arrives after the claimers are done walked for nothing (pilgrimage: Cassi crossed the map between
 			// two 68-gem packs for 300 rounds, hitting each one a few times before someone else captured it).
@@ -3131,7 +3358,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			}
 			const float budget_now = std::max(0.f, hp - reserve);
 			const float budget_full = std::max(1.f, max_hp - reserve);
-			if (i_tank && budget_full < in_now * my_share * 5.f)
+			if (i_tank && budget_full < in_now * my_share * 5.f && !(sc_relaxed && claimers))
 				return false; // cannot even survive a few rounds next to it
 			const float extra = taken - budget_now;
 			const int trips = extra > 0 ? static_cast<int>(std::ceil(extra / budget_full)) : 0;
@@ -3144,13 +3371,30 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 				xm_sp->reach = in > 0 ? in_now / in : 1.f;
 			}
 #endif
-			if (trips > P.max_trips)
+			if (trips > P.max_trips * (sc_relaxed ? 3 : 1))
 				return false;
 			t += static_cast<float>(trips * trip_cost(g));
 			return true;
 		};
 		float team_kill = 0, ring_kill = 0;
-		const bool solo_ok = plan(ally_dps, melee_ally, time);
+		bool solo_ok = plan(ally_dps, melee_ally, time);
+		sc_kite = false;
+		if (P.mi_kite && !g.harmless && !(W.obj_mode && g.objective))
+		{
+			// Kiting (default branch): stand at distance 4 and use spells only: no damage taken, no heal trips; allies on the
+			// group add their damage. Only with real spell power (focus items) or a group that dies soon anyway.
+			const float kd = kite_dps(g);
+			if (kd > 0 && kd >= P.mi_kite_ratio * my_dps && hp_left / (kd + ally_dps) <= P.mi_kite_max_kill)
+			{
+				const float k_time = static_cast<float>(std::max(0, d_tile - 4) + wait) + hp_left / (kd + ally_dps) + 9.f;
+				if (!solo_ok || k_time < time)
+				{
+					time = k_time;
+					solo_ok = true;
+					sc_kite = true;
+				}
+			}
+		}
 		bool ring_ok = false;
 		if (P.o2_ring && (P.o2_ring != 2 || (W.W == 60 && W.H == 50)) && W.obj_mode && g.objective && g.attackers >= 1 && (sc_obj_focus < 0 || sc_obj_focus == g.id))
 			ring_ok = ring_ready(g, hp_left, ring_kill);
@@ -3197,9 +3441,12 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 	if (!g.ours)
 	{
 		const float risk = sc_risk;
-		if (hp < P.steal_hp_frac * max_hp && risk > 0)
+		if (hp < P.steal_hp_frac * max_hp && risk > 0 && !sc_relaxed)
 			{ WHY(9); return -1; }
-		value *= 1.f + deny_bonus;
+		if (P.mi_deny_gems)
+			value += deny_bonus * static_cast<float>(g.gems) * share; // what they lose is the gems (default branch)
+		else
+			value *= 1.f + deny_bonus;
 		time += enemy_half_penalty * risk;
 		if (P.unknown_keep == 2 ? (g.seen_round < 0 || round - g.seen_round > 60) : (round - g.seen_round > 60 && !(P.unknown_keep && g.id == task_group)))
 			value *= P.unknown_discount;
@@ -3470,7 +3717,7 @@ void Brain::farm()
 		}
 	}
 	int best = -1, best_eta = BIG;
-	bool best_pair = false, best_team = false, best_ring = false;
+	bool best_pair = false, best_team = false, best_ring = false, best_kite = false;
 	float best_s = 0;
 #ifdef LEGEND_TRACE
 	std::map<int, float> tr_sc;
@@ -3508,16 +3755,16 @@ void Brain::farm()
 #endif
 				return;
 			}
-			const bool tm = sc_team, rg = sc_ring;
+			const bool tm = sc_team, rg = sc_ring, kt = sc_kite;
 #ifdef LEGEND_TRACE
 			tr_sc[g.id] = s;
 #endif
 			if (g.id == task_group)
-				s *= P.hysteresis;
+				s *= P.mi_flip_guard && round < mi_sticky_until ? 1000.f : P.hysteresis; // mi_flip_guard: committed
 			else if (P.flip_window > 0 && g.id == left_group && round - left_round <= P.flip_window)
 				s /= P.flip_margin; // going back to a target we just left: A-B-A-B flips walk in place
 			if (s > best_s)
-				best_s = s, best = g.id, best_eta = eta, best_pair = np, best_team = tm, best_ring = rg;
+				best_s = s, best = g.id, best_eta = eta, best_pair = np, best_team = tm, best_ring = rg, best_kite = kt;
 		};
 		if (task_group >= 0 && task_group < static_cast<int>(W.groups.size()))
 			consider(W.groups[static_cast<std::size_t>(task_group)]);
@@ -3542,6 +3789,24 @@ void Brain::farm()
 					break;
 				consider(g);
 			}
+	}
+	if (P.mi_relaxed && best < 0)
+	{
+		// Never idle while something is farmable (default branch): relax the wait / trip / steal limits rather than stand still.
+		sc_relaxed = true;
+		for (auto& g : W.groups)
+		{
+			if (blacklist[static_cast<std::size_t>(g.id)] > round)
+				continue;
+			if (bc::fuel_remaining() < P.score_fuel_floor)
+				break;
+			int eta = 0;
+			bool np = false;
+			const float s = group_score(g, eta, &np);
+			if (s > best_s)
+				best_s = s, best = g.id, best_eta = eta, best_pair = np, best_team = sc_team, best_ring = sc_ring, best_kite = sc_kite;
+		}
+		sc_relaxed = false;
 	}
 	// Islands: from near home, compare a crystal trip with the best walking target.
 	if (!W.islands.empty() && !inside_island() && W.dist_home(pos) <= 4)
@@ -3686,6 +3951,16 @@ void Brain::farm()
 #endif
 		if (task_group >= 0)
 			left_group = task_group, left_round = round;
+		if (P.mi_flip_guard)
+		{
+			// Flip-flop guard (default branch): many target switches in a short window -> commit to the new target for a while.
+			mi_switch_log[mi_switch_pos++ % mi_switch_log.size()] = round;
+			int recent = 0;
+			for (int r : mi_switch_log)
+				recent += round - r < 20;
+			if (recent >= 6)
+				mi_sticky_until = round + 25;
+		}
 		task_group = best;
 		task_since = round;
 #ifdef LEGEND_TRACE
@@ -3702,6 +3977,7 @@ void Brain::farm()
 	Group& g = W.groups[static_cast<std::size_t>(best)];
 	task_team = best_team;
 	task_ring = best_ring;
+	task_kite = best_kite;
 	if (best_team && g.st != ST_REWARD && hp < P.obj_go_hp * max_hp && !W.ally_spawn.is_set(pos) &&
 		nav().group_dist(g, pos) > P.obj_go_far)
 	{
@@ -3987,6 +4263,8 @@ bool Brain::farm_group(Group& g)
 	const bool obj_first = obj && P.obj_attackers_first;
 	if (obj && P.o2_ring && task_ring && g.id == task_group && ring_farm(g))
 		return true;
+	if (P.mi_kite && task_kite && g.id == task_group && !obj && kite_group(g))
+		return true;
 	if (obj && task_team && P.obj_gather > 1 && g.st == ST_ALIVE && !g.awake && g.hp_total / std::max(10.f, dps_on(g)) > P.obj_solo_rounds)
 	{
 		// Objective: bodies arriving one by one were worn down by the camps (6 elks hit for 360 a round) and
@@ -4097,6 +4375,8 @@ bool Brain::farm_group(Group& g)
 			goal &= ~g.mask;
 			if (!goal.is_empty())
 				step(goal, false, true);
+			else if (P.mi_close_in)
+				go_group(g, 1, true); // in range by the field but no camp in sight (walls block vision): close in (default branch)
 		}
 		else
 			go_group(g, kit.attack_range, true);

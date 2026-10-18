@@ -1,0 +1,234 @@
+diff -ruN _m4/src/brain.cpp _x_econ/src/brain.cpp
+--- _m4/src/brain.cpp	2026-10-18 10:31:54.671512061 +0000
++++ _x_econ/src/brain.cpp	2026-10-18 10:58:26.792630614 +0000
+@@ -62,14 +62,21 @@
+ 		case CT::ren:
+ 			if (P.rich_treasure_first)
+ 				rep(v, I::treasure_shard_of_focus, 5);
++			else if (P.econ_build & 8)
++			{
++				rep(v, I::monster_shard_of_focus, 5);
++				rep(v, (P.econ_build & 2) ? I::jungle_shard_of_focus : I::jungle_shard_of_health, 5);
++				rep(v, I::treasure_shard_of_focus, 5);
++			}
+ 			else
+ 			{
+ 				// The first emblem lands near round 240 and sets the early pace: Ren tanks the packs, and the
+ 				// kill-time planner (incoming_on) accepts more of them with Jungle health.
+-				rep(v, I::jungle_shard_of_health, 5);
++				rep(v, (P.econ_build & 2) ? I::jungle_shard_of_focus : I::jungle_shard_of_health, 5);
+ 				rep(v, I::treasure_shard_of_focus, 5);
+ 			}
+-			rep(v, I::monster_shard_of_focus, 5);
++			if (!(P.econ_build & 8))
++				rep(v, I::monster_shard_of_focus, 5);
+ 			rep(v, I::bruiser_shard_of_focus, 5);
+ 			if (P.rich_treasure_first)
+ 				rep(v, I::jungle_shard_of_health, 5);
+@@ -90,6 +97,8 @@
+ 			else
+ 			{
+ 				rep(v, I::monster_shard_of_focus, 5);
++				if (P.econ_build & 4)
++					rep(v, I::power_shard_of_focus, 10);
+ 				rep(v, I::treasure_shard_of_focus, 5);
+ 			}
+ 			rep(v, I::bruiser_shard_of_focus, 5);
+@@ -98,7 +107,14 @@
+ 			break;
+ 		case CT::cassi:
+ 		case CT::willow:
+-			if (P.ci_health_first)
++			if (P.ci_health_first && (P.econ_build & 1))
++			{
++				rep(v, I::durability_shard_of_focus, 5);
++				rep(v, I::jungle_shard_of_focus, 5);
++				rep(v, I::bruiser_shard_of_health, 5);
++				rep(v, I::monster_shard_of_focus, 5);
++			}
++			else if (P.ci_health_first)
+ 			{
+ 				rep(v, I::durability_shard_of_health, 5);
+ 				rep(v, I::jungle_shard_of_health, 5);
+@@ -114,7 +130,14 @@
+ 			cycle(v, { I::bruiser_shard_of_focus, I::bruiser_shard_of_health }, 12);
+ 			break;
+ 		case CT::issac:
+-			if (P.ci_health_first)
++			if (P.ci_health_first && (P.econ_build & 1))
++			{
++				rep(v, I::durability_shard_of_strength, 5);
++				rep(v, I::jungle_shard_of_strength, 5);
++				rep(v, I::bruiser_shard_of_strength, 5);
++				rep(v, I::monster_shard_of_strength, 5);
++			}
++			else if (P.ci_health_first)
+ 			{
+ 				rep(v, I::durability_shard_of_health, 5);
+ 				rep(v, I::jungle_shard_of_health, 5);
+@@ -144,6 +167,8 @@
+ 			if (P.squishy_hp_first)
+ 				rep(v, I::durability_shard_of_health, 5);
+ 			rep(v, I::monster_shard_of_strength, 5);
++			if (P.econ_build & 4)
++				rep(v, I::power_shard_of_strength, 10);
+ 			rep(v, I::treasure_shard_of_strength, 5);
+ 			rep(v, I::jungle_shard_of_strength, 5);
+ 			rep(v, I::durability_shard_of_health, 5);
+@@ -376,6 +401,7 @@
+ 		W.update_alive(round);
+ 		shop();
+ 		C.read(round);
++		track_claims();
+ 		C.write_bag(0);
+ 		C.write_self(W.my_index, -1);
+ 		learner().tick(round, W.my_index == 0, false);
+@@ -386,6 +412,7 @@
+ 	}
+ 	W.perceive(pos);
+ 	C.read(round);
++	track_claims();
+ 	C.write_bag(static_cast<int>(gems));
+ 	{
+ 		// Learning signals: champion damage marks a painful place; an enemy dying near us relieves it.
+@@ -528,6 +555,24 @@
+ 	last_hp = hp;
+ }
+ 
++void Brain::track_claims()
++{
++	auto& C = comms();
++	auto& W = world();
++	for (std::size_t i = 0; i < claim_prev.size(); ++i)
++		if (C.claim[i] != claim_prev[i])
++		{
++			const int old = claim_prev[i];
++			if (P.claim_release && old >= 0 && old < static_cast<int>(W.groups.size()) && static_cast<int>(i) != W.my_index && i < W.allies.size() && W.allies[i].alive)
++			{
++				auto& g = W.groups[static_cast<std::size_t>(old)];
++				if (g.st == ST_REWARD && g.seen_round < round)
++					g.st = ST_RESPAWN, g.ready_round = round + g.respawn;
++			}
++			claim_prev[i] = C.claim[i], claim_since[i] = round;
++		}
++}
++
+ void Brain::remember_positions()
+ {
+ 	// Called first thing in a turn: where we stood at the end of our last turn and where we saw the allies then
+@@ -2436,6 +2481,17 @@
+ 		eta = d_adj;
+ 		if (claimers)
+ 		{
++			if (P.join_age > 0.f && g.st == ST_ALIVE && g.seen_round < round)
++			{
++				// Not in sight: the claimers have been hitting it since their claim began (claims read late count from our first read).
++				int age = 0;
++				for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 6; ++i)
++					if (i != W.my_index && C.claim[static_cast<std::size_t>(i)] == g.id && W.allies[static_cast<std::size_t>(i)].alive)
++						age = std::max(age, round - claim_since[static_cast<std::size_t>(i)]);
++				hp_left = std::max(0.f, hp_left - P.join_age * ally_dps * static_cast<float>(age));
++				if (hp_left <= 0.f)
++					{ WHY(14); return -1; }
++			}
+ 			// Join only packs too heavy for one body; never a third body except on a monolith.
+ 			const float solo_rounds = hp_left / std::max(10.f, ally_dps);
+ 			const bool heavy = g.monolith || g.elk || (!g.harmless && (solo_rounds > P.join_min_rounds || g.attackers >= 2));
+@@ -2553,7 +2609,8 @@
+ 		};
+ 		float team_kill = 0;
+ 		const bool solo_ok = plan(ally_dps, melee_ally, time);
+-		if (!solo_ok && W.obj_mode && g.objective && P.obj_team && g.attackers >= P.obj_team_attackers && (sc_obj_focus < 0 || sc_obj_focus == g.id) &&
++		if (!solo_ok && ((W.obj_mode && g.objective && P.obj_team && g.attackers >= P.obj_team_attackers && (sc_obj_focus < 0 || sc_obj_focus == g.id)) ||
++				(P.heavy_team && heavy_ok(g) && (sc_heavy_focus < 0 || sc_heavy_focus == g.id))) &&
+ 			obj_team_ready(g, hp_left, team_kill))
+ 		{
+ 			// Objective map: too heavy for us and the bodies already on it, but not for the whole team.
+@@ -2820,6 +2877,22 @@
+ 				sc_obj_focus = c;
+ 		}
+ 	}
++	sc_heavy_focus = -1;
++	if (P.heavy_team)
++	{
++		auto& C = comms();
++		for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 6 && sc_heavy_focus < 0; ++i)
++		{
++			const int c = i == W.my_index ? (task_team ? task_group : -1) : (W.allies[static_cast<std::size_t>(i)].alive ? C.claim[static_cast<std::size_t>(i)] : -1);
++			if (c >= 0 && c < static_cast<int>(W.groups.size()) && heavy_ok(W.groups[static_cast<std::size_t>(c)]))
++				sc_heavy_focus = c;
++		}
++	}
++}
++
++bool Brain::heavy_ok(const Group& g) const
++{
++	return !g.monolith && !g.harmless && g.max_hp >= P.heavy_team_hp && !(world().obj_mode && g.objective);
+ }
+ 
+ void Brain::farm()
+@@ -3362,7 +3435,7 @@
+ 	auto& W = world();
+ 	const bool obj = W.obj_mode && g.objective;
+ 	const bool obj_first = obj && P.obj_attackers_first;
+-	if (obj && task_team && P.obj_gather > 1 && g.st == ST_ALIVE && !g.awake && g.hp_total / std::max(10.f, dps_on(g)) > P.obj_solo_rounds)
++	if ((obj || (P.heavy_team && heavy_ok(g))) && task_team && P.obj_gather > 1 && g.st == ST_ALIVE && !g.awake && g.hp_total / std::max(10.f, dps_on(g)) > P.obj_solo_rounds)
+ 	{
+ 		// Objective: bodies arriving one by one were worn down by the camps (6 elks hit for 360 a round) and
+ 		// left it half dead for the enemy (stampede vs _v6: 1,707 of 17,400 left for 130 rounds, then their
+diff -ruN _m4/src/brain.h _x_econ/src/brain.h
+--- _m4/src/brain.h	2026-10-18 10:31:54.667697192 +0000
++++ _x_econ/src/brain.h	2026-10-18 10:54:35.155191367 +0000
+@@ -80,6 +80,8 @@
+ 	int sc_recent_n = 0;
+ 	float sc_risk = 0;
+ 	bool sc_alert = false;
++	int sc_heavy_focus = -1; // heavy group the off-objective team plan is limited to this turn (P.heavy_team)
++	bool heavy_ok(const Group& g) const;
+ 	int sc_obj_focus = -1; // objective group the team plan is limited to this turn (P.obj_focus)
+ 	bool reward_here(); // a dead group we were farming waits for its capture next to us
+ 	bool respond_to_alert();
+@@ -225,6 +227,9 @@
+ 	vec2 my_prev_pos{ -1, -1 };
+ 	int my_prev_round = -100;
+ 	std::array<vec2, 8> ally_prev_pos{};
++	std::array<int, 6> claim_prev{ -1, -1, -1, -1, -1, -1 }; // allies' claims as last read (P.join_age)
++	std::array<int, 6> claim_since{};	// round each ally's current claim was first read
++	void track_claims();
+ 	std::array<int, 8> ally_prev_round{};
+ 	std::array<int, 8> ally_still_since{};
+ #ifdef LEGEND_TRACE
+diff -ruN _m4/src/params.h _x_econ/src/params.h
+--- _m4/src/params.h	2026-10-18 10:31:54.730029951 +0000
++++ _x_econ/src/params.h	2026-10-18 10:58:26.790324080 +0000
+@@ -138,6 +138,30 @@
+ 	int ci_health_first = 1;   // build_style 2: Cassi & Issac buy health first (1) or Monster damage first (0);
+ 							   // vs _v6 on the ladder maps: 1 won 19/24 (gems +8,623, deaths 495-660), 0 won 16/24 (+3,449, 560-550)
+ 	int monster_in_dps = 1;	   // count the Monster emblem's +10% camp damage in the kill-time model
++	// Agent econ (session 7): build_style 2 variants, bit flags (0 = the _m4 builds). An emblem's passive does not depend on the
++	// shard's stat, so the passive can come with the damage stat (the ladder teams: Cassi DfE, Issac PsE+DhE, clearers MfE/MsE + Power).
++	//   1: Cassi & Issac take Durability / Jungle in their damage stat (Cassi focus, Issac strength) instead of health
++	//   2: Ren takes Jungle in focus (retaliation 0.2 x focus per hit taken, stun 1.25 x focus) instead of health
++	//   4: Varg / Stellar: Power in the damage stat right after Monster (two Power emblems before Treasure)
++	//   8: Ren: Monster focus first, then Jungle
++	int econ_build = 0;
++	// Heavy groups off the objective maps (interlock elk pairs 4,800 HP / 120 dps, rows packs 4,050 / 60): no single body can plan them,
++	// pair_plans is off, so nobody claims them and nobody joins (unopposed interlock: our elk pairs sat untouched 100-350 rounds; the
++	// ladder enemy took one at r73 with 4 bodies). heavy_team scores such a group with the living team's damage (obj_team_ready, the
++	// objective plan's test) and gathers obj_gather bodies before waking it, like the objective plan; one such group at a time
++	// (the one claimed by the lowest-index body).
++	int heavy_team = 0;
++	// Joins on stale health: a claimed group we cannot see keeps the health we last saw (often full), so a body 15-20 tiles away joined a
++	// wolf the claimer had nearly killed (the "heavy" test used that stale health), walked over, and switched when it was captured
++	// (unopposed, 17 official maps: 668 switches "respawn too far off" after 15,008 rounds on the target; 24% of body-rounds were in
++	// target segments that never hit their target, tools/econ/waste.mjs). join_age: the claimers have hit it since their claim began:
++	// estimated health = seen health - join_age x their damage x rounds since the oldest claim (0 = off).
++	float join_age = 0.f;
++	// Stale rewards: an ally that captured a reward moves its claim on, but bodies that cannot see the group keep it as a reward for 8
++	// rounds and walk to it (interlock: Varg walked 4 rounds toward a wolf Ren had just collected, then switched again).
++	// claim_release: an alive ally's claim leaving a group we remember as a reward means it collected it: we mark it respawning.
++	int claim_release = 0;
++	float heavy_team_hp = 4000.f; // ... groups of at least this much health that hit back (not monoliths)
+ 
+ 	// Shopping and home trips (heal + shop + bank near spawn; recall makes them cheap)
+ 	int shop_gold = 150;	   // go home to shop at this much gold when home is close

@@ -69,6 +69,9 @@ Pace = round at which our team banks 1000 gems vs `idle` (mean of both sides; a 
   stampede 771 -> 751, ambush 533 -> 546); vs `_rm` 56.2 / 67.6 (deaths 1018-1266). Panel running.
 - Objective-mode coverage with `obj_focus` (pace on `_C3`): `obj_max_groups` 16 547.9 (swirl 284 -> 304); `obj_share` 0.55 545.7 (eight 416 -> 361 but expanse
   611 -> 651); both 546.8. Noise: left at 8 / 0.7.
+- `_C3` still split rewards on pilgrimage (Cassi walked through the gold tile next to Varg, who was already channelling its capture-recall, and kept
+  it by index). `_C4` (= current `_x_farm`): the collector is whoever arrived first (ours: `capture_since`; an ally's: the round since which we have
+  seen it standing still on the tiles; same round: lower index). Pilgrimage and rows traces: 0 splits. Evaluation queued (`/tmp/farm/b12.sh`).
 
 ## Tools (new files, agent farm)
 - `tools/farm/pack_watch.mjs FILE X,Y FROM TO [R]`: per round, health of the pack at (X,Y) and the champions near it (both teams).

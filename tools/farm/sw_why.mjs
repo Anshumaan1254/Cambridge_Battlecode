@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import { unwrapReplay } from '../replay/decode.mjs';
 const WHY = { 0: 'valid (rescored lower)', 1: 'monolith off', 2: 'obj open', 3: 'unreachable', 4: 'reward: lower claimer nearer', 5: 'respawn too far off',
-  6: 'join not allowed (claimed)', 7: 'cannot clear solo', 8: 'cannot clear with pair', 9: 'steal hp', 10: 'threat', 11: 'blacklisted', 12: 'no_split: ally on reward' };
+  6: 'join not allowed (claimed)', 7: 'cannot clear solo', 8: 'cannot clear with pair', 9: 'steal hp', 10: 'threat', 11: 'blacklisted', 12: 'no_split: ally on reward', 13: 'join_reach: claimers done first' };
 const st = {}, per = {};
 const add = (k, v) => { st[k] = st[k] || { n: 0, r: 0 }; st[k].n++; st[k].r += v; };
 for (const f of process.argv.slice(2)) {

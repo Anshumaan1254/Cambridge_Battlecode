@@ -1,6 +1,6 @@
 diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
 --- _rm/src/brain.cpp	2026-10-18 07:37:50.236526014 +0000
-+++ _x_farm/src/brain.cpp	2026-10-18 08:48:49.338027821 +0000
++++ _x_farm/src/brain.cpp	2026-10-18 09:07:29.666214404 +0000
 @@ -1,10 +1,19 @@
  #include "brain.h"
  #include "learn.h"
@@ -21,7 +21,38 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  #ifdef XM_TRACE
  #define XM(stmt) debug_block({ stmt; })
  #else
-@@ -1579,6 +1588,32 @@
+@@ -346,6 +355,8 @@
+ 
+ void Brain::turn()
+ {
++	if (inited && P.no_split)
++		remember_positions();
+ 	round = static_cast<int>(bc::round_number());
+ 	auto& W = world();
+ 	W.round = round;
+@@ -517,6 +528,21 @@
+ 	last_hp = hp;
+ }
+ 
++void Brain::remember_positions()
++{
++	// Called first thing in a turn: where we stood at the end of our last turn and where we saw the allies then
++	// (no_split: who reached a reward first). `round` and `pos` still hold the last turn's values.
++	my_prev_pos = pos, my_prev_round = round;
++	const auto& A = world().allies;
++	for (std::size_t i = 0; i < A.size() && i < 8; ++i)
++		if (A[i].visible && A[i].seen_round == round)
++		{
++			if (!(ally_prev_round[i] == round - 1 && ally_prev_pos[i] == A[i].pos))
++				ally_still_since[i] = round;
++			ally_prev_pos[i] = A[i].pos, ally_prev_round[i] = round;
++		}
++}
++
+ void Brain::unstick()
+ {
+ 	// Last resort: a body walking to a camp that has not left a 3x3 box (and not attacked) for unstick_rounds
+@@ -1579,6 +1605,32 @@
  	const int dh = W.dist_home(pos);
  	if (dh > P.recall_min_dist && safe_to_recall())
  	{
@@ -54,7 +85,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  		try
  		{
  			bc::self().recall();
-@@ -2256,12 +2291,12 @@
+@@ -2256,12 +2308,12 @@
  	auto& C = comms();
  	eta = BIG;
  	if (g.monolith && !P.farm_monolith)
@@ -70,7 +101,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  	// Rounds until we can hit the group. Ranged champions stop at their attack range; a dash kit covers 10 tiles
  	// per 8-round cooldown (walk + 2-tile dash). Fitted on 1,659 engaged episodes: d-1 was exact for Ryth and Varg
  	// and 2.2-2.3 rounds long for Cassi, Stellar (actual = -2.1 + 1.0 x predicted), Issac and Ren (0.85 x).
-@@ -2315,7 +2350,22 @@
+@@ -2315,7 +2367,28 @@
  		// One body captures; if allies claim it, the lowest index takes it unless we are clearly nearer
  		// (the joiner may still be walking in while we stand next to the reward).
  		if (claimers && first_claimer < W.my_index && closer_lower_claimer)
@@ -80,21 +111,27 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
 +		{
 +			// One collector per reward: allies standing on the tiles when it lands split it with no speed-up, and the
 +			// second body sat out the 6 capture rounds (and often recalled home with half a bag) instead of walking on.
-+			// An ally already on the tiles keeps it unless we stand there too and have the lower index.
++			// Who was there first keeps it (same round: the lower index). A body already channelling its capture-recall cannot
++			// step off (pilgrimage: Varg recalled on the gold tile at r49, Cassi walked through the next tile at r51 and kept it by
++			// index: 34/34). Arrival: ours is capture_since; an ally's is the round since which we have seen it standing still there.
 +			const bool on = g.mask.is_set(pos);
-+			for (int i = 0; i < static_cast<int>(W.allies.size()); ++i)
++			const int my_arr = on && capture_group_id == g.id ? capture_since : round;
++			for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 8; ++i)
 +			{
 +				const auto& a = W.allies[static_cast<std::size_t>(i)];
 +				if (i == W.my_index || !a.alive || !a.visible || a.seen_round != round || !g.mask.is_set(a.pos))
 +					continue;
-+				if (!on || i < W.my_index)
++				const auto k = static_cast<std::size_t>(i);
++				const bool still = ally_prev_round[k] == round - 1 && ally_prev_pos[k] == a.pos;
++				const int a_arr = still ? ally_still_since[k] : round;
++				if (!on || a_arr < my_arr || (a_arr == my_arr && i < W.my_index))
 +					{ WHY(12); return -1; }
 +			}
 +		}
  		eta = d_tile;
  		time = static_cast<float>(eta) + 6.f;
  		break;
-@@ -2323,7 +2373,7 @@
+@@ -2323,7 +2396,7 @@
  	{
  		const int avail = g.ready_round - round;
  		if (avail > d_adj + (W.obj_mode && g.objective ? P.obj_max_wait : P.max_wait))
@@ -103,7 +140,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  		wait = std::max(0, avail - d_adj);
  		hp_left = g.max_hp;
  		break;
-@@ -2342,7 +2392,7 @@
+@@ -2342,7 +2415,7 @@
  			const float solo_rounds = hp_left / std::max(10.f, ally_dps);
  			const bool heavy = g.monolith || g.elk || (!g.harmless && (solo_rounds > P.join_min_rounds || g.attackers >= 2));
  			if (!heavy || (claimers >= (g.monolith ? 4 : 1 + P.max_join) && !(W.obj_mode && g.objective && P.obj_team)))
@@ -112,7 +149,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  			share = P.join_share;
  		}
  		// Rounds to clear the group with the given helpers; false when it cannot be done in max_trips.
-@@ -2451,7 +2501,8 @@
+@@ -2451,7 +2524,8 @@
  		};
  		float team_kill = 0;
  		const bool solo_ok = plan(ally_dps, melee_ally, time);
@@ -122,7 +159,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  		{
  			// Objective map: too heavy for us and the bodies already on it, but not for the whole team.
  			sc_team = true;
-@@ -2463,7 +2514,7 @@
+@@ -2463,7 +2537,7 @@
  			// Too heavy for us (and the bodies already on it). Plan it as a pair: claim it, wait outside camp
  			// range for the best-suited ally, then kill it together (elk pairs, wolf packs early in the game).
  			if (claimers || !P.pair_plans || g.monolith)
@@ -131,7 +168,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  			float best_dps = 0;
  			bool best_melee = false;
  			for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 6; ++i)
-@@ -2474,7 +2525,7 @@
+@@ -2474,7 +2548,7 @@
  						best_dps = a, best_melee = ally_melee(i);
  				}
  			if (best_dps <= 0 || !plan(best_dps, best_melee, time))
@@ -140,7 +177,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  			time += P.pair_wait;
  			share = 0.5f;
  			if (need_pair)
-@@ -2487,10 +2538,10 @@
+@@ -2487,10 +2561,10 @@
  	{
  		const float risk = sc_risk;
  		if (hp < P.steal_hp_frac * max_hp && risk > 0)
@@ -153,7 +190,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  			value *= P.unknown_discount;
  	}
  	{
-@@ -2510,7 +2561,7 @@
+@@ -2510,7 +2584,7 @@
  					ohp += a.hp, odps += a.str + a.focus * best_mod(a.kit) / 8.f;
  			const float tadv = (ohp / edps) / std::max(0.1f, ehp / std::max(1.f, odps));
  			if (tadv < P.target_threat_adv)
@@ -162,7 +199,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  		}
  	}
  	if (round - g.enemy_round < 12)
-@@ -2705,6 +2756,18 @@
+@@ -2705,6 +2779,18 @@
  	}
  	sc_risk = static_cast<float>(alive_enemies) / std::max<std::size_t>(1, W.enemies.size());
  	sc_alert = !alert_zone.is_empty();
@@ -181,7 +218,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  }
  
  void Brain::farm()
-@@ -2749,13 +2812,23 @@
+@@ -2749,13 +2835,23 @@
  	int best = -1, best_eta = BIG;
  	bool best_pair = false, best_team = false;
  	float best_s = 0;
@@ -205,7 +242,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  			// Groups that cannot beat the best so far are skipped unscored (exact, see score_cap). Scoring took
  			// ~60k fuel a turn on the 98x99 48-group map and the math model made each group ~23% dearer, so
  			// the loop ran down to score_fuel_floor and farm_group (up to ~29k) spilled turns into the next round.
-@@ -2763,10 +2836,22 @@
+@@ -2763,10 +2859,22 @@
  				return;
  			int eta = 0;
  			bool np = false;
@@ -228,7 +265,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  			if (g.id == task_group)
  				s *= P.hysteresis;
  			else if (P.flip_window > 0 && g.id == left_group && round - left_round <= P.flip_window)
-@@ -2928,10 +3013,24 @@
+@@ -2928,10 +3036,24 @@
  #endif
  	if (best != task_group)
  	{
@@ -253,7 +290,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  	}
  	// Give up on targets we cannot reach in reasonable time.
  	if (round - task_since > 2 * best_eta + 60 + (W.obj_mode && W.groups[static_cast<std::size_t>(best)].objective ? P.obj_commit : 0))
-@@ -3174,6 +3273,10 @@
+@@ -3174,6 +3296,10 @@
  	auto& W = world();
  	if (!attack_unit(g.camps[idx].camp))
  		return false;
@@ -264,7 +301,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  	// Second swing with an attack reset; retarget if the first swing killed it.
  	if (kit.reset >= 0 && ready(kit.reset))
  	{
-@@ -3259,6 +3362,43 @@
+@@ -3259,6 +3385,43 @@
  	// (8-round cooldowns), and an enemy 7-9 tiles away led to a fight within 8 rounds only 13% of the time.
  	const bool save_cc = enemy_near_d <= P.hold_cc_dist;
  	const bool hold_spells = enemy_near_d <= P.hold_spell_dist && P.hold_spells_near_enemies;
@@ -310,7 +347,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  	{
 diff -ruN _rm/src/brain.h _x_farm/src/brain.h
 --- _rm/src/brain.h	2026-10-18 07:37:50.236809051 +0000
-+++ _x_farm/src/brain.h	2026-10-18 08:07:46.207745238 +0000
++++ _x_farm/src/brain.h	2026-10-18 09:07:23.705951104 +0000
 @@ -80,6 +80,7 @@
  	int sc_recent_n = 0;
  	float sc_risk = 0;
@@ -319,10 +356,17 @@ diff -ruN _rm/src/brain.h _x_farm/src/brain.h
  	bool reward_here(); // a dead group we were farming waits for its capture next to us
  	bool respond_to_alert();
  	void farm();
-@@ -218,6 +219,9 @@
+@@ -218,6 +219,16 @@
  	vec2 ust_anchor{ -1, -1 };
  	int ust_since = 0;
  	int left_group = -1, left_round = -1000; // target we last switched away from (flip guard)
++	// no_split: positions at the end of the last turn (ours and the allies we saw)
++	void remember_positions();
++	vec2 my_prev_pos{ -1, -1 };
++	int my_prev_round = -100;
++	std::array<vec2, 8> ally_prev_pos{};
++	std::array<int, 8> ally_prev_round{};
++	std::array<int, 8> ally_still_since{};
 +#ifdef LEGEND_TRACE
 +	int tr_hits = 0; // trace: attacks on the current target since it was set
 +#endif

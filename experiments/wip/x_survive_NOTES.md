@@ -75,3 +75,17 @@ vs `_ST`: `_rm` 52.9 (534-403), `_sv1` 55.9, `_svA` 44.1 (393-415), `_svB` 44.1,
   (vs `_rm` 103k-91k): farming does not collapse.
 - Cassi & Issac vs `_eA` (official 17, pair_deaths.mjs): `_rm` ~3.8 pair deaths per game, `_sv1` 3.74, `_svA` 2.88; gems lost per pair
   death 13.1 (`_sv1`) -> 5.1 (`_svA`); C&I body-rounds dead 25.1% -> 19.2%.
+- Death categories vs `_eA`, 56 maps, 112 games (`death_ctx.mjs` on A files `--team 0` + B files `--team 1`; `/tmp/survive/dctx.sh`):
+
+| category | `_rm` | `_svA` | `_svC` |
+|---|---|---|---|
+| all deaths | 1404 | 1075 (-23%) | 1223 (-13%) |
+| on our own half | 745 | 549 (-26%) | 575 |
+| enemy >1.2x our health within 6 | 836 | 564 (-33%) | 642 |
+| 3+ enemies within 6 | 636 | 471 (-26%) | 531 |
+| below 25% health | 608 | 431 (-29%) | 499 |
+| at 75%+ health (burst) | 307 | 276 (-10%) | 295 |
+| Cassi + Issac bodies | 700 | 524 (-25%) | 598 (-15%) |
+| no ally within 6 | 405 | 341 | 388 |
+- What is left: burst deaths at full health (enemies appearing inside reach, bushes) barely move; `pair_low_hp` is what cuts the
+  pair deaths beyond the shared rules (`_svA` vs `_svC`).

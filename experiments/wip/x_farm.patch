@@ -1,0 +1,318 @@
+diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
+--- _rm/src/brain.cpp	2026-10-18 07:37:50.236526014 +0000
++++ _x_farm/src/brain.cpp	2026-10-18 08:19:40.682127422 +0000
+@@ -1,10 +1,19 @@
+ #include "brain.h"
+ #include "learn.h"
++#ifdef LEGEND_TRACE
++#include <map>
++#endif
+ 
+ #include <cmath>
+ #include <cstdio>
+ 
+ // Prediction audit hooks: compiled only into XM_TRACE builds and run inside debug_block (fuel paused).
++#ifdef LEGEND_TRACE
++static int g_why = 0; // trace only: which rule made group_score return -1 (printed with target switches)
++#define WHY(n) (g_why = (n))
++#else
++#define WHY(n) (void)0
++#endif
+ #ifdef XM_TRACE
+ #define XM(stmt) debug_block({ stmt; })
+ #else
+@@ -2256,12 +2265,12 @@
+ 	auto& C = comms();
+ 	eta = BIG;
+ 	if (g.monolith && !P.farm_monolith)
+-		return -1;
++		{ WHY(1); return -1; }
+ 	if (P.obj_open_rounds > 0 && W.obj_mode && round < P.obj_open_rounds && !g.objective && g.d_enemy - g.d_ally < P.obj_open_margin)
+-		return -1;
++		{ WHY(2); return -1; }
+ 	const int d_tile = d_override >= 0 ? d_override : nav().group_dist(g, pos);
+ 	if (d_tile >= BIG)
+-		return -1;
++		{ WHY(3); return -1; }
+ 	// Rounds until we can hit the group. Ranged champions stop at their attack range; a dash kit covers 10 tiles
+ 	// per 8-round cooldown (walk + 2-tile dash). Fitted on 1,659 engaged episodes: d-1 was exact for Ryth and Varg
+ 	// and 2.2-2.3 rounds long for Cassi, Stellar (actual = -2.1 + 1.0 x predicted), Issac and Ren (0.85 x).
+@@ -2315,7 +2324,22 @@
+ 		// One body captures; if allies claim it, the lowest index takes it unless we are clearly nearer
+ 		// (the joiner may still be walking in while we stand next to the reward).
+ 		if (claimers && first_claimer < W.my_index && closer_lower_claimer)
+-			return -1;
++			{ WHY(4); return -1; }
++		if (P.no_split)
++		{
++			// One collector per reward: allies standing on the tiles when it lands split it with no speed-up, and the
++			// second body sat out the 6 capture rounds (and often recalled home with half a bag) instead of walking on.
++			// An ally already on the tiles keeps it unless we stand there too and have the lower index.
++			const bool on = g.mask.is_set(pos);
++			for (int i = 0; i < static_cast<int>(W.allies.size()); ++i)
++			{
++				const auto& a = W.allies[static_cast<std::size_t>(i)];
++				if (i == W.my_index || !a.alive || !a.visible || a.seen_round != round || !g.mask.is_set(a.pos))
++					continue;
++				if (!on || i < W.my_index)
++					{ WHY(12); return -1; }
++			}
++		}
+ 		eta = d_tile;
+ 		time = static_cast<float>(eta) + 6.f;
+ 		break;
+@@ -2323,7 +2347,7 @@
+ 	{
+ 		const int avail = g.ready_round - round;
+ 		if (avail > d_adj + (W.obj_mode && g.objective ? P.obj_max_wait : P.max_wait))
+-			return -1;
++			{ WHY(5); return -1; }
+ 		wait = std::max(0, avail - d_adj);
+ 		hp_left = g.max_hp;
+ 		break;
+@@ -2342,7 +2366,7 @@
+ 			const float solo_rounds = hp_left / std::max(10.f, ally_dps);
+ 			const bool heavy = g.monolith || g.elk || (!g.harmless && (solo_rounds > P.join_min_rounds || g.attackers >= 2));
+ 			if (!heavy || (claimers >= (g.monolith ? 4 : 1 + P.max_join) && !(W.obj_mode && g.objective && P.obj_team)))
+-				return -1;
++				{ WHY(6); return -1; }
+ 			share = P.join_share;
+ 		}
+ 		// Rounds to clear the group with the given helpers; false when it cannot be done in max_trips.
+@@ -2451,7 +2475,8 @@
+ 		};
+ 		float team_kill = 0;
+ 		const bool solo_ok = plan(ally_dps, melee_ally, time);
+-		if (!solo_ok && W.obj_mode && g.objective && P.obj_team && g.attackers >= P.obj_team_attackers && obj_team_ready(g, hp_left, team_kill))
++		if (!solo_ok && W.obj_mode && g.objective && P.obj_team && g.attackers >= P.obj_team_attackers && (sc_obj_focus < 0 || sc_obj_focus == g.id) &&
++			obj_team_ready(g, hp_left, team_kill))
+ 		{
+ 			// Objective map: too heavy for us and the bodies already on it, but not for the whole team.
+ 			sc_team = true;
+@@ -2463,7 +2488,7 @@
+ 			// Too heavy for us (and the bodies already on it). Plan it as a pair: claim it, wait outside camp
+ 			// range for the best-suited ally, then kill it together (elk pairs, wolf packs early in the game).
+ 			if (claimers || !P.pair_plans || g.monolith)
+-				return -1;
++				{ WHY(7); return -1; }
+ 			float best_dps = 0;
+ 			bool best_melee = false;
+ 			for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 6; ++i)
+@@ -2474,7 +2499,7 @@
+ 						best_dps = a, best_melee = ally_melee(i);
+ 				}
+ 			if (best_dps <= 0 || !plan(best_dps, best_melee, time))
+-				return -1;
++				{ WHY(8); return -1; }
+ 			time += P.pair_wait;
+ 			share = 0.5f;
+ 			if (need_pair)
+@@ -2487,10 +2512,10 @@
+ 	{
+ 		const float risk = sc_risk;
+ 		if (hp < P.steal_hp_frac * max_hp && risk > 0)
+-			return -1;
++			{ WHY(9); return -1; }
+ 		value *= 1.f + deny_bonus;
+ 		time += enemy_half_penalty * risk;
+-		if (round - g.seen_round > 60)
++		if (P.unknown_keep == 2 ? (g.seen_round < 0 || round - g.seen_round > 60) : (round - g.seen_round > 60 && !(P.unknown_keep && g.id == task_group)))
+ 			value *= P.unknown_discount;
+ 	}
+ 	{
+@@ -2510,7 +2535,7 @@
+ 					ohp += a.hp, odps += a.str + a.focus * best_mod(a.kit) / 8.f;
+ 			const float tadv = (ohp / edps) / std::max(0.1f, ehp / std::max(1.f, odps));
+ 			if (tadv < P.target_threat_adv)
+-				return -1;
++				{ WHY(10); return -1; }
+ 		}
+ 	}
+ 	if (round - g.enemy_round < 12)
+@@ -2705,6 +2730,18 @@
+ 	}
+ 	sc_risk = static_cast<float>(alive_enemies) / std::max<std::size_t>(1, W.enemies.size());
+ 	sc_alert = !alert_zone.is_empty();
++	// Objective team plan: one group for the whole team, the objective group claimed by the lowest-index body (ours included).
++	sc_obj_focus = -1;
++	if (P.obj_focus && W.obj_mode)
++	{
++		auto& C = comms();
++		for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 6 && sc_obj_focus < 0; ++i)
++		{
++			const int c = i == W.my_index ? task_group : (W.allies[static_cast<std::size_t>(i)].alive ? C.claim[static_cast<std::size_t>(i)] : -1);
++			if (c >= 0 && c < static_cast<int>(W.groups.size()) && W.groups[static_cast<std::size_t>(c)].objective)
++				sc_obj_focus = c;
++		}
++	}
+ }
+ 
+ void Brain::farm()
+@@ -2749,13 +2786,23 @@
+ 	int best = -1, best_eta = BIG;
+ 	bool best_pair = false, best_team = false;
+ 	float best_s = 0;
++#ifdef LEGEND_TRACE
++	std::map<int, float> tr_sc;
++	int tr_why_old = 0; // why the current target scored <= 0 (WHY codes; 11 blacklisted)
++#endif
+ 	prepare_scoring();
+ 	{
+ 		// Score the current target first, then groups near us, then the rest while fuel lasts: on a
+ 		// 48-group map scoring everything every turn cost ~55k and turns spilled into the next round.
+ 		auto consider = [&](Group& g) {
+ 			if (blacklist[static_cast<std::size_t>(g.id)] > round)
++			{
++#ifdef LEGEND_TRACE
++				if (g.id == task_group)
++					tr_why_old = 11;
++#endif
+ 				return;
++			}
+ 			// Groups that cannot beat the best so far are skipped unscored (exact, see score_cap). Scoring took
+ 			// ~60k fuel a turn on the 98x99 48-group map and the math model made each group ~23% dearer, so
+ 			// the loop ran down to score_fuel_floor and farm_group (up to ~29k) spilled turns into the next round.
+@@ -2763,10 +2810,22 @@
+ 				return;
+ 			int eta = 0;
+ 			bool np = false;
++#ifdef LEGEND_TRACE
++			g_why = 0;
++#endif
+ 			float s = group_score(g, eta, &np);
+ 			if (s <= 0)
++			{
++#ifdef LEGEND_TRACE
++				if (g.id == task_group)
++					tr_why_old = g_why;
++#endif
+ 				return;
++			}
+ 			const bool tm = sc_team;
++#ifdef LEGEND_TRACE
++			tr_sc[g.id] = s;
++#endif
+ 			if (g.id == task_group)
+ 				s *= P.hysteresis;
+ 			else if (P.flip_window > 0 && g.id == left_group && round - left_round <= P.flip_window)
+@@ -2928,10 +2987,24 @@
+ #endif
+ 	if (best != task_group)
+ 	{
++#ifdef LEGEND_TRACE
++		debug_block({
++			if (task_group >= 0)
++			{
++				const auto& og = W.groups[static_cast<std::size_t>(task_group)];
++				std::printf("SW r=%d %d old=%d new=%d sold=%.3f snew=%.3f stold=%d dold=%d dnew=%d since=%d why=%d hp=%.0f hit=%d bag=%d\n", round, static_cast<int>(type), task_group, best,
++					tr_sc.count(task_group) ? tr_sc[task_group] : -1.f, tr_sc.count(best) ? tr_sc[best] : -1.f, static_cast<int>(og.st), nav().group_dist(og, pos),
++					nav().group_dist(W.groups[static_cast<std::size_t>(best)], pos), round - task_since, tr_why_old, hp, tr_hits, static_cast<int>(gems));
++			}
++		});
++#endif
+ 		if (task_group >= 0)
+ 			left_group = task_group, left_round = round;
+ 		task_group = best;
+ 		task_since = round;
++#ifdef LEGEND_TRACE
++		tr_hits = 0;
++#endif
+ 	}
+ 	// Give up on targets we cannot reach in reasonable time.
+ 	if (round - task_since > 2 * best_eta + 60 + (W.obj_mode && W.groups[static_cast<std::size_t>(best)].objective ? P.obj_commit : 0))
+@@ -3174,6 +3247,10 @@
+ 	auto& W = world();
+ 	if (!attack_unit(g.camps[idx].camp))
+ 		return false;
++#ifdef LEGEND_TRACE
++	if (g.id == task_group)
++		++tr_hits;
++#endif
+ 	// Second swing with an attack reset; retarget if the first swing killed it.
+ 	if (kit.reset >= 0 && ready(kit.reset))
+ 	{
+diff -ruN _rm/src/brain.h _x_farm/src/brain.h
+--- _rm/src/brain.h	2026-10-18 07:37:50.236809051 +0000
++++ _x_farm/src/brain.h	2026-10-18 08:07:46.207745238 +0000
+@@ -80,6 +80,7 @@
+ 	int sc_recent_n = 0;
+ 	float sc_risk = 0;
+ 	bool sc_alert = false;
++	int sc_obj_focus = -1; // objective group the team plan is limited to this turn (P.obj_focus)
+ 	bool reward_here(); // a dead group we were farming waits for its capture next to us
+ 	bool respond_to_alert();
+ 	void farm();
+@@ -218,6 +219,9 @@
+ 	vec2 ust_anchor{ -1, -1 };
+ 	int ust_since = 0;
+ 	int left_group = -1, left_round = -1000; // target we last switched away from (flip guard)
++#ifdef LEGEND_TRACE
++	int tr_hits = 0; // trace: attacks on the current target since it was set
++#endif
+ 	void unstick();
+ };
+ 
+diff -ruN _rm/src/params.h _x_farm/src/params.h
+--- _rm/src/params.h	2026-10-18 07:37:50.237297424 +0000
++++ _x_farm/src/params.h	2026-10-18 08:19:40.686097297 +0000
+@@ -19,6 +19,13 @@
+ 	int pair_plans = 0;				 // claim packs too heavy for one body and wait for a partner (off: costs pace)
+ 	float pair_wait = 8.f;			 // rounds added to a pair plan for the partner to arrive
+ 	int pair_wait_max = 18;			 // give up waiting for a partner after this many rounds
++	int no_split = 1;				 // a reward with a visible ally on its tiles is left to that ally (lower index wins when both stand
++									 // there): ladder rows, 10 of our 18 captures were 33/33 splits of one 66-gem pack; unopposed
++									 // rows 6 of 21 (agent farm)
++	int unknown_keep = 1;			 // the unseen-for-60-rounds discount (unknown_discount) does not apply to the target we walk to:
++									 // every unseen enemy-half group lost 25% at round 61 and bodies that had walked 60 rounds to one
++									 // switched there (pilgrimage, ambush: 3-4 bodies turned back at r61-66; agent farm).
++									 // 2: no exemption, but a group never seen is discounted from round 0 (no cliff at r61 either)
+ 	float target_threat_adv = 1.305f;	 // skip camps where recently seen enemies beat us (and allies there) (ES: 1.1 -> 1.305)
+ 
+ 	// Farming model corrections (prediction audit, tools/analysis/xm_audit.mjs on 48 traced games vs _v6 and _hunt2)
+@@ -233,7 +240,9 @@
+ 	int race_carrier = 30;
+ 	int capture_reset = 1;		// an enemy seen on the group's tiles restarts the capture-recall clock (the engine resets the capture)
+ 	int tribute_elapsed = 1;	// handle_channel counts the tribute's remaining turns from its start, not from the carried bag
+-	int bank_first = 1;			// full bag at a capture: skip the recall and bank at the nearest altar when that beats banking from spawn
++	int bank_first = 0;			// full bag at a capture: skip the recall and bank at the nearest altar when that beats banking from spawn.
++								// OFF (agent pace): unopposed pace on 56 maps 472.7 -> 469.7 with it off (official 17: 574.3 -> 567.6; pilgrimage -123,
++								// rushbait-v2 -48, interlock -19; ambush/monolith/collision +16..+24 are map noise).
+ 	int bank_first_margin = 2;	// ... by at least this many steps (nearest-altar walk + recall_time + margin <= spawn altar walk)
+ 	float bank_trip_w = 1.0f;	// bank threshold rises by this many gems per step of bank trip beyond bank_trip_free
+ 	int bank_trip_free = 12;	// bank trips up to this many steps keep the plain threshold
+@@ -242,10 +251,19 @@
+ 
+ 	// Objective maps (agent obj, session 3): the gems sit in one or a few heavy groups (stampede, contest)
+ 	int obj_plan = 1;			// detect objective maps at init (World::detect_objective); everything below needs it
+-	float obj_min_hp = 6000.f;	// a group this heavy cannot be soloed early (elk 2,400; monolith 20,000)
+-	float obj_share = 0.6f;		// ... objective map when such groups hold this share of the map's gem rate
+-	int obj_min_attackers = 2;	// ... counting only groups with at least this many camps that hit back (not a lone monolith:
+-								// monolith-only maps with the mode on: 105 of 152 games vs _k1/_v6/_r2/_es2, about baseline; x_obj_NOTES)
++	float obj_min_hp = 4500.f;	// a group this heavy cannot be soloed early (elk 2,400; monolith 20,000). Was 6000; 4500 admits ambush's
++								// 4,750-5,800 HP gem groups: ambush pace 840 -> 646 (agent pace)
++	float obj_share = 0.7f;		// ... objective map when such groups hold this share of the map's gem rate (was 0.6; 0.7 keeps eight 0.67,
++								// expanse 0.64, interlock 0.59 out: with 0.4 they got +26..+49 rounds slower, ambush the same -194)
++	int obj_max_groups = 8;		// ... and at most this many such groups on the whole map (both sides). ambush 6, contest 2, stampede 1; swirl and the
++								// ladder 45x30 map have 14 (every gem group is heavy there): with the mode on they got +15 rounds and 2 of 12 more losses
++	int obj_min_attackers = 2;	// ... counting only groups with at least this many camps that hit back (2 excludes a lone monolith: monolith-only
++								// maps with the mode on: 105 of 152 games vs _k1/_v6/_r2/_es2, about baseline; x_obj_NOTES). Agent pace re-tested
++								// 1: contest unopposed pace 1087 -> 905 and nothing else changes, but the held-out gold/obj pool (100 games vs
++								// _ST) went 49 -> 46 with it (noise level) and the gold maps' lone monoliths are what it turns on: left at 2
++	int obj_focus = 1;			// the team plan is only for the objective group claimed by the lowest-index body: on ambush (6 objective groups)
++								// every body chose a different one (Ren g1, Stellar g6, Cassi g11, Varg the enemy's g10), arrived alone, fled at
++								// 120-230 HP, and the gather rule (obj_gather) never saw 3 bodies (agent farm)
+ 	int obj_team = 1;			// score an objective group with the whole living team's damage once the team can
+ 								// clear it (obj_team_ready); the solo plan never passes (stampede: nobody touched
+ 								// the 360-gem group before r905; bodies chipped it one or two at a time and left it)
+diff -ruN _rm/src/world.cpp _x_farm/src/world.cpp
+--- _rm/src/world.cpp	2026-10-18 07:37:50.237337919 +0000
++++ _x_farm/src/world.cpp	2026-10-18 07:54:15.655445053 +0000
+@@ -177,7 +177,7 @@
+ 	// group 17,400). Gem rate = gems per respawn round; a centre group counts once for the whole map, side groups
+ 	// once per copy, so the share is map-wide. The sums are gathered in init_static's group loop.
+ 	obj_share = obj_rate_total > 0 ? obj_rate_heavy / obj_rate_total : 0;
+-	obj_mode = !obj_groups.empty() && obj_share >= P.obj_share;
++	obj_mode = !obj_groups.empty() && static_cast<int>(obj_groups.size()) <= P.obj_max_groups && obj_share >= P.obj_share;
+ 	if (!obj_mode)
+ 		return;
+ 	std::sort(obj_groups.begin(), obj_groups.end(), [&](int a, int b) { return groups[static_cast<std::size_t>(a)].d_ally < groups[static_cast<std::size_t>(b)].d_ally; });

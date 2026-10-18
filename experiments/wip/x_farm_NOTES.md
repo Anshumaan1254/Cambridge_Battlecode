@@ -23,6 +23,27 @@ Pace = round at which our team banks 1000 gems vs `idle` (mean of both sides; a 
 - Target switches on the 17 official maps (`_xt_farm` trace, `tools/farm/sw_why.mjs`): respawning after an ally/us cleared it 1,529 switches; rescored
   lower (still valid) 2,519; reward left to a lower-index claimer 418; join refused (claimed, not heavy or full) 319.
 
+## Changes in `_x_farm` (all switches in `params.h`)
+- The session-4 pace patch (`x_pace.patch`): `bank_first=0`, `obj_min_hp` 4500, `obj_share` 0.7, new `obj_max_groups` 8, `SW` trace line.
+- `no_split` 1: a reward with a visible ally standing on its tiles is left to that ally (both on it: lower index keeps it). Rows unopposed: splits 6 -> 0.
+- `unknown_keep` 1: the 60-round unseen discount does not hit the current target (2: never-seen groups are discounted from round 0 instead).
+- `obj_focus` 1: on objective maps the team plan only applies to the objective group claimed by the lowest-index body.
+- Trace only (`LEGEND_TRACE`): `SW ... why= hit= bag=` (why the old target scored <= 0, attacks on it, bag).
+
+## Results so far (unopposed pace, 17 official maps, mean of 2 sides)
+| Build | pace | notes |
+|---|---|---|
+| `_rm` | 579.0 | |
+| + pace patch (`_c_pace`) | 579.9 | |
+| + `no_split` + `unknown_keep` (`_fb1`) | 562.3 | ambush 609, pilgrimage 785, swirl 327, fragment 551 |
+| `_fb1` without `no_split` / without `unknown_keep` | 579.9 / 575.8 | each one carries part of it |
+| `_fb1` + `max_join` 2 / 3 | 555.0 / 549.4 | rows 389-398, monolith 417-431, elkring 438 |
+| `_fb1` + `pair_plans` 1 | 564.2 | no gain |
+| + `obj_focus` (`_fb2`) | **559.0** | ambush 609 -> 552 |
+| `_fb2` + `max_join` 3 | 544.4 | |
+- Head-to-head (56 maps, 112 games): `_c_pace` vs `_rm` 54.5 (official 55.9), deaths 1196-1206. **`_fb2` vs `_rm` 48.2 (official 44.1), deaths 1255-1101**:
+  the pace gain does not carry over; single-feature runs to find the culprit are below.
+
 ## Tools (new files, agent farm)
 - `tools/farm/pack_watch.mjs FILE X,Y FROM TO [R]`: per round, health of the pack at (X,Y) and the champions near it (both teams).
 - `tools/farm/cycle.mjs FILE TEAM [TO]`: per body, captures / banks / recalls / shops / deaths in order.

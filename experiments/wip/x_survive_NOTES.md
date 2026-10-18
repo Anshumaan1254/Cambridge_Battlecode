@@ -43,6 +43,23 @@ Baseline `bots/_rm`; copy `bots/_x_survive` (all switches default off = `_rm` be
 | `_sv5` outmatch 0.8 + pair_flee_bonus 0.3 | 55.9 (423-514) | 70.6 (477-551) |
 | `_sv6` outmatch 0.7 | 52.9 (410-469) | 55.9 (488-560) |
 | `_sv7` outmatch 0.8, min_enemies 1 | 50.0 (405-569) | 55.9 (445-571) |
+| `_sv8` outmatch 0.8 + ren_reflect | 58.8 (430-551) | 61.8 (497-559) |
+| `_sv9` outmatch 0.8 + pair_low_hp 0.4 | 55.9 (413-500) | 64.7 (466-582) |
+| **`_svA`** outmatch 0.8 + pair_flee_bonus 0.3 + ren_reflect + pair_low_hp 0.4 | **64.7 (355-522)** | **70.6 (394-614)** |
+| `_svB` = `_svA` + pair_retreat_hp 0.4 | 64.7 (376-528) | 55.9 (417-561) |
+| `_svC` = `_svA` without pair_low_hp | 61.8 (339-531) | 70.6 (455-642) |
+
+Other cells (official 17, 34 games): vs `_eC`: `_rm` 76.5 (464-540), `_sv1` 94.1, `_svA` 85.3 (372-616), `_svB` 85.3, `_svC` 88.2.
+vs `_ST`: `_rm` 52.9 (534-403), `_sv1` 55.9, `_svA` 44.1 (393-415), `_svB` 44.1, `_svC` 52.9. vs `_eB`: `_rm` 73.5 (451-569).
+34-game cells have a standard deviation of ~8.5 points: the 56-map pool decides (below).
+- Fuel: `_svA` vs `_rm` on gen16_98x99 both sides: 8 rollovers per team, same as `_rm` (no new lost turns).
+
+## Traced games (`_svT` = `_svA` + XM_TRACE vs `_eA` on eight, fragment, interlock, swirl, collision; `tools/analysis/pair_trace.mjs`)
+- Fights started from outside reach are rarely deadly: 5% of such turns (1,225) were followed by the body's death within 10 rounds.
+- The deaths come from in-reach turns: 101 'cornered' fight turns (no escape, adv >= cornered_margin 0.634, typically 0.65-0.75),
+  96 in-reach fights with escape, 128 in-reach flee turns. adv swings a lot turn to turn (0.74 -> 1.72 -> 1.28 -> 0.42).
+- 15 of 68 deaths began outside reach with adv < 0.8 and no fight: 7 against a single visible enemy (outmatch needs 2), the rest fled late.
+- ~30 deaths began already in reach (the enemy appeared inside reach: bushes / vision): no early rule can see those.
 
 - Death categories vs `_eA` (`death_ctx.mjs`, A and B files): `_rm` 508 deaths (C&I 260), `_sv1` 467 (C&I 244): the non-pair
   deaths fell 248 -> 213 (-14%), the pair barely moved.

@@ -105,3 +105,8 @@ vs `_ST`: `_rm` 52.9 (534-403), `_sv1` 55.9, `_svA` 44.1 (393-415), `_svB` 44.1,
 | **`_svF`** = `_svC` + solo 0.6 | **61.6 (64.7) 881-1301** | **56.2 (58.8) 767-1275** | **69.6 (67.6) 1032-1577** |
 - `pair_low_hp` 0.4 costs ~4-5 points vs `_ST` every time it is on (`_svA` 50.9 / `_svD` 50.9 vs `_svC` 53.6 / `_svF` 56.2), though it
   cuts pair deaths further: left off in the recommendation.
+- `_svF` other cells (56 maps): vs `_eB` 73.2 (82.4) 783-1443 (`_rm` 68.8), vs `_eC` 76.8 (70.6) 898-1352 (`_rm` 80.4, `_svC` 85.7);
+  held-out vs `_rm` 56.0 (`_svC` 63.0, `_svA` 65.0). So `outmatch_solo_adv` 0.6 buys `_ST` and `_eA` and costs `_eC` and held-out.
+- Ablations of `_svF` (56 maps): without `ren_reflect` (`_svG`) vs `_rm` 59.8, `_ST` 56.2, our deaths vs `_rm` 1003 (881 with it);
+  without `pair_flee_bonus` (`_svH`) vs `_rm` 57.1, `_ST` 55.4, deaths 962. Both help.
+- Fuel: `_svF` vs `_rm` on gen16_98x99 both sides: 8 rollovers per team, same as `_rm`.

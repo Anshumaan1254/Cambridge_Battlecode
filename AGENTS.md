@@ -60,6 +60,17 @@ running or unfinished, and what to do next, so a new agent can continue without 
   First test running: `/tmp/ev/e3.sh` (official 17 maps vs `_rm`, `_ST`, `_eA`, 1 job; results in `/tmp/ev/m1c`, `python3 tools/sum.py /tmp/ev/m1c`).
   Redo `_m1` from the agents' final patches when they finish.
 
+### Checkpoint 09:53 UTC (read this with the 09:25 checkpoint above)
+- **`_m1` official 17 maps (34 games each)**: vs `_rm` 76.5 (deaths 231-539), vs `legend_st` 67.6 (276-509), vs `_eA` 64.7 (451-548). 0 faults.
+  It was built from older patches (`_svA` settings), so it is superseded.
+- **survive** now recommends `_svF` = `_svC` + `outmatch_solo_adv` 0.6 (pair_low_hp left at 0.25: 0.4 costs 4-5 points vs `legend_st`).
+  56 maps: vs `_rm` 61.6 (official 64.7), vs `legend_st` 56.2 (58.8), vs `_eA` 69.6 (67.6), vs `_eB` 73.2 (82.4), vs `_eC` 76.8 (70.6); held-out vs `_rm` 56.0.
+- **farm** is on `_C5` (not in `x_farm.patch` yet; the patch holds `_C2`-level code plus `_C3` features as of the last commit). Pace on `_C4` ~537-541.
+- **`bots/_m2`** = `_rm` + current `x_farm.patch` + current `x_survive.patch` + `outmatch_flee=1 pair_flee_bonus=0.3 ren_reflect=1` (the `_svF`
+  settings as the patch's defaults). Acceptance running since 09:53 UTC: `/tmp/ev/e4.sh` -> `/tmp/ev/m2` (56 maps, 112 games per opponent
+  vs `_rm`, `_ST`, `_eA`, `_eB`, `_eC`; log `/tmp/ev/e4.log`). Ship rule: beats `_rm` and `_ST` overall and on the official maps, 0 faults.
+- Both agents may still change their patches; if they do, rebuild `_m2` from the committed patches and rerun.
+
 ### Plan (priority order) and state
 | # | Task | Who | State |
 |---|---|---|---|

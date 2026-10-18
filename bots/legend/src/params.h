@@ -131,29 +131,33 @@ struct Params
 
 	// Session 11: ideas from the default branch (claude/lucid-pasteur-2jiojv: the Oct 16 "round-2" bot, b5d4e56, and its
 	// Oct 17 merge a25ae20, which does not compile), ported onto legend_m8 at the user's request: "push the ideas into the
-	// bot; if they are detrimental I will notify you". All on; each one has its own switch (0 = legend_m8's behaviour).
-	int mi_health_emblem = 1;	   // a Durability health emblem as the second emblem of every build
-	int mi_learn_burst = 1;		   // remember each enemy's biggest one-round hit on us; combat() uses it while its spells are up
-	int mi_lethal = 1;			   // leave a fight we can walk away from when an enemy within 5, spells up, has shown it can kill us from here
-	int mi_cd_slack = 1;		   // danger map: an enemy spell this many rounds from ready already counts as ready
-	int mi_walk_cast = 1;		   // danger map: a ready spell that can follow a step (not move-exclusive) reaches 5, not 4
-	int mi_endgame_bank = 200;	   // within this many gems of the goal (either team) the bank threshold shrinks linearly
-	float mi_learn_fight = 1.2f;   // fight record: P(we win an exchange) = (their deaths + 3) / (all deaths + 6); losing makes us
+	// bot; if they are detrimental I will notify you". Each one has its own switch (0 = legend_m8's behaviour).
+	// legend_m9 had them all on: vs legend_m8 58.0 / official 35.3, Mite proxy 63.6 (legend_m8 76.1), ifish proxy 51.1 (69.3),
+	// _px9 65.9 (78.4). legend_m10 ships them all off (= legend_m8's games). Alone on legend_m8 (88 games / official vs
+	// legend_m8): health_emblem 47.7 / 50.0, learn_burst 52.3 / 52.9, lethal 51.1 / 50.0, cd_slack 47.7 / 41.2, walk_cast
+	// 44.3 / 47.1, endgame_bank 48.9 / 50.0; learn_burst + lethal: 50.0 / 52.9, Mite proxy 77.3 / 88.2, _px9 63.6 (78.4).
+	int mi_health_emblem = 0;	   // a Durability health emblem as the second emblem of every build
+	int mi_learn_burst = 0;		   // remember each enemy's biggest one-round hit on us; combat() uses it while its spells are up
+	int mi_lethal = 0;			   // leave a fight we can walk away from when an enemy within 5, spells up, has shown it can kill us from here
+	int mi_cd_slack = 0;		   // danger map: an enemy spell this many rounds from ready already counts as ready
+	int mi_walk_cast = 0;		   // danger map: a ready spell that can follow a step (not move-exclusive) reaches 5, not 4
+	int mi_endgame_bank = 0;	   // within this many gems of the goal (either team) the bank threshold shrinks linearly
+	float mi_learn_fight = 0.f;   // fight record: P(we win an exchange) = (their deaths + 3) / (all deaths + 6); losing makes us
 								   // more careful (fight margin x caution, enemy-half penalty x caution^2, deny bonus x 2p)
-	int mi_learn_race = 1;		   // banking-rate race: they finish first by mi_race_ratio -> deny +0.4, enemy-half x0.6; we do -> fight margin +0.15
+	int mi_learn_race = 0;		   // banking-rate race: they finish first by mi_race_ratio -> deny +0.4, enemy-half x0.6; we do -> fight margin +0.15
 	int mi_race_after = 250;
 	float mi_race_ratio = 0.75f;
-	int mi_island_bank = 60;	   // inside a crystal island (no altar): recall out to bank at this bag
-	int mi_recall_shop = 300;	   // recall home to shop with this much gold when nothing can interrupt the channel
-	int mi_relaxed = 1;			   // never idle while something is farmable: if nothing scores, score again with 3x wait / trip limits
-	int mi_two_bodies = 1;		   // at most two bodies on one group (join limit 1), objectives and monoliths excepted
-	int mi_deny_gems = 1;		   // the enemy-half deny bonus applies to the gem part of a group's value only
-	int mi_flip_guard = 1;		   // 6+ target switches within 20 rounds: keep the current target for 25 rounds
-	int mi_kite = 1;			   // farm a group from distance 4 with spells only when that is faster (no damage taken, no heal trips)
+	int mi_island_bank = 0;	   // inside a crystal island (no altar): recall out to bank at this bag
+	int mi_recall_shop = 0;	   // recall home to shop with this much gold when nothing can interrupt the channel
+	int mi_relaxed = 0;			   // never idle while something is farmable: if nothing scores, score again with 3x wait / trip limits
+	int mi_two_bodies = 0;		   // at most two bodies on one group (join limit 1), objectives and monoliths excepted
+	int mi_deny_gems = 0;		   // the enemy-half deny bonus applies to the gem part of a group's value only
+	int mi_flip_guard = 0;		   // 6+ target switches within 20 rounds: keep the current target for 25 rounds
+	int mi_kite = 0;			   // farm a group from distance 4 with spells only when that is faster (no damage taken, no heal trips)
 	float mi_kite_ratio = 0.8f;	   // ... only with spell damage at least this share of our full camp damage
 	float mi_kite_max_kill = 40.f; // ... and a kill within this many rounds
-	int mi_chip = 1;			   // an idle damage spell hits a camp within 4 while passing (camps never heal)
-	int mi_close_in = 1;		   // in range by the group field but no live camp in sight (walls block vision): walk closer
+	int mi_chip = 0;			   // an idle damage spell hits a camp within 4 while passing (camps never heal)
+	int mi_close_in = 0;		   // in range by the group field but no live camp in sight (walls block vision): walk closer
 	int mapdraft = 3;		   // 0 = our composition choice; sparring proxies: 1 = Mite's per-map drafts, 2 = ifish's (draft.cpp)
 							   // 3 = ours with the top teams' choices where they beat ours (rushbait-v2, interlock, expanse; stampede with md_stampede)
 	int md_stampede = 1;	   // mapdraft 3: stampede drafts the 2nd team's casters (Prism, Stellar, C&I, Ryth, Tavi) for the ring plan

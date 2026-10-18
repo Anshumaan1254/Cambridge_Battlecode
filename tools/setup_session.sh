@@ -74,13 +74,16 @@ SRC=bots/_x_c1 tools/variant.sh _m8 mapdraft=3 md_stampede=1 o2_ring=2 > /dev/nu
 SRC=bots/_m8 tools/variant.sh _cS3 > /dev/null
 # Session 11: _m9 = legend_m9 (shipped at the user's request, ideas from the default branch, all on) = _m8 + x_mi.patch
 SRC=bots/_m8 tools/variant.sh _m9 > /dev/null && (cd bots/_m9 && patch -s -p1 --no-backup-if-mismatch < ../../experiments/wip/x_mi.patch)
+# _m10 = legend_m10 (shipped) = _m9 with every mi_* switch off: plays legend_m8's games (86-87 of 88 identical)
+MIOFF="mi_health_emblem=0 mi_learn_burst=0 mi_lethal=0 mi_cd_slack=0 mi_walk_cast=0 mi_endgame_bank=0 mi_learn_fight=0.f mi_learn_race=0 mi_island_bank=0 mi_recall_shop=0 mi_relaxed=0 mi_two_bodies=0 mi_deny_gems=0 mi_flip_guard=0 mi_kite=0 mi_chip=0 mi_close_in=0"
+SRC=bots/_m9 tools/variant.sh _m10 $MIOFF > /dev/null
 rm -rf $T
-for b in _rm _ST _m2 _m3 _x_gp _m4 _m4x _m5a _px9 _xp4 _m7 _fA _fB _fC _mite _ifish _m8 _cS3 _m9 legend idle; do cambc build $b > /dev/null && echo "built $b"; done
+for b in _rm _ST _m2 _m3 _x_gp _m4 _m4x _m5a _px9 _xp4 _m7 _fA _fB _fC _mite _ifish _m8 _cS3 _m9 _m10 legend idle; do cambc build $b > /dev/null && echo "built $b"; done
 python3 - <<'EOF'
 import sys; sys.path.insert(0, 'tools'); import ledger
 want = {'_rm': '339a961d3427', '_ST': 'ca21cbfe785b', '_eA': '0ee193334b60', '_eB': '654605b27deb', '_eC': '116ccc8b53b1',
 		'_m2': '1684aa2a482c', '_m3': '86c9e8f3de35', '_x_gp': '92e199947185', '_m4': '0dc2a2aac28a',
-		'_m5a': '5620bb02867a', '_xp4': '6a1a52e4ddb8', '_m7': '61dd9019869d', '_mite': '688b37be81e3', '_ifish': '6fde429be694', '_m8': '540e17bfe5a4', '_cS3': '540e17bfe5a4', '_m9': '0df32fa5ee2d', '_fA': '25fe5950b034', '_fB': 'f8e472c342f3', '_fC': 'ef5391dcc92b'}
+		'_m5a': '5620bb02867a', '_xp4': '6a1a52e4ddb8', '_m7': '61dd9019869d', '_mite': '688b37be81e3', '_ifish': '6fde429be694', '_m8': '540e17bfe5a4', '_cS3': '540e17bfe5a4', '_m9': '0df32fa5ee2d', '_m10': 'a0e6030bf0f4', '_fA': '25fe5950b034', '_fB': 'f8e472c342f3', '_fC': 'ef5391dcc92b'}
 for b, h in want.items():
 	got = ledger.src_hash(b)
 	print(f'{b:5s} {got} {"ok" if got == h else "MISMATCH (expected " + h + ")"}')

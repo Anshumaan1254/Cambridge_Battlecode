@@ -13,13 +13,13 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Current build: `legend_m9` (session 11): default-branch ideas, shipped before full testing
+## Current build: `legend_m10` (session 11): `legend_m8`'s play, ready for the ladder check
 
-At the user's request ("push the ideas into the bot; if they are detrimental I will notify you"), `legend_m9` = `legend_m8` plus
-17 ideas from the repository's default branch (`claude/lucid-pasteur-2jiojv`: the Oct 16 "round-2" bot, whose Oct 17 merge does
-not compile), each behind its own `mi_*` switch in `bots/legend/src/params.h`, all on. **First local check: 35.3% against
-`legend_m8` on the 34 official-map games**, so it may be weaker; the previous build is `submissions/history/legend_m8_20261018.zip`
-(upload it to roll back), and any single idea can be turned off by setting its switch to 0. Per-idea results: AGENTS.md §S11.
+`submissions/legend.zip` = `legend_m10`. It plays exactly as `legend_m8` (the results table below applies: it takes the two top
+teams' per-map draft choices where they beat ours and Mite's stampede plan). The 17 ideas from the repository's default branch
+(`claude/lucid-pasteur-2jiojv`, the Oct 16 "round-2" bot) are in the code behind `mi_*` switches, all off: switched on together
+(`legend_m9`, shipped briefly at the user's request) they lost to every sparring opponent (Mite proxy 63.6% vs 76.1%, ifish proxy
+51.1% vs 69.3%, `_px9` 65.9% vs 78.4%). Per-idea numbers and what stays off: AGENTS.md §S11. Ladder feedback decides the next step.
 
 ## Results of `legend_m8` (session 10, Oct 18; 44 distinct maps × both sides = 88 games per row)
 

@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-18 (session 11; `legend_m9` shipped at the user's request before full testing; see §S11)**. Rule from the user: update this file and push at every step. Start with **§S11**, then **§S10**, **§S9**, **§S8**,
+- Last updated: **2026-10-18 (session 11; `legend_m10` shipped = `legend_m8`'s play with the default-branch ideas switched off; see §S11)**. Rule from the user: update this file and push at every step. Start with **§S11**, then **§S10**, **§S9**, **§S8**,
   **§S7**, **§S7-SV2**, then §000000 (resume protocol), §00000, §0000, §000, §00. **All work stays on branch `ccr-a858cd03-q87cpi`**:
   `git pull` (merge, never force) before every push. The repository's **default branch is `claude/lucid-pasteur-2jiojv`** (Oct 17, its
   bot does not compile); this branch is 142 commits ahead of it. No PR unless the user asks.
@@ -38,8 +38,17 @@ running or unfinished, and what to do next, so a new agent can continue without 
 - **Full cells of `_m9` (ledger name `_mi1`; 88 distinct / official 34, `_m8`'s cell in brackets)**: vs `_m8` 58.0 / **35.3** (deaths
   639-711); `_mite` 63.6 / 64.7 (76.1 / 82.4); `_ifish` 51.1 / **35.3** (69.3 / 79.4); `_px9` 65.9 / 58.8 (78.4 / 76.5). **Worse than
   `legend_m8` against every third party by 12-18 points (official 18-44)**: the user was told; recommended rollback = `legend_m8`.
-- Running: add-one (`_a_<idea>` = `_m8` code + that idea alone) and leave-one-out (`_l_<idea>` = `_m9` minus that idea) vs `_m8`, 88 games each
-  (`$S/bin/mi_screen.sh`, log `/tmp/mi.log`); results go into the table below as they land.
+- The user then asked for a finished bot first ("give me a bot, then continue; I will give feedback from the ladder"). Screen so far (88 games /
+  official vs `_m8`), each idea **alone** on `_m8`: `health_emblem` 47.7 / 50.0, `learn_burst` 52.3 / 52.9 (deaths 590-631), `lethal` 51.1 / 50.0,
+  `cd_slack` 47.7 / 41.2, `walk_cast` 44.3 / 47.1, `endgame_bank` 48.9 / 50.0 (the other 11 not yet run). Each idea **removed** from `_m9`:
+  `health_emblem` 55.7 / 38.2, `learn_burst` 55.7 / 29.4, `lethal` 58.0 / 35.3, `cd_slack` 61.4 / 47.1, `walk_cast` 58.0 / 44.1.
+  Quick candidate `_bl2` (= `_m9` code, only `learn_burst` + `lethal` on; ledger cells `_bl2_vs_*`): vs `_m8` 50.0 / 52.9, `_mite` 77.3 / 88.2
+  (76.1 / 82.4), `_ifish` 69.3 / 76.5 (69.3 / 79.4), `_px9` **63.6 / 61.8 (78.4 / 76.5)**, pace 503.8: not a better trade.
+- **SHIPPED `legend_m10`** (`submissions/legend.zip` sha256 43d3b1ed…, `submissions/history/legend_m10_20261018.zip`) = `_m10` = `_m9` with every
+  `mi_*` switch 0 (`bots/legend/src` = that + the `LEGEND_RUNTIME_PARAMS` block and a comment with the numbers: wasm byte-identical).
+  It plays `legend_m8`'s games: vs `_mite` 86 / 88 games identical, vs `_px9` 87 / 88, same wins (76.1, 78.4). **New baseline: `_m10`** (= `_m8` play).
+- Still to do (the user: continue after giving the bot): finish the per-idea screen (the 11 ideas left, `mi_screen.sh` resumes through the ledger),
+  then test the ideas that are positive alone in pairs, vs `_m10` and the third parties; wait for the user's ladder feedback on `legend_m10`.
 
 ## S10. SESSION 10 (2026-10-18 17:20 UTC, new container): read this first
 

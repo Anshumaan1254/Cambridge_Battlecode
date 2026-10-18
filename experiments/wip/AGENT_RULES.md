@@ -1,3 +1,26 @@
+# Session 9 (2026-10-18 afternoon, new container): read this block first; it overrides everything below
+
+- Work only on branch `ccr-a858cd03-q87cpi`. Baseline: **`bots/_xp4`** (= shipped `legend_m6`, source hash 6a1a52e4ddb8). Read-only.
+  Copy: `SRC=bots/_xp4 tools/variant.sh _x_NAME`; patch: `cd bots && diff -ruN _xp4/src _x_NAME/src > ../experiments/wip/x_NAME.patch`.
+  Variants: `SRC=bots/_x_NAME tools/variant.sh _<prefix>N key=val ...` (your own prefix only).
+- Opponents (built, read-only): `_xp4` (baseline), `_px9` (ladder-calibrated proxy, session 8), `_fA` (pressure archetype on legend_m4
+  code), `_ST` (legend_st), `_m5a` (legend_m5), `_m4`, `_eA _eB _eC`, `idle`.
+- Pools: **distinct maps only** `'maps/*.map26a,maps/comp/*.map26a'` (44 maps, 88 games; never `maps/ladder`, it copies official maps);
+  official `'maps/comp/*.map26a'` (34 games) is part of it, report it apart (`tools/ledger_sum.py --pool ...`); held-out
+  `'maps/gold/*.map26a,maps/gold2/*.map26a,maps/obj/*.map26a'` (100 games). Games are fast (34 games in ~11 s at 4 jobs).
+- Every game through `tools/ledger.py run BOT OPP --maps POOL --jobs 2`; summaries `python3 tools/ledger_sum.py --pool 'maps/*.map26a,maps/comp/*.map26a' BOT`.
+  Pace: `python3 tools/ledger.py run BOT idle --maps 'maps/comp/*.map26a' --jobs 2` then `python3 tools/ledger_pace.py BOT _xp4 --maps` (`_xp4` 521.9).
+- Replay KPIs for your local games: `python3 tools/bench.py A B --maps ... --out DIR` keeps replays; then
+  `python3 tools/strategy_v2/run_all.py OUT DIR_with_side_A_replays` (report.md), `python3 -I tools/strategy_v2/micro.py OUT/dmg=*:A:B`
+  (distance bands, hit ranges, fight openers), `python3 -I tools/strategy_v2/teamsum.py OUT/out=*:A:B` (per champion farming).
+- Ladder evidence (read these first): `docs/strategy_v2/08_TOP3_VS_TOP3.md`, `experiments/ladder_top3/` (top 3 vs each other),
+  `experiments/ladder_m5/` (legend_m5 vs the top 3), `docs/strategy_v2/07_LADDER_M5_18OCT.md`.
+- Ship rule (coordinator): >= 50 vs `_xp4` on the 88 and on the official 34, not worse vs `_px9` / `_fA` / `_ST`, pace within +10 of 521.9,
+  0 faults, no new fuel rollovers (`node tools/analysis/rollovers.mjs REPLAY` on `gen16_98x99_V_c5`, both sides: 8 per team, rounds 1-3).
+- CPU: 4 cores shared by two agents and the coordinator: `--jobs 2`.
+- Never commit/push/checkout/stash/reset, never `pkill -f`/`pgrep -f`/`killall`, never edit `bots/legend`, `bots/_xp4` or others' bots,
+  never run `tools/setup_session.sh`. Keep `experiments/wip/x_NAME.patch` and `x_NAME_NOTES.md` current (the coordinator commits them).
+
 # Session 7 (2026-10-18, new container): read this block first; it overrides everything below
 
 - Work only on branch `ccr-a858cd03-q87cpi` and only with what is in it (the user: do not look at or merge other branches).

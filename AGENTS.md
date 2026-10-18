@@ -3,17 +3,41 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-18 16:00 UTC (session 8)**. Rule from the user: update this file and push at every step. Start with **§S8**, then **§S7**
-  (session 7), then **§S7-SV2** (session 7, strategy v2: the top-3 replay study and the new plan, `docs/strategy_v2/`), then §000000
-  (resume protocol), §00000 (session 6), §0000, §000, §00. **All work stays on branch `ccr-a858cd03-q87cpi`**:
-  **two sessions push to this branch** (§S7 = the coordinator with agents econ / fight / contest; §S7-SV2 = strategy v2): `git pull` (merge,
-  never force) before every push, and do not duplicate the other session's runs.
-  The user said (session 7) not to look at or merge other branches. No PR unless the user asks.
+- Last updated: **2026-10-18 16:10 UTC (session 9)**. Rule from the user: update this file and push at every step. Start with **§S9**, then **§S8**,
+  **§S7**, **§S7-SV2**, then §000000 (resume protocol), §00000, §0000, §000, §00. **All work stays on branch `ccr-a858cd03-q87cpi`**:
+  `git pull` (merge, never force) before every push. Session 9: the user asked to read the `claude/laughing-curie-3rq6hu` branch too:
+  it is the session 4-5 state (last commit 2026-10-17 20:28 UTC) and everything in it is already in this branch (its §0000 is below).
+  No PR unless the user asks.
 - Competition: Cambridge Battlecode 2026a (CAMBC), 12 Oct to 18 Nov 2026. C++ bot compiled to wasm.
 - The submitted bot cannot be changed after submission and keeps nothing between matches. All "learning"
   is either offline (training parameters before submission) or in-match (adapting inside one game).
 
 ---
+
+## S9. SESSION 9 (2026-10-18 15:15 UTC, new container): read this first
+
+- Inputs: two zips from the user: **top 3 vs each other** (3 match groups, 15 games: `experiments/ladder_top3/`, replays in `repl/`)
+  and "our fight with top 3" (= the same 3 groups as `experiments/ladder_m5/top4`, played by `legend_m5`; nothing new).
+  The user's requests: continue AGENTS.md's open list by priority, recreate the top teams' strategies in our bot without making it
+  worse than `legend_m6`, Opus agents only for make-or-break work (Sonnet/Haiku otherwise), push every better bot first,
+  update this file at every step, no RL bundle this time. After the main tasks: look at our games vs the top 3 again.
+- Setup: `tools/setup_session.sh` (all hashes ok). Games are fast here: 34 games in 11 s at 4 jobs.
+- **Findings** (doc `docs/strategy_v2/08_TOP3_VS_TOP3.md`):
+  1. Teams by draft: 23206e46 = 3rd (A) vs 1st, 7b2474db = 2nd vs 1st, c47bab28 = 3rd vs 1st. Top-vs-top games are farming
+     races with 0-22 deaths; their opposed finish beats our unopposed pace on expanse, lanes, monolith, stampede. Contest is a
+     massacre for the weaker side (1st loses it to both, 98-9 deaths).
+  2. **Spells are 72-82% of champion damage between top teams** (ours 48%), cast from distance 4-5: area spells (radius 1 at
+     range 4) reach 5. Our danger map treats every spell as reach 4; at distance 5 we deal 3 and take 12 per body-round.
+  3. **The opener wins**: first hit of a fight -> 391 vs 58 damage in 3 rounds (top vs us); they open 129 fights to our 74.
+  4. **Cassi focus at r300: ours 70 (health-first build), theirs 195-248**; Issac strength 47 vs 77-108. 3rd team: Treasure,
+     Jungle, Durability emblems **in the damage stat**, one Bruiser health, then Power forever; 2nd: Jungle (damage stat) first.
+     Gold: our Ren takes 35-38% of capture gold; 3rd's Stellar 33% + Cassi 27%.
+- Tools added: `tools/strategy_v2/teamsum.py` (named-team per-champion summary), `micro.py` (distance bands, hit ranges, openers).
+- Agents started 16:15 UTC (baseline `_xp4`, rules `experiments/wip/AGENT_RULES.md` session-9 block):
+  `fight2` (Opus, high): area reach 5, cast-first openers, no idling at 4-5 from ready casters; copy `bots/_x_f2`, variants `_f2*`,
+  notes `experiments/wip/x_f2_NOTES.md`, patch `x_f2.patch`.
+  `econ2` (Sonnet, high): 3rd/2nd-team builds, Cassi focus, gold to casters; copy `bots/_x_e2`, variants `_e2*`, notes `x_e2_NOTES.md`, patch `x_e2.patch`.
+- Session 8's `evade` and `neutral` agents pushed nothing (no notes in git): their tasks are folded into `fight2` / `econ2`.
 
 ## S8. SESSION 8 (2026-10-18 13:00 UTC, new container): read this first
 

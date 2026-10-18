@@ -37,11 +37,14 @@ Control `_xd0` (= `_x_doc`, all off) vs `_m4` official 17: 50.0, deaths 318-318 
 | `_xd7c` burst_exit 2 (no chaser) | 52.9 (339-333, = `_xd7`) | 58.8 (421-349) |
 | `_xd4b` spread_vs_splash 2 | 55.9 (318-360) | 61.8 (441-378) |
 | `_xd9b` pair_space 2 | 41.2 (361-296) | 70.6 (368-391) |
+| `_xde` engage_angle 1 | 52.9 (365-303) | |
+| `_xds` support_v2 1 | 61.8 (287-340) | |
 
 88 distinct games (`maps/*.map26a` + `maps/comp`; all / official / deaths):
 | Variant | vs `_m4` | vs `_fA` | vs `_ST` |
 |---|---|---|---|
-| `_xd5` camp_in_fight 3 | **56.8 / 58.8** (545-616) | | |
+| `_m4` reference | - | 63.6 / 64.7 (731-787) | 73.9 / 70.6 (654-817) |
+| `_xd5` camp_in_fight 3 | **56.8 / 58.8** (545-616); held-out 100 (gold, gold2, obj) 52.0 (1898-1851) | 59.1 / 70.6 (758-794) | 72.7 / 73.5 (616-812) |
 | `_xd4` spread_vs_splash 1 | 45.5 / 61.8 (584-581) | | |
 | `_xd9` pair_space 1 | 52.3 / 47.1 (591-655) | | |
 | `_xdC3` cif 3 + spread 1 + pair_space 1 | 47.7 / 44.1 (639-589) | | |
@@ -56,3 +59,19 @@ Control `_xd0` (= `_x_doc`, all off) vs `_m4` official 17: 50.0, deaths 318-318 
   victim + ally 8% (them 0%), camp damage in the last 5 rounds 6% (them 20%: they die to camps + us more than we do).
 - Sparring (`_m4` vs `_fA`) does not reproduce the ladder gap (hit-nobody-back 68/63, damage ratio 0.88): every A/B below
   is against our own code family, where rules aimed at the top teams' burst move results by noise-level amounts.
+
+- `_xd5` pace (official 17 vs idle): 524.2 (`_m4` 524.5). gen16 rollovers of `_xdC2` (cif + spread + burst): 8 per team, rounds 1-3 (= `_m4`).
+
+## Rebase on `_m5a` (= shipped legend_m5 = `_m4` + x_exec + 16 RL params; coordinator, 14:00)
+- `bots/_xm5` = `_m5a` + x_doc (two hunks placed by hand: params at the end of the struct, burst_exit block before the win_bank
+  veto, after x_exec's fight_commit). Patch vs `_m5a`: `experiments/wip/x_doc_m5.patch`
+  (`SRC=bots/_m5a tools/variant.sh _xm5 && (cd bots/_xm5 && patch -p1 < ../../experiments/wip/x_doc_m5.patch)`).
+- Variants: `_xm5c` camp_in_fight 3; `_xm5s` support_v2 1; `_xm5cs` both.
+
+88 distinct games on the `_m5a` base (all / official / deaths):
+| Variant | vs `_m5a` | vs `_fA` | vs `_ST` | pace |
+|---|---|---|---|---|
+| `_m5a` reference | - | 76.1 / 79.4 (611-956) | 73.9 / 91.2 (526-849) | 523.4 |
+| `_xm5c` camp_in_fight 3 | 51.1 / 44.1 (644-649) | 75.0 / 82.4 (601-934) | 75.0 / 88.2 (525-886) | 521.8 |
+| `_xm5cs` camp_in_fight 3 + support_v2 1 | **52.3 / 52.9** (614-655) | | | |
+| `_xm5s` support_v2 1 (official 34 only) | 55.9 (320-338) | | | |

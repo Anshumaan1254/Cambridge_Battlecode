@@ -58,6 +58,11 @@ running or unfinished, and what to do next, so a new agent can continue without 
   source hash a629b67deee1). Top-style fight order and damage builds (28.4 damage points per 1000 gold, hit-back gap 0.62) but a weak economy:
   pace 827 (objective maps never cleared), 12.6 deaths per game; `_m4` beats it 91.2% (official), `_m5a` 100%. **Not a realistic stand-in**:
   use it only as an extra sparring partner, never as evidence about the real top teams. The pressure archetype `_fA` stays the main proxy.
+- **Part B screen on `legend_m5` (15:10 UTC)**, variants of `bots/legend` (= `_m5a` + inert code; control `_L5c` vs `_m5a` 50.0, deaths 318-318: identical play).
+  88 distinct games / official 34, then pace: `build_style 3` (`_L5b3`) vs `_m5a` 46.6 / 41.2, vs `_fA` 70.5 (`_m5a` 76.1), pace 564.5 (contest 1045 -> 1463);
+  top draft Varg, Stellar, C&I, Ryth, Ren (`_L5d`, `LEGEND_DRAFT 9,4,3,0,8`) 51.1 / 52.9, vs `_fA` 62.5, pace 529.5; both (`_L5b3d`) 45.5 / 35.3, `_fA` 63.6, pace 570.5.
+  **Still no gain from the top teams' builds or draft, now with x_exec in the brain**: rejected again. Builds would need faster kills and a
+  contest plan first (style 3 cannot clear contest's monolith: no health).
 - Next for the user: upload `submissions/legend.zip` (legend_m5), queue match groups vs the top 3 and send the zips (`tools/strategy_v2/run_all.py` decodes them); re-run the A100 trainer on this commit (it now trains legend_m5 = `bots/legend`, with `_m4` in its frozen opponents).
 - Agents started 13:30 UTC: `top` (Sonnet): top-style sparring bot `bots/_top` from starter-cpp (notes `experiments/wip/x_top_NOTES.md`,
   patch `x_top.patch` vs starter-cpp); `doctrine` (Opus): fight doctrine A4-A7/A9 on `_m4` (`bots/_x_doc`, notes `x_doc_NOTES.md`, patch `x_doc.patch`).

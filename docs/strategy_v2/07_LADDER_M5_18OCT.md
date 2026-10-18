@@ -47,3 +47,13 @@ Session 8 found that our sparring bots (all our own code; `_fA` = our brain with
 reproduce this fight gap (`_m4` vs `_fA`: hit-nobody-back 68% vs 63%, damage ratio 0.88), so rules aimed at burst
 (`burst_exit`, spacing, strike first) score as noise locally. Next step: a sparring proxy calibrated on these 51 games
 (target KPIs above) before any more fight rules are judged; ladder match groups stay the final judge.
+
+## Addendum: 3 more match groups ("top 4", 15 games, `experiments/ladder_m5/top4/`)
+
+2 wins (packs 1,020-868, rows 1,056-924), 13 losses; banked 6,248-15,170, deaths 122-45, kills 32-79, camp gems 6,428-16,070,
+gold 34.4k-74.5k, captures 178-374 (neutral 63 vs 192), damage points per 1,000 gold 20.6 vs 29.4, burst deaths 43% vs 16%,
+hit-nobody-back 0.63 vs 0.50, fight damage ratio 0.63, time alive 85% vs 94%, camp damage per camp round 77 vs 107.
+Three games replay identically to games of the earlier groups (monolith 534-1,016 = vs 1st; rows 1,056-924 and rushbait-v2
+584-1,004 = vs 3rd), so at least groups 257928d1 and a578cf31 were played by the same build as before (`legend_m5`, or
+`legend_m6` making the same moves in those games). Same picture as above: fewer deaths would not be enough on their own;
+the top teams also farm the neutral half and buy damage.

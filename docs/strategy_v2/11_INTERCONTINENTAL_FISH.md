@@ -2,6 +2,21 @@
 
 > Written as a handoff in session 12. `legend_m12` (= `legend_m11` play, wasm byte-identical, plus the inert switches below) is the build on branch `claude/laughing-curie-3rq6hu`; the zip `legend_final` described in section 0 below was the session-12 candidate before `legend_m11` shipped on the ccr branch (`legend_m11` = the same warding plus the stronger contest blob opening).
 
+## legend_m13 (session 12): the blob opening on the clash maps
+
+Per-map breakdown of the rejected all-map blob (`follow_all_until`, official 34 vs `_m11`) showed it winning both sides on interlock, eight and rushbait-v2 and losing on the farming maps. Gated to those three maps by size (`follow_maps` 7) and tested on the clash pool (the five clash maps in 4 layouts each, `maps/blob/` made with `tools/mapgen/swap_sides.mjs`, 40 games per cell; `_m11` in brackets):
+
+| Variant | vs `_m11` | `_mite` (72.5) | `_ifish` (57.5) | `_px9` (72.5) | `_snk` (67.5) | `_fA` (82.5) | `_ST` (85.0) | mean (72.9) |
+|---|---|---|---|---|---|---|---|---|
+| `_g13a` to r120, 3 maps | 57.5 | 80.0 | 65.0 | 57.5 | 72.5 | 77.5 | 77.5 | 71.7 |
+| **`_g13b` to r60, 3 maps** | **62.5** | **82.5** | 55.0 | **80.0** | **75.0** | 80.0 | 85.0 | **76.2** |
+| `_g13c` to r120, 5 maps | 72.5 | 75.0 | 65.0 | 52.5 | 67.5 | 72.5 | 82.5 | 69.2 |
+| `_g13d` to r200, 3 maps | 57.5 | 75.0 | 55.0 | 72.5 | 70.0 | 80.0 | 77.5 | 71.7 |
+
+`_g13b` = **`legend_m13`**: 88 distinct / official vs `_m11` 51.1 / 55.9, Mite 67.0 / 79.4 (65.9 / 76.5), `_px9` 71.6 / 82.4 (71.6 / 79.4), `_fA` 79.5 / 88.2 (77.3 / 76.5), `_ST` 86.4 / 94.1 (85.2 / 91.2), ifish 67.0 / 64.7 (69.3 / 70.6; the 15 flipped games split 7 wins / 8 losses across layouts); pace 500.5 (505.5); 0 faults; rollovers 8.
+
+Also tested on `_m11` and rejected: the Home emblem (`home_emblem`: Stellar/Issac/Varg 2nd 32.4, Ren 41.2, all 3rd 38.2, all 2nd 35.3, S/I/V 3rd 47.1 head-to-head; proxies -6 to -24).
+
 ## Final check (session 12): which contest plan to ship
 
 On the contest pool (contest + 33 geometry / perturbed copies, 68 games): `_fwc` (ward_bush 2 + GROUPED opening to r300, the `legend_final` zip of section 0) vs `_m11` (ward_bush 2 + blob opening `mono_follow_until` 200) **27.9%**; vs the sneaky-bush proxy `_fwc` 92.6%, `_m11` 97.1%. **`legend_m11` / `legend_m12` is the build to ship; `legend_final` is superseded.**

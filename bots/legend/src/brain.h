@@ -139,7 +139,8 @@ private:
 	void refresh_item_flags() const;
 	mutable std::size_t item_flags_idx = static_cast<std::size_t>(-1);
 	mutable bool jungle_ok = false, durability_ok = false, monster_ok = false;
-	bool has_home = false; // Home emblem (faster recall); we never buy it, kept for the capture-recall timing
+	bool has_home = false; // Home emblem owned (home_emblem): recall lands in 3 turn ends instead of 5
+	int recall_turns() const { return static_cast<int>(bc::constants::recall_time) - (P.home_emblem && has_home ? 2 : 0); }
 #ifdef XM_TRACE
 	// Prediction audit state (all updated inside debug_block, so it costs no fuel and changes no decision).
 	mutable ScoreParts* xm_sp = nullptr;

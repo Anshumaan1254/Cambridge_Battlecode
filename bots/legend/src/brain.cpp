@@ -369,6 +369,26 @@ void Brain::init()
 	const auto abl = me.abilities();
 	ab.assign(abl.begin(), abl.end());
 	build = build_for(type, P.build_style);
+	if (P.home_emblem)
+	{
+		// Home health emblem (recall in 3 turns): every Intercontinental Fish collector buys it second (Oct 18 upload, 30 games).
+		int bit = 64;
+		switch (type)
+		{
+		case CT::ren: bit = 1; break;
+		case CT::stellar: bit = 2; break;
+		case CT::cassi: bit = 4; break;
+		case CT::issac: bit = 8; break;
+		case CT::ryth: bit = 16; break;
+		case CT::varg: bit = 32; break;
+		default: break;
+		}
+		if (P.home_emblem & bit)
+		{
+			const std::size_t at = std::min(build.size(), static_cast<std::size_t>(std::max(0, P.home_at)) * 5);
+			build.insert(build.begin() + static_cast<std::ptrdiff_t>(at), 5, I::home_shard_of_health);
+		}
+	}
 	if (P.mi_health_emblem)
 	{
 		// mi_health_emblem (default branch): a Durability health emblem (-10% damage taken, +5 health points) right after the
@@ -814,6 +834,13 @@ void Brain::shop()
 		catch (...)
 		{
 			break;
+		}
+		if (P.home_emblem && !has_home && item == I::home_shard_of_health)
+		{
+			int k = 0;
+			for (std::size_t i = 0; i < build_idx; ++i)
+				k += build[i] == I::home_shard_of_health;
+			has_home = k >= 5;
 		}
 	}
 	// A spare altar lock once the first emblem is done (consumables only on spawn or while dead).
@@ -2405,7 +2432,7 @@ bool Brain::home_trip()
 	if (dh >= BIG || dh <= (P.home_edge_fix ? 0 : 2))
 		return false;
 	const bool can_recall = dh > P.recall_min_dist && safe_to_recall();
-	const int cost = can_recall ? static_cast<int>(bc::constants::recall_time) : dh;
+	const int cost = can_recall ? recall_turns() : dh;
 	const bool shopper = type != CT::tavi && build_idx < build.size();
 	const int shards = shopper ? static_cast<int>(gold / 30) : 0;
 	const bool hurt = hp < P.home_hp * max_hp;
@@ -2742,7 +2769,7 @@ bool Brain::tribute(bool force)
 	// flip the choice each round and the champion oscillated in place for hundreds of rounds.
 	const bool committed = P.sticky_tribute && task == T_TRIBUTE && static_cast<int>(gems) >= 10;
 	// Recall and bank at the altar next to spawn when that beats walking (and heals and shops on the way).
-	const int via_home = static_cast<int>(bc::constants::recall_time) + W.spawn_altar_d;
+	const int via_home = recall_turns() + W.spawn_altar_d;
 	const bool recall_bank = W.dist_home(pos) > P.recall_min_dist && via_home + 2 < dist && safe_to_recall() && !endgame;
 	// A long bank trip is worth a bigger bag: the threshold rises with the cheapest way to an altar from here,
 	// so a body far from every altar keeps farming and banks when its route passes close to one.
@@ -2950,7 +2977,7 @@ int Brain::trip_cost(const Group& g) const
 {
 	// Heal at spawn and come back: recall (5 turn ends, 3 with Home) beats walking once spawn is far.
 	const int hd = std::min(g.d_home_c, 60);
-	const int recall = static_cast<int>(bc::constants::recall_time);
+	const int recall = recall_turns();
 	return 2 + std::min(2 * hd, recall + hd);
 }
 
@@ -3233,6 +3260,15 @@ void Brain::chip_passing()
 	}
 }
 
+// follow_maps: the clash maps where the opening blob beat legend_m11 on both sides (interlock, eight, rushbait-v2; collision, swirl),
+// recognised by size in either orientation (no host call; the official sizes are unique among the 17 maps).
+static bool follow_map_on(int w, int h)
+{
+	auto is = [&](int a, int b) { return (w == a && h == b) || (w == b && h == a); };
+	return ((P.follow_maps & 1) && is(40, 40)) || ((P.follow_maps & 2) && is(41, 30)) || ((P.follow_maps & 4) && is(30, 80))
+		|| ((P.follow_maps & 8) && is(41, 41)) || ((P.follow_maps & 16) && is(45, 30));
+}
+
 float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_override) const
 {
 	if (need_pair)
@@ -3249,7 +3285,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 	// Lone-monolith maps, opening: the lowest-index living body with a claim leads, everyone else farms the leader's group (the centre gold
 	// triples are where the packs meet; bodies that pick their own camps arrive one at a time and feed).
 	bool follow_g = false;
-	if ((P.mono_follow_until > 0 && W.mono_mode && round < P.mono_follow_until) || (P.follow_all_until > 0 && round < P.follow_all_until))
+	if ((P.mono_follow_until > 0 && W.mono_mode && round < P.mono_follow_until) || (P.follow_all_until > 0 && round < P.follow_all_until && (!P.follow_maps || follow_map_on(W.W, W.H))))
 	{
 		int leader = -1;
 		for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 6; ++i)
@@ -4190,7 +4226,7 @@ bool Brain::capture_group(Group& g)
 				return true;
 			}
 			const bool bank_here = P.bank_first && adist < BIG && spawn_altar < BIG &&
-				adist + static_cast<int>(bc::constants::recall_time) + P.bank_first_margin <= spawn_altar;
+				adist + recall_turns() + P.bank_first_margin <= spawn_altar;
 			const bool bag = static_cast<int>(gems) + g.gems >= bank_min(std::min(adist, spawn_altar < BIG ? 1 + spawn_altar : BIG));
 			if (bag && bank_here && !hurt)
 			{

@@ -378,7 +378,16 @@ struct Params
 	int mono_rg_from = 0;
 	int mono_rg_fight_r = 3;	 // an enemy this close: combat() decides instead of walking home
 	int mono_gmask = 15;		// which parts of the GROUPED stance apply while mono_grouped_until forces it: 1 enemy-half penalty x2, 2 deny bonus x0.5, 4 isolated fight +0.3, 8 stay near allies' claims
-	int follow_all_until = 0;	// every map: the mono_follow_until blob (bodies farm the lowest-index claimant's group) until this round
+	int home_emblem = 0;		// champions that buy a Home health emblem (recall in 3 turn ends, not 5): Ren 1, Stellar 2, Cassi 4, Issac 8,
+							// Ryth 16, Varg 32, others 64 (Intercontinental Fish: Stellar, Issac, Varg, 2nd emblem; we never bought it)
+	int home_at = 1;			// ... inserted as this emblem (0 = first). Measured on legend_m11 (official 34): every variant loses (vs m11 32.4-47.1,
+							// mite 64.7-76.5 vs 76.5, px9 55.9-73.5 vs 79.4; pace +7..+13 except Stellar/Issac/Varg as 3rd emblem 503.8): off
+	int follow_all_until = 60;	// legend_m13: the mono_follow_until blob opening (bodies farm the lowest-index claimant's group) until this round,
+							// on the follow_maps only. Clash pool (interlock, eight, rushbait-v2, collision, swirl x 4 layouts, 40 games): vs legend_m11
+							// 62.5, proxies mite 82.5 (m11 72.5), px9 80.0 (72.5), snk 75.0 (67.5), fA 80.0 (82.5), ST 85.0 (85.0), ifish 55.0 (57.5);
+							// 88 distinct: vs legend_m11 51.1 / official 55.9. On every map (follow_maps 0) it lost 44.1; until r120 57.5, r200 57.5
+	int follow_maps = 7;		// follow_all_until only on these maps (0 = all): interlock 1, eight 2, rushbait-v2 4, collision 8, swirl 16 (31: 72.5 h2h
+							// but px9 52.5 on the clash pool)
 	int pair_open_until = 0;	// every map: before this round any fighting group an ally claims counts as heavy enough to join (IC pairs)
 	int mono_follow_until = 200;	// opening: bodies farm the group the lowest-index living claimant farms (one blob) until this round
 	float mono_group_w = 0.f;	// cohesion (with mono_grouped_until): rounds of extra cost per tile beyond mono_group_r from the nearest ally's claimed group

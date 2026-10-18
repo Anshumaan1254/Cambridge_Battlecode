@@ -21,7 +21,9 @@ running or unfinished, and what to do next, so a new agent can continue without 
   `bots/legend/src` = it + the inert `LEGEND_RUNTIME_PARAMS` block (wasm byte-identical). Evidence: vs `_m8` 52.3 / 67.6 (88 distinct / official),
   83 of 86 non-contest games identical to `_wb2`'s; contest pool (68 games) vs `_m8` 88.2, `_mite` 95.6, `_snk` 97.1; `_wb2` held-out vs `_mite` 87.0
   (`_m10` 79.0), `_px9` 74.0 (66.0); gen16 rollovers 8/8. Caveat: on the 88-map pool `_wb2` scored 63.6 vs `_mite` (`_m8` 76.1): held-out reverses it.
-  Third-party cells of `_m11` on the 88 still playing (`$S/m11.sh`): add them to the BUILDS row. **New baseline: `_m11`.** Rollback: `legend_m10` zip.
+  Held-out (100 games, warding alone `_wb2` / `_m10`): vs `_m8` 51.0, `_mite` 87.0 / 79.0, `_px9` 74.0 / 66.0, `_ifish` 83.0 / 80.0, `_snk` 86.0 / 84.0:
+  better than `_m10` against every proxy on maps that were never used for selection. `_m11` on the 88: vs `_m10` 53.4, vs `_mite` 65.9.
+  Remaining third-party cells of `_m11` on the 88 still playing (`$S/m11.sh`): add them to the BUILDS row. **New baseline: `_m11`.** Rollback: `legend_m10` zip.
   The opening-gold workflow was stopped to free CPU (its notes: `x_og_NOTES.md`; nothing passed vs the proxies).
 
 - This container (S7's) resumed after the session limit; its agents econ / fight / contest died then. It works on: (1) **`join_marginal`**

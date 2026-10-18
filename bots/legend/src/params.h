@@ -14,11 +14,23 @@ struct Params
 	int farm_monolith = 1;			 // 0: never farm a monolith group (20,000 HP, 200 strength; the user: do not rely on it for gems)
 	int max_trips = 5;				 // heal trips we accept to finish one camp group (camps never heal)
 	float join_min_rounds = 14.f;	 // join an ally's group when it alone needs more rounds than this
-	int max_join = 1;				 // extra bodies allowed on one (non-monolith) group
+	int max_join = 3;				 // extra bodies allowed on one (non-monolith) group. Was 1; 3 (agent farm): unopposed pace on the 17 official maps
+									 // 563.1 -> 553.3 (rows 425 -> 398, monolith 474 -> 417, elkring 472 -> 442, eight 427 -> 396), head-to-head vs _rm
+									 // 54.5 both (official 58.8 -> 61.8). Ladder rows: the enemy clears each 3-wolf pack with 3-5 bodies in ~11 rounds
+	float join_reach = 0.f;			 // (0 off) join a claimed group only when we reach it within this share of the claimers' remaining clear time
 	float join_share = 0.6f;		 // value credited to a joining body (the claimer captures)
 	int pair_plans = 0;				 // claim packs too heavy for one body and wait for a partner (off: costs pace)
 	float pair_wait = 8.f;			 // rounds added to a pair plan for the partner to arrive
 	int pair_wait_max = 18;			 // give up waiting for a partner after this many rounds
+	int no_split = 1;				 // a reward with a visible ally on its tiles is left to that ally (lower index wins when both stand
+									 // there): ladder rows, 10 of our 18 captures were 33/33 splits of one 66-gem pack; unopposed
+									 // rows 6 of 21 (agent farm)
+	int unknown_keep = 2;			 // 1: the unseen-for-60-rounds discount (unknown_discount) does not apply to the target we walk to:
+									 // every unseen enemy-half group lost 25% at round 61 and bodies that had walked 60 rounds to one
+									 // switched there (pilgrimage, ambush: 3-4 bodies turned back at r61-66; agent farm).
+									 // 2 (default): no exemption, but a group never seen is discounted from round 0 (no cliff at r61 either).
+									 // Head-to-head vs _rm (56 maps, with no_split, obj_focus and the pace patch): 1 -> 48.2 (official 44.1, deaths
+									 // 1255-1101: bodies kept walking into the enemy half); 2 -> 54.5 (58.8, deaths 1055-1287). Pace 559.0 vs 563.1
 	float target_threat_adv = 1.305f;	 // skip camps where recently seen enemies beat us (and allies there) (ES: 1.1 -> 1.305)
 
 	// Farming model corrections (prediction audit, tools/analysis/xm_audit.mjs on 48 traced games vs _v6 and _hunt2)
@@ -57,6 +69,25 @@ struct Params
 	float isolated_fight_adv = 1.428f; // alone, start a fight only at this advantage (or a sure kill) (ES: 1.6 -> 1.428)
 	float isolated_flee_adv = 1.1f;	 // alone and weaker than this: walk away as soon as they are in sight
 	int flee_dist = 7;				 // ... when the nearest enemy is this close
+	// Survival vs grouped invaders (agent survive, session 6; experiments/wip/x_survive_NOTES.md). Ladder: 232 deaths vs 50 in
+	// 17 games; the killers were within 8 tiles for 7+ rounds before 75% of them. Recommended set (_svF) vs _rm, 56 maps,
+	// 112 games: 61.6% head-to-head (official 64.7), deaths 881-1301; vs _ST 56.2 (_rm 54.5), _eA 69.6 (_rm 57.1); held-out pool
+	// and _eB/_eC in the notes. Our deaths fall 23-38% against every opponent with more gems banked.
+	int outmatch_flee = 1;			 // also walk away (not alone) when the visible group here outmatches us: adv below
+	float outmatch_flee_adv = 0.8f;	 // ... this (1.0: 50.0% vs _rm on the official 17, 0.7: 52.9, 0.8: 55.9), with at least
+	int outmatch_min_enemies = 2;	 // ... this many visible enemies within 9 and the nearest within outmatch_flee_dist (not yet
+	int outmatch_flee_dist = 8;		 // ... in reach: in reach the fight-back / cornered rules apply)
+	float outmatch_solo_adv = 0.6f;	 // ... against a single visible enemy flee below this advantage (0: never; traces: 7 of 68
+									 // deaths began outside reach against one stronger enemy, e.g. their 1,900-health Ren)
+	float pair_flee_bonus = 0.3f;	 // Cassi & Issac (two bodies, two bags per death): flee bar + this (official 17: 55.9 -> 55.9 vs
+									 // _rm, 61.8 -> 70.6 vs _eA)
+	float pair_low_hp = 0.25f;		 // Cassi & Issac: below this health fraction skip fights we can escape (others: 0.25). 0.4 cut
+									 // pair deaths a further 12% vs _eA but cost 4-5 points vs _ST every time (_svA/_svD 50.9 vs 53.6/56.2)
+	float pair_kill_adv = 0.5f;		 // ... and below it a 'killable' target needs this advantage (1.0: same games as 0.5, off)
+	float pair_retreat_hp = 0.f;	 // Cassi & Issac: safety() retreat line (max with retreat_hp; 0.4: 55.9 vs _eA vs 70.6 without)
+	int ren_reflect = 1;			 // combat(): a fight on Ren counts its retaliation (0.2 x focus per hit) on each of our hitters
+	int threat_score_memory = 8;	 // group_score: enemies seen this many rounds ago still guard the camps within 8 of them
+									 // (20: 50.0 vs _rm, more deaths; alert_radius 8 for the team DANGER alert: 47.1, more deaths)
 	float reserve_margin = 0.5f;	 // half the team dead: extra advantage needed to fight
 	int stay_rule = 0;				 // off: all three on (+ ES params) = 49.1% vs this build, fewer deaths (1301 vs 1504) but
 									 // lower panel mean (vs _r2 67.0 vs 78.6, _L0 58.9 vs 67.0); without stay_veto 41.1%
@@ -143,6 +174,7 @@ struct Params
 	int cast_near_target = 1; // fighting: the chosen target is out of spell range but another enemy is within 4: cast on that one
 							  // instead of walking toward the target (path1/eng4 in the trace: 41 turns in 3 games)
 
+	int varg_splash_pos = 1;   // Varg steps next to the camp with the most live neighbours before hitting (splash covers it all; agent farm)
 	int dash_holes = 1;		   // dash kits route over 1-wide hole crossings (fields treat those holes as ground; the
 							   // step waits for the dash instead of walking around), see world.cpp
 	int dash_wait_max = 4;	   // at a crossing with the dash on cooldown: wait up to this many rounds, else walk around
@@ -233,7 +265,9 @@ struct Params
 	int race_carrier = 30;
 	int capture_reset = 1;		// an enemy seen on the group's tiles restarts the capture-recall clock (the engine resets the capture)
 	int tribute_elapsed = 1;	// handle_channel counts the tribute's remaining turns from its start, not from the carried bag
-	int bank_first = 1;			// full bag at a capture: skip the recall and bank at the nearest altar when that beats banking from spawn
+	int bank_first = 0;			// full bag at a capture: skip the recall and bank at the nearest altar when that beats banking from spawn.
+								// OFF (agent pace): unopposed pace on 56 maps 472.7 -> 469.7 with it off (official 17: 574.3 -> 567.6; pilgrimage -123,
+								// rushbait-v2 -48, interlock -19; ambush/monolith/collision +16..+24 are map noise).
 	int bank_first_margin = 2;	// ... by at least this many steps (nearest-altar walk + recall_time + margin <= spawn altar walk)
 	float bank_trip_w = 1.0f;	// bank threshold rises by this many gems per step of bank trip beyond bank_trip_free
 	int bank_trip_free = 12;	// bank trips up to this many steps keep the plain threshold
@@ -242,10 +276,19 @@ struct Params
 
 	// Objective maps (agent obj, session 3): the gems sit in one or a few heavy groups (stampede, contest)
 	int obj_plan = 1;			// detect objective maps at init (World::detect_objective); everything below needs it
-	float obj_min_hp = 6000.f;	// a group this heavy cannot be soloed early (elk 2,400; monolith 20,000)
-	float obj_share = 0.6f;		// ... objective map when such groups hold this share of the map's gem rate
-	int obj_min_attackers = 2;	// ... counting only groups with at least this many camps that hit back (not a lone monolith:
-								// monolith-only maps with the mode on: 105 of 152 games vs _k1/_v6/_r2/_es2, about baseline; x_obj_NOTES)
+	float obj_min_hp = 4500.f;	// a group this heavy cannot be soloed early (elk 2,400; monolith 20,000). Was 6000; 4500 admits ambush's
+								// 4,750-5,800 HP gem groups: ambush pace 840 -> 646 (agent pace)
+	float obj_share = 0.7f;		// ... objective map when such groups hold this share of the map's gem rate (was 0.6; 0.7 keeps eight 0.67,
+								// expanse 0.64, interlock 0.59 out: with 0.4 they got +26..+49 rounds slower, ambush the same -194)
+	int obj_max_groups = 8;		// ... and at most this many such groups on the whole map (both sides). ambush 6, contest 2, stampede 1; swirl and the
+								// ladder 45x30 map have 14 (every gem group is heavy there): with the mode on they got +15 rounds and 2 of 12 more losses
+	int obj_min_attackers = 2;	// ... counting only groups with at least this many camps that hit back (2 excludes a lone monolith: monolith-only
+								// maps with the mode on: 105 of 152 games vs _k1/_v6/_r2/_es2, about baseline; x_obj_NOTES). Agent pace re-tested
+								// 1: contest unopposed pace 1087 -> 905 and nothing else changes, but the held-out gold/obj pool (100 games vs
+								// _ST) went 49 -> 46 with it (noise level) and the gold maps' lone monoliths are what it turns on: left at 2
+	int obj_focus = 1;			// the team plan is only for the objective group claimed by the lowest-index body: on ambush (6 objective groups)
+								// every body chose a different one (Ren g1, Stellar g6, Cassi g11, Varg the enemy's g10), arrived alone, fled at
+								// 120-230 HP, and the gather rule (obj_gather) never saw 3 bodies (agent farm)
 	int obj_team = 1;			// score an objective group with the whole living team's damage once the team can
 								// clear it (obj_team_ready); the solo plan never passes (stampede: nobody touched
 								// the 360-gem group before r905; bodies chipped it one or two at a time and left it)

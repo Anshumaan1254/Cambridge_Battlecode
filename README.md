@@ -12,6 +12,21 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
+## Results of the current build `legend_m2` (session 6, Oct 18; 56 maps × both sides = 112 games per row)
+
+`legend_m2` = `legend_rm` + the `survive` agent's early retreat from outmatched groups (and from one stronger enemy;
+Cassi & Issac leave earlier; Ren's retaliation counted) + the `farm` agent's farming fixes (no split rewards, the
+first body on a reward keeps it, up to 3 bodies on a heavy group, Varg's splash position, objective focus). Official-map
+rates (`maps/comp/`, the real ladder pool) in brackets. Every game is in `experiments/results/ledger/`.
+
+| Opponent | `legend_m2` | deaths (ours-theirs) |
+|---|---|---|
+| `legend_rm` (previous ship) | **61.6%** (70.6) | 804-1359 |
+| `legend_st` (on the ladder Oct 18: 1 win in 17) | **63.4%** (67.6) | 856-1140 |
+| `_eA` Ren-first pressure archetype | 72.3% (76.5) | 1009-1665 |
+| `_eB` C&I-first farming archetype | 73.2% (85.3) | 809-1432 |
+| `_eC` caster objective archetype | 85.7% (85.3) | 795-1455 |
+
 ## Results (local, 56 maps × both sides = 112 games per row; session 3, Oct 17)
 
 The 56 maps are the 17 official ladder maps (`maps/comp/`, the real pool), 12 real ladder maps rebuilt from replays

@@ -80,6 +80,7 @@ private:
 	int sc_recent_n = 0;
 	float sc_risk = 0;
 	bool sc_alert = false;
+	int sc_obj_focus = -1; // objective group the team plan is limited to this turn (P.obj_focus)
 	bool reward_here(); // a dead group we were farming waits for its capture next to us
 	bool respond_to_alert();
 	void farm();
@@ -218,6 +219,16 @@ private:
 	vec2 ust_anchor{ -1, -1 };
 	int ust_since = 0;
 	int left_group = -1, left_round = -1000; // target we last switched away from (flip guard)
+	// no_split: positions at the end of the last turn (ours and the allies we saw)
+	void remember_positions();
+	vec2 my_prev_pos{ -1, -1 };
+	int my_prev_round = -100;
+	std::array<vec2, 8> ally_prev_pos{};
+	std::array<int, 8> ally_prev_round{};
+	std::array<int, 8> ally_still_since{};
+#ifdef LEGEND_TRACE
+	int tr_hits = 0; // trace: attacks on the current target since it was set
+#endif
 	void unstick();
 };
 

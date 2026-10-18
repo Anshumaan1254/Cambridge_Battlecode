@@ -3,14 +3,38 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-18 (session 6)**. Rule from the user: update this file and push at every step. Start with **§00000**
-  (session 6), then §0000, §000, §00. **Session 6 pushes to branch `ccr-a858cd03-q87cpi`** (forked from the tip of
-  `claude/laughing-curie-3rq6hu` at 7e444b0; sessions 4-5 are gone). No PR unless the user asks.
+- Last updated: **2026-10-18 (session 7)**. Rule from the user: update this file and push at every step. Start with **§S7**
+  (session 7), then §000000 (resume protocol), §00000 (session 6), §0000, §000, §00. **All work stays on branch `ccr-a858cd03-q87cpi`**:
+  the user said (session 7) not to look at or merge other branches. No PR unless the user asks.
 - Competition: Cambridge Battlecode 2026a (CAMBC), 12 Oct to 18 Nov 2026. C++ bot compiled to wasm.
 - The submitted bot cannot be changed after submission and keeps nothing between matches. All "learning"
   is either offline (training parameters before submission) or in-match (adapting inside one game).
 
 ---
+
+## S7. SESSION 7 (2026-10-18, new container): read this first
+
+- Setup in a new container: **`tools/setup_session.sh`** (SDK, toolchain, and `_rm _ST _eA _eB _eC _m2 _m3` rebuilt with the exact sources of their
+  ledger rows; it prints each source hash and `ok`). Do not run it while a ledger run is playing (it rebuilds the bots).
+  Recipes it encodes: `_rm` = legend@60d9930; `_ST` = legend@cd4e2aa; archetypes = `_rm` + the brain.cpp part of 78c32bf (`build_style` 3/4,
+  no `LEGEND_RUNTIME_PARAMS`), then `tools/make_archetypes.sh`; `_m2` = `_rm` + `x_farm.patch` and `x_survive.patch` as of cbe612b.
+- **Shipped `legend_m2`** (`submissions/legend.zip` sha256 9568accf…, `submissions/history/legend_m2_20261018.zip`, BUILDS row) = `_m2` exactly
+  (source hash 1684aa2a482c). Its 560 ledger games: vs `_rm` 61.6 / 70.6 (all / official 17), `_ST` 63.4 / 67.6, `_eA` 72.3 / 76.5, `_eB` 73.2 / 85.3,
+  `_eC` 85.7 / 85.3, 0 faults; gen16 rollovers 8 per team (= `_rm`, rounds 1-3). `bots/legend/src` = `_m2` + the inert 78c32bf code (`build_style`
+  3/4 branches, `LEGEND_RUNTIME_PARAMS` for the A100 trainer). Frozen shipped copy: unzip the history zip, or `bots/_m2` from the setup script.
+- The agents' final patches (`x_farm.patch` at 72f4da8, `x_survive.patch` at 52e9b65) differ from `_m2` only in two defaults:
+  `join_reach` 0 -> 1.2 (farm `_C5`: vs `_rm` 70.5 / 85.3 where `_C4` scored 61.6 / 67.6; direct `_C5` vs `_C4` 50.9 / 52.9, held-out 50.0) and
+  `outmatch_solo_adv` 0.6 -> 0.45 (survive `_svI`: vs `_rm` 63.4, `_ST` 63.4 where `_svF` scored 61.6 / 56.2). So **`_m3` = `_m2` + those two values**
+  (`SRC=bots/_m2 tools/variant.sh _m3 join_reach=1.2f outmatch_solo_adv=0.45f`). The agents themselves are finished: nothing of theirs is left to rerun.
+- **Running**: `_m3` acceptance with the ledger, opponents in order `_m2 _ST _rm _eA _eB _eC` (56 maps, `--jobs 4`). Check / resume with
+  `python3 tools/ledger.py table _m3 --opps _m2,_ST,_rm,_eA,_eB,_eC --maps 'maps/*.map26a,maps/ladder/*.map26a,maps/comp/*.map26a'`, then
+  `ledger.py run _m3 OPP ...` for any cell not `complete`. Ship rule: `_m3` vs `_m2` >= 50 all and official, and not worse than `_m2` vs `_ST`/`_rm`/archetypes.
+
+| # | Task | State |
+|---|---|---|
+| 1 | Ship the survive + farm merge | **done**: `legend_m2` |
+| 2 | `_m3` (the agents' final defaults) acceptance, ship if better than `_m2` | running |
+| 3 | Not started before: contest single-monolith plan (contest pace ~1074, 0 monolith damage on the ladder), gem-race endgame (`race`), gold rush on gem-scarce maps (`rush`, `x_rush_wip.patch`) | after 2 |
 
 ## 000000. RESUME PROTOCOL (session limits, container restarts): read before running any test
 

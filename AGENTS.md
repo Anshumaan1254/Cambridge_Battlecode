@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-18 (session 7)**. Rule from the user: update this file and push at every step. Start with **§S7**
+- Last updated: **2026-10-18 11:30 container clock (session 7)**. Rule from the user: update this file and push at every step. Start with **§S7**
   (session 7), then §000000 (resume protocol), §00000 (session 6), §0000, §000, §00. **All work stays on branch `ccr-a858cd03-q87cpi`**:
   the user said (session 7) not to look at or merge other branches. No PR unless the user asks.
 - Competition: Cambridge Battlecode 2026a (CAMBC), 12 Oct to 18 Nov 2026. C++ bot compiled to wasm.
@@ -49,17 +49,29 @@ running or unfinished, and what to do next, so a new agent can continue without 
 | 4 | **Agent `contest` (Sonnet, high)**: lone-monolith maps (contest 0-1000 on the ladder, zero monolith damage): detector + feasible monolith cycle / denial, inert elsewhere. Baseline `_m4`, copy `bots/_x_contest`, deliverables `x_contest.patch` + `x_contest_NOTES.md` | running (started ~11:20 UTC) |
 | 5 | **Agent `fight` (Opus, high)**: deaths and kills vs pressure teams (enemy memory in combat(): adv flickers with visibility; burst deaths from bushes; cornered fights; chasers; punishing their weak C&I partner; focus fire). Baseline `_m4`, opponents incl. **`_fA _fB _fC`** = the archetypes rebuilt on `legend_m4` code (setup script). Copy `bots/_x_fight`, deliverables `x_fight.patch` + `x_fight_NOTES.md` | running (started ~10:50 container clock) |
 | 6 | Later: gem-race endgame (`race`: close finishes, altar denial; probes in ENGINE_FACTS "Session 5 probes"), deaths at full health (enemies appearing inside reach) | not started |
-- **Checkpoint 11:15 (container clock), agents' notes** (details in `experiments/wip/x_{econ,fight,contest}_NOTES.md`):
-  - `econ`: `_m4` unopposed already collects camp gems about as fast as the ladder teams did *contested* on their half (r100-300 level or ahead on
-    11 of 17 maps; behind at r100 on collision, expanse, interlock, lanes, packs, rows). **The ladder gem gap is mostly contact** (deaths, chases), plus
-    the opening on those 6 maps. 24.3% of alive body-rounds are in target segments that produce nothing. Build tweaks (`econ_build`), bigger bags,
-    `heavy_team`, `join_age`, `max_wait`: noise or worse. Promising: `join_marginal` (joiner value = claimers' rounds saved; waste 25% -> 13.6% on
-    expanse) and `claim_release`. New tools `tools/econ/cycles.mjs`, `tools/econ/waste.mjs`.
-  - `fight`: 53 of the 73 ladder deaths at 75%+ health are Cassi or Issac (the healthy partner dies with the weak one). Traced `_m4` vs `_fA`: being
-    without escape kills (~40% death within 8 rounds); once there, fighting trades better than fleeing. `_m4` vs `_fA` 64.7 (official 17).
-    Switches built (`fight_mem`, `pair_pool`, `kill_reach`, `fight_smooth`, `flee_fail_turns`, `flee_hold`): 34-game screens all within noise so far.
-  - `contest`: detector `mono_mode` (share of gem rate in single-camp monoliths >= 0.9) fires on contest, its ladder copy and the 12 `gold_mono_*` maps
-    only. Contest is decided by r100-200 (one team wiped, then spawn-camped).
+- **CURRENT STATE, checkpoint 11:30 (container clock)**. Shipped: **`legend_m4`** (`submissions/legend.zip`, sha256 c1217ccc…). Nothing better yet.
+  Three agents running on baseline `_m4` (their notes are the handoff: `experiments/wip/x_{econ,fight,contest}_NOTES.md`, patches next to them;
+  their ledger cells are `_xe*` econ, `_xf*` fight, `_xc* _xm* _xg* _xp* _xq*` contest):
+  - **`econ` (Opus)**: `_m4` unopposed already collects camp gems about as fast as the ladder teams did *contested* on their half (r100-300 level or
+    ahead on 11 of 17 maps; behind at r100 on collision, expanse, interlock, lanes, packs, rows). **The ladder gem gap is mostly contact** (deaths,
+    chases), plus the opening on those 6 maps. 24.3% of alive body-rounds are in target segments that produce nothing. Rejected on pace: `econ_build`
+    bits (Power/Monster/Jungle build tweaks: noise), bigger bags, `heavy_team`, `join_age`, `max_wait`, `hysteresis` 1.3, `max_join` 4.
+    Candidates: `join_marginal` (joiner value = claimers' rounds saved; waste 25% -> 13.6% on expanse) and `claim_release` (56-map pace 410.7 vs
+    418.7 off the official maps); head-to-head cells `_xe_jm_vs__m4`, `_xe_cj_vs__m4` in progress. Told (coordinator message) to take them to 112-game
+    head-to-heads vs `_m4`/`_ST`/`_fA`, then fix the opening on the 6 maps (interlock elk pairs nobody claims; expanse single wolves 29.9 rounds vs 8.6).
+  - **`fight` (Opus)**: 53 of the 73 ladder deaths at 75%+ health are Cassi or Issac (the healthy partner dies with the weak one). Traced `_m4` vs
+    `_fA`: being without escape kills (~40% death within 8 rounds); once there, fighting trades better than fleeing. `_m4` vs `_fA` 64.7 (official 17).
+    Screens vs `_m4` (34 games): `fight_mem` 50.0, `pair_pool` 47.1, `kill_reach` 44.1, `cornered_margin` 0 / 0.4 44.1, `fight_smooth` 0.5 47.1
+    (73.5 vs `_fA`), `flee_fail_turns` 2 47.1, **`flee_hold` 6 23.5** (our deaths same, theirs 318 -> 198: they farm freely), `die_soon` 55.9.
+    56 maps: `_xfC1` (fight_mem + pair_pool + kill_reach) **42.0** (official 44.1): rejected. Lesson: every rule that makes the whole body more
+    cautious loses head-to-head (staying out of fights costs more than the deaths it saves); only targeted, short disengages are worth testing.
+  - **`contest` (Sonnet)**: detector `mono_mode` (share of gem rate in single-camp monoliths >= 0.9) fires on contest, its ladder copy and the 12
+    `gold_mono_*` maps only. Contest is decided by r100-200 (one team wiped, then spawn-camped: final deaths 50-65 vs 10-15). Variants `_xc1`-`_xc8`,
+    `_xm1`/`_xm2`, `_xg1` on the scarce pool (contest + ladder copy + gold/gold2, 26 games): no clear winner yet (`_xm2` vs `_m2` 42.3, vs `_ST` 46.2;
+    `_m4` itself vs `_m2` on the same pool 61.2).
+- If the session stops: the agents stop too. Next session: `tools/setup_session.sh`, read the three NOTES files, rebuild a candidate from its
+  patch (`SRC=bots/_m4 tools/variant.sh _x_NAME && (cd bots/_x_NAME && patch -p1 --no-backup-if-mismatch < ../../experiments/wip/x_NAME.patch)`,
+  then the variant's switches from the notes), and use `tools/ledger.py run` for the missing cells only.
 - Summaries: `python3 tools/ledger_sum.py [--maps] [--pool GLOBS|all] BOT` (all / official / deaths per cell, no rebuild; default pool = the 56 maps:
   agents add other pools to the same cells). Pace: `python3 tools/ledger_pace.py BOT... --maps`.
 - Auto checkpoint: `$S/ckpt.sh` commits and pushes `experiments/wip/x_econ*`, `x_contest*`, the ledger and new tools every 10 minutes

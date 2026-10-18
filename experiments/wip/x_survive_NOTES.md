@@ -89,3 +89,19 @@ vs `_ST`: `_rm` 52.9 (534-403), `_sv1` 55.9, `_svA` 44.1 (393-415), `_svB` 44.1,
 | no ally within 6 | 405 | 341 | 388 |
 - What is left: burst deaths at full health (enemies appearing inside reach, bushes) barely move; `pair_low_hp` is what cuts the
   pair deaths beyond the shared rules (`_svA` vs `_svC`).
+
+## More variants (`outmatch_solo_adv`, `pair_kill_adv` added after the traces)
+- `outmatch_solo_adv`: against a single visible enemy (fewer than outmatch_min_enemies) flee below this advantage (traces: 7 of 68
+  deaths began outside reach against one stronger enemy, often their 1,900-health Ren). `pair_kill_adv`: a C&I body below
+  pair_low_hp needs this advantage for a 'killable' fight.
+- Official 17 (34 games): `_svD` = `_svA` + solo 0.6: vs `_rm` 67.6 (328-559), vs `_eA` 64.7. `_svE` = `_svA` + pair_kill_adv 1.0:
+  vs `_rm` 67.6, vs `_eA` 70.6 (the same games as `_svA`: the rule almost never fires). `pair_kill_adv` dropped.
+- Held-out pool (gold, gold2, obj; 100 games) vs `_rm`: `_svA` 65.0 (deaths 1949-2614), `_svC` 63.0 (2134-2598).
+- vs `_eC`, 56 maps: `_rm` 80.4 (76.5) 1155-1376, `_svA` 83.9 (85.3) 978-1549, `_svC` 85.7 (88.2) 1093-1422.
+
+| Bot (56 maps, all (official)) | vs `_rm` | vs `_ST` | vs `_eA` |
+|---|---|---|---|
+| `_svD` = `_svA` + solo 0.6 | 63.4 (67.6) 866-1345 | 50.9 (47.1) 772-1255 | 69.6 (64.7) 1126-1552 |
+| **`_svF`** = `_svC` + solo 0.6 | **61.6 (64.7) 881-1301** | **56.2 (58.8) 767-1275** | **69.6 (67.6) 1032-1577** |
+- `pair_low_hp` 0.4 costs ~4-5 points vs `_ST` every time it is on (`_svA` 50.9 / `_svD` 50.9 vs `_svC` 53.6 / `_svF` 56.2), though it
+  cuts pair deaths further: left off in the recommendation.

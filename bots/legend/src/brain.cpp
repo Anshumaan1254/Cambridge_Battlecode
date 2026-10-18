@@ -3249,7 +3249,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 	// Lone-monolith maps, opening: the lowest-index living body with a claim leads, everyone else farms the leader's group (the centre gold
 	// triples are where the packs meet; bodies that pick their own camps arrive one at a time and feed).
 	bool follow_g = false;
-	if (P.mono_follow_until > 0 && W.mono_mode && round < P.mono_follow_until)
+	if ((P.mono_follow_until > 0 && W.mono_mode && round < P.mono_follow_until) || (P.follow_all_until > 0 && round < P.follow_all_until))
 	{
 		int leader = -1;
 		for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 6; ++i)
@@ -3368,7 +3368,9 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 		{
 			// Join only packs too heavy for one body; never a third body except on a monolith.
 			const float solo_rounds = hp_left / std::max(10.f, ally_dps);
-			const bool heavy = follow_g || g.monolith || g.elk || (!g.harmless && (solo_rounds > P.join_min_rounds || g.attackers >= 2));
+			// pair_open_until (IC, Oct 18 upload): in the opening their Ren / Ryth / Varg farm with an ally 84-93% of the time (ours 52-70%):
+			// any fighting group an ally claims is worth joining until that round.
+			const bool heavy = follow_g || g.monolith || g.elk || (!g.harmless && (solo_rounds > P.join_min_rounds || g.attackers >= 2 || (P.pair_open_until > 0 && round < P.pair_open_until)));
 			const int max_join = P.mi_two_bodies ? std::min(P.max_join, 1) : P.max_join; // mi_two_bodies (default branch)
 			if (!heavy || (!follow_g && claimers >= (g.monolith ? 4 : 1 + max_join) && !(W.obj_mode && g.objective && P.obj_team)))
 				{ WHY(6); return -1; }

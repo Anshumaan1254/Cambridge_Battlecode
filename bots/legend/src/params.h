@@ -378,6 +378,8 @@ struct Params
 	int mono_rg_from = 0;
 	int mono_rg_fight_r = 3;	 // an enemy this close: combat() decides instead of walking home
 	int mono_gmask = 15;		// which parts of the GROUPED stance apply while mono_grouped_until forces it: 1 enemy-half penalty x2, 2 deny bonus x0.5, 4 isolated fight +0.3, 8 stay near allies' claims
+	int follow_all_until = 0;	// every map: the mono_follow_until blob (bodies farm the lowest-index claimant's group) until this round
+	int pair_open_until = 0;	// every map: before this round any fighting group an ally claims counts as heavy enough to join (IC pairs)
 	int mono_follow_until = 200;	// opening: bodies farm the group the lowest-index living claimant farms (one blob) until this round
 	float mono_group_w = 0.f;	// cohesion (with mono_grouped_until): rounds of extra cost per tile beyond mono_group_r from the nearest ally's claimed group
 	int mono_group_r = 8;

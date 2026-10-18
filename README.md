@@ -13,6 +13,10 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
+## Build `legend_m12` (session 12, branch `claude/laughing-curie-3rq6hu`)
+
+`submissions/legend.zip` on this branch = `legend_m12`: `legend_m11`'s play (byte-identical wasm) plus the Intercontinental Fish study ([doc 11](docs/strategy_v2/11_INTERCONTINENTAL_FISH.md)); no tested change beat `legend_m11`.
+
 ## Current build: `legend_m11` (session 7R, Oct 18): ready for the ladder
 
 `legend_m11` = `legend_m10` (= `legend_m8`'s play) + **bush warding** (a ward inside a bush reveals champions hiding there; we now ward a bush

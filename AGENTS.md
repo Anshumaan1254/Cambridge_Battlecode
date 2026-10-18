@@ -13,6 +13,12 @@ running or unfinished, and what to do next, so a new agent can continue without 
 
 ---
 
+## S12. SESSION 12 (2026-10-18 ~22:30 UTC): `legend_m12` on branch `claude/laughing-curie-3rq6hu` (the user: do not push to the ccr branch)
+
+- Input: the user's `intercontinental_matches.zip` (6 match groups, 30 games, replays in `experiments/ic_oct18/`): **Intercontinental Fish** in all 30, now drafting **Stellar first**, 25 wins (Mite 5-0 and 2-3, sneaky-bush 4-1, the old-ifish-table team 5-0, two others 4-1 and 5-0). Study: `docs/strategy_v2/11_INTERCONTINENTAL_FISH.md` (deaths 3.9 vs our 5.4 per game, neutral captures 8.3 vs 3.8, positive trades at every distance band, Stellar first emblem r66 vs our r170, Power + Home builds, melee bodies paired in the opening).
+- Every IC element was tested inside our brain and lost (on `_m10`, official 34 unless said): Stellar first 45.5 (88 games; `_mite` 67.0, `_px9` 56.8), IC builds 32.4, IC table + builds 29.4, Monster then Power on rows / expanse (pace expanse 499 -> 529), IC rows draft (rows 373 -> 409). On `_m11`: paired opening 35.3 / 38.2, all-map blob 44.1, `mi_chip` 47.1, `mi_deny_gems` 50.0 (`_px9` -5.9).
+- **`legend_m12` = `legend_m11`'s play** (wasm byte-identical) + inert `follow_all_until` / `pair_open_until` (guarded `> 0`), zip sha256 de29b287…, `submissions/history/legend_m12_20261018.zip`. Next work (doc 11 section 5): paired opening done better than "join anything", spell openers from 4-5, neutral camps.
+
 ## S7R. SESSION 7 RESUMED (2026-10-18 20:05 UTC, the original S7 container, live in parallel with S11): read with §S11
 
 - **SHIPPED `legend_m11` (S7R, ~21:55 UTC)** at the user's request ("prioritize finishing the bot so we get feedback from the actual ladder"):

@@ -379,8 +379,8 @@ diff -ruN _rm/src/brain.h _x_farm/src/brain.h
  
 diff -ruN _rm/src/params.h _x_farm/src/params.h
 --- _rm/src/params.h	2026-10-18 07:37:50.237297424 +0000
-+++ _x_farm/src/params.h	2026-10-18 09:10:30.538054557 +0000
-@@ -14,11 +14,23 @@
++++ _x_farm/src/params.h	2026-10-18 10:03:58.100049175 +0000
+@@ -14,11 +14,26 @@
  	int farm_monolith = 1;			 // 0: never farm a monolith group (20,000 HP, 200 strength; the user: do not rely on it for gems)
  	int max_trips = 5;				 // heal trips we accept to finish one camp group (camps never heal)
  	float join_min_rounds = 14.f;	 // join an ally's group when it alone needs more rounds than this
@@ -388,7 +388,10 @@ diff -ruN _rm/src/params.h _x_farm/src/params.h
 +	int max_join = 3;				 // extra bodies allowed on one (non-monolith) group. Was 1; 3 (agent farm): unopposed pace on the 17 official maps
 +									 // 563.1 -> 553.3 (rows 425 -> 398, monolith 474 -> 417, elkring 472 -> 442, eight 427 -> 396), head-to-head vs _rm
 +									 // 54.5 both (official 58.8 -> 61.8). Ladder rows: the enemy clears each 3-wolf pack with 3-5 bodies in ~11 rounds
-+	float join_reach = 0.f;			 // (0 off) join a claimed group only when we reach it within this share of the claimers' remaining clear time
++	float join_reach = 1.2f;		 // (0 off) join a claimed group only when we reach it within this share of the claimers' remaining clear time
++									 // (pilgrimage: Cassi walked between the two 68-gem packs for 300 rounds: 0 captures, 0 gold). Agent farm, on top of
++									 // max_join 3: pace official 546.6 -> 537.2 (0.7: 541.1), 56 maps 458.8 -> 453.4; head-to-head vs the same build
++									 // without it 50.9 (official 52.9), held-out 50.0
  	float join_share = 0.6f;		 // value credited to a joining body (the claimer captures)
  	int pair_plans = 0;				 // claim packs too heavy for one body and wait for a partner (off: costs pace)
  	float pair_wait = 8.f;			 // rounds added to a pair plan for the partner to arrive
@@ -405,7 +408,7 @@ diff -ruN _rm/src/params.h _x_farm/src/params.h
  	float target_threat_adv = 1.305f;	 // skip camps where recently seen enemies beat us (and allies there) (ES: 1.1 -> 1.305)
  
  	// Farming model corrections (prediction audit, tools/analysis/xm_audit.mjs on 48 traced games vs _v6 and _hunt2)
-@@ -143,6 +155,7 @@
+@@ -143,6 +158,7 @@
  	int cast_near_target = 1; // fighting: the chosen target is out of spell range but another enemy is within 4: cast on that one
  							  // instead of walking toward the target (path1/eng4 in the trace: 41 turns in 3 games)
  
@@ -413,7 +416,7 @@ diff -ruN _rm/src/params.h _x_farm/src/params.h
  	int dash_holes = 1;		   // dash kits route over 1-wide hole crossings (fields treat those holes as ground; the
  							   // step waits for the dash instead of walking around), see world.cpp
  	int dash_wait_max = 4;	   // at a crossing with the dash on cooldown: wait up to this many rounds, else walk around
-@@ -233,7 +246,9 @@
+@@ -233,7 +249,9 @@
  	int race_carrier = 30;
  	int capture_reset = 1;		// an enemy seen on the group's tiles restarts the capture-recall clock (the engine resets the capture)
  	int tribute_elapsed = 1;	// handle_channel counts the tribute's remaining turns from its start, not from the carried bag
@@ -424,7 +427,7 @@ diff -ruN _rm/src/params.h _x_farm/src/params.h
  	int bank_first_margin = 2;	// ... by at least this many steps (nearest-altar walk + recall_time + margin <= spawn altar walk)
  	float bank_trip_w = 1.0f;	// bank threshold rises by this many gems per step of bank trip beyond bank_trip_free
  	int bank_trip_free = 12;	// bank trips up to this many steps keep the plain threshold
-@@ -242,10 +257,19 @@
+@@ -242,10 +260,19 @@
  
  	// Objective maps (agent obj, session 3): the gems sit in one or a few heavy groups (stampede, contest)
  	int obj_plan = 1;			// detect objective maps at init (World::detect_objective); everything below needs it

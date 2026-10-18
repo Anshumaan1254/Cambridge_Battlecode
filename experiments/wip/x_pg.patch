@@ -1,0 +1,100 @@
+diff -ruN _pd2/src/brain.cpp _x_pg/src/brain.cpp
+--- a/src/brain.cpp	2026-10-18 22:35:41.187685326 +0000
++++ b/src/brain.cpp	2026-10-18 22:56:55.071018297 +0000
+@@ -3505,7 +3505,7 @@
+ 			}
+ 		}
+ 		bool ring_ok = false;
+-		if (P.o2_ring && (P.o2_ring != 2 || (W.W == 60 && W.H == 50)) && W.obj_mode && g.objective && g.attackers >= 1 && (sc_obj_focus < 0 || sc_obj_focus == g.id))
++		if (P.o2_ring && (P.o2_ring == 1 || (W.W == 60 && W.H == 50) || (P.o2_ring == 3 && W.ring_comp)) && W.obj_mode && g.objective && g.attackers >= 1 && (sc_obj_focus < 0 || sc_obj_focus == g.id))
+ 			ring_ok = ring_ready(g, hp_left, ring_kill);
+ 		if (ring_ok)
+ 		{
+diff -ruN _pd2/src/draft.cpp _x_pg/src/draft.cpp
+--- a/src/draft.cpp	2026-10-18 22:35:41.187533790 +0000
++++ b/src/draft.cpp	2026-10-18 23:03:02.133274645 +0000
+@@ -292,7 +292,9 @@
+ 	MP.team = std::clamp(F.team, 3, 5);
+ 	MP.pack_share = F.multi / g;
+ 	MP.elk_share = F.elk / g;
+-	MP.objective = F.gem_groups == 1 && F.mono == 0;
++	// pd_obj_multi: the lone gem group must also be a multi-camp group (stampede and maps/obj: an elk + gem objective). On the gold_elk
++	// maps the only gem group is one elk camp: no objective plan fires there, so the caster draft would farm without its ring.
++	MP.objective = F.gem_groups == 1 && F.mono == 0 && (!P.pd_obj_multi || F.multi >= 1);
+ 	MP.monolith_only = F.gem_groups == 0 && F.mono > 0;
+ 	MP.open_small = MP.team <= 3 && F.area >= P.pd_open_area && F.mean_dist >= P.pd_open_dist;
+ 	pd_type = MP.objective ? 2 : MP.open_small ? 1 : 0;
+diff -ruN _pd2/src/params.h _x_pg/src/params.h
+--- a/src/params.h	2026-10-18 22:35:41.214284636 +0000
++++ b/src/params.h	2026-10-18 23:03:02.133988126 +0000
+@@ -168,6 +168,7 @@
+ 	float pd_pack = 0.5f;
+ 	float pd_elk = 0.3f; // team size 4: Ryth only with elk share >= pd_elk
+ 	float pd_counter = 1.f;
++	int pd_obj_multi = 0;	   // 1: an objective map also needs the lone gem group to be a multi-camp group (draft.cpp derive_params)
+ 	int build_style = 2;	   // 0 = old farm builds, 1 = health/durability/treasure builds (ladder-proven),
+ 							   // sparring proxies: 3 / 4 / 10 = ifish (frontline health then Power / Monster then Power / 3 or 4 by map),
+ 							   //     9 = Mite (Jungle, Durability in the damage stat, Bruiser health, Power)
+@@ -356,6 +357,7 @@
+ 	// Session 9 (agent obj2): objective ring. The 2nd ladder team killed stampede's 17,400-HP group at r54-124 taking 0 damage:
+ 	// every body stood at Chebyshev 4 from the elks (camps hit within 3) and cast range-4 spells (area spells hit up to 6 camps).
+ 	int o2_ring = 2;			// objective group with live elks: casters (a range-4 damage/stun/area spell) cast from distance 4 and never step into camp reach
++								// 3: on 60x50 or whenever our team has Prism or Tavi (the parameter draft takes them on objective maps of any size)
+ 								// (2 = on stampede only: elsewhere, e.g. ambush, it lost 5 of 11 changed games in session 10)
+ 	float o2_ring_clear = 160.f; // ring plan ready when the casters' spell damage clears the group within this many rounds
+ 	float o2_ring_share = 0.5f;	 // value share per caster
+@@ -368,6 +370,7 @@
+ 	int mono_plan = 1;			// detect them at init (World::mono_mode); everything mono_* needs it (0: the baseline, byte-identical play)
+ 	float mono_share = 0.9f;	// ... when lone monoliths hold at least this share of the map's gem rate
+ 	int mono_size50 = 1;		// ... and only on 50x50 maps (1: contest and its copies; the generated monolith-only test maps of other sizes keep legend_m10's play)
++	float mono_center = 0.45f;	// ... mono_size50 2: instead of the size, every lone monolith at least this far toward the middle (min(d, 1 - d) of the spawn-to-spawn walk)
+ 	int mono_obj = 0;			// ... plan the lone monoliths with the objective team plan (obj_*; obj_min_attackers=2 left them out)
+ 	int mono_grouped_until = 0;	// ... play the GROUPED stance (stay together, off their half) until this round
+ 	int mono_build = 0;			// builds on those maps: 0 = build_style, 3 = the ladder teams' (Durability / Bruiser health, then Power stacks)
+diff -ruN _pd2/src/world.cpp _x_pg/src/world.cpp
+--- a/src/world.cpp	2026-10-18 22:35:41.187138066 +0000
++++ b/src/world.cpp	2026-10-18 22:56:55.071380437 +0000
+@@ -147,6 +147,11 @@
+ 				mono_rate_lone += rate;
+ 				if (G.d_ally < BIG)
+ 					mono_groups.push_back(G.id);
++				if (G.d_ally < BIG && G.d_enemy < BIG && G.d_ally + G.d_enemy > 0)
++				{
++					const float r = static_cast<float>(G.d_ally) / static_cast<float>(G.d_ally + G.d_enemy);
++					mono_mid = std::min(mono_mid, std::min(r, 1.f - r));
++				}
+ 			}
+ 		}
+ 		if (P.obj_plan && G.gems > 0)
+@@ -166,7 +171,10 @@
+ 	mono_share = mono_rate_total > 0 ? mono_rate_lone / mono_rate_total : 0;
+ 	// mono_size50: only on 50x50 maps (contest and its copies). On the 24 generated monolith-only test maps (maps/gold*/gold_mono*, 30-80
+ 	// wide) the blob opening + bush warding lost to _px9 29 of 60 vs legend_m10's 39; on contest and 33 copies it won 88-97%.
+-	mono_mode = P.mono_plan && mono_rate_total > 0 && mono_share >= P.mono_share && (!P.mono_size50 || (W == 50 && H == 50));
++	// mono_size50 2: no size test; the lone monoliths must stand near the middle instead (contest and its copies 0.49 at any size; the
++	// generated monolith-only maps where the plan lost have them on each half, 0.39-0.42)
++	mono_mode = P.mono_plan && mono_rate_total > 0 && mono_share >= P.mono_share
++		&& (!P.mono_size50 || (P.mono_size50 == 1 ? (W == 50 && H == 50) : mono_mid >= P.mono_center));
+ 	detect_objective();
+ }
+ 
+@@ -285,6 +293,7 @@
+ 			a.type = static_cast<bc::champion_type>(info.type);
+ 		if (a.handle == me)
+ 			my_index = i;
++		ring_comp = ring_comp || a.type == bc::champion_type::prism || a.type == bc::champion_type::tavi;
+ 		allies.push_back(a);
+ 		++i;
+ 	}
+diff -ruN _pd2/src/world.h _x_pg/src/world.h
+--- a/src/world.h	2026-10-18 22:35:41.187316266 +0000
++++ b/src/world.h	2026-10-18 22:56:55.071243356 +0000
+@@ -144,6 +144,8 @@
+ 	// Lone-monolith map (P.mono_plan, agent contest): (almost) all gem income is in single-camp monoliths (contest, its ladder copy,
+ 	// gold_mono_*). Everything the monolith plan does is gated by this flag, so every other map plays exactly as before.
+ 	bool mono_mode = false;
++	float mono_mid = 1.f;	 // lone monoliths: the smallest min(d, 1 - d), d = our spawn's share of the walk between the spawns (0.5 = the middle)
++	bool ring_comp = false;	 // our team has Prism or Tavi (the parameter draft takes them for the objective ring)
+ 	float mono_share = 0;		 // share of the map's gem rate (gems / respawn) held by lone monoliths
+ 	float mono_rate_total = 0, mono_rate_lone = 0;
+ 	std::vector<int> mono_groups; // the lone monoliths we can reach

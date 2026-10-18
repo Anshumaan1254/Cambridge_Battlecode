@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-18 16:10 UTC (session 9)**. Rule from the user: update this file and push at every step. Start with **§S9**, then **§S8**,
+- Last updated: **2026-10-18 15:40 UTC (session 9; container clock)**. Rule from the user: update this file and push at every step. Start with **§S9**, then **§S8**,
   **§S7**, **§S7-SV2**, then §000000 (resume protocol), §00000, §0000, §000, §00. **All work stays on branch `ccr-a858cd03-q87cpi`**:
   `git pull` (merge, never force) before every push. Session 9: the user asked to read the `claude/laughing-curie-3rq6hu` branch too:
   it is the session 4-5 state (last commit 2026-10-17 20:28 UTC) and everything in it is already in this branch (its §0000 is below).
@@ -33,7 +33,7 @@ running or unfinished, and what to do next, so a new agent can continue without 
      Jungle, Durability emblems **in the damage stat**, one Bruiser health, then Power forever; 2nd: Jungle (damage stat) first.
      Gold: our Ren takes 35-38% of capture gold; 3rd's Stellar 33% + Cassi 27%.
 - Tools added: `tools/strategy_v2/teamsum.py` (named-team per-champion summary), `micro.py` (distance bands, hit ranges, openers).
-- Agents started 16:15 UTC (baseline `_xp4`, rules `experiments/wip/AGENT_RULES.md` session-9 block):
+- Agents started 15:25 UTC (baseline `_xp4`, rules `experiments/wip/AGENT_RULES.md` session-9 block):
   `fight2` (Opus, high): area reach 5, cast-first openers, no idling at 4-5 from ready casters; copy `bots/_x_f2`, variants `_f2*`,
   notes `experiments/wip/x_f2_NOTES.md`, patch `x_f2.patch`.
   `econ2` (Sonnet, high): 3rd/2nd-team builds, Cassi focus, gold to casters; copy `bots/_x_e2`, variants `_e2*`, notes `x_e2_NOTES.md`, patch `x_e2.patch`.

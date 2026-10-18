@@ -66,6 +66,14 @@ Body mean gold r150 144 (`_snk` itself: 144; its Issac 165, Cassi 108, Stellar 1
   | `_og6` | gold x2.5 + Jungle C&I | 76.5 | 61.8 | 73.5 | 211.8 |
   | `_og7` | `og_solo=3` (C&I farm own groups before r250: join x0.5, off-half x0.7) | 70.6 | 70.6 | 55.9 | 197.1 |
   | `_og8` | `og_solo=7` (+ Ryth) | 82.4 | 73.5 | 55.9 | 211.8 |
-  (`_og2` gold x2.5: 70.6 / 70.6 / 73.5 = 214.7.) All rejected. Placebo `_ogP` (gold x1.02) running to measure how much any perturbation
-  costs against the proxies (the reference build was selected on them, so its cells may be inflated).
+  | `_og9` | gold x1.25 until owned 150 | 70.6 | 76.5 | 76.5 | 223.6 |
+  | `_ogA` | gold x1.5 until r150 | 76.5 | 67.6 | 79.4 | 223.5 |
+  (`_og2` gold x2.5: 70.6 / 70.6 / 73.5 = 214.7.) All rejected: the more the opening values gold, the worse against the proxies.
+  Placebo `_ogP` (gold x1.02): 102/102 games identical to `_m10` (too small to change a decision; not informative).
+- Why gold-first loses (`/tmp/og/tools/flip.py _og2 _m10 _px9 _mite`): of the 44 games `_og2` lost that `_m10` won, most are close gem races
+  that end r270-500 (gen16 898-1008 r294, gen19 758-1000 r284, gen01 832-1048 r359). Most games are decided by r300-700; an emblem
+  bought ~50 rounds earlier for ~150 gold of gem-camp time gives +5 stat points (~5% farm rate), which does not pay back the gems
+  lost in that window before the race ends. `math_gold` already discounts gold by the rounds left; the opening has the most rounds left,
+  and still the gems win.
+- Opposite-direction check running: `_ogB` gold x0.6 for everyone until r300, `_ogC` gold x0.6 until owned 150.
 

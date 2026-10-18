@@ -79,8 +79,31 @@ running or unfinished, and what to do next, so a new agent can continue without 
 - **SHIPPED `legend_m10`** (`submissions/legend.zip` sha256 43d3b1ed…, `submissions/history/legend_m10_20261018.zip`) = `_m10` = `_m9` with every
   `mi_*` switch 0 (`bots/legend/src` = that + the `LEGEND_RUNTIME_PARAMS` block and a comment with the numbers: wasm byte-identical).
   It plays `legend_m8`'s games: vs `_mite` 86 / 88 games identical, vs `_px9` 87 / 88, same wins (76.1, 78.4). **New baseline: `_m10`** (= `_m8` play).
-- Still to do (the user: continue after giving the bot): finish the per-idea screen (the 11 ideas left, `mi_screen.sh` resumes through the ledger),
-  then test the ideas that are positive alone in pairs, vs `_m10` and the third parties; wait for the user's ladder feedback on `legend_m10`.
+- **Per-idea screen complete** (88 distinct / official 34 vs `_m8`; `_a_<idea>` = `_m8` code + that idea alone, `_l_<idea>` = `_m9` minus it):
+
+  | idea | alone on legend_m8 (all / official, deaths) | removed from legend_m9 (all / official) |
+  |---|---|---|
+  | `mi_health_emblem` | 47.7 / 50.0 (662-682) | 55.7 / 38.2 |
+  | `mi_learn_burst` | 52.3 / 52.9 (590-631) | 55.7 / 29.4 |
+  | `mi_lethal` | 51.1 / 50.0 (646-644) | 58.0 / 35.3 |
+  | `mi_cd_slack` | 47.7 / 41.2 (668-627) | 61.4 / 47.1 |
+  | `mi_walk_cast` | 44.3 / 47.1 (705-641) | 58.0 / 44.1 |
+  | `mi_endgame_bank` | 48.9 / 50.0 (641-645) | 53.4 / 32.4 |
+  | `mi_learn_fight` | 55.7 / 58.8 (602-662) | 47.7 / 20.6 |
+  | `mi_learn_race` | 46.6 / 41.2 (660-607) | 59.1 / 38.2 |
+  | `mi_island_bank` | 52.3 / 50.0 (640-651) | 56.8 / 35.3 |
+  | `mi_recall_shop` | 51.1 / 50.0 (648-651) | 58.0 / 35.3 |
+  | `mi_relaxed` | 46.6 / 47.1 (651-657) | 60.2 / 41.2 |
+  | `mi_two_bodies` | 54.5 / 47.1 (605-693) | 47.7 / 41.2 |
+  | `mi_deny_gems` | 54.5 / 61.8 (612-650) | 59.1 / 38.2 |
+  | `mi_flip_guard` | 54.5 / 58.8 (631-658) | 58.0 / 50.0 |
+  | `mi_kite` | 52.3 / 47.1 (645-648) | 59.1 / 50.0 |
+  | `mi_chip` | 54.5 / 50.0 (610-648) | 53.4 / 32.4 |
+  | `mi_close_in` | 51.1 / 50.0 (649-654) | 58.0 / 35.3 |
+
+  Pass the first gate (>= 50 all and official vs `_m8`): `learn_fight`, `deny_gems`, `flip_guard`, `chip`, `learn_burst`. Next (running): those five
+  vs the third parties (`_mite`, `_ifish`, `_px9`), then the passing ones combined vs `_m8`, `_m10` and the third parties (the user's S7R rule).
+  S7R owns opening gold, contest and the sneaky-bush draft; this session stays on the default-branch ideas.
 
 ## S10. SESSION 10 (2026-10-18 17:20 UTC, new container): read this first
 

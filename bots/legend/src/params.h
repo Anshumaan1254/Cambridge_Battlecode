@@ -17,7 +17,7 @@ struct Params
 	int max_join = 3;				 // extra bodies allowed on one (non-monolith) group. Was 1; 3 (agent farm): unopposed pace on the 17 official maps
 									 // 563.1 -> 553.3 (rows 425 -> 398, monolith 474 -> 417, elkring 472 -> 442, eight 427 -> 396), head-to-head vs _rm
 									 // 54.5 both (official 58.8 -> 61.8). Ladder rows: the enemy clears each 3-wolf pack with 3-5 bodies in ~11 rounds
-	float join_reach = 0.f;			 // (0 off) join a claimed group only when we reach it within this share of the claimers' remaining clear time
+	float join_reach = 1.2f;			 // (0 off) join a claimed group only when we reach it within this share of the claimers' remaining clear time
 	float join_share = 0.6f;		 // value credited to a joining body (the claimer captures)
 	int pair_plans = 0;				 // claim packs too heavy for one body and wait for a partner (off: costs pace)
 	float pair_wait = 8.f;			 // rounds added to a pair plan for the partner to arrive
@@ -77,7 +77,7 @@ struct Params
 	float outmatch_flee_adv = 0.8f;	 // ... this (1.0: 50.0% vs _rm on the official 17, 0.7: 52.9, 0.8: 55.9), with at least
 	int outmatch_min_enemies = 2;	 // ... this many visible enemies within 9 and the nearest within outmatch_flee_dist (not yet
 	int outmatch_flee_dist = 8;		 // ... in reach: in reach the fight-back / cornered rules apply)
-	float outmatch_solo_adv = 0.6f;	 // ... against a single visible enemy flee below this advantage (0: never; traces: 7 of 68
+	float outmatch_solo_adv = 0.45f;	 // ... against a single visible enemy flee below this advantage (0: never; traces: 7 of 68
 									 // deaths began outside reach against one stronger enemy, e.g. their 1,900-health Ren)
 	float pair_flee_bonus = 0.3f;	 // Cassi & Issac (two bodies, two bags per death): flee bar + this (official 17: 55.9 -> 55.9 vs
 									 // _rm, 61.8 -> 70.6 vs _eA)
@@ -326,6 +326,10 @@ struct Params
 	int stuck_reach = 1;		 // a group unreachable on foot from our side is not estimated by straight-line distance
 	int unstick_rounds = 10;	 // a farm/capture walk stuck inside a 3x3 box this many rounds (no attack) drops its target
 	int unstick_blacklist = 30;	 // ... for this many rounds (0 rounds: off)
+	int giveup_progress = 1;	 // farm(): the give-up clock (2 x eta + 60 rounds on one target) restarts on every hit on the target,
+								 // capture turn and respawn wait next to it. Before, eta was the walk left (0 at the group), so any body
+								 // spending 60+ rounds on one group (heavy pack, heal trips, waiting out a respawn) blacklisted it for 40
+								 // rounds, often just before it paid
 	int flip_window = 12;		 // for this many rounds after leaving a target, going back to it needs ...
 	float flip_margin = 1.5f;	 // ... this factor more score (on top of hysteresis): stops A-B-A-B target flips
 	int score_near_floor = 38000; // stop scoring near groups below this much fuel (0: never); start rotates too

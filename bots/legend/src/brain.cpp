@@ -3122,7 +3122,7 @@ void Brain::farm()
 #endif
 	}
 	// Give up on targets we cannot reach in reasonable time.
-	if (round - task_since > 2 * best_eta + 60 + (W.obj_mode && W.groups[static_cast<std::size_t>(best)].objective ? P.obj_commit : 0))
+	if (round - std::max(task_since, P.giveup_progress ? task_progress : -BIG) > 2 * best_eta + 60 + (W.obj_mode && W.groups[static_cast<std::size_t>(best)].objective ? P.obj_commit : 0))
 	{
 		blacklist[static_cast<std::size_t>(best)] = round + 40;
 		task_group = -1;
@@ -3172,6 +3172,8 @@ void Brain::farm()
 bool Brain::wait_group(Group& g)
 {
 	// Stand next to (never on) the spawn tiles: an occupied spawn tile delays the respawn.
+	if (g.id == task_group && nav().group_dist(g, pos) <= 2)
+		task_progress = round;
 	if (g.mask.is_set(pos))
 	{
 		bc::bitboard ring;
@@ -3187,6 +3189,8 @@ bool Brain::capture_group(Group& g)
 {
 	if (g.mask.is_set(pos))
 	{
+		if (g.id == task_group)
+			task_progress = round;
 		if (capture_group_id != g.id)
 			capture_group_id = g.id, capture_since = round;
 		// An enemy on any tile of the group resets the capture (it completes 6 rounds after they leave): restart
@@ -3362,6 +3366,8 @@ bool Brain::attack_chain_camp(Group& g, std::size_t idx)
 	auto& W = world();
 	if (!attack_unit(g.camps[idx].camp))
 		return false;
+	if (g.id == task_group)
+		task_progress = round;
 #ifdef LEGEND_TRACE
 	if (g.id == task_group)
 		++tr_hits;

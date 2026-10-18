@@ -1,0 +1,64 @@
+diff -ruN _m2/src/brain.cpp _x_gp/src/brain.cpp
+--- _m2/src/brain.cpp	2026-10-18 10:20:58.340990083 +0000
++++ _x_gp/src/brain.cpp	2026-10-18 10:29:28.299513774 +0000
+@@ -3085,7 +3085,7 @@
+ #endif
+ 	}
+ 	// Give up on targets we cannot reach in reasonable time.
+-	if (round - task_since > 2 * best_eta + 60 + (W.obj_mode && W.groups[static_cast<std::size_t>(best)].objective ? P.obj_commit : 0))
++	if (round - std::max(task_since, P.giveup_progress ? task_progress : -BIG) > 2 * best_eta + 60 + (W.obj_mode && W.groups[static_cast<std::size_t>(best)].objective ? P.obj_commit : 0))
+ 	{
+ 		blacklist[static_cast<std::size_t>(best)] = round + 40;
+ 		task_group = -1;
+@@ -3135,6 +3135,8 @@
+ bool Brain::wait_group(Group& g)
+ {
+ 	// Stand next to (never on) the spawn tiles: an occupied spawn tile delays the respawn.
++	if (g.id == task_group && nav().group_dist(g, pos) <= 2)
++		task_progress = round;
+ 	if (g.mask.is_set(pos))
+ 	{
+ 		bc::bitboard ring;
+@@ -3150,6 +3152,8 @@
+ {
+ 	if (g.mask.is_set(pos))
+ 	{
++		if (g.id == task_group)
++			task_progress = round;
+ 		if (capture_group_id != g.id)
+ 			capture_group_id = g.id, capture_since = round;
+ 		// An enemy on any tile of the group resets the capture (it completes 6 rounds after they leave): restart
+@@ -3325,6 +3329,8 @@
+ 	auto& W = world();
+ 	if (!attack_unit(g.camps[idx].camp))
+ 		return false;
++	if (g.id == task_group)
++		task_progress = round;
+ #ifdef LEGEND_TRACE
+ 	if (g.id == task_group)
+ 		++tr_hits;
+diff -ruN _m2/src/brain.h _x_gp/src/brain.h
+--- _m2/src/brain.h	2026-10-18 10:20:58.339195162 +0000
++++ _x_gp/src/brain.h	2026-10-18 10:29:28.297026776 +0000
+@@ -210,6 +210,7 @@
+ 
+ 	// memory
+ 	int task = T_NONE, task_group = -1, task_since = 0;
++	int task_progress = -1; // giveup_progress: last round we hit, captured or waited at task_group
+ 	int ward_round = -100;
+ 	float last_hp = 0;
+ 	int last_hit_round = -100;
+diff -ruN _m2/src/params.h _x_gp/src/params.h
+--- _m2/src/params.h	2026-10-18 10:20:58.342275173 +0000
++++ _x_gp/src/params.h	2026-10-18 10:29:59.881495285 +0000
+@@ -326,6 +326,10 @@
+ 	int stuck_reach = 1;		 // a group unreachable on foot from our side is not estimated by straight-line distance
+ 	int unstick_rounds = 10;	 // a farm/capture walk stuck inside a 3x3 box this many rounds (no attack) drops its target
+ 	int unstick_blacklist = 30;	 // ... for this many rounds (0 rounds: off)
++	int giveup_progress = 1;	 // farm(): the give-up clock (2 x eta + 60 rounds on one target) restarts on every hit on the target,
++								 // capture turn and respawn wait next to it. Before, eta was the walk left (0 at the group), so any body
++								 // spending 60+ rounds on one group (heavy pack, heal trips, waiting out a respawn) blacklisted it for 40
++								 // rounds, often just before it paid
+ 	int flip_window = 12;		 // for this many rounds after leaving a target, going back to it needs ...
+ 	float flip_margin = 1.5f;	 // ... this factor more score (on top of hysteresis): stops A-B-A-B target flips
+ 	int score_near_floor = 38000; // stop scoring near groups below this much fuel (0: never); start rotates too

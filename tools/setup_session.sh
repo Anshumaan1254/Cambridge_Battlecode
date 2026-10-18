@@ -41,14 +41,16 @@ SRC=bots/_rm tools/variant.sh _m2 > /dev/null
 (cd bots/_m2 && patch -s -p1 --no-backup-if-mismatch < $T/farm.patch && patch -s -p1 --no-backup-if-mismatch < $T/surv.patch)
 # _m3 = _m2 with the agents' final defaults (farm _C5: join_reach 1.2; survive _svI: outmatch_solo_adv 0.45)
 SRC=bots/_m2 tools/variant.sh _m3 join_reach=1.2f outmatch_solo_adv=0.45f > /dev/null
+# _x_gp = _m2 + the give-up clock fix (experiments/wip/x_gp.patch); _m4 = legend_m4 (shipped) = _x_gp + the _m3 values
+SRC=bots/_m2 tools/variant.sh _x_gp > /dev/null && (cd bots/_x_gp && patch -s -p1 --no-backup-if-mismatch < ../../experiments/wip/x_gp.patch)
+SRC=bots/_x_gp tools/variant.sh _m4 join_reach=1.2f outmatch_solo_adv=0.45f > /dev/null
 rm -rf $T
-for b in _rm _ST _m2 _m3 legend idle; do cambc build $b > /dev/null && echo "built $b"; done
+for b in _rm _ST _m2 _m3 _x_gp _m4 legend idle; do cambc build $b > /dev/null && echo "built $b"; done
 python3 - <<'EOF'
 import sys; sys.path.insert(0, 'tools'); import ledger
 want = {'_rm': '339a961d3427', '_ST': 'ca21cbfe785b', '_eA': '0ee193334b60', '_eB': '654605b27deb', '_eC': '116ccc8b53b1',
-		'_m2': '1684aa2a482c'}
+		'_m2': '1684aa2a482c', '_m3': '86c9e8f3de35', '_x_gp': '92e199947185', '_m4': '0dc2a2aac28a'}
 for b, h in want.items():
 	got = ledger.src_hash(b)
 	print(f'{b:5s} {got} {"ok" if got == h else "MISMATCH (expected " + h + ")"}')
-print('_m3  ', ledger.src_hash('_m3'))
 EOF

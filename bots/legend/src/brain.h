@@ -210,6 +210,7 @@ private:
 
 	// memory
 	int task = T_NONE, task_group = -1, task_since = 0;
+	int task_progress = -1; // giveup_progress: last round we hit, captured or waited at task_group
 	int ward_round = -100;
 	float last_hp = 0;
 	int last_hit_round = -100;

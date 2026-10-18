@@ -33,13 +33,18 @@ running or unfinished, and what to do next, so a new agent can continue without 
   spending 60+ rounds on one group (heavy pack, heal trips, waiting out a respawn, camp cycling) dropped it for 40 rounds. Now the clock restarts on
   every hit on the target, capture turn and respawn wait next to it. Unopposed pace (17 official maps): `_m2` 546.6 -> `_x_gp` **526.1**
   (pilgrimage 763 -> 694, stampede 742 -> 698, eight 426 -> 386, rushbait-v2 646 -> 604; no map slower); `_m4` **524.5**.
-- **`_m4` vs `_m2` (shipped): 58.0 / 58.8** (deaths 770-732), 0 faults. Third-party cells running (`$S/gp.sh`, then `_x_gp` vs `_m2`): ship `_m4` if
-  they are not worse than `_m2`'s. Check: `python3 tools/ledger_sum.py _m4 _m2` (all / official / deaths per cell, no rebuild needed).
+- **Shipped `legend_m4`** (`submissions/legend.zip` sha256 c1217ccc…, `submissions/history/legend_m4_20261018.zip`, BUILDS row) = `_m4` exactly
+  (source hash 0dc2a2aac28a; `tools/setup_session.sh` rebuilds it: `_x_gp` = `_m2` + `experiments/wip/x_gp.patch`, `_m4` = `_x_gp` + `join_reach=1.2f
+  outmatch_solo_adv=0.45f`). Ledger (56 maps / official 17): vs `_m2` **58.0 / 58.8** (deaths 770-732), vs `_ST` **73.2 / 70.6** (958-1114), vs `_rm`
+  **67.0 / 79.4** (902-1187), 0 faults; pace 524.5; gen16 rollovers 8 per team. `_x_gp` (fix alone on `_m2`) vs `_m2` 51.8 / 61.8.
+  Archetype cells `_m4` vs `_eA _eB _eC` still playing (`$S/gp.sh`): add them to the BUILDS row when done. `bots/legend/src` = `_m4` + the inert 78c32bf code.
+  The A100 space (`tools/rl/a100/space.json`) now also has `outmatch_flee_adv`, `outmatch_solo_adv`, `pair_flee_bonus`, `join_reach`, `outmatch_flee_dist` (52).
+  **Ask the user to re-run the A100 trainer on this build** (the bundle they have trains `legend_rm`).
 
 | # | Task | State |
 |---|---|---|
 | 1 | Ship the survive + farm merge | **done**: `legend_m2` |
-| 2 | `_m3` / `_m4` acceptance, ship `_m4` if its third-party cells hold | running |
+| 2 | `_m3` / `_m4` acceptance | **done**: `legend_m4` shipped (archetype cells finishing) |
 | 3 | **Agent `econ` (Opus, high)**: farming income vs the real teams (opening: our first captures r55-125, their Varg r27; income to the clearers; contact-aware damage builds: their Varg ends `MsE+PsE8`; body-time waste). Baseline `_m4`, copy `bots/_x_econ`, deliverables `experiments/wip/x_econ.patch` + `x_econ_NOTES.md` | running (started ~11:20 UTC) |
 | 4 | **Agent `contest` (Sonnet, high)**: lone-monolith maps (contest 0-1000 on the ladder, zero monolith damage): detector + feasible monolith cycle / denial, inert elsewhere. Baseline `_m4`, copy `bots/_x_contest`, deliverables `x_contest.patch` + `x_contest_NOTES.md` | running (started ~11:20 UTC) |
 | 5 | Later: gem-race endgame (`race`: close finishes, altar denial; probes in ENGINE_FACTS "Session 5 probes"), deaths at full health (enemies appearing inside reach) | not started |

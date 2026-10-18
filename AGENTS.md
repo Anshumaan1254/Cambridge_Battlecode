@@ -3,15 +3,53 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-17 20:00 UTC (session 5)**. Rule from the user: update this file and push at every step. Start with **§0000**, then **§000**, then **§00** below. Branch `claude/laughing-curie-3rq6hu` (do not open a PR unless the user asks).
-- **Two sessions are live on this branch (20:00 UTC)**: session 4 (container with `/tmp/ev/fp_*`, still running its full
-  panels: `_ST`, `_rm`, `_rs3`, `_rnr` done, `_rnd` running, then `_rmx`, `_x_side`, `_rmxp`; results written into §000) and
-  session 5 (§0000). Before pushing: `git pull --rebase`. Do not duplicate each other's panels: see §000 for session 4's numbers.
+- Last updated: **2026-10-18 (session 6)**. Rule from the user: update this file and push at every step. Start with **§00000**
+  (session 6), then §0000, §000, §00. **Session 6 pushes to branch `ccr-a858cd03-q87cpi`** (forked from the tip of
+  `claude/laughing-curie-3rq6hu` at 7e444b0; sessions 4-5 are gone). No PR unless the user asks.
 - Competition: Cambridge Battlecode 2026a (CAMBC), 12 Oct to 18 Nov 2026. C++ bot compiled to wasm.
 - The submitted bot cannot be changed after submission and keeps nothing between matches. All "learning"
   is either offline (training parameters before submission) or in-match (adapting inside one game).
 
 ---
+
+## 00000. SESSION 6 (2026-10-18, new container): read this first
+
+### Inputs from the user (message 1 of session 6)
+- 4 ladder match groups (20 archives, **17 distinct games, one per official map, `legend_st` on side A: 1 win, 16 losses**),
+  now in `experiments/ladder_oct18/<map>.repl26a` (deduplicated, named by map).
+- `docs/HOUSEOFCODERS_ENEMY_STRATEGY_REPORT.md` (external analysis of those 17 games; read §3, §4-6, §8, §9).
+- Requests: continue what is left here first, then the unstarted tasks; implement what the report shows is important;
+  recreate the opponents' good strategies in our bot and as sparring opponents; **an RL script to run on a Lightning AI
+  A100 machine for 2-3 hours** with many test cases and the opponent archetypes; Opus subagents only for make-or-break
+  work (Sonnet/Haiku otherwise, effort sized to the task); push every better bot first, then continue; keep this file updated.
+
+### Ladder evidence (measured this session with `tools/analysis/ladder_econ.mjs` and `tools/analysis/death_ctx.mjs`)
+- Totals (us - them): body deaths 232 - 50, camp gems 7,938 - 16,210, gold 39.6k - 87.0k, kills 30 - 167.
+- **60% of our deaths are on our own half**, 58% with the enemy holding >1.2x our health within 6 tiles, 39% with 3+ enemies
+  within 6, 41% with no ally within 6, 31% at 75%+ health (burst). The enemy roams in groups into our half and picks off
+  spread farmers. Cassi & Issac: 59 pair deaths (118 bodies), trigger Issac 63%, trigger at <25% HP 64%, fighting 47% /
+  fleeing 34%, the partner usually healthy and 7+ tiles away (`tools/analysis/pair_deaths.mjs` on the ladder dir).
+- **Builds**: every enemy profile buys **one Durability health emblem (and a Bruiser health emblem on Ren / Ryth / Cassi)
+  early, then stacks Power emblems in its damage stat** (focus: Ren, Stellar, Cassi, Tavi, Prism; strength: Issac, Varg,
+  Ryth), e.g. Ren `PfE12+DhE+BhE`, Issac `PsE8+DhE` by r450. Farming profile (rows, expanse): Monster emblem in the damage
+  stat, then Power. Ours: Monster / Treasure / Jungle / Durability passives + Bruiser; our Ren's first emblem lands ~r240,
+  theirs at r56 (fragment, after a 58-gem group).
+- **Farming**: enemy realized finish (with us on the map) beats our *unopposed* pace on ambush (561 vs 820), pilgrimage
+  (658 vs 900), rows (355 vs 436), fragment (488 vs 560), interlock (499 vs 572), expanse (580 vs 638), elkring, lanes.
+  rows: 10 of our 18 captures were split rewards (two bodies on a 66-gem group); their Varg solo-farms one group every
+  ~55 rounds from r27. Our Stellar captured once on collision (their Stellar 9 times).
+- contest: we never touch a monolith (0-1000, deaths 63-3); stampede: our objective plan won 1080-0 (keep it).
+
+### Plan (priority order) and state
+| # | Task | Who | State |
+|---|---|---|---|
+| 1 | Ship `_rm` (= session-4 legend: opening fuel, `start_round=2`, `capture_reset`, `tribute_elapsed`, `danger_detour`, `team_bank`, `race_mode`; the report's P1 fixes) | me | **shipped** as `legend_rm` (zip + `submissions/history/legend_rm_20261018.zip`, BUILDS row) |
+| 2 | Enemy builds (`build_style 3`: Durability/Bruiser health first, then Power stacks in the damage stat; `4`: Monster then Power for farming maps) | me | in progress |
+| 3 | Opponent archetypes from the report (Ren-first pressure `_eA`, CI-first farming `_eB`, caster objective `_eC`): our code + their drafts, builds and play style; sparring and RL opponents | me | in progress |
+| 4 | Survival vs grouped invaders + Cassi & Issac pair protection (232 vs 50 deaths) | Opus agent `survive` | to start |
+| 5 | Farming throughput: no split rewards, fast first captures, camp circuits on respawn, idle-roaming watchdog (unopposed pace on the 17 official maps) | Opus agent `farm` | to start |
+| 6 | A100 RL script (ES + GPU surrogate, opponent archetypes, scenario test cases, time budget) | me | to start |
+| 7 | contest single-monolith plan; the `race`/`rush` tasks of §0000 (their work was lost with the session-5 container) | Sonnet, later | not started |
 
 ## 0000. SESSION 5: CURRENT POSITION (started 2026-10-17 19:46 UTC in a new container): read this first, then §000
 

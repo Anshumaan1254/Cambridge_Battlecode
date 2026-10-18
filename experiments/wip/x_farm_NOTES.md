@@ -81,7 +81,9 @@ Pace = round at which our team banks 1000 gems vs `idle` (mean of both sides; a 
 - **`_C4` panel** (56 maps / official; `_rm` reference in brackets): `_rm` **61.6 / 67.6**; `_eA` 59.8 / 64.7 (57.1 / 58.8); `_eB` 69.6 / 85.3 (68.8 / 73.5);
   `_eC` 75.9 / 79.4 (80.4 / 76.5); `_ST` 67.0 / 73.5 (- / 52.9); held-out vs `_rm` 52.0. Deaths lower in every cell (vs `_rm` 1023-1268).
   The `_eC` all-map gap (-4.5) is contest (a monolith race decided at r2000: `_C2` won it 2/2 + its ladder copy 2/2, `_C4` 0/4) plus scattered
-  single-game flips; held-out check vs `_eC` running.
+  single-game flips. Held-out (100 games) vs `_eC`: `_C4` 88.0, `_rm` 81.0: noise, not a loss.
+- **`_C5` = `_C4` + `join_reach` 1.2** panel (56 maps / official): `_rm` **70.5 / 85.3** (deaths 918-1302); `_eA` 62.5 / 64.7; `_eB` 67.0 / 79.4; `_eC` 83.0 / 85.3;
+  `_ST` 72.3 / 73.5; held-out vs `_rm` 47.0 (`_C4` 52.0). Fuel: gen16 rollovers 8 = `_rm`. Direct `_C5` vs `_C4` running (56 maps + held-out).
 
 ## Tools (new files, agent farm)
 - `tools/farm/pack_watch.mjs FILE X,Y FROM TO [R]`: per round, health of the pack at (X,Y) and the champions near it (both teams).

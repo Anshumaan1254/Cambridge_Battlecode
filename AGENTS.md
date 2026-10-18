@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-18 02:40 UTC (session 7)**. Rule from the user: update this file and push at every step. Start with **§000000** (session 7), then **§00000** (session 6), **§0000**, **§000**, **§00** below.
+- Last updated: **2026-10-18 02:30 UTC (session 7, container clock)**. Rule from the user: update this file and push at every step. Start with **§000000** (session 7), then **§00000** (session 6), **§0000**, **§000**, **§00** below.
   Session 7 pushes to **`claude/battlecode-bot-optimization-0ixvxa`** (harness branch). Session 6 pushed to `ccr-b9ffa7d9-hvk1ud`, sessions 3-5 to `claude/laughing-curie-3rq6hu`:
   before pushing, `git fetch origin` and merge any new commits from those branches (other sessions may be live; do not duplicate their panels).
 - **Two sessions are live on this branch (20:00 UTC)**: session 4 (container with `/tmp/ev/fp_*`, still running its full
@@ -35,9 +35,9 @@ running or unfinished, and what to do next, so a new agent can continue without 
 |---|---|---|---|
 | Farming speed (first cycle, shop timing, farm builds, helper vs collector, abandoned walks, respawn cycling) | agent `farm7` (Opus), copy `bots/_x_farm7`, outputs `/tmp/farm7/`, deliverables `experiments/wip/x_farm7.patch` + `x_farm7_NOTES.md` | started 02:35 | merge what wins on pace (17 + 56 maps) with h2h vs `_b7` >= 48 |
 | Deaths / fight selection / escape / reachable support / pair risk | agent `fight7` (Opus), copy `bots/_x_fight7`, outputs `/tmp/fight7/`, deliverables `x_fight7.patch` + `x_fight7_NOTES.md` | started 02:35 | merge what cuts deaths with h2h >= 50 and no worse vs `_lad` |
-| pair6 finish: `x_pair6.patch` ported onto `_b7` as `bots/_x_pair7` (1 hunk fixed by hand: `safety()` threshold line), variants `_p7h` (veto 1, margin 0.8), `_p7f` (join_w 0), `_p7hf` (both) | coordinator, `/tmp/ev/e1.sh`, results `/tmp/ev/h_<bot>/` | running | merge the best if h2h vs `_b7` >= 50 and vs `_lad` not worse |
-| Ladder proxy `_lad` = `_b7` + `build_style 3` + draft Ren, Stellar, C&I, Ryth, Varg (`LEGEND_DRAFT 8,4,3,0,9`) | coordinator | built | `_b7` vs `_lad` running; use as an extra panel opponent |
-| Ship decision `_b7` vs `_s6` (56 maps + official) | coordinator | running | ship if >= 50 and pace not worse |
+| pair6 finish: `x_pair6.patch` ported onto `_b7` as `bots/_x_pair7` (1 hunk fixed by hand: `safety()` threshold line), variants `_p7h` (veto 1, margin 0.8), `_p7f` (join_w 0), `_p7hf` (both) | coordinator, `/tmp/ev/e1.sh`, results `/tmp/ev/h_<bot>/` | h2h vs `_b7` (all / official, deaths us-them): `_p7h` 51.8 / 50.0 (1113-1212), `_p7f` 47.3 / 44.1 (rejected), `_p7hf` 50.0 / 47.1 (1086-1218); vs `_lad`: `_b7` 56.2 / 58.8 (1315-1217), `_p7h` 54.5 / 58.8 (1211-1172), `_p7hf` 48.2 / 47.1. Patch on `_b7`: `experiments/wip/x_pair7.patch` | `_p7h` panel vs `_r2 _devci _L0 _v6` + held-out running (`/tmp/ev/e2.sh`); merge `pair_veto=1 pair_veto_margin=0.8` if not worse |
+| Ladder proxy `_lad` = `_b7` + `build_style 3` + draft Ren, Stellar, C&I, Ryth, Varg (`LEGEND_DRAFT 8,4,3,0,9`) | coordinator | built | `_b7` beats it 56.2 / 58.8: the proxy is weaker than our build, not ladder strength. Also built `_ladB` (C&I, Stellar, Varg, Ren) and `_ladC` (Stellar, Tavi, Prism, C&I, Ren), both `build_style 3` |
+| Ship decision `_b7` vs `_s6` (56 maps + official) | coordinator | 50.0 / 50.0 (deaths 1142-1105): neutral, contest pace only | ship together with the next real gain |
 
 ## 00000. SESSION 6: CURRENT POSITION (started 2026-10-17 21:00 UTC, new container): read this first, then §0000
 

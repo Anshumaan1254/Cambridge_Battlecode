@@ -1,0 +1,179 @@
+diff -ruN _b7/src/brain.cpp _x_pair7/src/brain.cpp
+--- _b7/src/brain.cpp	2026-10-18 02:03:58.142673890 +0000
++++ _x_pair7/src/brain.cpp	2026-10-18 02:06:04.387917663 +0000
+@@ -416,6 +416,8 @@
+ 		C.read(round);
+ 		C.write_bag(0);
+ 		C.write_self(W.my_index, -1);
++		if (P.pair_bits && (type == CT::cassi || type == CT::issac))
++			C.write_pair(type == CT::cassi ? 0 : 1, false, false);
+ 		learner().tick(round, W.my_index == 0, false);
+ 		if (W.my_index == 0)
+ 			C.write_stance(learner().stance);
+@@ -450,6 +452,11 @@
+ 			}
+ 	}
+ 	build_danger();
++	if (P.pair_bits && (type == CT::cassi || type == CT::issac))
++	{
++		const bool risk = hp < P.pair_low * max_hp && (enemy_near_d <= P.pair_danger_d || danger.is_set(pos));
++		C.write_pair(type == CT::cassi ? 0 : 1, risk, static_cast<int>(gems) >= P.pair_bag_min);
++	}
+ 	XM(xm_pre());
+ 
+ 	if (flag(state, bc::champion_state::recalling) || flag(state, bc::champion_state::submitting_gems) ||
+@@ -1264,6 +1271,8 @@
+ 	float our_hp = hp, our_dps = str + focus * best_mod(kit) / 8.f + my_burst / 3.f;
+ 	float allies_burst = 0;
+ 	int allies_near = 0;
++	const bool me_pair = type == CT::cassi || type == CT::issac;
++	float pair_hp[2] = { me_pair ? hp : -1.f, -1.f }; // health of the pair bodies counted on our side (self first)
+ 	std::array<vec2, 8> side_pos{};
+ 	int side_n = 0;
+ 	side_pos[static_cast<std::size_t>(side_n++)] = pos;
+@@ -1274,10 +1283,14 @@
+ 				side_pos[static_cast<std::size_t>(side_n++)] = a.pos;
+ 			const float ab = std::max(a.str, a.focus * best_mod(a.kit));
+ 			our_hp += a.hp;
++			if (a.type == CT::cassi || a.type == CT::issac)
++				pair_hp[pair_hp[0] < 0 ? 0 : 1] = a.hp;
+ 			our_dps += P.ally_spell_dps ? a.str + a.focus * best_mod(a.kit) / 8.f + ab / 3.f : a.str * 1.2f;
+ 			allies_burst += a.str;
+ 			++allies_near;
+ 		}
++	if (pair_hp[0] >= 0 && pair_hp[1] >= 0 && P.pair_join_w < 1.f)
++		our_hp -= (1.f - P.pair_join_w) * std::max(pair_hp[0], pair_hp[1]); // focus on the weaker kills both
+ 	if (W.ally_spawn.is_set(pos) && P.spawn_heal_bonus)
+ 	{
+ 		// We heal fully next round on spawn, but only while the fight stays here: stepping off spawn to
+@@ -1424,7 +1437,8 @@
+ 		fight = true; // fleeing a same-speed chaser hands it free hits: trade instead
+ 	else if (tgt->channeling && adv >= 0.9f)
+ 		fight = true;
+-	if (fight && !killable && can_escape && (hp < 0.25f * max_hp || (static_cast<int>(gems) >= P.bag_caution && adv < 1.5f)))
++	const int pair_bag = P.pair_bits && me_pair && comms().pair_bag[type == CT::cassi ? 1 : 0] ? P.pair_bag_min : 0; // partner's posted bag
++	if (fight && !killable && can_escape && (hp < (me_pair ? P.pair_abort_hp : 0.25f) * max_hp || (static_cast<int>(gems) + pair_bag >= P.bag_caution && adv < 1.5f)))
+ 		fight = false;
+ 	if (fight && reserve && !(killable && adv >= 1.f) && adv < fight_margin + P.reserve_margin && can_escape)
+ 		fight = false;
+@@ -1447,6 +1461,16 @@
+ 		else if (P.stay_veto && fight && !killable && can_escape && hp <= worst)
+ 			fight = false;
+ 	}
++	if (P.pair_veto && me_pair && fight && !killable && can_escape)
++	{
++		// Cassi & Issac: a death costs both bodies and both bags, and enemies focus the pair. Skip a fight that every
++		// visible enemy hitting this body could end before the target dies.
++		const float worst = their_dps * (std::ceil(tgt->hp / std::max(1.f, our_dps)) + 1.f);
++		// pair_veto 2: the partner fighting next to us dies for both of us too: the weaker body's health counts.
++		const float pair_low_hp = P.pair_veto == 2 && pair_hp[1] >= 0 ? std::min(hp, pair_hp[1]) : hp;
++		if (pair_low_hp <= worst * P.pair_veto_margin)
++			fight = false;
++	}
+ 	// A bag that wins the game is worth more than any fight we can walk away from.
+ 	if (fight && P.win_bank && !killable && can_escape && gems > 0 && wins_with(static_cast<int>(gems)))
+ 		fight = false;
+@@ -1862,7 +1886,7 @@
+ 			if (g.st == ST_ALIVE && !g.harmless && g.near.is_set(pos))
+ 				g.exit_steps = std::max(g.exit_steps, esc);
+ 	}
+-	float threshold = std::max(P.retreat_hp * max_hp, camp_in * static_cast<float>(std::max(P.safety_v2 ? escape + 1 : 4, esc + 1)));
++	float threshold = std::max(((type == CT::cassi || type == CT::issac) ? P.pair_retreat_hp : P.retreat_hp) * max_hp, camp_in * static_cast<float>(std::max(P.safety_v2 ? escape + 1 : 4, esc + 1)));
+ 	if (obj_in > 0)
+ 	{
+ 		// Objective camps: only those that target us (no ally nearer), after our emblems, for the steps out of
+@@ -2088,7 +2112,10 @@
+ 	// A long bank trip is worth a bigger bag: the threshold rises with the cheapest way to an altar from here,
+ 	// so a body far from every altar keeps farming and banks when its route passes close to one.
+ 	const int need = bank_min(recall_bank ? via_home : dist);
+-	const bool want = force || endgame || winning || risky || committed || static_cast<int>(gems) >= need || dist <= P.tribute_near ||
++	// P.pair_bits: the partner is low with enemies on it; its death takes our bag too, so bank it if that is quick.
++	const bool partner_risk = P.pair_bits && (type == CT::cassi || type == CT::issac) && comms().pair_risk[type == CT::cassi ? 1 : 0] &&
++		static_cast<int>(gems) >= 10 && dist + ticks <= P.pair_bank_t;
++	const bool want = force || endgame || winning || risky || committed || partner_risk || static_cast<int>(gems) >= need || dist <= P.tribute_near ||
+ 		(static_cast<int>(gems) >= 10 && on_the_way(a));
+ 	if (!want)
+ 		return false;
+diff -ruN _b7/src/comms.cpp _x_pair7/src/comms.cpp
+--- _b7/src/comms.cpp	2026-10-18 02:03:58.142835287 +0000
++++ _x_pair7/src/comms.cpp	2026-10-18 02:05:57.324892217 +0000
+@@ -21,6 +21,11 @@
+ 	if (!bag_on)
+ 		bag_tens = 0;
+ 	stance = ((b[0] >> 7) & 1) | (((b[1] >> 7) & 1) << 1);
++	for (int k = 0; k < 2; ++k)
++	{
++		pair_risk[static_cast<std::size_t>(k)] = (b[static_cast<std::size_t>(2 + 2 * k)] >> 7) & 1;
++		pair_bag[static_cast<std::size_t>(k)] = (b[static_cast<std::size_t>(3 + 2 * k)] >> 7) & 1;
++	}
+ 	const std::uint16_t raw = static_cast<std::uint16_t>(b[6] | (b[7] << 8));
+ 	// Bit 7 of byte 2 flips on every post: re-posting the same alert (a fight still going on at one tile)
+ 	// refreshes it for the team instead of letting it expire (P.alert_refresh).
+@@ -97,3 +102,14 @@
+ 	my_bag = mine;
+ 	bag_tens = s;
+ }
++
++void Comms::write_pair(int slot, bool risk, bool bag)
++{
++	if (slot < 0 || slot > 1 || P.alert_refresh)
++		return;
++	const std::size_t i = static_cast<std::size_t>(2 + 2 * slot);
++	bc::shared_memory[i] = static_cast<std::uint8_t>((bc::shared_memory[i] & 0x7F) | (risk ? 0x80 : 0));
++	bc::shared_memory[i + 1] = static_cast<std::uint8_t>((bc::shared_memory[i + 1] & 0x7F) | (bag ? 0x80 : 0));
++	pair_risk[static_cast<std::size_t>(slot)] = risk;
++	pair_bag[static_cast<std::size_t>(slot)] = bag;
++}
+diff -ruN _b7/src/comms.h _x_pair7/src/comms.h
+--- _b7/src/comms.h	2026-10-18 02:03:58.142860541 +0000
++++ _x_pair7/src/comms.h	2026-10-18 02:05:57.325111989 +0000
+@@ -2,6 +2,7 @@
+ // Bytes 0-5: one per body: bits 0-6 = claimed group id + 1 (0 = none); bit 7 of bytes 0-1 = team stance
+ //            (written only by the stance leader, body 0; see learn.h).
+ // Bit 7 of byte 2: flips on every alert post (refresh, P.alert_refresh).
++// P.pair_bits (only with alert_refresh off): bit 7 of bytes 2-5 = Cassi at risk, Cassi bag, Issac at risk, Issac bag.
+ // Bytes 6-7: team alert: bits 0-13 tile index (y * W + x), bits 14-15 kind.
+ // P.team_bank (maps with at most 62 groups): claims use bits 0-5 and bit 6 of bytes 0-5 holds a 6-bit team sum
+ //            of carried gems in tens (each body adds the change of its own min(10, bag / 10)).
+@@ -30,7 +31,10 @@
+ 	int my_bag = 0;					// this body's last contribution
+ 	int last_toggle = 0;
+ 
++	std::array<bool, 2> pair_risk{}, pair_bag{}; // P.pair_bits: Cassi (slot 0, bit 7 of bytes 2-3), Issac (slot 1, bytes 4-5)
++
+ 	void read(int round);
++	void write_pair(int slot, bool risk, bool bag);
+ 	void write_self(int index, int group);
+ 	void write_stance(int s);
+ 	void write_bag(int gems);
+diff -ruN _b7/src/params.h _x_pair7/src/params.h
+--- _b7/src/params.h	2026-10-18 02:03:58.143105083 +0000
++++ _x_pair7/src/params.h	2026-10-18 02:05:57.325314595 +0000
+@@ -78,6 +78,27 @@
+ 									 // _v6 86.6 (83.9), _devci 85.7 (80.4), _hunt2 94.6 (93.8); deaths -16%
+ 	float pair_caution = 0.f;		 // Cassi and Issac die together (both bodies, both bags): this much more advantage to fight
+ 									 // (0.3 measured neutral: 63.4 vs _r2 against 67.0, 87.5 vs _v6 against 86.6)
++	// Cassi & Issac (agent pair6, session 6). Measured on _b6 (56 maps, 112 games per cell): the pair dies 2.2-2.9 times
++	// per game (vs _r2 2.45, _L0 2.86; official maps 2.6-3.8), 55-60% of our body deaths. XM_TRACE of 248 pair deaths
++	// vs _r2: 65% started as a fight we could leave (141 of 161 by the margin rule, mostly 1 enemy seen vs the pair),
++	// then the trigger body was focused while the team estimate stayed favourable (adv 1.1-10 at 10-35% own health).
++	float pair_join_w = 1.f;		 // both pair bodies on our side of a fight: count their health as min + w x max
++									 // (1 = the sum, as before). Enemies kill both by focusing the weaker one.
++	float pair_abort_hp = 0.25f;	 // a pair body leaves an escapable, not-killable fight below this health fraction
++									 // (0.25 for every body before)
++	float pair_retreat_hp = 0.25f;	 // safety(): a pair body retreats below this health fraction (retreat_hp for the rest)
++	int pair_veto = 0;				 // a pair body skips an escapable, not-killable fight when every visible enemy hitting it
++									 // until the target dies (+1 round) x pair_veto_margin exceeds its health (stay_veto for the
++									 // pair only; for every body it cut deaths 13% but lost 45-49% head-to-head)
++	float pair_veto_margin = 1.f;	 // (pair_veto 2: with the partner on our side of the fight, the weaker body's health is compared)
++	int pair_bits = 0;				 // each pair body posts 2 status bits (bit 7 of bytes 2-5; off with alert_refresh): at risk
++									 // (health below pair_low with an enemy within pair_danger_d or in reach) and bag >= pair_bag_min.
++									 // The partner of a body at risk banks its bag when an altar is pair_bank_t rounds away (walk +
++									 // ticks); a body counts its partner's posted bag in bag_caution (a pair death loses both bags)
++	float pair_low = 0.4f;
++	int pair_danger_d = 5;
++	int pair_bag_min = 20;
++	int pair_bank_t = 6;
+ 	int alert_refresh = 0;			 // (A/B neutral: 50.9% head-to-head, +2.6 vs _r2) re-posting the same alert refreshes it for the team (a toggle bit; before, an alert
+ 									 // re-posted at one tile expired after its max age while the fight went on)
+ 	int squishy_hp_first = 0;		 // (A/B: 40.2% head-to-head, -8 vs _devci: rejected) Stellar/Prism/Tavi and Varg/Vendetta/Vesper buy a Durability health emblem first (they

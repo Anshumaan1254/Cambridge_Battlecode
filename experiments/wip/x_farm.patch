@@ -1,6 +1,6 @@
 diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
 --- _rm/src/brain.cpp	2026-10-18 07:37:50.236526014 +0000
-+++ _x_farm/src/brain.cpp	2026-10-18 08:19:40.682127422 +0000
++++ _x_farm/src/brain.cpp	2026-10-18 08:48:49.338027821 +0000
 @@ -1,10 +1,19 @@
  #include "brain.h"
  #include "learn.h"
@@ -21,7 +21,40 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  #ifdef XM_TRACE
  #define XM(stmt) debug_block({ stmt; })
  #else
-@@ -2256,12 +2265,12 @@
+@@ -1579,6 +1588,32 @@
+ 	const int dh = W.dist_home(pos);
+ 	if (dh > P.recall_min_dist && safe_to_recall())
+ 	{
++		if (P.no_split && can_move)
++		{
++			// Recalling from a reward tile while an ally stands on the group too: the channel keeps us on the tile and the
++			// reward is split (pilgrimage: a hurt Varg recalled from the wolf tiles next to Cassi, 34/34). Step off first.
++			for (const auto& g : W.groups)
++			{
++				if (cheb(g.center, pos) > g.radius + 1 || !g.mask.is_set(pos))
++					continue;
++				bool other = false;
++				for (int i = 0; i < static_cast<int>(W.allies.size()) && !other; ++i)
++				{
++					const auto& a = W.allies[static_cast<std::size_t>(i)];
++					other = i != W.my_index && a.alive && a.visible && a.seen_round == round && cheb(a.pos, g.center) <= g.radius + 1;
++				}
++				if (other)
++				{
++					bc::bitboard off;
++					off.draw_chebyshev(pos, 1.f);
++					off &= ~g.mask;
++					off &= ~W.walls;
++					if (!off.is_empty())
++						step(off, false, false);
++				}
++				break;
++			}
++		}
+ 		try
+ 		{
+ 			bc::self().recall();
+@@ -2256,12 +2291,12 @@
  	auto& C = comms();
  	eta = BIG;
  	if (g.monolith && !P.farm_monolith)
@@ -37,7 +70,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  	// Rounds until we can hit the group. Ranged champions stop at their attack range; a dash kit covers 10 tiles
  	// per 8-round cooldown (walk + 2-tile dash). Fitted on 1,659 engaged episodes: d-1 was exact for Ryth and Varg
  	// and 2.2-2.3 rounds long for Cassi, Stellar (actual = -2.1 + 1.0 x predicted), Issac and Ren (0.85 x).
-@@ -2315,7 +2324,22 @@
+@@ -2315,7 +2350,22 @@
  		// One body captures; if allies claim it, the lowest index takes it unless we are clearly nearer
  		// (the joiner may still be walking in while we stand next to the reward).
  		if (claimers && first_claimer < W.my_index && closer_lower_claimer)
@@ -61,7 +94,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  		eta = d_tile;
  		time = static_cast<float>(eta) + 6.f;
  		break;
-@@ -2323,7 +2347,7 @@
+@@ -2323,7 +2373,7 @@
  	{
  		const int avail = g.ready_round - round;
  		if (avail > d_adj + (W.obj_mode && g.objective ? P.obj_max_wait : P.max_wait))
@@ -70,7 +103,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  		wait = std::max(0, avail - d_adj);
  		hp_left = g.max_hp;
  		break;
-@@ -2342,7 +2366,7 @@
+@@ -2342,7 +2392,7 @@
  			const float solo_rounds = hp_left / std::max(10.f, ally_dps);
  			const bool heavy = g.monolith || g.elk || (!g.harmless && (solo_rounds > P.join_min_rounds || g.attackers >= 2));
  			if (!heavy || (claimers >= (g.monolith ? 4 : 1 + P.max_join) && !(W.obj_mode && g.objective && P.obj_team)))
@@ -79,7 +112,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  			share = P.join_share;
  		}
  		// Rounds to clear the group with the given helpers; false when it cannot be done in max_trips.
-@@ -2451,7 +2475,8 @@
+@@ -2451,7 +2501,8 @@
  		};
  		float team_kill = 0;
  		const bool solo_ok = plan(ally_dps, melee_ally, time);
@@ -89,7 +122,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  		{
  			// Objective map: too heavy for us and the bodies already on it, but not for the whole team.
  			sc_team = true;
-@@ -2463,7 +2488,7 @@
+@@ -2463,7 +2514,7 @@
  			// Too heavy for us (and the bodies already on it). Plan it as a pair: claim it, wait outside camp
  			// range for the best-suited ally, then kill it together (elk pairs, wolf packs early in the game).
  			if (claimers || !P.pair_plans || g.monolith)
@@ -98,7 +131,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  			float best_dps = 0;
  			bool best_melee = false;
  			for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 6; ++i)
-@@ -2474,7 +2499,7 @@
+@@ -2474,7 +2525,7 @@
  						best_dps = a, best_melee = ally_melee(i);
  				}
  			if (best_dps <= 0 || !plan(best_dps, best_melee, time))
@@ -107,7 +140,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  			time += P.pair_wait;
  			share = 0.5f;
  			if (need_pair)
-@@ -2487,10 +2512,10 @@
+@@ -2487,10 +2538,10 @@
  	{
  		const float risk = sc_risk;
  		if (hp < P.steal_hp_frac * max_hp && risk > 0)
@@ -120,7 +153,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  			value *= P.unknown_discount;
  	}
  	{
-@@ -2510,7 +2535,7 @@
+@@ -2510,7 +2561,7 @@
  					ohp += a.hp, odps += a.str + a.focus * best_mod(a.kit) / 8.f;
  			const float tadv = (ohp / edps) / std::max(0.1f, ehp / std::max(1.f, odps));
  			if (tadv < P.target_threat_adv)
@@ -129,7 +162,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  		}
  	}
  	if (round - g.enemy_round < 12)
-@@ -2705,6 +2730,18 @@
+@@ -2705,6 +2756,18 @@
  	}
  	sc_risk = static_cast<float>(alive_enemies) / std::max<std::size_t>(1, W.enemies.size());
  	sc_alert = !alert_zone.is_empty();
@@ -148,7 +181,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  }
  
  void Brain::farm()
-@@ -2749,13 +2786,23 @@
+@@ -2749,13 +2812,23 @@
  	int best = -1, best_eta = BIG;
  	bool best_pair = false, best_team = false;
  	float best_s = 0;
@@ -172,7 +205,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  			// Groups that cannot beat the best so far are skipped unscored (exact, see score_cap). Scoring took
  			// ~60k fuel a turn on the 98x99 48-group map and the math model made each group ~23% dearer, so
  			// the loop ran down to score_fuel_floor and farm_group (up to ~29k) spilled turns into the next round.
-@@ -2763,10 +2810,22 @@
+@@ -2763,10 +2836,22 @@
  				return;
  			int eta = 0;
  			bool np = false;
@@ -195,7 +228,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  			if (g.id == task_group)
  				s *= P.hysteresis;
  			else if (P.flip_window > 0 && g.id == left_group && round - left_round <= P.flip_window)
-@@ -2928,10 +2987,24 @@
+@@ -2928,10 +3013,24 @@
  #endif
  	if (best != task_group)
  	{
@@ -220,7 +253,7 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
  	}
  	// Give up on targets we cannot reach in reasonable time.
  	if (round - task_since > 2 * best_eta + 60 + (W.obj_mode && W.groups[static_cast<std::size_t>(best)].objective ? P.obj_commit : 0))
-@@ -3174,6 +3247,10 @@
+@@ -3174,6 +3273,10 @@
  	auto& W = world();
  	if (!attack_unit(g.camps[idx].camp))
  		return false;
@@ -230,6 +263,50 @@ diff -ruN _rm/src/brain.cpp _x_farm/src/brain.cpp
 +#endif
  	// Second swing with an attack reset; retarget if the first swing killed it.
  	if (kit.reset >= 0 && ready(kit.reset))
+ 	{
+@@ -3259,6 +3362,43 @@
+ 	// (8-round cooldowns), and an enemy 7-9 tiles away led to a fight within 8 rounds only 13% of the time.
+ 	const bool save_cc = enemy_near_d <= P.hold_cc_dist;
+ 	const bool hold_spells = enemy_near_d <= P.hold_spell_dist && P.hold_spells_near_enemies;
++	if (P.varg_splash_pos && type == CT::varg && can_move)
++	{
++		// Varg's splash hits every camp next to the target: stand next to the camp with the most live neighbours. From
++		// below a vertical 3-wolf pack (rows) Varg reached only the end wolf and hit 2 of 3 (pack 31,4: 32 rounds with Cassi).
++		auto live = [&](std::size_t i) { return g.hp[i] > 0 && W.camp_occ.is_set(g.camps[i].pos); };
++		auto cover = [&](std::size_t i) {
++			int n = 1;
++			for (std::size_t j = 0; j < g.camps.size(); ++j)
++				if (j != i && live(j) && cheb(g.camps[i].pos, g.camps[j].pos) <= 1)
++					++n;
++			return n;
++		};
++		int here = 0, best_n = 0;
++		std::size_t bi = g.camps.size();
++		for (std::size_t i = 0; i < g.camps.size(); ++i)
++		{
++			if (!live(i))
++				continue;
++			const int d = cheb(pos, g.camps[i].pos);
++			if (d > 3)
++				continue;
++			const int n = cover(i);
++			if (d <= 1)
++				here = std::max(here, n);
++			if (n > best_n)
++				best_n = n, bi = i;
++		}
++		if (bi < g.camps.size() && best_n > here && best_n >= 2)
++		{
++			bc::bitboard goal;
++			goal.draw_chebyshev(g.camps[bi].pos, 1.f);
++			goal &= ~g.mask;
++			goal &= ~W.walls;
++			if (!goal.is_empty() && !goal.is_set(pos))
++				step(goal, false, false);
++		}
++	}
+ 	std::size_t t = pick(kit.attack_range);
+ 	if (t == g.camps.size())
  	{
 diff -ruN _rm/src/brain.h _x_farm/src/brain.h
 --- _rm/src/brain.h	2026-10-18 07:37:50.236809051 +0000
@@ -254,7 +331,7 @@ diff -ruN _rm/src/brain.h _x_farm/src/brain.h
  
 diff -ruN _rm/src/params.h _x_farm/src/params.h
 --- _rm/src/params.h	2026-10-18 07:37:50.237297424 +0000
-+++ _x_farm/src/params.h	2026-10-18 08:44:52.910116683 +0000
++++ _x_farm/src/params.h	2026-10-18 08:45:24.250045089 +0000
 @@ -14,11 +14,22 @@
  	int farm_monolith = 1;			 // 0: never farm a monolith group (20,000 HP, 200 strength; the user: do not rely on it for gems)
  	int max_trips = 5;				 // heal trips we accept to finish one camp group (camps never heal)
@@ -279,7 +356,15 @@ diff -ruN _rm/src/params.h _x_farm/src/params.h
  	float target_threat_adv = 1.305f;	 // skip camps where recently seen enemies beat us (and allies there) (ES: 1.1 -> 1.305)
  
  	// Farming model corrections (prediction audit, tools/analysis/xm_audit.mjs on 48 traced games vs _v6 and _hunt2)
-@@ -233,7 +244,9 @@
+@@ -143,6 +154,7 @@
+ 	int cast_near_target = 1; // fighting: the chosen target is out of spell range but another enemy is within 4: cast on that one
+ 							  // instead of walking toward the target (path1/eng4 in the trace: 41 turns in 3 games)
+ 
++	int varg_splash_pos = 1;   // Varg steps next to the camp with the most live neighbours before hitting (splash covers it all; agent farm)
+ 	int dash_holes = 1;		   // dash kits route over 1-wide hole crossings (fields treat those holes as ground; the
+ 							   // step waits for the dash instead of walking around), see world.cpp
+ 	int dash_wait_max = 4;	   // at a crossing with the dash on cooldown: wait up to this many rounds, else walk around
+@@ -233,7 +245,9 @@
  	int race_carrier = 30;
  	int capture_reset = 1;		// an enemy seen on the group's tiles restarts the capture-recall clock (the engine resets the capture)
  	int tribute_elapsed = 1;	// handle_channel counts the tribute's remaining turns from its start, not from the carried bag
@@ -290,7 +375,7 @@ diff -ruN _rm/src/params.h _x_farm/src/params.h
  	int bank_first_margin = 2;	// ... by at least this many steps (nearest-altar walk + recall_time + margin <= spawn altar walk)
  	float bank_trip_w = 1.0f;	// bank threshold rises by this many gems per step of bank trip beyond bank_trip_free
  	int bank_trip_free = 12;	// bank trips up to this many steps keep the plain threshold
-@@ -242,10 +255,19 @@
+@@ -242,10 +256,19 @@
  
  	// Objective maps (agent obj, session 3): the gems sit in one or a few heavy groups (stampede, contest)
  	int obj_plan = 1;			// detect objective maps at init (World::detect_objective); everything below needs it

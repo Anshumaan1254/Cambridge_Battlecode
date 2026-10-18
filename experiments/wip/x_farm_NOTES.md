@@ -49,7 +49,21 @@ Pace = round at which our team banks 1000 gems vs `idle` (mean of both sides; a 
 | Build | pace (official 17) | vs `_rm` 56 maps / official | deaths |
 |---|---|---|---|
 | `_C1` (`max_join` 1) | 563.1 | 54.5 / 58.8 | 1055-1287 |
-| **`_C2` (`max_join` 3) = current `_x_farm`** | **553.3** | 54.5 / 61.8 | 1096-1297 |
+| **`_C2` (`max_join` 3)** | **553.3** | 54.5 / 61.8 | 1096-1297 |
+- **`_C2` acceptance panel** (56 maps, 112 games per cell; `_rm` reference from `/tmp/ev` in brackets):
+
+| Opponent | `_C2` all / official | `_rm` all / official |
+|---|---|---|
+| `_rm` | 54.5 / 61.8 | - |
+| `_eA` | 67.0 / 73.5 | 57.1 / 58.8 |
+| `_eB` | 66.1 / 85.3 | 68.8 / 73.5 |
+| `_eC` | 85.7 / 91.2 | 80.4 / 76.5 |
+| `_ST` | 56.2 / 61.8 | - / 52.9 (34 games) |
+  Deaths fall in every cell (e.g. vs `_ST` 924-1274). 0 faults. Fuel: rollovers on `gen16_98x99` 8 = `_rm` 8 (opening turns only), official maps
+  ambush/pilgrimage/lanes/rushbait-v2 unchanged (6/4/6/0).
+- After `_C2` (in `_x_farm`, under test as `_C3`): `varg_splash_pos` (Varg steps next to the camp with the most live neighbours: rows pack 31,4 cleared
+  r33-r50 by 4 bodies, Varg 3 captures from r55) and `no_split` in `go_home` (step off the reward tiles before a recall when an ally stands on the
+  group: the remaining 2 splits on pilgrimage/ambush were a hurt Varg recalling from the tiles next to Cassi).
 
 ## Tools (new files, agent farm)
 - `tools/farm/pack_watch.mjs FILE X,Y FROM TO [R]`: per round, health of the pack at (X,Y) and the champions near it (both teams).

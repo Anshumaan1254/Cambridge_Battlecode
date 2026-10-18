@@ -65,14 +65,14 @@ if [ "$SKIP_SETUP" = 0 ]; then
 	say "step 3/6: opponents (sparring panel, frozen builds, ladder archetypes, self)"
 	tools/make_sparring.sh
 	tools/snapshot.sh _L0 25bed8d
-	for z in es2:legend_es2_20261017 c3:legend_c3_20261017 ST:legend_st_20261017 rm:legend_rm_20261018 m4:legend_m4_20261018; do
+	for z in es2:legend_es2_20261017 c3:legend_c3_20261017 ST:legend_st_20261017 rm:legend_rm_20261018 m4:legend_m4_20261018 m5:legend_m5_20261018; do
 		n=_${z%%:*}; f=submissions/history/${z#*:}.zip
 		rm -rf "bots/$n" && mkdir -p "bots/$n" && (cd "bots/$n" && python3 -c "import zipfile,sys;zipfile.ZipFile(sys.argv[1]).extractall('.')" "../../$f") && cp bots/legend/.gitignore "bots/$n/"
 	done
 	tools/make_archetypes.sh
 	rm -rf bots/_self && mkdir -p bots/_self && cp -r bots/legend/src bots/_self/ && cp bots/legend/.gitignore bots/_self/
 	say "         release builds of every opponent ($JOBS cores)"
-	opps="_base _v6 _r2 _hunt _hunt2 _devci _L0 _es2 _c3 _ST _rm _m4 _eA _eB _eC _eD _self idle legend"
+	opps="_base _v6 _r2 _hunt _hunt2 _devci _L0 _es2 _c3 _ST _rm _m4 _m5 _eA _eB _eC _eD _self idle legend"
 	printf '%s\n' $opps | xargs -P "$(( JOBS / 2 > 0 ? JOBS / 2 : 1 ))" -I{} sh -c 'cambc build {} --release >/dev/null 2>&1 || echo "build {} failed"'
 
 	say "step 4/6: smoke test"
@@ -104,7 +104,7 @@ python3 tools/rl/apply_params.py "$OUT/best_params.json" --bot _a100_best | tail
 cambc build _a100_best --release >/dev/null
 VAL="$OUT/validation.txt"
 : > "$VAL"
-for o in _eA _eB _eC _eD _ST _rm _m4 _self; do
+for o in _eA _eB _eC _eD _ST _rm _m4 _m5 _self; do
 	python3 tools/bench.py _a100_best "$o" --maps 'maps/comp/*.map26a' --jobs "$JOBS" --out "$OUT/validate" --quiet --release 2>>"$LOG" | grep '^==' | tee -a "$VAL" || true
 done
 python3 tools/bench.py _a100_best idle --maps 'maps/comp/*.map26a' --jobs "$JOBS" --out "$OUT/validate" --quiet --release 2>>"$LOG" | grep '^==' | tee -a "$VAL" || true

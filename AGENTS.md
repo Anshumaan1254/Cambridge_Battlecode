@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-18 13:20 UTC (session 8)**. Rule from the user: update this file and push at every step. Start with **§S8**, then **§S7**
+- Last updated: **2026-10-18 16:00 UTC (session 8)**. Rule from the user: update this file and push at every step. Start with **§S8**, then **§S7**
   (session 7), then **§S7-SV2** (session 7, strategy v2: the top-3 replay study and the new plan, `docs/strategy_v2/`), then §000000
   (resume protocol), §00000 (session 6), §0000, §000, §00. **All work stays on branch `ccr-a858cd03-q87cpi`**:
   **two sessions push to this branch** (§S7 = the coordinator with agents econ / fight / contest; §S7-SV2 = strategy v2): `git pull` (merge,
@@ -85,12 +85,50 @@ running or unfinished, and what to do next, so a new agent can continue without 
   vs `_m5a` 52.3 / 61.8 (deaths 580-710), held-out 59.0 (188 games: 55.9); vs `_px9` 64.7 (`_m5a` 35.3); `_fA` 72.7 / 82.4, `_ST` 73.9 / 82.4,
   `_eA` 71.6, `_eB` 79.5, `_eC` 88.6, `_m4` 53.4 / 47.1 (third-party mean 73.3 vs `_m5a` 74.1: level); pace 521.9; 0 faults; rollovers 8 (r1-3).
   Not helping on top: `burst_exit` (58.8 = no gain), stun-first and ally-spell ablations. **New baseline: `_xp4`.**
-- Next for the user: upload `submissions/legend.zip` (now legend_m6), queue match groups vs the top 3 and send the zips (`tools/strategy_v2/run_all.py` decodes them); re-run the A100 trainer on this commit (it now trains legend_m5 = `bots/legend`, with `_m4` in its frozen opponents).
-- Agents started 13:30 UTC: `top` (Sonnet): top-style sparring bot `bots/_top` from starter-cpp (notes `experiments/wip/x_top_NOTES.md`,
-  patch `x_top.patch` vs starter-cpp); `doctrine` (Opus): fight doctrine A4-A7/A9 on `_m4` (`bots/_x_doc`, notes `x_doc_NOTES.md`, patch `x_doc.patch`).
-- Plan (priority): (1) **done: `legend_m5`**;
-  (2) the top-style sparring bot `bots/_top` (05 section 2; Sonnet agent); (3) fight doctrine A4-A7/A9 on the new base (Opus agent, targeted
-  disengages only: session 7 showed broad caution loses); (4) Part C/D (draft-time plan, field/contest playbooks); (5) builds/draft package vs `_top`.
+- Agents of session 8 (all finished, nothing running): `top` (Sonnet: `bots/_top`, `x_top_NOTES.md`), `doctrine` (Opus: fight switches A3-A9,
+  `x_doc_NOTES.md`, `x_doc.patch`, `x_doc_m5.patch`), `proxy` (Opus: `_px9` proxy and the `legend_m6` fix, `x_px_NOTES.md`, `x_px.patch`, `x_pxfix.patch`).
+
+### S8 CURRENT STATE (16:00 UTC) and WHAT IS LEFT TO DO
+
+**Shipped: `legend_m6`** (`submissions/legend.zip`, sha256 8f62a7c5…; frozen copy `bots/_xp4`, rebuilt by `tools/setup_session.sh`).
+Baseline for every new change: `_xp4`. Its gains are local only: it has **not** played the ladder yet.
+
+Left to do, in priority order:
+
+1. **Ladder check of `legend_m6` (the user)**: upload `submissions/legend.zip`, queue match groups vs the top 3
+   (`cambc match-groups create <TEAM_ID> --maps ...`, rotate all 17 maps; keep eight, swirl, fragment, collision, elkring, contest in rotation),
+   send the zips. Then: `python3 tools/strategy_v2/run_all.py DIR ZIPS...` per team, `python3 -I tools/strategy_v2/bags.py SCRATCH`,
+   compare with `docs/strategy_v2/07_LADDER_M5_18OCT.md` (wins 5/60, deaths ~200-60 per 20 games, burst share 52-69%, neutral captures 41-54 vs
+   147-168, camp gems 0.5x). Keep `legend_m6` only if the ladder KPIs are not worse than `legend_m5`'s; else roll back to
+   `submissions/history/legend_m5_20261018.zip`. Optional A/B candidate: `submissions/candidates/legend_m5_campfight_20261018.zip`.
+2. **A100 RL re-run on `legend_m6` (the user)**: `nohup bash tools/rl/a100/run_a100.sh --hours 2.5 > a100.out 2>&1 &` on this commit (it trains
+   `bots/legend` = `legend_m6`; frozen opponents now `_ST`, `_m4`, `_m5`, `_self`; `max_join` range 1-4). When the archive comes back: analyse it with
+   `python3 tools/rl/a100/analyze_run.py RUN_DIR`, apply only the parameters that moved consistently (session 8: the full vector did not transfer, the
+   consistent subset did), screen each farm parameter on pace (session 8: `max_wait` alone cost 14 rounds), then the usual cells vs `_xp4`, `_px9`, `_fA`, `_ST`.
+   Add `_px9` (proxy) to the A100 suite once its recipe is in `run_a100.sh` (it needs `x_px.patch` on legend@61fdce4).
+3. **Avoid being hit (biggest open fight lever)**: on the ladder `_m5a` dealt 5.5k champion damage per game and took 13.4k (locally ~19k dealt);
+   52-69% of our deaths are bursts from above 60% health, mostly ranged (enemy Stellar: stun + 2.0x focus from range 4, then focus fire).
+   Work: do not stand in an enemy's next-turn reach (attack range, or 4 with a damage/stun spell up) unless we hit this turn; ranged bodies move
+   out then attack (dash/move then attack works, attack then move does not); melee enter-hit-leave; leave Stellar's range-4 cast reach when its
+   spell is up and our health is below its burst plus its allies' hits. Judge against `_px9` first, then the usual guard cells vs `_xp4`.
+   Improve the proxy too (its death ratio is 1.2x, the ladder's 2.7x): a proxy that avoids hits like the top teams is the better sparring partner.
+4. **Neutral control / farming income**: the top teams take 3-4x our neutral captures and collect 2x our camp gems; our Issac earns 280 gold vs their
+   1,060 (gold piles on Ren: 1,724 per game unopposed). Ideas: contest neutral groups when the local power estimate allows (the `race_mode` deny
+   logic is the start), collector rank (gold to Varg/Issac/Stellar, strategy v2 B2), Part C draft-time plan with zones and circuits
+   (`tools/strategy_v2/map_plan.py` prototype, spec in `03_IMPLEMENTATION_SPEC.md` §3). Unopposed pace (`ledger.py run BOT idle`) is a fair test for this part.
+5. **contest map** (lost every time, 55-84 deaths: spawn-camped from r100-200; vs 2nd it went to r2000 at 0-0 and was lost on gold earned 2.6k vs 19.8k):
+   the contest agent's detector `mono_mode` (`experiments/wip/x_contest.patch`, notes `x_contest_NOTES.md`) fires only there; needed: no feeding
+   (stay off their spawn-camp path, regroup before walking out), gold income for the tiebreak, a monolith attempt only with the whole team.
+6. **Builds / draft (Part B)**: still rejected inside our brain (session 8 on `legend_m5`: `build_style 3` 46.6 and pace +41, top draft 51.1, both 45.5).
+   Re-test only after items 3-4 change how fights and farming go.
+7. **Gem-race endgame** (S7 task 6, not started): close finishes, altar denial (a stun cancels a tribute; probes in ENGINE_FACTS "Session 5 probes").
+8. Switches kept off in the code for later tests against a realistic opponent: `burst_exit`, `spread_vs_splash`, `strike_first`, `pair_space`,
+   `support_v2`, `engage_angle` (doctrine), `fight_mem`, `pair_pool`, `kill_reach`, `fight_smooth`, `flee_fail_turns`, `flee_hold` (S7 fight),
+   `join_marginal`, `claim_release` (S7 econ).
+
+Rules that held this session: test on distinct maps only (`'maps/*.map26a,maps/comp/*.map26a'`, 88 games; never `maps/ladder` copies), every game
+through `tools/ledger.py`, ship only with >= 50 vs the baseline on all and official, not worse vs the third parties, pace within 10, 0 faults,
+no new rollovers; push the zip first, then continue.
 
 ## S7. SESSION 7 (2026-10-18, new container): read this first
 

@@ -35,8 +35,9 @@ What changed and why: [docs/STRATEGY.md](docs/STRATEGY.md) §1. How the bot lear
 
 ## Ready-to-submit ZIP
 
-Current: **`legend_s6`** (Oct 17, session 6): 54.5% head-to-head vs the previous ship `legend_st` (55.9% on the 17 official maps),
-fewer lost opening turns (168 -> 46 on the official maps) and no deaths to camps in unopposed official-map games.
+Current: **`legend_s7a`** (Oct 18, session 7): 56.2% head-to-head vs the previous ship `legend_s6` (61.8% on the 17 official maps),
+unopposed farming pace on the official maps 565 -> 547 rounds to 1000 gems (a give-up timer abandoned long pack clears; the objective team
+plan now wins over slow solo plans).
 
 [`submissions/legend.zip`](submissions/legend.zip) is `cambc bundle legend` output (the bot's `src/` only).
 Upload it on the platform's Submissions page, or submit from the CLI with `cambc login && cambc submit legend`.

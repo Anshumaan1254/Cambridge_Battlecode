@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-18 03:00 UTC (session 7, container clock)**. Rule from the user: update this file and push at every step. Start with **§000000** (session 7), then **§00000** (session 6), **§0000**, **§000**, **§00** below.
+- Last updated: **2026-10-18 03:35 UTC (session 7, container clock)**. Rule from the user: update this file and push at every step. Start with **§000000** (session 7), then **§00000** (session 6), **§0000**, **§000**, **§00** below.
   Session 7 pushes to **`claude/battlecode-bot-optimization-0ixvxa`** (harness branch). Session 6 pushed to `ccr-b9ffa7d9-hvk1ud`, sessions 3-5 to `claude/laughing-curie-3rq6hu`:
   before pushing, `git fetch origin` and merge any new commits from those branches (other sessions may be live; do not duplicate their panels).
 - **Two sessions are live on this branch (20:00 UTC)**: session 4 (container with `/tmp/ev/fp_*`, still running its full
@@ -17,10 +17,16 @@ running or unfinished, and what to do next, so a new agent can continue without 
 
 ## 000000. SESSION 7: CURRENT POSITION (started 2026-10-18 02:00 UTC, new container): read this first, then §00000
 
-- Last update of this block: 03:00 UTC (container clock). Branch `claude/battlecode-bot-optimization-0ixvxa`.
+- Last update of this block: 03:35 UTC (container clock). Branch `claude/battlecode-bot-optimization-0ixvxa`.
 - Started from session 6's last push (`ccr-b9ffa7d9-hvk1ud` @ 67abcbf, fast-forwarded into this branch). Container rebuilt with `/tmp/ev/setup.sh`
   (local; = §000.6 "How to resume" + `tools/snapshot.sh _ST cd4e2aa` + unzip `legend_{es2,c3,st,s6}` from `submissions/history/`).
-- **Shipped: still `legend_s6`**. `bots/legend` = `legend_s6` + contest6 (`cm_mode`, `cm_obj`), frozen as **`bots/_b7`** (baseline of session-7 A/Bs).
+- **Shipped (03:35 UTC): `legend_s7a`** = `submissions/legend.zip` (sha256 8783cae6…, row in BUILDS.md) = `bots/legend` = frozen `bots/_s7a`:
+  `legend_s6` + contest6 (`cm_mode`, `cm_obj`) + agent farm7's first two fixes (`giveup_progress`, `obj_team_best`; snapshot of its copy at 03:00,
+  other farm7 switches present but off; diff from `_b7` in `experiments/wip/x_farm7_s7a.patch`). **56.2% vs `legend_s6` (official 61.8)**,
+  50.0 / 52.9 vs `_b7`, vs `_lad` 60.7 / 64.7 (`_b7` 56.2 / 58.8), `_r2` 82.1 (`_b7` 73.2), pace official 547.1 (565.2), 56 maps 458.9 (469.1),
+  0 faults in 582 games, rollovers unchanged. `bots/_b7` (= `legend_s6` + contest6) stays the agents' baseline; patches are cut against it.
+- Rejected for now: `ci_health_first=0` on top (`_fs2`): pace 529.8 but 48.2 / 44.1 vs `_b7` with **deaths 1338 vs 1015** (C&I without health die):
+  a contact-aware version (damage first only where contact is unlikely) is for farm7.
 - User input: the same `HOUSEOFCODERS_ENEMY_STRATEGY_REPORT.md` session 6 used, now committed as **`docs/ENEMY_REPORT.md`**.
 - New tool: `tools/pace17.sh BOT [JOBS] [MAPS]` (unopposed pace vs `idle`, 17 official maps, ~15 s at 4 jobs). `_b7` = **565.2**
   (ambush 716, collision 569, contest 946, corners 418, eight 428, elkring 495, expanse 601, fragment 581, interlock 537, lanes 504, monolith 526,
@@ -55,8 +61,8 @@ running or unfinished, and what to do next, so a new agent can continue without 
 | `fight7` | deaths: fight selection, escape, reachable support, pair risk | `bots/_x_fight7`, `/tmp/fight7/`, `x_fight7.patch` + `x_fight7_NOTES.md`, new `tools/analysis/fight_deaths.mjs` | vs `_lad`: 13.3 body deaths per game vs 9.6; 59% die fleeing (59% of those 21+ steps from home, advantage < 0.63 at the flee); 61% follow an escapable fight choice, mostly vs ONE visible enemy, 1-3 more arrive in 85%. Two mechanisms: **visibility flicker** (combat() counts only enemies visible this round: advantage jumps 1 -> 18 when one enemy hides for a round) and **no early retreat unless isolated**. Switches built: `fm_age` (remembered hidden enemies count), `threat_flee_adv` (walk away early when outmatched), `unk_w` (proactive fights must beat unseen enemies), `fh_rounds` (stay cautious after fleeing); results pending |
 
 ### 000000.3 Plan (in order)
-1. When `farm7` reports: merge its winning switches into `bots/legend` (pace on 17 + 56 maps, h2h vs `_b7` >= 48), then ship if it does not lose to `_s6`
-   (**ship first, then continue**: zip, `submissions/history/`, BUILDS row, README, push).
+1. ~~Interim ship of farm7's first fixes~~ done (`legend_s7a`). When `farm7` reports: merge its remaining winning switches (pace on 17 + 56 maps,
+   h2h vs `_s7a` >= 48), ship if it beats `_s7a` (**ship first, then continue**: zip, `submissions/history/`, BUILDS row, README, push).
 2. When `fight7` reports: merge on top (deaths lower, h2h >= 50, not worse vs `_lad`), full panel, ship.
 3. Then: ask the user to re-run ES (`tools/rl/train_local.sh`) on the shipped build; next agent topics (only after 1-2): the opening contact on
    contested maps (contest/eight: the kill difference of rounds 1-150 decides ~70% of games), enemy power-spike tracking, endgame altar denial

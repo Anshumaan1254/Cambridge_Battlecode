@@ -90,7 +90,8 @@ private:
 	void plan_owners();
 	float own_mult(const Group& g) const; // P.own_plan score multiplier: our own group up, a living ally's down
 	std::vector<std::int8_t> owner;	   // group id -> owning ally index (-1 none), the same in every body
-	bool claim_before(int a, int b) const; // a's claim / capture goes before b's (P.capture_rank)
+	bool claim_before(int a, int b) const;
+	bool ally_before(int i, const Group& g) const; // ally i's claim on g goes before ours (P.incumbent: first claimer keeps it) // a's claim / capture goes before b's (P.capture_rank)
 	float group_score(const Group& g, int& eta, bool* need_pair = nullptr, int d_override = -1) const;
 	int approach_rounds(int d_tile) const; // rounds to attack range of a group d_tile steps away
 	float score_cap(const Group& g) const;  // upper bound on group_score(g)
@@ -215,6 +216,7 @@ private:
 
 	// memory
 	int task = T_NONE, task_group = -1, task_since = 0;
+	int task_prog = -1000; // last round we hit the task group or stood on its reward (P.giveup_progress)
 	int ward_round = -100;
 	float last_hp = 0;
 	int last_hit_round = -100;

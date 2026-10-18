@@ -11,11 +11,15 @@ void Comms::read(int round)
 {
 	std::array<std::uint8_t, 8> b{};
 	bc::shared_memory.read(0, std::span<std::uint8_t>{ b });
+	cur_round = round;
 	bag_tens = 0;
 	for (int i = 0; i < 6; ++i)
 	{
 		const int v = b[static_cast<std::size_t>(i)] & (bag_on ? 0x3F : 0x7F);
-		claim[static_cast<std::size_t>(i)] = v == 0 ? -1 : v - 1;
+		const int cv = v == 0 ? -1 : v - 1;
+		if (cv != claim[static_cast<std::size_t>(i)] || round < 2)
+			since[static_cast<std::size_t>(i)] = round;
+		claim[static_cast<std::size_t>(i)] = cv;
 		bag_tens |= ((b[static_cast<std::size_t>(i)] >> 6) & 1) << i;
 	}
 	if (!bag_on)
@@ -47,6 +51,8 @@ void Comms::write_self(int index, int group)
 	v |= old & (bag_on ? 0xC0 : 0x80);
 	bc::shared_memory[static_cast<std::size_t>(index)] = v;
 	claim[static_cast<std::size_t>(index)] = group;
+	if (group != self_claim)
+		self_claim = group, self_since = cur_round;
 }
 
 void Comms::write_stance(int s)

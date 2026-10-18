@@ -20,6 +20,8 @@ struct Comms
 {
 	int bodies = 0;
 	std::array<int, 6> claim{};		// group id or -1
+	std::array<int, 6> since{};		// round from which claim[i] has held its value (as read by this body)
+	int self_claim = -1, self_since = -1000, cur_round = 0; // our last written claim and the round it was first written
 	int stance = 0;					// team stance broadcast by the leader
 	int alert_kind = AL_NONE;
 	vec2 alert_pos{ -1, -1 };

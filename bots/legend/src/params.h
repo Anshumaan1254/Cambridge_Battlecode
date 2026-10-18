@@ -106,11 +106,14 @@ struct Params
 	int build_style = 2;	   // 3 = the top ladder team's builds (session 6 report), 0 = old farm builds, 1 = health/durability/treasure builds (ladder-proven),
 							   // 2 = value-model builds (tools/analysis/item_value.py): Bruiser over Power, early Treasure
 							   //     on the rich farmers, survival first on Cassi & Issac, builds that never run out
+	int farm_ren_str = 0;		 // build_style 4: Ren buys strength (1) or focus (0)
+	int ren_dmg_first = 0;		 // build_style 2: Ren and Ryth buy Monster before their Jungle health emblem (agent farm7)
 	int rich_treasure_first = 0; // build_style 2: Ren and Stellar open with Treasure (1) or with r2's first emblem
 							   // (Ren Jungle health, Stellar Monster) and Treasure second (0); vs _v6 on the ladder
 							   // maps: 1 won 19/24 (gems +8,623), 0 won 21/24 (+9,385, deaths 441-670)
 	int ci_health_first = 1;   // build_style 2: Cassi & Issac buy health first (1) or Monster damage first (0);
 							   // vs _v6 on the ladder maps: 1 won 19/24 (gems +8,623, deaths 495-660), 0 won 16/24 (+3,449, 560-550)
+	int ci_health_obj = 0;		 // with ci_health_first 0 / ren_dmg_first 1: objective maps keep the health-first builds (agent farm7)
 	int monster_in_dps = 1;	   // count the Monster emblem's +10% camp damage in the kill-time model
 
 	// Shopping and home trips (heal + shop + bank near spawn; recall makes them cheap)
@@ -210,6 +213,8 @@ struct Params
 	int sticky_tribute = 1;		// finish a bank trip once started
 	int claim_tiebreak = 1;		// on our own group only lower-index claimers count
 	int claim_helpers = 1;		// ... but higher-index claimers there still add their damage to our kill plan
+	int no_split = 0;			// a reward with a visible ally on its tiles is left to it (both on it: claim_before) (agent farm7)
+	int incumbent = 0;			// claim precedence on a group: the first claimer keeps it, a later claimer helps (or leaves) (agent farm7)
 	int own_plan = 0;			// OFF (pace 17 official maps: 1.3/0.8 576.1 vs 579.6 off, 1.6/0.6 585.3; rows +48 / +20): each body owns one gem group on our half (Brain::plan_owners, same plan in every body) and returns to it
 	float own_bonus = 1.3f;		// ... score multiplier on our own group
 	float own_other = 0.8f;		// ... on a group a living ally owns
@@ -269,6 +274,7 @@ struct Params
 								// the 360-gem group before r905; bodies chipped it one or two at a time and left it)
 	float obj_clear_max = 40.f;	// ... team clear time (rounds) at most this
 	float obj_absorb = 0.6f;	// ... and the camp damage it takes at most this share of the team's usable health
+	int obj_team_best = 1;		// pace: ambush 716 -> 585, contest 920 -> 915, nothing else moves (17 maps 551.4 -> 543.4). The team plan when it scores better than a feasible solo plan, not only when the solo plan fails (agent farm7)
 	int obj_team_attackers = 1;	// ... only on groups with at least this many camps that hit back (2: not a lone monolith)
 	int obj_min_bodies = 3;		// ... with at least this many bodies alive
 	int obj_dead_max = 1;		// ... and at most this many dead
@@ -315,6 +321,8 @@ struct Params
 								 // pilgrimage (3-4 wide hole bands) straight line said 41 for a 128-150 step walk: unopposed, Ren
 								 // and Ryth flipped between the far 92-gem groups all game and captured nothing (session 6)
 	float landmark_dash = 0.85f; // ... dash kits cross 1-wide holes the init fields treat as walls (pilgrimage 128 vs 150)
+	int giveup_progress = 1;	 // pace 565.2 -> 551.4 (pilgrimage 778 -> 662, stampede 711 -> 673, swirl 320 -> 281, rows 441 -> 416). farm(): the give-up clock (2 x eta + 60 rounds on one target) restarts at every hit / capture turn (agent farm7)
+	int farm_prio = 0;			 // idle priority = prio_idle - farm rank (Varg first): the best farmer claims first (agent farm7)
 	int unstick_rounds = 10;	 // a farm/capture walk stuck inside a 3x3 box this many rounds (no attack) drops its target
 	int unstick_blacklist = 30;	 // ... for this many rounds (0 rounds: off)
 	int flip_window = 12;		 // for this many rounds after leaving a target, going back to it needs ...

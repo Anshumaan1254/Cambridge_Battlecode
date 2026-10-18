@@ -33,9 +33,46 @@ void cycle(std::vector<I>& v, std::initializer_list<I> blocks, int n)
 }
 
 // Shard plans: five shards of a family complete its emblem; only the emblem grants the passive.
-std::vector<I> build_for(CT t)
+std::vector<I> build_for(CT t, bool obj)
 {
+	// obj: objective map (World::obj_mode): the team plan needs health to absorb the camps (P.ci_health_obj).
+	const bool ci_hp = P.ci_health_first || (obj && P.ci_health_obj);
+	const bool dmg_first = P.ren_dmg_first && !(obj && P.ci_health_obj);
 	std::vector<I> v;
+	if (P.build_style == 4)
+	{
+		// Farming builds (enemy profile B, rows/expanse with no deaths: Monster in the damage stat, then Power in it).
+		// farm_ren_str: Ren takes strength instead of focus.
+		switch (t)
+		{
+		case CT::varg:
+		case CT::vendetta:
+		case CT::issac:
+		case CT::vesper_vale:
+		case CT::ryth:
+		case CT::marcella:
+			rep(v, I::monster_shard_of_strength, 5);
+			rep(v, I::power_shard_of_strength, 60);
+			break;
+		case CT::ren:
+			if (P.farm_ren_str)
+			{
+				rep(v, I::monster_shard_of_strength, 5);
+				rep(v, I::power_shard_of_strength, 60);
+			}
+			else
+			{
+				rep(v, I::monster_shard_of_focus, 5);
+				rep(v, I::power_shard_of_focus, 60);
+			}
+			break;
+		default: // Stellar, Cassi, Prism, Tavi, Willow
+			rep(v, I::monster_shard_of_focus, 5);
+			rep(v, I::power_shard_of_focus, 60);
+			break;
+		}
+		return v;
+	}
 	if (P.build_style == 3)
 	{
 		// The strongest ladder profile's builds (user report, 13 real games of the Ren-first team): frontliners take
@@ -93,6 +130,17 @@ std::vector<I> build_for(CT t)
 		switch (t)
 		{
 		case CT::ren:
+			if (dmg_first)
+			{
+				// Damage first (unopposed farming pace, agent farm7): Monster, Treasure, then the health emblem.
+				rep(v, I::monster_shard_of_focus, 5);
+				rep(v, I::treasure_shard_of_focus, 5);
+				rep(v, I::jungle_shard_of_health, 5);
+				rep(v, I::bruiser_shard_of_focus, 10);
+				rep(v, I::durability_shard_of_health, 5);
+				cycle(v, { I::bruiser_shard_of_focus, I::bruiser_shard_of_focus, I::bruiser_shard_of_health }, 8);
+				break;
+			}
 			if (P.rich_treasure_first)
 				rep(v, I::treasure_shard_of_focus, 5);
 			else
@@ -131,7 +179,7 @@ std::vector<I> build_for(CT t)
 			break;
 		case CT::cassi:
 		case CT::willow:
-			if (P.ci_health_first)
+			if (ci_hp)
 			{
 				rep(v, I::durability_shard_of_health, 5);
 				rep(v, I::jungle_shard_of_health, 5);
@@ -147,7 +195,7 @@ std::vector<I> build_for(CT t)
 			cycle(v, { I::bruiser_shard_of_focus, I::bruiser_shard_of_health }, 12);
 			break;
 		case CT::issac:
-			if (P.ci_health_first)
+			if (ci_hp)
 			{
 				rep(v, I::durability_shard_of_health, 5);
 				rep(v, I::jungle_shard_of_health, 5);
@@ -165,8 +213,11 @@ std::vector<I> build_for(CT t)
 		case CT::ryth:
 		case CT::marcella:
 			// Model margin over the r2 order is ~0 here: keep it, Bruiser for the raw stats.
+			if (dmg_first)
+				rep(v, I::monster_shard_of_strength, 5);
 			rep(v, I::jungle_shard_of_health, 5);
-			rep(v, I::monster_shard_of_strength, 5);
+			if (!dmg_first)
+				rep(v, I::monster_shard_of_strength, 5);
 			rep(v, I::durability_shard_of_health, 5);
 			cycle(v, { I::bruiser_shard_of_strength, I::bruiser_shard_of_health }, 12);
 			break;
@@ -294,6 +345,18 @@ std::vector<I> build_for(CT t)
 	return v;
 }
 
+static int farm_rank(CT t)
+{
+	switch (t)
+	{
+	case CT::varg: return 0;
+	case CT::ren: return 1;
+	case CT::stellar: return 2;
+	case CT::ryth: return 3;
+	default: return 4;
+	}
+}
+
 float best_mod(const Kit& k)
 {
 	return std::max({ k.dmg >= 0 ? k.dmg_mod : 0.f, k.cc >= 0 ? k.cc_mod : 0.f, k.aoe >= 0 ? k.aoe_mod : 0.f });
@@ -322,10 +385,10 @@ void Brain::init()
 	kit = kit_of(me);
 	const auto abl = me.abilities();
 	ab.assign(abl.begin(), abl.end());
-	build = build_for(type);
 	auto& W = world();
 	W.dash_kit = kit.dash >= 0;
 	W.init_static();
+	build = build_for(type, W.obj_mode);
 	// Islands are searched later (prebuild_fields): ~47k fuel on 100x100 maps, not needed in the opening rounds.
 	W.island_of.assign(W.groups.size(), -1);
 	W.islands_pending = true;
@@ -403,6 +466,8 @@ void Brain::turn()
 	read_self();
 	if (alive && round < P.start_round)
 	{
+		if (P.farm_prio)
+			update_priority();
 		prebuild_fields();
 		return;
 	}
@@ -1706,6 +1771,10 @@ void Brain::update_priority()
 	// a row with no enemy turn between them. So fighters alternate: high when we lead the next round, low
 	// when we trail it. Escapers move first. (57.6% vs the previous bot in mirror tests, -14% deaths.)
 	int prio = P.prio_idle;
+	// P.farm_prio: idle bodies take turns in farm_rank order (Varg, Ren, Stellar, Ryth, rest), so the strongest
+	// farmer claims first each round (draft order let Ren claim the nearest pack and Varg walk to the far one).
+	if (P.farm_prio)
+		prio = P.prio_idle - farm_rank(type);
 	if (!P.prio_alternate)
 	{
 		// Previous scheme: engaged champions simply act first.
@@ -2453,19 +2522,32 @@ bool Brain::claim_before(int a, int b) const
 	// Claim and capture precedence between two allies, the same in every body's view (types are known to all).
 	if (!P.capture_rank)
 		return a < b;
-	auto rank = [](CT t) {
-		switch (t)
-		{
-		case CT::varg: return 0;
-		case CT::ren: return 1;
-		case CT::stellar: return 2;
-		case CT::ryth: return 3;
-		default: return 4;
-		}
-	};
+	auto rank = [](CT t) { return farm_rank(t); };
 	auto& W = world();
 	const int ra = rank(W.allies[static_cast<std::size_t>(a)].type), rb = rank(W.allies[static_cast<std::size_t>(b)].type);
 	return ra != rb ? ra < rb : a < b;
+}
+
+bool Brain::ally_before(int i, const Group& g) const
+{
+	// Does ally i (claiming g) go before us on g? P.incumbent: whoever claimed g first keeps it (a newcomer helps or leaves), ties
+	// within a round by claim_before. Every body sees the same claim history (one round late at most), so the views agree.
+	// Before, precedence was rank only: lanes, Issac walked 38 rounds to a wolf, Cassi (lower index) arrived and Issac left
+	// from distance 1 to walk 13 tiles elsewhere.
+	if (P.incumbent)
+	{
+		// Our side of the history is our written claim (what the allies saw), not task_since: a body that went home
+		// stopped claiming and returns as a newcomer in every view.
+		const auto& C = comms();
+		if (g.id != task_group || g.id != C.self_claim)
+			return true; // we would be the newcomer
+		const int their = C.since[static_cast<std::size_t>(i)];
+		if (their > C.self_since + 1)
+			return false;
+		if (their < C.self_since - 1)
+			return true;
+	}
+	return claim_before(i, world().my_index);
 }
 
 float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_override) const
@@ -2500,7 +2582,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 		{
 			// Claims are seen a round late: on the group we already hold only lower-index claimers count,
 			// otherwise two allies wanting one group both yield, both switch, and repeat forever.
-			if (P.claim_tiebreak && g.id == task_group && claim_before(W.my_index, i))
+			if ((P.claim_tiebreak || P.incumbent) && g.id == task_group && !ally_before(i, g))
 			{
 				// A higher-index claimer yields the group to us but still fights on it. Dropping its damage too
 				// made a pack that needs two bodies look impossible every other turn: the lower-index body
@@ -2516,7 +2598,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			++claimers;
 			if (first_claimer == 99 || claim_before(i, first_claimer))
 				first_claimer = i;
-			if (g.st == ST_REWARD && claim_before(i, W.my_index))
+			if (g.st == ST_REWARD && ally_before(i, g))
 			{
 				const auto& a = W.allies[static_cast<std::size_t>(i)];
 				// Unseen allies are beyond vision, so farther than us when we are close.
@@ -2535,8 +2617,21 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 	case ST_REWARD:
 		// One body captures; if allies claim it, the lowest index takes it unless we are clearly nearer
 		// (the joiner may still be walking in while we stand next to the reward).
-		if (claimers && claim_before(first_claimer, W.my_index) && closer_lower_claimer)
+		if (claimers && (P.incumbent || claim_before(first_claimer, W.my_index)) && closer_lower_claimer)
 			return -1;
+		if (P.no_split)
+		{
+			// One body captures: a second one on the tiles only halves the reward into two bags (5% of unopposed rewards
+			// were split, agent farm7). A visible ally already on the tiles keeps it; both on it: claim_before decides.
+			for (int i = 0; i < static_cast<int>(W.allies.size()); ++i)
+			{
+				const auto& a = W.allies[static_cast<std::size_t>(i)];
+				if (i == W.my_index || !a.alive || !a.visible || a.seen_round != round || !g.mask.is_set(a.pos))
+					continue;
+				if (!g.mask.is_set(pos) || claim_before(i, W.my_index))
+					return -1;
+			}
+		}
 		eta = d_tile;
 		time = static_cast<float>(eta) + 6.f;
 		break;
@@ -2672,7 +2767,11 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 		};
 		float team_kill = 0;
 		const bool solo_ok = plan(ally_dps, melee_ally, time);
-		if (!solo_ok && W.obj_mode && g.objective && P.obj_team && g.attackers >= P.obj_team_attackers && obj_team_ready(g, hp_left, team_kill))
+		// P.obj_team_best: the team plan also when it beats a feasible solo plan. Before, a helper's claim made the solo
+		// plan feasible (5 heal trips, 217-302 rounds) and replaced the 43-round team plan: ambush, Varg and Stellar took
+		// turns on one elk group (each left when the other joined) and nobody hit it.
+		if ((!solo_ok || P.obj_team_best) && W.obj_mode && g.objective && P.obj_team && g.attackers >= P.obj_team_attackers && obj_team_ready(g, hp_left, team_kill) &&
+			(!solo_ok || P.obj_value_share / (static_cast<float>(d_adj + wait) + team_kill + 6.f) > share / std::max(1.f, time)))
 		{
 			// Objective map: too heavy for us and the bodies already on it, but not for the whole team.
 			sc_team = true;
@@ -3189,8 +3288,15 @@ void Brain::farm()
 		task_since = round;
 	}
 	// Give up on targets we cannot reach in reasonable time.
-	if (round - task_since > 2 * best_eta + 60 + (W.obj_mode && W.groups[static_cast<std::size_t>(best)].objective ? P.obj_commit : 0))
+	// P.giveup_progress: the clock restarts at every hit on the group and every capture turn (task_prog), so a
+	// long clear is not abandoned the round the pack dies (rows: Varg walked 38 and hit 22 rounds, was blacklisted
+	// from its own reward at r63 and walked to another pack; Cassi took it at r81).
+	if ((P.giveup_progress ? round - std::max(task_since, task_prog) : round - task_since) >
+		2 * best_eta + 60 + (W.obj_mode && W.groups[static_cast<std::size_t>(best)].objective ? P.obj_commit : 0))
 	{
+#ifdef LEGEND_TRACE
+		debug_block({ std::printf("GU r=%d %d g=%d st=%d since=%d prog=%d eta=%d\n", round, static_cast<int>(type), best, static_cast<int>(W.groups[static_cast<std::size_t>(best)].st), task_since, task_prog, best_eta); });
+#endif
 		blacklist[static_cast<std::size_t>(best)] = round + 40;
 		task_group = -1;
 		return;
@@ -3254,6 +3360,7 @@ bool Brain::capture_group(Group& g)
 {
 	if (g.mask.is_set(pos))
 	{
+		task_prog = round;
 		if (capture_group_id != g.id)
 			capture_group_id = g.id, capture_since = round;
 		// An enemy on any tile of the group resets the capture (it completes 6 rounds after they leave): restart
@@ -3623,6 +3730,7 @@ bool Brain::farm_group(Group& g)
 		}
 		// Melee can still swing after walking; ranged only after a dash (walking spends the attack).
 		attack_chain_camp(g, t);
+		task_prog = round;
 		return true;
 	}
 	if (obj_first && g.camps[t].str <= 0 && can_move)
@@ -3640,13 +3748,14 @@ bool Brain::farm_group(Group& g)
 		{
 			const std::size_t t2 = pick(kit.attack_range);
 			if (t2 < g.camps.size())
-				attack_chain_camp(g, t2);
+				attack_chain_camp(g, t2), task_prog = round;
 			return true;
 		}
 	}
 	if (!hold_spells)
 		spells_on_camp(g, t, save_cc);
 	attack_chain_camp(g, t);
+	task_prog = round;
 	return true;
 }
 

@@ -44,4 +44,11 @@ Control `_xf0` (= `_x_fight`, all switches off) vs `_m4`: 50.0, deaths 318-318 (
 | `_xf4` cornered_margin 0 | 44.1 (419-284) | 61.8 (402-458) |
 | `_xf5` cornered_margin 0.4 | 44.1 (374-255) | 52.9 (469-327) |
 | `_xf6` fight_smooth 0.5 | 47.1 (312-280) | 73.5 |
+| `_xf7` flee_fail_turns 2 | 47.1 | 64.7 |
+| `_xf8` flee_hold 6 | **23.5 (307-198)** | |
+| `_xf9` die_soon 2, die_soon_pair 3 | 55.9 | |
+- 56 maps: `_xfC1` (fight_mem 3 + pair_pool + kill_reach) vs `_m4` **42.0** (official 44.1), deaths 738-732, gems 93.7k-102.3k: rejected.
+- `flee_hold` lesson: our deaths barely move (307 vs 318) but the enemy's fall 318 -> 198 and they farm freely. Staying out of
+  fights costs far more than the deaths it saves, against our own code family. Every switch that makes the whole body more
+  cautious (fight_mem, pair_pool, kill_reach, flee_hold) loses head-to-head; only targeted, short disengages are worth testing.
 - 13 of 34 games change winner between `_m4` and `_xf1` vs `_fA`: fight changes flip whole games; judge on 112+ games.

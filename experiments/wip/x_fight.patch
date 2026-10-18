@@ -1,6 +1,6 @@
 diff -ruN _m4/src/brain.cpp _x_fight/src/brain.cpp
 --- _m4/src/brain.cpp	2026-10-18 10:31:54.671512061 +0000
-+++ _x_fight/src/brain.cpp	2026-10-18 11:09:38.489907308 +0000
++++ _x_fight/src/brain.cpp	2026-10-18 11:19:00.378226325 +0000
 @@ -508,6 +508,13 @@
  		unstick();
  	prebuild_fields();
@@ -15,7 +15,39 @@ diff -ruN _m4/src/brain.cpp _x_fight/src/brain.cpp
  #ifdef LEGEND_TRACE
  	debug_block({
  		std::printf("T r=%d %d task=%d g=%d pos=(%d,%d) hp=%.0f gems=%u gold=%u fuel=%llu\n", round, static_cast<int>(type), task, task_group, pos.x, pos.y, hp, gems, gold,
-@@ -1195,7 +1202,21 @@
+@@ -1083,6 +1090,31 @@
+ 	}
+ 	if (kit.shield >= 0 && ready(kit.shield) && hp < 0.9f * max_hp && (in_awake_camp_range() || enemies_within(4) > 0))
+ 		cast_self(kit.shield);
++	// P.peel_stun (agent fight): a stun that does not cost the step (Cassi) goes on the enemy that can hit a low ally now,
++	// above all Issac (his death kills Cassi too). _m4 vs _fA: 75% of pair deaths were triggered by the partner below 25%.
++	if (P.peel_stun > 0.f && kit.cc >= 0 && !kit.cc_excl && ready(kit.cc) && !cast_done)
++	{
++		Enemy* pick = nullptr;
++		float worst = 2.f;
++		for (auto& e : W.enemies)
++		{
++			if (!e.alive || !e.visible || !e.ch || cheb(e.pos, pos) > static_cast<int>(kit.cc_range) || W.enemy_spawn.is_set(e.pos))
++				continue;
++			const int hit = e.kit.attack_range + (e.kit.ranged ? 0 : 1) + (e.ready(e.kit.dash) ? 2 : 0);
++			for (const auto& a : W.allies)
++			{
++				if (a.handle == self || !a.alive || !a.visible || a.hp >= P.peel_stun * a.max_hp || cheb(a.pos, e.pos) > hit)
++					continue;
++				float f = a.hp / std::max(1.f, a.max_hp);
++				if ((type == CT::cassi && a.type == CT::issac) || (type == CT::issac && a.type == CT::cassi))
++					f *= 0.5f;
++				if (f < worst)
++					worst = f, pick = &e;
++			}
++		}
++		if (pick)
++			cast_unit_champ(kit.cc, *pick->ch);
++	}
+ }
+ 
+ void Brain::use_locks()
+@@ -1195,7 +1227,21 @@
  			E.push_back(&e);
  		}
  	if (E.empty())
@@ -37,7 +69,7 @@ diff -ruN _m4/src/brain.cpp _x_fight/src/brain.cpp
  
  	// Enemy reach next turn: attack range (+1 step for melee), +2 with a dash ready, 4 with a spell ready.
  	auto reach_of = [](const Enemy& e) {
-@@ -1220,6 +1241,31 @@
+@@ -1220,6 +1266,31 @@
  		if (d <= reach_of(*e))
  			incoming += e->str + e->burst() / 2.f;
  	}
@@ -69,7 +101,7 @@ diff -ruN _m4/src/brain.cpp _x_fight/src/brain.cpp
  	// Our side: self plus visible allies within 6 (with their spells, not just basic attacks).
  	float my_burst = 0;
  	if (ready(kit.dmg)) my_burst = std::max(my_burst, focus * kit.dmg_mod);
-@@ -1229,6 +1275,10 @@
+@@ -1229,6 +1300,10 @@
  	float our_hp = hp, our_dps = str + focus * best_mod(kit) / 8.f + my_burst / 3.f;
  	float allies_burst = 0;
  	int allies_near = 0;
@@ -80,7 +112,7 @@ diff -ruN _m4/src/brain.cpp _x_fight/src/brain.cpp
  	for (const auto& a : W.allies)
  		if (a.handle != self && a.alive && a.visible && cheb(a.pos, pos) <= 6 && (!P.support_filter || can_support(a, E)))
  		{
-@@ -1237,7 +1287,15 @@
+@@ -1237,7 +1312,15 @@
  			our_dps += P.ally_spell_dps ? a.str + a.focus * best_mod(a.kit) / 8.f + ab / 3.f : a.str * 1.2f;
  			allies_burst += a.str;
  			++allies_near;
@@ -96,7 +128,7 @@ diff -ruN _m4/src/brain.cpp _x_fight/src/brain.cpp
  	if (W.ally_spawn.is_set(pos) && P.spawn_heal_bonus)
  	{
  		// We heal fully next round on spawn, but only while the fight stays here: stepping off spawn to
-@@ -1324,8 +1382,24 @@
+@@ -1324,8 +1407,24 @@
  		const float tku = our_hp / std::max(1.f, their_dps + reflect * static_cast<float>(1 + allies_near));
  		adv = tku / std::max(0.1f, t_kill_them) * learner().fight_scale();
  	}
@@ -122,7 +154,19 @@ diff -ruN _m4/src/brain.cpp _x_fight/src/brain.cpp
  	const bool in_reach = danger.is_set(pos);
  
  	// Can we actually get away? Melee and dash chasers move and hit in the same turn. Fleeing only works
-@@ -1384,6 +1458,16 @@
+@@ -1360,6 +1459,11 @@
+ 	const float low_hp = (type == CT::cassi || type == CT::issac) ? P.pair_low_hp : 0.25f;
+ 	if (fight && !killable && can_escape && (hp < low_hp * max_hp || (static_cast<int>(gems) >= P.bag_caution && adv < 1.5f)))
+ 		fight = false;
++	// P.die_soon (agent fight): the team estimate pools our health, but the enemy hits one body: when the damage that can
++	// reach this body now kills it within die_soon rounds (Cassi / Issac: die_soon_pair, two bodies die) and we can get
++	// away, step out unless the target dies now. _m4 vs _fA: 75% of pair deaths were triggered by the partner below 25%, 48% fighting.
++	if (fight && !killable && can_escape && !on_spawn && t_die < (me_pair ? P.die_soon_pair : P.die_soon))
++		fight = false;
+ 	if (fight && reserve && !(killable && adv >= 1.f) && adv < fight_margin + P.reserve_margin && can_escape)
+ 		fight = false;
+ 	if (fight && isolated && !killable && adv < isolated_fight_adv && can_escape)
+@@ -1384,16 +1488,45 @@
  	// A bag that wins the game is worth more than any fight we can walk away from.
  	if (fight && P.win_bank && !killable && can_escape && gems > 0 && wins_with(static_cast<int>(gems)))
  		fight = false;
@@ -139,7 +183,28 @@ diff -ruN _m4/src/brain.cpp _x_fight/src/brain.cpp
  	// Do not dive their spawn: it heals them and they block us.
  	if (W.enemy_spawn.is_set(tgt->pos) || cheb(tgt->pos, W.enemy_spawn_c) <= 3)
  		fight = fight && killable;
-@@ -1393,7 +1477,7 @@
++#ifdef FIGHT_TRACE
++	debug_block({
++		int av = 0, ahid = 0, ehid = 0, elow = 0;
++		for (const auto& a : W.allies)
++			if (a.handle != self && a.alive)
++			{
++				if (a.visible && cheb(a.pos, pos) <= 6)
++					++av;
++				else if (!a.visible && round - a.seen_round <= 2 && cheb(a.pos, pos) <= 6)
++					++ahid;
++			}
++		for (const auto& e : W.enemies)
++			if (e.alive && !e.visible && round - e.seen_round >= 1 && round - e.seen_round <= 3 && cheb(e.pos, pos) <= 9)
++				++ehid;
++		for (auto* e : E)
++			elow += e->hp < 0.3f * e->max_hp;
++		std::printf("FS r=%d ty=%d av=%d na=%d ahid=%d ne=%d ehid=%d elow=%d hidden=%d\n", round, static_cast<int>(type), av, allies_near, ahid, static_cast<int>(E.size()), ehid, elow, hidden);
++	});
++#endif
+ 	XM(xm_fight(adv, t_kill_us, t_kill_them, our_hp, their_hp, our_dps, their_dps, allies_near, static_cast<int>(E.size()), fight, killable, in_reach,
+ 		can_escape, isolated, reserve, static_cast<int>(tgt->type), d, incoming, t_die, tgt->hp, backup, str + focus * best_mod(kit) / 8.f + my_burst / 3.f));
+ 	engaged = fight || in_reach || nearest_enemy <= 5;
  	(void)stunners;
  
  	// Early warning: an outnumbering group is visible; allies keep away from it.
@@ -148,7 +213,7 @@ diff -ruN _m4/src/brain.cpp _x_fight/src/brain.cpp
  		post_danger(tgt->pos);
  	if (fight)
  	{
-@@ -1406,6 +1490,10 @@
+@@ -1406,6 +1539,10 @@
  	{
  		post_danger(tgt->pos);
  		task = T_FLEE;
@@ -159,7 +224,7 @@ diff -ruN _m4/src/brain.cpp _x_fight/src/brain.cpp
  		// A stun on the closest melee chaser buys a free step (only stuns that still let us walk).
  		for (auto* e : E)
  			if (e->ch && !kit.cc_excl && (!e->kit.ranged || e->ready(e->kit.dash)) && cheb(pos, e->pos) <= static_cast<int>(kit.cc_range) && ready(kit.cc))
-@@ -1476,13 +1564,18 @@
+@@ -1476,13 +1613,18 @@
  	// within 8 tiles for 7+ rounds before 75% of our deaths, the victim walked toward them in 48%, 58% died with the
  	// enemy holding >1.2x our health within 6.
  	const bool pair_body = type == CT::cassi || type == CT::issac;
@@ -181,7 +246,7 @@ diff -ruN _m4/src/brain.cpp _x_fight/src/brain.cpp
  		if (P.flee_recall && W.dist_home(pos) > P.recall_min_dist && safe_to_recall())
  		{
  			try
-@@ -2129,6 +2222,8 @@
+@@ -2129,6 +2271,8 @@
  	const int max_d = opp ? (their_endgame ? 16 : 12) : 9;
  	if (hp < hp_gate * max_hp || ((task == T_CAPTURE || reward_here()) && !their_endgame))
  		return false;
@@ -208,8 +273,8 @@ diff -ruN _m4/src/brain.h _x_fight/src/brain.h
  	int last_act_round = -100;
 diff -ruN _m4/src/params.h _x_fight/src/params.h
 --- _m4/src/params.h	2026-10-18 10:31:54.730029951 +0000
-+++ _x_fight/src/params.h	2026-10-18 11:09:38.491202715 +0000
-@@ -86,6 +86,19 @@
++++ _x_fight/src/params.h	2026-10-18 11:19:00.382048875 +0000
+@@ -86,6 +86,23 @@
  	float pair_kill_adv = 0.5f;		 // ... and below it a 'killable' target needs this advantage (1.0: same games as 0.5, off)
  	float pair_retreat_hp = 0.f;	 // Cassi & Issac: safety() retreat line (max with retreat_hp; 0.4: 55.9 vs _eA vs 70.6 without)
  	int ren_reflect = 1;			 // combat(): a fight on Ren counts its retaliation (0.2 x focus per hit) on each of our hitters
@@ -225,6 +290,10 @@ diff -ruN _m4/src/params.h _x_fight/src/params.h
 +	int flee_hold = 0;				 // after an outmatch flee, for this many rounds: flee bars widen (distance + flee_hold_d,
 +	int flee_hold_d = 3;			 // ... adv + flee_hold_adv), unseen enemies seen within threat_memory still push us home, and
 +	float flee_hold_adv = 0.2f;		 // ... rallies go unanswered (traces: fled to 8 tiles, farmed back toward them, caught)
++	float die_soon = 0.f;			 // combat(): skip a fight we can escape (not a sure kill) when the damage in reach of this body
++	float die_soon_pair = 0.f;		 // ... kills it within this many rounds (Cassi & Issac: die_soon_pair)
++	float peel_stun = 0.f;			 // support_spells(): a stun usable while moving (Cassi) goes on an enemy that can hit an ally
++									 // below this health fraction now (Issac first)
 +	int kill_reach = 0;				 // combat(): 'killable' counts an ally's hit only when the ally is within its own reach of the target
  	int threat_score_memory = 8;	 // group_score: enemies seen this many rounds ago still guard the camps within 8 of them
  									 // (20: 50.0 vs _rm, more deaths; alert_radius 8 for the team DANGER alert: 47.1, more deaths)

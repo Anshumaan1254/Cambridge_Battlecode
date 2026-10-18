@@ -40,6 +40,17 @@ running or unfinished, and what to do next, so a new agent can continue without 
   ~55 rounds from r27. Our Stellar captured once on collision (their Stellar 9 times).
 - contest: we never touch a monolith (0-1000, deaths 63-3); stampede: our objective plan won 1080-0 (keep it).
 
+### Checkpoint 09:00 UTC (agents still running; read their notes for the latest)
+- **survive** best = `_svA` = `_rm` + `outmatch_flee=1` (adv 0.8) + `pair_flee_bonus=0.3` + `ren_reflect=1` + `pair_low_hp=0.4`
+  (patch `experiments/wip/x_survive.patch`). 56 maps: vs `_rm` **60.7** (official 64.7), deaths 893-1240; vs `_eA` 61.6 (70.6), `_eB` 76.8 (88.2),
+  `_ST` 50.9 (44.1 official: the weak cell); deaths -23..38% everywhere, gems up; no new rollovers. `_svC` (= `_svA` without pair_low_hp): vs `_rm` 59.8, `_ST` 53.6 (52.9).
+- **farm** best = `_C2` = `_rm` + session-4 pace patch + `no_split` + `unknown_keep` + `obj_focus` + `max_join=3` (patch `experiments/wip/x_farm.patch`).
+  Unopposed official pace 579 -> 553. 56 maps: vs `_rm` 54.5 (official 61.8), `_eA` 67.0 (73.5), `_eB` 66.1 (85.3), `_eC` 85.7 (91.2), `_ST` 56.2 (61.8); 0 faults, no new rollovers.
+  Under test: `_C3` (+ `varg_splash_pos`, `no_split` in `go_home`).
+- **Next step (anyone resuming)**: build the merge `_m1` = `_rm` + x_farm.patch + x_survive.patch (resolve params.h conflicts by hand), switches at the values above
+  (`_svC` variant if `_ST` stays weak); bench vs `_rm _ST _eA _eB _eC` on the 56 maps (`--jobs 2`); if it beats `_rm` and `_ST` overall and on the official maps:
+  copy into `bots/legend`, rebuild the zip, `submissions/history/legend_m1_<date>.zip`, BUILDS row, push (**ship first**), then add the new switches to `tools/rl/a100/space.json`.
+
 ### Plan (priority order) and state
 | # | Task | Who | State |
 |---|---|---|---|

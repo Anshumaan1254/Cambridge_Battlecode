@@ -64,3 +64,14 @@ vs `_ST`: `_rm` 52.9 (534-403), `_sv1` 55.9, `_svA` 44.1 (393-415), `_svB` 44.1,
 - Death categories vs `_eA` (`death_ctx.mjs`, A and B files): `_rm` 508 deaths (C&I 260), `_sv1` 467 (C&I 244): the non-pair
   deaths fell 248 -> 213 (-14%), the pair barely moved.
 - Rejected: `alert_radius` 8 (more deaths: the avoid zone blocks routes), `threat_score_memory` 20 (neutral, more deaths vs `_rm`).
+
+## 56-map pool (112 games per cell; win % all maps (official 17); deaths ours-theirs)
+| Bot | vs `_rm` | vs `_ST` | vs `_eA` | vs `_eB` |
+|---|---|---|---|---|
+| `_rm` | - | 54.5 (52.9) 1241-1053 | 57.1 (58.8) 1404-1604 | 68.8 (73.5) 1060-1399 |
+| `_svA` | **60.7 (64.7) 893-1240** | 50.9 (44.1) 1017-1082 | 61.6 (70.6) 1075-1580 | 76.8 (88.2) 662-1504 |
+| `_svC` | **59.8 (61.8) 862-1292** | 53.6 (52.9) 1016-1070 | 59.8 (70.6) 1223-1614 | 73.2 (82.4) 696-1492 |
+- Our deaths fall 23-38% against every opponent (vs `_eA` 1404 -> 1075, vs `_eB` 1060 -> 662, vs `_ST` 1241 -> 1016) and gems rise
+  (vs `_rm` 103k-91k): farming does not collapse.
+- Cassi & Issac vs `_eA` (official 17, pair_deaths.mjs): `_rm` ~3.8 pair deaths per game, `_sv1` 3.74, `_svA` 2.88; gems lost per pair
+  death 13.1 (`_sv1`) -> 5.1 (`_svA`); C&I body-rounds dead 25.1% -> 19.2%.

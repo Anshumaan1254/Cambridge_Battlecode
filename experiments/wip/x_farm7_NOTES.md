@@ -32,6 +32,38 @@ Measure: `tools/pace17.sh BOT 2` (per map in `/tmp/ev/p_BOT.txt`). Trace builds:
 | `max_wait=30` / `10` | 552.9 / 557.4 | 18 is right |
 | `max_join=2` | 545.4 | a third body helps on supply-limited maps |
 | `join_min_rounds=8` | 547.2 | |
+| `shop_shards=2` | 560.0 | gold is already spent fast: mean gold held 10-26 per body, >=150 only 0.1-3.7% of alive rounds |
+| `obj_team_best=1` (new switch) | **543.4** | ambush 716 -> 585 (enemy contested 561), contest 920 -> 915, no other map moves. ON |
+| `farm_prio=1` (new switch, without otb) | 541.0 (vs 551.4) | ambush 621, lanes 477, pilgrimage 613, contest 871; rushbait 707 (+83) |
+| `incumbent=1` (new switch, with otb) | 542.7 (vs 543.4) | monolith 453 (-70), lanes -28, elkring -23; swirl +58, rushbait +53, pilgrimage +45: neutral on 17 |
+| `build_style=4` (Monster + Power in the damage stat, new) | 613.5 | contest 1731, stampede 1083 (objective team plan needs health); without those two 507.7 vs 510.0 |
+| `build_style=4 farm_ren_str=1` | 607.0 | without contest/stampede 503.8 |
+| `tribute_min=50` | 545.7 | |
+| `hysteresis=1.3` | 544.3 | |
+| `join_share=0.8` | 561.6 | |
+
+## Stacks (giveup + obj_team_best on; 17 maps)
+
+| stack | pace |
+|---|---|
+| s1 = + `ci_health_first=0` | 529.8 |
+| s2 = s1 + `farm_prio=1` | 528.6 |
+| s3 = s1 + `max_join=2` | 526.3 |
+| s4 = s1 + `farm_prio=1 max_join=2 incumbent=1` | 525.0 |
+| s5 = s1 + `ren_dmg_first=1` (new: Ren/Ryth Monster before Jungle health) | 537.5 (worse) |
+| s6 = s1 + `ci_health_obj=1` (new: health-first C&I on objective maps only) | 530.9 (neutral: stampede 739 -> 735) |
+| s8 = s1 + `no_split=1` (new: leave a reward an ally stands on; 40 split pairs in 854 rewards) | 536.9 (worse) |
+| s9 = s4 + `bank_trip_cap=4` | 528.5 (worse) |
+| s10 = s4 + `bank_trip_cap=4 bank_trip_w=2` | 539.0 (worse) |
+
+56-map pool (pace vs idle, 112 games): `_b7` 469.1, s1 448.0, s2 445.9, s3 449.8, **s4 443.7**.
+
+**Regression guard s4 vs `_b7`: 64.3% (72/112), official 58.8% (20/34), deaths 961-1276, 0 faults.**
+
+Trace of s4 (17 maps): walk 32.4%, hit 28.7%, wait 16.6%, bank 13.3%, capture 5.7%; abandoned episodes 13.1% -> 10.1%.
+rows (s4): the far pack (x=42, 38 steps) was captured at r100 and next at r351: Stellar, Cassi and Issac kept joining the
+two near packs as helpers (Issac 0 captures in 447 rounds). Joiner credit = 0.6 of the reward overstates a helper's
+value (the claimer clears the pack anyway): test `join_share` 0.3-0.4 and `join_dps_share` (share = my dps / all dps).
 
 ## Diagnostics so far
 - Time use unopposed (giveup build, 34 games): walk 32%, hit 29%, wait 16% (2/3 of it walking to a respawning group or an

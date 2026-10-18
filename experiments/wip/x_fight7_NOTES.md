@@ -50,6 +50,13 @@ a fight against a stronger group keeps doing its task (farm walk, bank walk) unt
 | `unk_w` (+ `unk_side0`, `unk_need`) | a proactive fight (margin rule, not in reach) must also beat the enemies not accounted for, weighted by how deep we stand toward their spawn |
 | `fh_rounds` (+ `fh_mult`) | after walking away outmatched, proactive fights need fh_mult x the margin for this many rounds |
 
-## 3. Results
+## 3. Results (56 maps, both sides, 112 games per cell; win % all / official 17, deaths us-them over 112 games)
 
-(pending)
+Baseline `_b7`: vs `_lad` 56.2 (1315-1217), `_r2` 73.2 (962-1760), `_v6` 92.9 (1160-1761), `_devci` 93.8 (790-1773),
+`_L0` 80.4 (935-1808): 5-opponent mean **79.3**, our deaths 9.22 per game, theirs 14.86. Pace (17 official vs idle) 565.2.
+
+| bot | settings | vs `_b7` | `_lad` | `_r2` | `_v6` | `_devci` | `_L0` | 5-opp mean | our deaths/game (5 opp) | their deaths | pace |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| `_b7` | baseline | (50) | 56.2 | 73.2 | 92.9 | 93.8 | 80.4 | 79.3 | 9.22 | 14.86 | 565.2 |
+| `_f7a` | fm_age 3 | 55.4 / 52.9 (1102-1059) | 48.2 (1201-1052) | | | | | | | | |
+| `_f7b` | fm_age 3, threat_flee_adv 0.8 | 51.8 / 52.9 (956-1169) | 62.5 (965-1293) | 82.1 (699-1753) | 92.0 (758-1687) | 96.4 (657-1700) | 73.2 (849-1707) | **81.2** | **7.01 (-24%)** | 14.54 (-2%) | 565.2 |

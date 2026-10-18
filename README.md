@@ -13,7 +13,10 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Current build: `legend_m12` (session 7R, Oct 18): ready for the ladder
+## Current build: `legend_m12b` (session 7R, Oct 18): ready for the ladder
+
+`legend_m12b` = `legend_m12` with the contest plan restricted to 50x50 maps (contest and its copies): identical games on all 17 official maps,
+and `legend_m10`'s play on generated monolith-only maps of other sizes (where the plan had lost). The table below is `legend_m12`'s (same games).
 
 `legend_m12` plays `legend_m10`'s proven game everywhere, and on contest-type maps (gems only in lone monoliths) it opens as one group until
 round 200 and wards the bushes. `legend_m11` warded bushes on every map: that beat our own older builds but lost to the top-team proxies (and,

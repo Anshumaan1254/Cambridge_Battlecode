@@ -364,6 +364,7 @@ struct Params
 	// Lone-monolith maps (agent contest, session 7): contest (the ladder map we lost 0-1000 with 63 deaths), its ladder copy and gold_mono_*
 	int mono_plan = 1;			// detect them at init (World::mono_mode); everything mono_* needs it (0: the baseline, byte-identical play)
 	float mono_share = 0.9f;	// ... when lone monoliths hold at least this share of the map's gem rate
+	int mono_size50 = 1;		// ... and only on 50x50 maps (1: contest and its copies; the generated monolith-only test maps of other sizes keep legend_m10's play)
 	int mono_obj = 0;			// ... plan the lone monoliths with the objective team plan (obj_*; obj_min_attackers=2 left them out)
 	int mono_grouped_until = 0;	// ... play the GROUPED stance (stay together, off their half) until this round
 	int mono_build = 0;			// builds on those maps: 0 = build_style, 3 = the ladder teams' (Durability / Bruiser health, then Power stacks)

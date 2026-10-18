@@ -164,7 +164,9 @@ void World::init_static()
 	}
 	hops.assign(groups.size(), Hop{});
 	mono_share = mono_rate_total > 0 ? mono_rate_lone / mono_rate_total : 0;
-	mono_mode = P.mono_plan && mono_rate_total > 0 && mono_share >= P.mono_share;
+	// mono_size50: only on 50x50 maps (contest and its copies). On the 24 generated monolith-only test maps (maps/gold*/gold_mono*, 30-80
+	// wide) the blob opening + bush warding lost to _px9 29 of 60 vs legend_m10's 39; on contest and 33 copies it won 88-97%.
+	mono_mode = P.mono_plan && mono_rate_total > 0 && mono_share >= P.mono_share && (!P.mono_size50 || (W == 50 && H == 50));
 	detect_objective();
 }
 

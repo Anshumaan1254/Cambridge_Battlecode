@@ -89,21 +89,24 @@ diff -ruN _rm/src/brain.cpp _x_survive/src/brain.cpp
  	sc_risk = static_cast<float>(alive_enemies) / std::max<std::size_t>(1, W.enemies.size());
 diff -ruN _rm/src/params.h _x_survive/src/params.h
 --- _rm/src/params.h	2026-10-18 07:37:50.237297424 +0000
-+++ _x_survive/src/params.h	2026-10-18 09:31:42.486141782 +0000
-@@ -57,6 +57,25 @@
++++ _x_survive/src/params.h	2026-10-18 10:00:47.854062645 +0000
+@@ -57,6 +57,28 @@
  	float isolated_fight_adv = 1.428f; // alone, start a fight only at this advantage (or a sure kill) (ES: 1.6 -> 1.428)
  	float isolated_flee_adv = 1.1f;	 // alone and weaker than this: walk away as soon as they are in sight
  	int flee_dist = 7;				 // ... when the nearest enemy is this close
 +	// Survival vs grouped invaders (agent survive, session 6; experiments/wip/x_survive_NOTES.md). Ladder: 232 deaths vs 50 in
 +	// 17 games; the killers were within 8 tiles for 7+ rounds before 75% of them. Recommended set (_svF) vs _rm, 56 maps,
 +	// 112 games: 61.6% head-to-head (official 64.7), deaths 881-1301; vs _ST 56.2 (_rm 54.5), _eA 69.6 (_rm 57.1); held-out pool
-+	// and _eB/_eC in the notes. Our deaths fall 23-38% against every opponent with more gems banked.
++	// and _eB/_eC in the notes. Our deaths fall 23-38% against every opponent with more gems banked. With
++	// outmatch_solo_adv 0.45 (_svI, these defaults): vs _rm 63.4, _ST 63.4, _eA 68.8, _eC 85.7 (deaths vs _rm 847-1269).
 +	int outmatch_flee = 1;			 // also walk away (not alone) when the visible group here outmatches us: adv below
 +	float outmatch_flee_adv = 0.8f;	 // ... this (1.0: 50.0% vs _rm on the official 17, 0.7: 52.9, 0.8: 55.9), with at least
 +	int outmatch_min_enemies = 2;	 // ... this many visible enemies within 9 and the nearest within outmatch_flee_dist (not yet
 +	int outmatch_flee_dist = 8;		 // ... in reach: in reach the fight-back / cornered rules apply)
-+	float outmatch_solo_adv = 0.6f;	 // ... against a single visible enemy flee below this advantage (0: never; traces: 7 of 68
-+									 // deaths began outside reach against one stronger enemy, e.g. their 1,900-health Ren)
++	float outmatch_solo_adv = 0.45f; // ... against a single visible enemy flee below this advantage (0: never; traces: 7 of 68
++									 // deaths began outside reach against one stronger enemy, e.g. their 1,900-health Ren).
++									 // 56 maps: 0 (_svC) vs _rm 59.8 / _ST 53.6 / _eA 59.8 / _eC 85.7; 0.6 (_svF) 61.6 / 56.2 / 69.6 / 76.8;
++									 // 0.45 (_svI) 63.4 / 63.4 / 68.8 / 85.7
 +	float pair_flee_bonus = 0.3f;	 // Cassi & Issac (two bodies, two bags per death): flee bar + this (official 17: 55.9 -> 55.9 vs
 +									 // _rm, 61.8 -> 70.6 vs _eA)
 +	float pair_low_hp = 0.25f;		 // Cassi & Issac: below this health fraction skip fights we can escape (others: 0.25). 0.4 cut

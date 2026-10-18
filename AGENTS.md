@@ -88,7 +88,10 @@ running or unfinished, and what to do next, so a new agent can continue without 
 - **`bots/_m2`** = `_rm` + current `x_farm.patch` + current `x_survive.patch` + `outmatch_flee=1 pair_flee_bonus=0.3 ren_reflect=1` (the `_svF`
   settings as the patch's defaults). Acceptance running since 09:53 UTC: `/tmp/ev/e4.sh` -> `/tmp/ev/m2` (56 maps, 112 games per opponent
   vs `_rm`, `_ST`, `_eA`, `_eB`, `_eC`; log `/tmp/ev/e4.log`). Ship rule: beats `_rm` and `_ST` overall and on the official maps, 0 faults.
-- Both agents may still change their patches; if they do, rebuild `_m2` from the committed patches and rerun.
+- **10:02 UTC: survive changed its default to `outmatch_solo_adv` 0.45 (`_svI`: vs `_rm` 63.4, `_ST` 63.4, `_eA` 68.8, `_eC` 85.7).**
+  `_m2` was built with 0.6 (`_svF`), so it stays as the reference for 0.6 (its rows are keyed to its own code). When survive is final:
+  build `_m3` from the committed patches (defaults from the patch: no overrides) and run only `tools/ledger.py run` for `_m3`; that is the
+  acceptance run. Do not reuse `_m2` rows for `_m3`: the hash differs by design.
 
 ### Plan (priority order) and state
 | # | Task | Who | State |

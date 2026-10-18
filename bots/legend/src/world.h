@@ -141,6 +141,12 @@ struct World
 	float obj_share = 0;		 // share of the map's gem rate (gems / respawn) held by heavy groups
 	float obj_rate_total = 0, obj_rate_heavy = 0;
 	std::vector<int> obj_groups; // heavy gem groups, nearest to our spawn first
+	// Lone-monolith map (P.mono_plan, agent contest): (almost) all gem income is in single-camp monoliths (contest, its ladder copy,
+	// gold_mono_*). Everything the monolith plan does is gated by this flag, so every other map plays exactly as before.
+	bool mono_mode = false;
+	float mono_share = 0;		 // share of the map's gem rate (gems / respawn) held by lone monoliths
+	float mono_rate_total = 0, mono_rate_lone = 0;
+	std::vector<int> mono_groups; // the lone monoliths we can reach
 	void detect_objective();
 	Field home; // steps from our spawn
 	int spawn_altar_d = BIG; // walking steps from our spawn to the nearest altar's approach tile

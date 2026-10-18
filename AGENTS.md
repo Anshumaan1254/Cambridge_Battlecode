@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-18 (session 11; `legend_m10` shipped = `legend_m8`'s play with the default-branch ideas switched off; see §S11)**. Rule from the user: update this file and push at every step. Start with **§S11**, then **§S10**, **§S9**, **§S8**,
+- Last updated: **2026-10-18 21:55 UTC (S7R: `legend_m11` shipped); earlier: 2026-10-18 (session 11; `legend_m10` shipped = `legend_m8`'s play with the default-branch ideas switched off; see §S11)**. Rule from the user: update this file and push at every step. Start with **§S11**, then **§S10**, **§S9**, **§S8**,
   **§S7**, **§S7-SV2**, then §000000 (resume protocol), §00000, §0000, §000, §00. **All work stays on branch `ccr-a858cd03-q87cpi`**:
   `git pull` (merge, never force) before every push. The repository's **default branch is `claude/lucid-pasteur-2jiojv`** (Oct 17, its
   bot does not compile); this branch is 142 commits ahead of it. No PR unless the user asks.
@@ -14,6 +14,15 @@ running or unfinished, and what to do next, so a new agent can continue without 
 ---
 
 ## S7R. SESSION 7 RESUMED (2026-10-18 20:05 UTC, the original S7 container, live in parallel with S11): read with §S11
+
+- **SHIPPED `legend_m11` (S7R, ~21:55 UTC)** at the user's request ("prioritize finishing the bot so we get feedback from the actual ladder"):
+  `submissions/legend.zip` sha256 1fb13fa2…, `submissions/history/legend_m11_20261018.zip`, BUILDS row. `_m11` = `_m10` + `experiments/wip/x_m11.patch`
+  (source hash 0dd8010eaf12; = contest agent's `_fo200` (`mono_plan` detector + `mono_follow_until` 200) + `x_wb.patch` with `ward_bush=2`).
+  `bots/legend/src` = it + the inert `LEGEND_RUNTIME_PARAMS` block (wasm byte-identical). Evidence: vs `_m8` 52.3 / 67.6 (88 distinct / official),
+  83 of 86 non-contest games identical to `_wb2`'s; contest pool (68 games) vs `_m8` 88.2, `_mite` 95.6, `_snk` 97.1; `_wb2` held-out vs `_mite` 87.0
+  (`_m10` 79.0), `_px9` 74.0 (66.0); gen16 rollovers 8/8. Caveat: on the 88-map pool `_wb2` scored 63.6 vs `_mite` (`_m8` 76.1): held-out reverses it.
+  Third-party cells of `_m11` on the 88 still playing (`$S/m11.sh`): add them to the BUILDS row. **New baseline: `_m11`.** Rollback: `legend_m10` zip.
+  The opening-gold workflow was stopped to free CPU (its notes: `x_og_NOTES.md`; nothing passed vs the proxies).
 
 - This container (S7's) resumed after the session limit; its agents econ / fight / contest died then. It works on: (1) **`join_marginal`**
   (agent econ's best switch: 63.4 / 55.9 vs `_m4`, never picked up by S8-S11) ported onto `_m8`: `_jm8` = `_m8` + `experiments/wip/x_jm8.patch`

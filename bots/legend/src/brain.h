@@ -53,6 +53,9 @@ private:
 	bool home_trip();
 	void update_priority();
 	bool escort_wait();
+	bool regroup_active();
+	int rg_until = -1000;
+	bool mono_forced = false;
 	int deficit = 0, respawn_round = -1000;
 	bool was_alive = true;
 	int cur_prio = -1;
@@ -237,6 +240,7 @@ private:
 	int task = T_NONE, task_group = -1, task_since = 0;
 	int task_progress = -1; // giveup_progress: last round we hit, captured or waited at task_group
 	int ward_round = -100;
+	vec2 ward_pos{ -1, -1 }; // where our ward was last placed (ward_bush)
 	float last_hp = 0;
 	int last_hit_round = -100;
 	std::vector<int> blacklist; // per group: round until which we ignore it

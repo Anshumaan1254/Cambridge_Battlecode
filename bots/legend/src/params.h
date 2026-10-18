@@ -158,6 +158,9 @@ struct Params
 	float mi_kite_max_kill = 40.f; // ... and a kill within this many rounds
 	int mi_chip = 0;			   // an idle damage spell hits a camp within 4 while passing (camps never heal)
 	int mi_close_in = 0;		   // in range by the group field but no live camp in sight (walls block vision): walk closer
+	int ward_bush = 2;		   // place_ward: 1 = prefer a bush tile within 2 (a ward inside a bush reveals it; the sneaky-bush team wards bushes
+							   // 100% of the time, we 19%); 2 = also re-ward after ward_bush_gap rounds when a bush is in reach and our ward is not in it
+	int ward_bush_gap = 3;	   // ... (ward_bush 2)
 	int mapdraft = 3;		   // 0 = our composition choice; sparring proxies: 1 = Mite's per-map drafts, 2 = ifish's (draft.cpp)
 							   // 3 = ours with the top teams' choices where they beat ours (rushbait-v2, interlock, expanse; stampede with md_stampede)
 	int md_stampede = 1;	   // mapdraft 3: stampede drafts the 2nd team's casters (Prism, Stellar, C&I, Ryth, Tavi) for the ring plan
@@ -356,6 +359,30 @@ struct Params
 	int o2_ring_melee = 0;		 // 1: bodies that are not casters (melee kits) never take the all-in team plan while the ring is on
 	float o2_ring_mindps = 0.f;	 // a caster whose spell damage per round is below this stays out of the ring plan (Ren's stun is 15.6, Cassi's 17.5)
 
+
+	// Lone-monolith maps (agent contest, session 7): contest (the ladder map we lost 0-1000 with 63 deaths), its ladder copy and gold_mono_*
+	int mono_plan = 1;			// detect them at init (World::mono_mode); everything mono_* needs it (0: the baseline, byte-identical play)
+	float mono_share = 0.9f;	// ... when lone monoliths hold at least this share of the map's gem rate
+	int mono_obj = 0;			// ... plan the lone monoliths with the objective team plan (obj_*; obj_min_attackers=2 left them out)
+	int mono_grouped_until = 0;	// ... play the GROUPED stance (stay together, off their half) until this round
+	int mono_build = 0;			// builds on those maps: 0 = build_style, 3 = the ladder teams' (Durability / Bruiser health, then Power stacks)
+	int mono_fort = 0;			// probe: lone-monolith maps: before mono_fort_until hold on spawn (healing 100% per round) instead of farming
+	int mono_fort_until = 0;
+	int mono_rg = 0;			// regroup: lone-monolith maps: a body that sees >= mono_rg_n enemies (within mono_rg_see) and is outnumbered by them goes home to
+								// heal on spawn (100% per round) and alerts the team (mono_rg_team); they hold there mono_rg_hold rounds after the last sighting
+	int mono_rg_n = 3;
+	int mono_rg_see = 10;
+	int mono_rg_margin = 0;
+	int mono_rg_hold = 30;
+	int mono_rg_team = 1;
+	int mono_rg_from = 0;
+	int mono_rg_fight_r = 3;	 // an enemy this close: combat() decides instead of walking home
+	int mono_gmask = 15;		// which parts of the GROUPED stance apply while mono_grouped_until forces it: 1 enemy-half penalty x2, 2 deny bonus x0.5, 4 isolated fight +0.3, 8 stay near allies' claims
+	int mono_follow_until = 200;	// opening: bodies farm the group the lowest-index living claimant farms (one blob) until this round
+	float mono_group_w = 0.f;	// cohesion (with mono_grouped_until): rounds of extra cost per tile beyond mono_group_r from the nearest ally's claimed group
+	int mono_group_r = 8;
+	int mono_open_rounds = 0;	// opening: before this round skip groups on the enemy's half (the enemy's triples at 25 steps from us: on contest
+								// two of five bodies walked there from r2 and met 3-4 enemies alone)
 
 	// Stuck champions (tools/analysis/stuck.mjs; experiments/wip/x_stuck_NOTES.md)
 	int stuck_live_goal = 1;	 // farming without the group's field: walk to tiles in range of live camps, not of any

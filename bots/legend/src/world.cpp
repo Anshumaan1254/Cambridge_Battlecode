@@ -138,6 +138,17 @@ void World::init_static()
 		for (auto t : G.tiles)
 			G.radius = std::max(G.radius, cheb(t, G.center));
 		G.update_cluster();
+		if (P.mono_plan && G.gems > 0)
+		{
+			const float rate = static_cast<float>(G.gems) / static_cast<float>(std::max(1, G.respawn));
+			mono_rate_total += rate;
+			if (G.monolith && G.camps.size() == 1)
+			{
+				mono_rate_lone += rate;
+				if (G.d_ally < BIG)
+					mono_groups.push_back(G.id);
+			}
+		}
 		if (P.obj_plan && G.gems > 0)
 		{
 			// Objective-map detector input (see detect_objective), gathered here to keep init fuel flat.
@@ -152,6 +163,8 @@ void World::init_static()
 		groups.push_back(std::move(G));
 	}
 	hops.assign(groups.size(), Hop{});
+	mono_share = mono_rate_total > 0 ? mono_rate_lone / mono_rate_total : 0;
+	mono_mode = P.mono_plan && mono_rate_total > 0 && mono_share >= P.mono_share;
 	detect_objective();
 }
 
@@ -176,6 +189,20 @@ void World::detect_objective()
 	// Heavy = too much health for one body to clear in a few trips (elk 2,400, monolith 20,000; stampede's fused
 	// group 17,400). Gem rate = gems per respawn round; a centre group counts once for the whole map, side groups
 	// once per copy, so the share is map-wide. The sums are gathered in init_static's group loop.
+	if (mono_mode && P.mono_obj)
+	{
+		// Lone monoliths are the whole gem supply: plan them as the team objective (obj_min_attackers 2 excluded them).
+		obj_groups = mono_groups;
+		obj_share = mono_share;
+		obj_mode = !obj_groups.empty();
+		if (obj_mode)
+		{
+			std::sort(obj_groups.begin(), obj_groups.end(), [&](int a, int b) { return groups[static_cast<std::size_t>(a)].d_ally < groups[static_cast<std::size_t>(b)].d_ally; });
+			for (int id : obj_groups)
+				groups[static_cast<std::size_t>(id)].objective = true;
+		}
+		return;
+	}
 	obj_share = obj_rate_total > 0 ? obj_rate_heavy / obj_rate_total : 0;
 	obj_mode = !obj_groups.empty() && static_cast<int>(obj_groups.size()) <= P.obj_max_groups && obj_share >= P.obj_share;
 	if (!obj_mode)

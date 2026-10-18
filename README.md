@@ -13,7 +13,21 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Current build: `legend_m10` (session 11): `legend_m8`'s play, ready for the ladder check
+## Current build: `legend_m11` (session 7R, Oct 18): ready for the ladder
+
+`legend_m11` = `legend_m10` (= `legend_m8`'s play) + **bush warding** (a ward inside a bush reveals champions hiding there; we now ward a bush
+tile within 2 when one is in reach, as the sneaky-bush ladder team does with every ward) + **a grouped opening on contest-type maps** (the bodies
+farm together until round 200 instead of arriving one by one at the centre fight we lost in every ladder contest game).
+
+| Opponent | `legend_m11` |
+|---|---|
+| `legend_m8` (previous best), 88 distinct games / official 34 | **52.3% / 67.6%** (deaths 593-712) |
+| contest pool (68 games) vs `legend_m8` / Mite proxy / sneaky-bush proxy | **88.2% / 95.6% / 97.1%** (old play vs the sneaky proxy: 38.2%) |
+| held-out maps (100 games, warding alone) vs Mite / `_px9` proxies | 87.0% / 74.0% (`legend_m10`: 79.0% / 66.0%) |
+
+Previous: `legend_m10` (`submissions/history/legend_m10_20261018.zip`). Full numbers: `submissions/BUILDS.md`.
+
+## Previous build: `legend_m10` (session 11): `legend_m8`'s play, ready for the ladder check
 
 `submissions/legend.zip` = `legend_m10`. It plays exactly as `legend_m8` (the results table below applies: it takes the two top
 teams' per-map draft choices where they beat ours and Mite's stampede plan). The 17 ideas from the repository's default branch

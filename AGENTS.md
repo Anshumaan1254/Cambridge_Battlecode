@@ -35,7 +35,13 @@ running or unfinished, and what to do next, so a new agent can continue without 
   identical). Their builds = Mite style (`build_style` 9). Proxy `_snk` = `_x_sn` + `mapdraft=4 build_style=9`; candidate `_snd` = `_x_sn` + `mapdraft=4`.
   Running: per-map screen on the 11 maps where their draft differs (collision, contest, corners, eight, elkring, interlock, monolith, rows, rushbait-v2,
   stampede, swirl), `_snd` and `_m10` vs 18 opponents both sides (`$S/sneaky_screen.sh`; `python3 tools/mapscreen.py _m10 _snd --opps ...`). First cells:
-  `_snd` vs `_m10` 8/22 on those maps. Then: adopt only maps that win clearly (and not vs the top proxies), full acceptance under the user's rule.
+  `_snd` vs `_m10` 8/22 on those maps. **Screen done** (17 opponents x 2 sides = 34 games per map; wins `_snd` / `_m10`; top proxies `_mite _ifish _px9`):
+  contest **27 / 21 (+6)**, top 3 / 4, h2h 2/2; collision 28 / 25 (+3), top 5 / 4, h2h 1/2; stampede 31 / 31; interlock 26 / 29; eight 25 / 29; corners 22 / 28;
+  rushbait-v2 21 / 27; swirl 18 / 24; monolith 19 / 26; elkring 19 / 27; **rows 20 / 33**; all 256 / 300 (-44), top 34 / 53. Their draft loses inside our
+  brain on 8 of 11 maps (Tavi, Willow and Vendetta are played worse by our code than the champions they replace); only contest (their caster
+  draft Tavi, Willow, Stellar, Ren, Prism) and maybe collision gain. Candidates: `_sdc` (`md_sneaky=4`: contest), `_sdl` (`=2`: collision),
+  **`_sdC` (`=6`: both)**; running (`$S/sdc.sh`): `_sdc` vs 10 opponents on the contest geometry variants `maps/ct/contest_{sw,tr,swtr}` (more
+  contest samples), then `_sdC` full acceptance vs `_m10 _m8 _mite _ifish _px9 _fA _ST _snk` (88 distinct) and pace.
   A workflow `sneaky-bush-study` (Sonnet + Haiku, no games) writes `docs/strategy_v2/10_SNEAKY_BUSH.md` (bush play, same-draft losses) and checks the table.
 - The user got the zips in chat: `legend_m8` (best measured), then `legend_m10` (current `submissions/legend.zip`, plays `legend_m8`'s games).
 

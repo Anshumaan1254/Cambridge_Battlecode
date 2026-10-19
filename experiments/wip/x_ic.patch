@@ -1,0 +1,243 @@
+diff -ruN _pg3/src/brain.cpp _x_ic/src/brain.cpp
+--- a/src/brain.cpp	2026-10-19 18:10:45.813043112 +0000
++++ b/src/brain.cpp	2026-10-19 18:31:54.319166952 +0000
+@@ -41,6 +41,18 @@
+ 			rep(v, it, 5);
+ }
+ 
++bool is_home_shard(I it)
++{
++	return it == I::home_shard_of_health || it == I::home_shard_of_strength || it == I::home_shard_of_focus;
++}
++
++bool is_health_shard(I it)
++{
++	return it == I::monster_shard_of_health || it == I::power_shard_of_health || it == I::durability_shard_of_health ||
++		it == I::treasure_shard_of_health || it == I::jungle_shard_of_health || it == I::home_shard_of_health ||
++		it == I::bruiser_shard_of_health;
++}
++
+ // Shard plans: five shards of a family complete its emblem; only the emblem grants the passive.
+ std::vector<I> build_for(CT t, int bs)
+ {
+@@ -82,6 +94,36 @@
+ 		rep(v, power, 300);
+ 		return v;
+ 	}
++	if (bs == 11)
++	{
++		// Intercontinental Fish (ladder #1; emblem order of its bodies in 36 games of Oct 19, experiments/interwin_oct19):
++		// Stellar PfE > HhE > DhE (17 of 36), Ren BhE > DhE > PfE, Cassi PfE > DfE > BhE, Issac PsE > HhE > DhE, Ryth BhE > DhE > PsE,
++		// Varg PsE > HhE; first emblem near r83 (Stellar), r74 (Ren). Power in the damage stat for the rest of the game.
++		const bool focus = t == CT::ren || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
++		const I pw = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
++		switch (t)
++		{
++		case CT::ren:
++		case CT::ryth:
++		case CT::marcella:
++			rep(v, I::bruiser_shard_of_health, 5);
++			rep(v, I::durability_shard_of_health, 5);
++			break;
++		case CT::cassi:
++		case CT::willow:
++			rep(v, pw, 5);
++			rep(v, I::durability_shard_of_focus, 5);
++			rep(v, I::bruiser_shard_of_health, 5);
++			break;
++		default: // Stellar, Prism, Tavi, Issac, Varg, Vendetta, Vesper
++			rep(v, pw, 5);
++			rep(v, I::home_shard_of_health, 5);
++			rep(v, I::durability_shard_of_health, 5);
++			break;
++		}
++		rep(v, pw, 300);
++		return v;
++	}
+ 	if (bs == 9)
+ 	{
+ 		// Mite (2nd on the ladder; sparring proxy), from its emblem timings in 33 ladder games: Jungle (-30% camp damage
+@@ -393,6 +435,13 @@
+ 	W.init_static();
+ 	if (W.mono_mode && P.mono_build)
+ 		build = build_for(type, P.mono_build);
++	if ((P.ic_home == 1 || P.ic_home == 2) && build.size() >= 5)
++	{
++		// ic_home: a Home emblem second, on the bodies whose first emblem is a damage emblem (1) or on all (2).
++		const bool damage_first = !is_health_shard(build[0]);
++		if (P.ic_home == 2 || damage_first)
++			insert_home(5);
++	}
+ 	// Islands are searched later (prebuild_fields): ~47k fuel on 100x100 maps, not needed in the opening rounds.
+ 	W.island_of.assign(W.groups.size(), -1);
+ 	W.islands_pending = true;
+@@ -515,6 +564,11 @@
+ 	if (P.mi_learn_burst || P.mi_lethal)
+ 		learn_burst();
+ 	XM(xm_pre());
++	{
++		const bool rec = flag(state, bc::champion_state::recalling);
++		recalls_started += rec && !was_recalling;
++		was_recalling = rec;
++	}
+ 
+ 	if (flag(state, bc::champion_state::recalling) || flag(state, bc::champion_state::submitting_gems) ||
+ 		flag(state, bc::champion_state::teleporting))
+@@ -799,6 +853,8 @@
+ 		{
+ 		}
+ 	}
++	if (P.ic_home == 3 && recalls_started >= P.ic_home_recalls)
++		insert_home(build_idx);
+ 	while (build_idx < build.size() && gold >= 30)
+ 	{
+ 		const I item = build[build_idx];
+@@ -2408,7 +2464,7 @@
+ 	if (dh >= BIG || dh <= (P.home_edge_fix ? 0 : 2))
+ 		return false;
+ 	const bool can_recall = dh > P.recall_min_dist && safe_to_recall();
+-	const int cost = can_recall ? static_cast<int>(bc::constants::recall_time) : dh;
++	const int cost = can_recall ? recall_turns() : dh;
+ 	const bool shopper = type != CT::tavi && build_idx < build.size();
+ 	const int shards = shopper ? static_cast<int>(gold / 30) : 0;
+ 	const bool hurt = hp < P.home_hp * max_hp;
+@@ -2745,7 +2801,7 @@
+ 	// flip the choice each round and the champion oscillated in place for hundreds of rounds.
+ 	const bool committed = P.sticky_tribute && task == T_TRIBUTE && static_cast<int>(gems) >= 10;
+ 	// Recall and bank at the altar next to spawn when that beats walking (and heals and shops on the way).
+-	const int via_home = static_cast<int>(bc::constants::recall_time) + W.spawn_altar_d;
++	const int via_home = recall_turns() + W.spawn_altar_d;
+ 	const bool recall_bank = W.dist_home(pos) > P.recall_min_dist && via_home + 2 < dist && safe_to_recall() && !endgame;
+ 	// A long bank trip is worth a bigger bag: the threshold rises with the cheapest way to an altar from here,
+ 	// so a body far from every altar keeps farming and banks when its route passes close to one.
+@@ -2852,9 +2908,10 @@
+ 	// for every camp group every turn).
+ 	if (item_flags_idx == build_idx)
+ 		return;
+-	int j = 0, d = 0, m = 0;
++	int j = 0, d = 0, m = 0, h = 0;
+ 	for (std::size_t i = 0; i < build_idx && i < build.size(); ++i)
+ 	{
++		h += is_home_shard(build[i]);
+ 		j += build[i] == I::jungle_shard_of_strength || build[i] == I::jungle_shard_of_health || build[i] == I::jungle_shard_of_focus;
+ 		d += build[i] == I::durability_shard_of_health || build[i] == I::durability_shard_of_strength || build[i] == I::durability_shard_of_focus;
+ 		m += build[i] == I::monster_shard_of_health || build[i] == I::monster_shard_of_strength || build[i] == I::monster_shard_of_focus;
+@@ -2862,9 +2919,29 @@
+ 	jungle_ok = j >= 5;
+ 	durability_ok = d >= 5;
+ 	monster_ok = m >= 5;
++	home_ok = h >= 5;
+ 	item_flags_idx = build_idx;
+ }
+ 
++void Brain::insert_home(std::size_t at)
++{
++	// A Home emblem (five Home health shards) at shard index `at`, rounded up to the next emblem boundary of the plan.
++	for (const I it : build)
++		if (is_home_shard(it))
++			return;
++	at = std::max(at, build_idx);
++	at = std::min(build.size(), (at + 4) / 5 * 5);
++	build.insert(build.begin() + static_cast<std::ptrdiff_t>(at), 5, I::home_shard_of_health);
++	item_flags_idx = static_cast<std::size_t>(-1);
++}
++
++int Brain::recall_turns() const
++{
++	// Recall takes recall_time turn ends, three with a Home emblem.
++	refresh_item_flags();
++	return static_cast<int>(bc::constants::recall_time) - (home_ok ? 2 : 0);
++}
++
+ bool Brain::jungle_done() const
+ {
+ 	refresh_item_flags();
+@@ -2953,7 +3030,7 @@
+ {
+ 	// Heal at spawn and come back: recall (5 turn ends, 3 with Home) beats walking once spawn is far.
+ 	const int hd = std::min(g.d_home_c, 60);
+-	const int recall = static_cast<int>(bc::constants::recall_time);
++	const int recall = recall_turns();
+ 	return 2 + std::min(2 * hd, recall + hd);
+ }
+ 
+@@ -3505,7 +3582,7 @@
+ 			}
+ 		}
+ 		bool ring_ok = false;
+-		if (P.o2_ring && (P.o2_ring == 1 || (W.W == 60 && W.H == 50) || (P.o2_ring == 3 && W.ring_comp && W.team_champs >= P.o2_ring_team)) && W.obj_mode && g.objective && g.attackers >= 1 && (sc_obj_focus < 0 || sc_obj_focus == g.id))
++		if (P.o2_ring && (P.o2_ring == 1 || (P.o2_ring_size && W.W == 60 && W.H == 50) || (P.o2_ring == 3 && W.ring_comp && W.team_champs >= P.o2_ring_team)) && W.obj_mode && g.objective && g.attackers >= 1 && (sc_obj_focus < 0 || sc_obj_focus == g.id))
+ 			ring_ok = ring_ready(g, hp_left, ring_kill);
+ 		if (ring_ok)
+ 		{
+@@ -4168,7 +4245,7 @@
+ 		// Strong ladder teams do this after almost every capture far from home.
+ 		// Capture lands at the start of round since + capture_time + 1; a recall started in round R lands at
+ 		// R + recall_time. Start it so both land together (never earlier: an early teleport loses the reward).
+-		const int recall_t = static_cast<int>(bc::constants::recall_time) - (has_home ? 2 : 0);
++		const int recall_t = recall_turns();
+ 		const int start_at = capture_since + static_cast<int>(bc::constants::capture_time) + 1 - recall_t;
+ 		if (round >= std::max(capture_since + 1, start_at) && W_dist_home_ok() && safe_to_recall())
+ 		{
+@@ -4191,7 +4268,7 @@
+ 				return true;
+ 			}
+ 			const bool bank_here = P.bank_first && adist < BIG && spawn_altar < BIG &&
+-				adist + static_cast<int>(bc::constants::recall_time) + P.bank_first_margin <= spawn_altar;
++				adist + recall_t + P.bank_first_margin <= spawn_altar;
+ 			const bool bag = static_cast<int>(gems) + g.gems >= bank_min(std::min(adist, spawn_altar < BIG ? 1 + spawn_altar : BIG));
+ 			if (bag && bank_here && !hurt)
+ 			{
+diff -ruN _pg3/src/brain.h _x_ic/src/brain.h
+--- a/src/brain.h	2026-10-19 18:10:45.812735385 +0000
++++ b/src/brain.h	2026-10-19 18:27:23.821894876 +0000
+@@ -138,7 +138,11 @@
+ 	bool monster_done() const;
+ 	void refresh_item_flags() const;
+ 	mutable std::size_t item_flags_idx = static_cast<std::size_t>(-1);
+-	mutable bool jungle_ok = false, durability_ok = false, monster_ok = false;
++	mutable bool jungle_ok = false, durability_ok = false, monster_ok = false, home_ok = false;
++	void insert_home(std::size_t at);
++	int recall_turns() const;
++	int recalls_started = 0; // ic_home 3
++	bool was_recalling = false;
+ 	bool has_home = false; // Home emblem (faster recall); we never buy it, kept for the capture-recall timing
+ #ifdef XM_TRACE
+ 	// Prediction audit state (all updated inside debug_block, so it costs no fuel and changes no decision).
+diff -ruN _pg3/src/params.h _x_ic/src/params.h
+--- a/src/params.h	2026-10-19 18:10:45.913943997 +0000
++++ b/src/params.h	2026-10-19 18:31:54.330469893 +0000
+@@ -174,6 +174,13 @@
+ 							   //     9 = Mite (Jungle, Durability in the damage stat, Bruiser health, Power)
+ 							   // 2 = value-model builds (tools/analysis/item_value.py): Bruiser over Power, early Treasure
+ 							   //     on the rich farmers, survival first on Cassi & Issac, builds that never run out
++							   // 11 = Intercontinental Fish (ladder #1, 45 games of Oct 19): carries open with Power in the damage stat,
++							   //     tanks with Bruiser + Durability health, Home health second on the carries, then Power forever
++	// Home emblem (recall takes 3 turn ends instead of 5). IC buys it second on the bodies whose first emblem is a damage
++	// emblem (Stellar, Issac, Varg); it recalls 28 times a game, 44% of them capture-recalls.
++	int ic_home = 0;		   // 1: Home health emblem right after the first emblem when that one is in the damage stat (derived
++							   //    from the build, not the champion); 2: on every body; 3: once this body has recalled ic_home_recalls times
++	int ic_home_recalls = 6;   // ic_home 3
+ 	int rich_treasure_first = 0; // build_style 2: Ren and Stellar open with Treasure (1) or with r2's first emblem
+ 							   // (Ren Jungle health, Stellar Monster) and Treasure second (0); vs _v6 on the ladder
+ 							   // maps: 1 won 19/24 (gems +8,623), 0 won 21/24 (+9,385, deaths 441-670)
+@@ -359,6 +366,7 @@
+ 	int o2_ring = 3;			// objective group with live elks: casters (a range-4 damage/stun/area spell) cast from distance 4 and never step into camp reach
+ 								// 3: on 60x50 or whenever our team has Prism or Tavi (the parameter draft takes them on objective maps of any size)
+ 	int o2_ring_team = 5;		// o2_ring 3: only with this many champions per team (obj_pack4, 4 champions: ring 14/30 vs 20/30 without it; 5: 75/90 vs 51/90)
++	int o2_ring_size = 1;		// o2_ring 2-3: also ring on any 60x50 objective map whatever the draft (the stampede size; 0 = only the team test of o2_ring 3, ISSUES.md #1)
+ 								// (2 = on stampede only: elsewhere, e.g. ambush, it lost 5 of 11 changed games in session 10)
+ 	float o2_ring_clear = 160.f; // ring plan ready when the casters' spell damage clears the group within this many rounds
+ 	float o2_ring_share = 0.5f;	 // value share per caster
+diff -ruN _pg3/src/world.cpp _x_ic/src/world.cpp
+--- a/src/world.cpp	2026-10-19 18:10:45.812528334 +0000
++++ b/src/world.cpp	2026-10-19 18:31:54.320253933 +0000
+@@ -479,7 +479,7 @@
+ 			else if (g.st == ST_REWARD && round - g.seen_round > 8)
+ 			{
+ 				g.st = ST_RESPAWN;
+-				g.ready_round = g.seen_round + 6 + g.respawn;
++				g.ready_round = g.seen_round + static_cast<int>(bc::constants::capture_time) + g.respawn;
+ 			}
+ 		}
+ 		g.enemy_on_tile = false;

@@ -1,0 +1,655 @@
+diff -ruN _ch2/src/brain.cpp _x_zone/src/brain.cpp
+--- _ch2/src/brain.cpp	2026-10-19 20:56:14.462361469 +0000
++++ _x_zone/src/brain.cpp	2026-10-19 21:27:54.445829907 +0000
+@@ -1,6 +1,7 @@
+ #include "brain.h"
+ #include "learn.h"
+ #include "draft.h"
++#include "zone.h"
+ #ifdef LEGEND_TRACE
+ #include <map>
+ #endif
+@@ -448,6 +449,17 @@
+ 	if (!P.defer_islands)
+ 		W.islands_pending = false, W.find_islands();
+ 	W.init_units();
++	if (P.zone_plan)
++	{
++		try
++		{
++			zones().build();
++		}
++		catch (...)
++		{
++			zones().ready = false;
++		}
++	}
+ 	blacklist.assign(W.groups.size(), -1);
+ 	nav().init();
+ 	learner().init(W.W, W.H);
+@@ -468,6 +480,14 @@
+ 					std::printf("%d,%d;", t.x, t.y);
+ 				std::printf("\n");
+ 			}
++			const auto& Z = zones();
++			std::printf("ZP ready=%d units=%d items=%d m=%d fuel=%llu\n", static_cast<int>(Z.ready), Z.nunits, Z.nitems, Z.src_m, static_cast<unsigned long long>(bc::fuel_remaining()));
++			for (std::size_t i = 0; i < Z.unit_of.size(); ++i)
++				std::printf("ZU i=%d type=%d unit=%d medoid=%d\n", static_cast<int>(i), static_cast<int>(W.allies[i].type), Z.unit_of[i],
++					Z.unit_of[i] >= 0 && static_cast<std::size_t>(Z.unit_of[i]) < Z.medoid.size() ? Z.medoid[static_cast<std::size_t>(Z.unit_of[i])] : -1);
++			for (const auto& g : W.groups)
++				if (Z.zone(g.id) >= 0)
++					std::printf("ZG g=%d z=%d\n", g.id, Z.zone(g.id));
+ 		}
+ 	});
+ #endif
+@@ -3086,6 +3106,8 @@
+ 		v *= std::max(1.f, P.deny_capture_mult);
+ 	const int lb = std::max(0, cheb(g.center, pos) - g.radius);
+ 	const int d = g.st == ST_REWARD ? lb : approach_rounds(lb);
++	if (P.zone_plan && g.st != ST_REWARD)
++		v *= std::max(1.f, zone_mult(g));
+ 	return v / std::max(1.f, static_cast<float>(d) + 6.f);
+ }
+ 
+@@ -3393,7 +3415,20 @@
+ 		{
+ 			// Claims are seen a round late: on the group we already hold only lower-index claimers count,
+ 			// otherwise two allies wanting one group both yield, both switch, and repeat forever.
+-			if (P.claim_tiebreak && g.id == task_group && i > W.my_index)
++			bool yields = P.claim_tiebreak && g.id == task_group && i > W.my_index;
++			if (P.zone_claim && zones().ready)
++			{
++				// Zones: between an owner and another body claiming one of its groups, the owner keeps it (whatever the index).
++				const int zg = zones().zone(g.id), ui = zones().unit_of[static_cast<std::size_t>(i)];
++				if (zg >= 0 && ui != zones().my_unit)
++				{
++					if (zg == zones().my_unit && g.id == task_group)
++						yields = true;
++					else if (zg == ui)
++						yields = false;
++				}
++			}
++			if (yields)
+ 			{
+ 				// A higher-index claimer yields the group to us but still fights on it. Dropping its damage too
+ 				// made a pack that needs two bodies look impossible every other turn: the lower-index body
+@@ -3456,7 +3491,10 @@
+ 	case ST_RESPAWN:
+ 	{
+ 		const int avail = g.ready_round - round;
+-		if (avail > d_adj + (W.obj_mode && g.objective ? P.obj_max_wait : P.max_wait) * (sc_relaxed ? 3 : 1))
++		int wmax = W.obj_mode && g.objective ? P.obj_max_wait : P.max_wait;
++		if (P.zone_plan && zones().ready && zones().zone(g.id) == zones().my_unit && zones().my_unit >= 0)
++			wmax = std::max(wmax, P.zone_wait); // our own zone: come back for its respawn
++		if (avail > d_adj + wmax * (sc_relaxed ? 3 : 1))
+ 			{ WHY(5); return -1; }
+ 		wait = std::max(0, avail - d_adj);
+ 		hp_left = g.max_hp;
+@@ -3728,9 +3766,26 @@
+ 	if (xm_sp)
+ 		xm_sp->time = time, xm_sp->value = value, xm_sp->score = value / std::max(1.f, time);
+ #endif
++	if (P.zone_plan && g.st != ST_REWARD)
++		value *= P.zone_help && claimers ? std::max(1.f, zone_mult(g)) : zone_mult(g);
+ 	return value / std::max(1.f, time);
+ }
+ 
++float Brain::zone_mult(const Group& g) const
++{
++	// Farming zones: our own zone's groups are worth more to us, another pick's zone less while one of its bodies lives (it
++	// will come for them; the walk there is what the zones save). Unzoned groups (enemy side, objectives) are unchanged.
++	const auto& Z = zones();
++	if (!Z.ready || Z.my_unit < 0)
++		return 1.f;
++	const int z = Z.zone(g.id);
++	if (z < 0)
++		return 1.f;
++	if (z == Z.my_unit)
++		return P.zone_own;
++	return Z.unit_alive(z) ? P.zone_other : 1.f;
++}
++
+ bool Brain::inside_island() const { return world().dist_home(pos) >= BIG; }
+ 
+ bool Brain::has_crystal() const
+@@ -4118,6 +4173,16 @@
+ 		for (auto& g : W.groups)
+ 			if (g.st == ST_RESPAWN && g.ours && g.ready_round - round < soon_t)
+ 				soon_t = g.ready_round - round, soon = g.id;
++		if (P.zone_idle && P.zone_plan && zones().ready && zones().my_unit >= 0)
++		{
++			// Our own zone's next respawn: the walk back is what made respawned camps stand 26.5 rounds unattacked (IC 13.8).
++			int zs = -1, zt = BIG;
++			for (auto& g : W.groups)
++				if (g.st == ST_RESPAWN && zones().zone(g.id) == zones().my_unit && g.ready_round - round < zt)
++					zt = g.ready_round - round, zs = g.id;
++			if (zs >= 0)
++				soon = zs, soon_t = zt;
++		}
+ 		task = T_WAIT;
+ 		// Nothing to farm: top up at home (heal and shop) rather than stand around hurt or rich.
+ 		const bool shopper = type != CT::tavi && build_idx < build.size();
+diff -ruN _ch2/src/brain.h _x_zone/src/brain.h
+--- _ch2/src/brain.h	2026-10-19 20:56:14.462472645 +0000
++++ _x_zone/src/brain.h	2026-10-19 21:11:21.592311994 +0000
+@@ -96,6 +96,7 @@
+ 	float group_score(const Group& g, int& eta, bool* need_pair = nullptr, int d_override = -1) const;
+ 	int approach_rounds(int d_tile) const; // rounds to attack range of a group d_tile steps away
+ 	float score_cap(const Group& g) const;  // upper bound on group_score(g)
++	float zone_mult(const Group& g) const;  // P.zone_plan: own zone / another pick's zone weight
+ 	bool obj_team_ready(const Group& g, float hp_left, float& kill) const; // objective map: the team can clear g
+ 	int obj_gather_since = -1, obj_gather_group = -1;
+ 	mutable bool sc_team = false; // the last group_score used the objective team plan (the solo plan failed)
+diff -ruN _ch2/src/draft.cpp _x_zone/src/draft.cpp
+--- _ch2/src/draft.cpp	2026-10-19 20:56:14.462536427 +0000
++++ _x_zone/src/draft.cpp	2026-10-19 21:09:53.277319634 +0000
+@@ -431,10 +431,103 @@
+ 		}
+ 	return false;
+ }
++
++// P.zone_plan: walking distances between the camp groups on our side, measured once on the first draft turn (1M fuel; a
++// distance field costs 13-19k on 100x100, too much for the 100k of a game turn) and left in draft memory for the bodies
++// (zone.cpp builds the zones from it). Layout (zone.h): magic, version, M, groups, width, height, M group ids (nearest to our
++// spawn first), then the upper triangle of the M x M matrix, row by row (steps, 255 = unreachable or more).
++void zone_draft()
++{
++	const long long floor_fuel = 300000; // the pick still needs its share of the turn
++	const bc::bitboard terrain = bc::map::walls() | bc::map::holes();
++	const bc::bitboard ally = bc::map::spawn_region(team::ally), enemy = bc::map::spawn_region(team::enemy);
++	const bc::bitboard walls = terrain | bc::map::altars() | enemy;
++	bc::distance_field home, away;
++	bc::bitboard vis;
++	home.compute(walls, ally, vis);
++	away.compute(terrain | bc::map::altars() | ally, enemy, vis);
++	struct Cand
++	{
++		int id, dh;
++		vec2 tile;
++		bc::bitboard mask;
++	};
++	std::vector<Cand> cand;
++	const auto groups = bc::map::camp_groups();
++	cand.reserve(groups.size());
++	int id = 0;
++	for (const auto& g : groups)
++	{
++		int da = BIG, de = BIG;
++		bool mono = false;
++		Cand c{ id++, BIG, { -1, -1 }, {} };
++		for (const auto& cp : g.camps())
++		{
++			const vec2 p = cp.spawn_position();
++			const auto a = home.get(p), e = away.get(p);
++			const int ia = a == UNREACH ? BIG : static_cast<int>(a), ie = e == UNREACH ? BIG : static_cast<int>(e);
++			if (ia < da)
++				da = ia, c.tile = p;
++			de = std::min(de, ie);
++			c.mask.set(p);
++			mono |= cp.kind() == bc::camp_type::monolith;
++		}
++		if (da < BIG && !mono && da <= de + P.zone_band)
++		{
++			c.dh = da;
++			cand.push_back(std::move(c));
++		}
++	}
++	std::stable_sort(cand.begin(), cand.end(), [](const Cand& a, const Cand& b) { return a.dh < b.dh; });
++	constexpr std::size_t MMAX = 44; // 6 + 44 + 44 x 43 / 2 = 996 bytes of 1024
++	if (cand.size() > MMAX)
++		cand.resize(MMAX);
++	const int M = static_cast<int>(cand.size());
++	std::vector<std::uint8_t> mem(6 + static_cast<std::size_t>(M) + static_cast<std::size_t>(M * (M - 1) / 2), 255);
++	mem[0] = 0xB9, mem[1] = 1, mem[2] = static_cast<std::uint8_t>(M), mem[3] = static_cast<std::uint8_t>(std::min<std::size_t>(255, groups.size()));
++	mem[4] = static_cast<std::uint8_t>(bc::map::width()), mem[5] = static_cast<std::uint8_t>(bc::map::height());
++	for (int i = 0; i < M; ++i)
++		mem[6 + static_cast<std::size_t>(i)] = static_cast<std::uint8_t>(cand[static_cast<std::size_t>(i)].id);
++	auto at = [&](int i, int j) -> std::uint8_t& { // i < j
++		const std::size_t row = static_cast<std::size_t>(i) * static_cast<std::size_t>(2 * M - i - 1) / 2;
++		return mem[6 + static_cast<std::size_t>(M) + row + static_cast<std::size_t>(j - i - 1)];
++	};
++	int done = 0;
++	for (; done < M - 1 && static_cast<long long>(bc::fuel_remaining()) > floor_fuel; ++done)
++	{
++		bc::distance_field f;
++		f.compute(walls, cand[static_cast<std::size_t>(done)].mask, vis);
++		for (int j = done + 1; j < M; ++j)
++		{
++			const auto d = f.get(cand[static_cast<std::size_t>(j)].tile);
++			at(done, j) = d == UNREACH ? 255 : static_cast<std::uint8_t>(std::min<int>(254, d));
++		}
++	}
++	// Out of fuel: the pairs among the remaining groups are estimated (Chebyshev x 1.3; walls make walks longer).
++	for (int i = done; i < M; ++i)
++		for (int j = i + 1; j < M; ++j)
++			at(i, j) = static_cast<std::uint8_t>(std::min(254, cheb(cand[static_cast<std::size_t>(i)].tile, cand[static_cast<std::size_t>(j)].tile) * 13 / 10));
++	bc::draft_memory = mem;
++}
+ } // namespace
+ 
+ void play_draft()
+ {
++	if (P.zone_plan)
++	{
++		static bool zone_done = false;
++		if (!zone_done)
++		{
++			zone_done = true;
++			try
++			{
++				zone_draft();
++			}
++			catch (...)
++			{
++			}
++		}
++	}
+ 	const auto mine = bc::draft::current_draft(team::ally);
+ #ifdef LEGEND_FEATURES
+ 	// One line of map features for the offline draft model (tools/draft_model.py).
+diff -ruN _ch2/src/params.h _x_zone/src/params.h
+--- _ch2/src/params.h	2026-10-19 20:56:14.462734580 +0000
++++ _x_zone/src/params.h	2026-10-19 21:27:54.449740054 +0000
+@@ -488,6 +488,26 @@
+ 								// (ranged, an opener of ours ready): when the step enters an enemy's next-turn reach, hold at the
+ 								// edge (they step in, we cast first) for at most open_hold rounds per fight
+ 	int open_hold = 2;			// ... rounds
++
++	// Farming zones (session 13, agent zone; experiments/wip/x_zone_NOTES.md). All off = legend_m14_commit.
++	// The first draft turn (1M fuel) measures the walking distances between the camp groups on our side (one distance field per
++	// group) and leaves them in draft memory; every body then splits those groups into one zone per pick (Cassi & Issac: one
++	// zone for both bodies) with a weighted k-medoids on walking distance, gives each pick the zone it farms best (splash,
++	// area, kill time, damage taken) and lets the zones re-weight group_score. Nothing is per map: geometry, rewards, respawn
++	// times and our draft only.
++	int zone_plan = 0;			// 1: compute and use the plan (0: no draft work, no effect)
++	float zone_own = 1.3f;		// score x this for a group in our own zone
++	float zone_other = 0.6f;	// score x this for a group in another pick's zone while one of its bodies is alive
++	int zone_wait = 18;			// a respawning group in our own zone stays a target while it is ready within the walk + this many rounds (max_wait elsewhere)
++	int zone_band = 0;			// groups up to this many steps nearer the enemy spawn than ours are zoned too (0: our half only)
++	int zone_idle = 0;			// 1: with nothing to farm, wait at the soonest respawn of our own zone (else the soonest on our half)
++	int zone_shape = 0;			// clustering distance: 0 walking distance between groups; 1 sectors around our spawn (zone.cpp)
++	float zone_depth = 0.2f;	// zone_shape 1: + this x walking distance
++	float zone_balance = 0.f;	// > 0: each zone holds at most its picks' share of the total farming load x (1 + this)
++	float zone_solo_trips = 99.f; // a group its owner needs more heal trips than this to clear alone (base stats) stays unzoned
++	int zone_help = 0;			// 1: no zone_other cut on a group an ally already claims (joining a heavy pack is help)
++	int zone_claim = 0;			// 1: a zone's owner keeps a group of its zone that another body also claims (else the lower index keeps it)
++	int zone_skip_obj = 0;		// 1: no zones on objective / lone-monolith maps (World::obj_mode, mono_mode: the team plans run there)
+ };
+ 
+ inline constexpr Params P{};
+diff -ruN _ch2/src/zone.cpp _x_zone/src/zone.cpp
+--- _ch2/src/zone.cpp	1970-01-01 00:00:00.000000000 +0000
++++ _x_zone/src/zone.cpp	2026-10-19 21:23:41.769672860 +0000
+@@ -0,0 +1,348 @@
++#include "zone.h"
++#include "params.h"
++#include "world.h"
++
++ZonePlan& zones()
++{
++	static ZonePlan z;
++	return z;
++}
++
++bool ZonePlan::unit_alive(int u) const
++{
++	const auto& W = world();
++	for (std::size_t i = 0; i < W.allies.size() && i < unit_of.size(); ++i)
++		if (unit_of[i] == u && W.allies[i].alive)
++			return true;
++	return false;
++}
++
++namespace
++{
++using CT = bc::champion_type;
++
++// One body's base facts (designs: no live state), read once per body: kit_of() walks the abilities through host calls.
++struct BodyFacts
++{
++	CT t;
++	float str, focus, hp;
++	Kit k;
++};
++
++// Damage per round of one body on group g at base stats (the same terms as Brain::dps_on: splash and radius-1 area spells hit
++// the packed camps, spells once per 8-round cooldown, Ren's retaliation per camp hitting him).
++float body_dps(const BodyFacts& b, const Group& g)
++{
++	const Kit& k = b.k;
++	const float cl = g.cluster;
++	float base = b.str * (1.f + (k.reset >= 0 ? 0.125f : 0.f));
++	if (b.t == CT::varg)
++		base *= cl;
++	float spells = 0;
++	if (k.dmg >= 0)
++		spells += b.focus * k.dmg_mod;
++	if (k.cc >= 0)
++		spells += b.focus * k.cc_mod;
++	if (k.aoe >= 0)
++		spells += b.focus * k.aoe_mod * (k.aoe_radius >= 1.f ? cl : 1.f);
++	float v = base + spells / 8.f;
++	if (b.t == CT::ren && !k.ranged)
++		v += bc::constants::passive_abilities::ren_retaliation_focus_ratio * b.focus * static_cast<float>(std::min(g.attackers, 3));
++	return v;
++}
++} // namespace
++
++void ZonePlan::build()
++{
++	ready = false;
++	auto& W = world();
++	if (P.zone_skip_obj && (W.obj_mode || W.mono_mode))
++		return;
++	const auto& mem = bc::draft_memory;
++	const std::size_t n = mem.size();
++	if (n < 6 || static_cast<int>(mem[0]) != 0xB9 || static_cast<int>(mem[1]) != 1)
++		return;
++	const int M = static_cast<int>(mem[2]);
++	if (static_cast<int>(mem[3]) != static_cast<int>(std::min<std::size_t>(255, W.groups.size())) || static_cast<int>(mem[4]) != (W.W & 255) ||
++		static_cast<int>(mem[5]) != (W.H & 255) || n < 6 + static_cast<std::size_t>(M) + static_cast<std::size_t>(M * (M - 1) / 2))
++		return;
++	src_m = M;
++	// Units: our picks. Cassi and Issac are one pick, two bodies, one zone (they die together).
++	unit_of.assign(W.allies.size(), -1);
++	std::vector<std::vector<BodyFacts>> units;
++	int ci_unit = -1;
++	for (std::size_t i = 0; i < W.allies.size(); ++i)
++	{
++		const CT t = W.allies[i].type;
++		const auto& dz = bc::champion_designs[static_cast<std::size_t>(t)];
++		const auto st = dz.base_stats();
++		const BodyFacts bf{ t, st.base_strength, st.base_focus, st.base_health, kit_of(dz) };
++		if (t == CT::cassi || t == CT::issac)
++		{
++			if (ci_unit < 0)
++				ci_unit = static_cast<int>(units.size()), units.emplace_back();
++			units[static_cast<std::size_t>(ci_unit)].push_back(bf);
++			unit_of[i] = ci_unit;
++		}
++		else
++		{
++			unit_of[i] = static_cast<int>(units.size());
++			units.push_back({ bf });
++		}
++	}
++	nunits = static_cast<int>(units.size());
++	my_unit = W.my_index >= 0 && W.my_index < static_cast<int>(unit_of.size()) ? unit_of[static_cast<std::size_t>(W.my_index)] : -1;
++	// Items: the measured groups that a body farms alone or with a partner (objective groups and monoliths are team plans).
++	std::vector<int> item, row; // group id, index in the draft matrix
++	for (int i = 0; i < M; ++i)
++	{
++		const int gid = static_cast<int>(mem[6 + static_cast<std::size_t>(i)]);
++		if (gid >= static_cast<int>(W.groups.size()))
++			return;
++		const auto& g = W.groups[static_cast<std::size_t>(gid)];
++		if (g.objective || g.monolith || g.d_ally >= BIG)
++			continue;
++		item.push_back(gid), row.push_back(i);
++	}
++	const int N = static_cast<int>(item.size());
++	nitems = N;
++	const int k = std::min(nunits, N);
++	zone_of.assign(W.groups.size(), -1);
++	medoid.assign(static_cast<std::size_t>(std::max(0, nunits)), -1);
++	if (k <= 0)
++		return;
++	std::vector<int> D(static_cast<std::size_t>(N * N), 0);
++	auto tri = [&](int i, int j) { // matrix rows i < j
++		const std::size_t r = static_cast<std::size_t>(i) * static_cast<std::size_t>(2 * M - i - 1) / 2;
++		return static_cast<int>(mem[6 + static_cast<std::size_t>(M) + r + static_cast<std::size_t>(j - i - 1)]);
++	};
++	for (int a = 0; a < N; ++a)
++		for (int b = a + 1; b < N; ++b)
++		{
++			const int i = row[static_cast<std::size_t>(a)], j = row[static_cast<std::size_t>(b)];
++			int d = i < j ? tri(i, j) : tri(j, i);
++			if (d >= 255)
++				d = 400; // unreachable on foot (islands): never one zone
++			D[static_cast<std::size_t>(a * N + b)] = D[static_cast<std::size_t>(b * N + a)] = d;
++		}
++	auto dist = [&](int a, int b) { return D[static_cast<std::size_t>(a * N + b)]; };
++	// Units' facts per group at base stats: damage per round (splash, area, retaliation) and how many heal trips a clear costs.
++	std::vector<float> ufit(static_cast<std::size_t>(nunits * N), 0.f), utrips(static_cast<std::size_t>(nunits * N), 0.f);
++	std::vector<float> w(static_cast<std::size_t>(N)), load(static_cast<std::size_t>(N));
++	std::vector<int> ubodies(static_cast<std::size_t>(nunits));
++	int bodies = 0;
++	for (int u = 0; u < nunits; ++u)
++		ubodies[static_cast<std::size_t>(u)] = static_cast<int>(units[static_cast<std::size_t>(u)].size()), bodies += ubodies[static_cast<std::size_t>(u)];
++	for (int a = 0; a < N; ++a)
++	{
++		const auto& g = W.groups[static_cast<std::size_t>(item[static_cast<std::size_t>(a)])];
++		const float v = static_cast<float>(g.gems) + P.gold_value * static_cast<float>(g.gold);
++		float dsum = 0;
++		for (int u = 0; u < nunits; ++u)
++		{
++			float hpu = 0, dps = 0;
++			bool melee = false;
++			for (const auto& b : units[static_cast<std::size_t>(u)])
++				hpu += b.hp, melee |= !b.k.ranged, dps += body_dps(b, g);
++			dsum += dps;
++			const float kill = g.max_hp / std::max(10.f, dps);
++			const float taken = g.dps * kill * (melee ? 1.f : P.ranged_exposure);
++			const float budget = 0.6f * std::max(1.f, hpu);
++			const float trips = std::max(0.f, taken - budget) / budget;
++			ufit[static_cast<std::size_t>(u * N + a)] = v / (kill + 6.f + trips * 25.f);
++			utrips[static_cast<std::size_t>(u * N + a)] = trips;
++		}
++		// Weight: value per round of its cycle; load: share of one body's time it takes to farm it at every respawn (clear with
++		// the team's mean damage, capture, a short hop).
++		const float kref = g.max_hp / std::max(10.f, dsum / static_cast<float>(std::max(1, bodies)));
++		w[static_cast<std::size_t>(a)] = v / (static_cast<float>(g.respawn) + 6.f + g.max_hp / 150.f);
++		load[static_cast<std::size_t>(a)] = (kref + 14.f) / (static_cast<float>(g.respawn) + kref + 6.f);
++	}
++	// Clustering distance. zone_shape 0: walking distance. 1: sectors around our spawn: the share of the walk between two groups
++	// that leaves the line through spawn, theta = (D - |dh_a - dh_b|) / (dh_a + dh_b - |dh_a - dh_b|) (0 on one ray, 1 when the
++	// walk goes back through spawn), plus zone_depth x walking distance. Trips are star-shaped (spawn, camps, recall home), so a
++	// sector keeps a body's near and far groups on one way out.
++	std::vector<float> X(static_cast<std::size_t>(N * N), 0.f);
++	for (int a = 0; a < N; ++a)
++		for (int b = a + 1; b < N; ++b)
++		{
++			const float d = static_cast<float>(dist(a, b));
++			float x = d;
++			if (P.zone_shape == 1)
++			{
++				const float ha = static_cast<float>(std::min(400, W.groups[static_cast<std::size_t>(item[static_cast<std::size_t>(a)])].d_ally));
++				const float hb = static_cast<float>(std::min(400, W.groups[static_cast<std::size_t>(item[static_cast<std::size_t>(b)])].d_ally));
++				const float lo = std::abs(ha - hb), hi = ha + hb;
++				const float th = hi - lo > 0.5f ? std::clamp((d - lo) / (hi - lo), 0.f, 1.f) : (d > 2.f ? 1.f : 0.f);
++				x = 100.f * th + P.zone_depth * d;
++			}
++			X[static_cast<std::size_t>(a * N + b)] = X[static_cast<std::size_t>(b * N + a)] = x;
++		}
++	auto xd = [&](int a, int b) { return X[static_cast<std::size_t>(a * N + b)]; };
++	// Weighted k-medoids, Voronoi iteration. Seeds: the most valuable group, then farthest-first.
++	std::vector<int> med;
++	{
++		int s0 = 0;
++		for (int a = 1; a < N; ++a)
++			if (w[static_cast<std::size_t>(a)] > w[static_cast<std::size_t>(s0)])
++				s0 = a;
++		med.push_back(s0);
++		while (static_cast<int>(med.size()) < k)
++		{
++			int best = -1;
++			float bd = -1.f;
++			for (int a = 0; a < N; ++a)
++			{
++				float md = 1e30f;
++				for (int m : med)
++					md = std::min(md, xd(a, m));
++				if (md > bd)
++					bd = md, best = a;
++			}
++			med.push_back(best);
++		}
++	}
++	std::vector<int> cl(static_cast<std::size_t>(N), 0);
++	auto voronoi = [&]() {
++		for (int a = 0; a < N; ++a)
++		{
++			int bc = 0;
++			float bd = 1e30f;
++			for (int c = 0; c < k; ++c)
++			{
++				const float d = xd(a, med[static_cast<std::size_t>(c)]);
++				if (d < bd)
++					bd = d, bc = c;
++			}
++			cl[static_cast<std::size_t>(a)] = bc;
++		}
++	};
++	auto update = [&]() {
++		bool moved = false;
++		for (int c = 0; c < k; ++c)
++		{
++			int best = med[static_cast<std::size_t>(c)];
++			float bcost = 1e30f;
++			for (int a = 0; a < N; ++a)
++			{
++				if (cl[static_cast<std::size_t>(a)] != c)
++					continue;
++				float cost = 0;
++				for (int b = 0; b < N; ++b)
++					if (cl[static_cast<std::size_t>(b)] == c)
++						cost += w[static_cast<std::size_t>(b)] * xd(a, b);
++				if (cost < bcost - 1e-4f)
++					bcost = cost, best = a;
++			}
++			moved |= best != med[static_cast<std::size_t>(c)];
++			med[static_cast<std::size_t>(c)] = best;
++		}
++		return moved;
++	};
++	for (int it = 0; it < 20; ++it)
++	{
++		voronoi();
++		if (!update())
++			break;
++	}
++	// Seed shares: the pick with the most bodies (Cassi & Issac) takes the cluster with the most load; the rest are equal.
++	std::vector<int> share(static_cast<std::size_t>(k), 1);
++	if (k == nunits)
++	{
++		std::vector<int> ord(static_cast<std::size_t>(nunits));
++		for (int u = 0; u < nunits; ++u)
++			ord[static_cast<std::size_t>(u)] = u;
++		std::stable_sort(ord.begin(), ord.end(), [&](int x, int y) { return ubodies[static_cast<std::size_t>(x)] > ubodies[static_cast<std::size_t>(y)]; });
++		std::vector<float> cload(static_cast<std::size_t>(k), 0.f);
++		for (int a = 0; a < N; ++a)
++			cload[static_cast<std::size_t>(cl[static_cast<std::size_t>(a)])] += load[static_cast<std::size_t>(a)];
++		std::vector<int> cord(static_cast<std::size_t>(k));
++		for (int c = 0; c < k; ++c)
++			cord[static_cast<std::size_t>(c)] = c;
++		std::stable_sort(cord.begin(), cord.end(), [&](int x, int y) { return cload[static_cast<std::size_t>(x)] > cload[static_cast<std::size_t>(y)]; });
++		for (int r = 0; r < k; ++r)
++			share[static_cast<std::size_t>(cord[static_cast<std::size_t>(r)])] = ubodies[static_cast<std::size_t>(ord[static_cast<std::size_t>(r)])];
++	}
++	if (P.zone_balance > 0.f && k == nunits && k > 1)
++	{
++		// Balanced zones: each cluster holds at most its share of the total load (x 1 + zone_balance); groups go to the nearest
++		// cluster with room, nearest pairs first.
++		float L = 0;
++		for (int a = 0; a < N; ++a)
++			L += load[static_cast<std::size_t>(a)];
++		std::vector<std::pair<float, int>> pairs;
++		pairs.reserve(static_cast<std::size_t>(N * k));
++		for (int it = 0; it < 10; ++it)
++		{
++			std::vector<float> cap(static_cast<std::size_t>(k)), cl_load(static_cast<std::size_t>(k), 0.f);
++			for (int c = 0; c < k; ++c)
++				cap[static_cast<std::size_t>(c)] = L * static_cast<float>(share[static_cast<std::size_t>(c)]) / static_cast<float>(bodies) * (1.f + P.zone_balance);
++			pairs.clear();
++			for (int a = 0; a < N; ++a)
++				for (int c = 0; c < k; ++c)
++					pairs.push_back({ xd(a, med[static_cast<std::size_t>(c)]), a * k + c });
++			std::stable_sort(pairs.begin(), pairs.end(), [](const auto& x, const auto& y) { return x.first < y.first; });
++			std::vector<int> nc(static_cast<std::size_t>(N), -1);
++			for (int c = 0; c < k; ++c) // every medoid stays in its own cluster
++				nc[static_cast<std::size_t>(med[static_cast<std::size_t>(c)])] = c, cl_load[static_cast<std::size_t>(c)] += load[static_cast<std::size_t>(med[static_cast<std::size_t>(c)])];
++			for (const auto& pr : pairs)
++			{
++				const int a = pr.second / k, c = pr.second % k;
++				if (nc[static_cast<std::size_t>(a)] >= 0 || cl_load[static_cast<std::size_t>(c)] + load[static_cast<std::size_t>(a)] > cap[static_cast<std::size_t>(c)])
++					continue;
++				nc[static_cast<std::size_t>(a)] = c, cl_load[static_cast<std::size_t>(c)] += load[static_cast<std::size_t>(a)];
++			}
++			for (int a = 0; a < N; ++a)
++				if (nc[static_cast<std::size_t>(a)] < 0)
++				{
++					// No room anywhere: the cluster least over its cap.
++					int bc = 0;
++					float bo = 1e30f;
++					for (int c = 0; c < k; ++c)
++					{
++						const float o = (cl_load[static_cast<std::size_t>(c)] + load[static_cast<std::size_t>(a)]) / cap[static_cast<std::size_t>(c)];
++						if (o < bo)
++							bo = o, bc = c;
++					}
++					nc[static_cast<std::size_t>(a)] = bc, cl_load[static_cast<std::size_t>(bc)] += load[static_cast<std::size_t>(a)];
++				}
++			cl = nc;
++			if (!update())
++				break;
++		}
++	}
++	// Who farms which zone: the assignment of picks to zones (with the same body count as the zone's share) with the best sum of
++	// farm rates, value / (clear + capture + heal trips), at base stats.
++	std::vector<float> zfit(static_cast<std::size_t>(nunits * k), 0.f);
++	for (int a = 0; a < N; ++a)
++		for (int u = 0; u < nunits; ++u)
++			zfit[static_cast<std::size_t>(u * k + cl[static_cast<std::size_t>(a)])] += ufit[static_cast<std::size_t>(u * N + a)];
++	std::vector<int> perm(static_cast<std::size_t>(nunits));
++	for (int u = 0; u < nunits; ++u)
++		perm[static_cast<std::size_t>(u)] = u;
++	std::vector<int> best_perm = perm;
++	float best = -1.f;
++	do
++	{
++		float s = 0;
++		bool ok = true;
++		for (int c = 0; c < k && ok; ++c)
++		{
++			const int u = perm[static_cast<std::size_t>(c)];
++			ok = k != nunits || ubodies[static_cast<std::size_t>(u)] == share[static_cast<std::size_t>(c)];
++			s += zfit[static_cast<std::size_t>(u * k + c)];
++		}
++		if (ok && s > best + 1e-6f)
++			best = s, best_perm = perm;
++	} while (std::next_permutation(perm.begin(), perm.end()));
++	for (int a = 0; a < N; ++a)
++	{
++		const int u = best_perm[static_cast<std::size_t>(cl[static_cast<std::size_t>(a)])];
++		// A group its owner cannot clear alone at base stats stays a team target (the join rules bring the helpers).
++		if (utrips[static_cast<std::size_t>(u * N + a)] <= P.zone_solo_trips)
++			zone_of[static_cast<std::size_t>(item[static_cast<std::size_t>(a)])] = u;
++	}
++	for (int c = 0; c < k; ++c)
++		medoid[static_cast<std::size_t>(best_perm[static_cast<std::size_t>(c)])] = item[static_cast<std::size_t>(med[static_cast<std::size_t>(c)])];
++	ready = true;
++}
+diff -ruN _ch2/src/zone.h _x_zone/src/zone.h
+--- _ch2/src/zone.h	1970-01-01 00:00:00.000000000 +0000
++++ _x_zone/src/zone.h	2026-10-19 21:10:30.857321868 +0000
+@@ -0,0 +1,20 @@
++// Farming zones (P.zone_plan): the camp groups on our side split into one zone per pick, from the walking distances the first
++// draft turn leaves in draft memory (draft.cpp zone_draft). Every body computes the same plan from the same facts (draft memory,
++// the static camp table, our picks), so the zones agree without shared memory.
++#pragma once
++#include "common.h"
++
++struct ZonePlan
++{
++	bool ready = false;
++	int nunits = 0, my_unit = -1;
++	std::vector<int> zone_of;	   // per group: the pick (unit) that farms it, -1 for none
++	std::vector<int> unit_of;	   // per ally index: its unit (Cassi and Issac share one)
++	std::vector<int> medoid;	   // per unit: its zone's medoid group (-1 none)
++	int nitems = 0, src_m = 0;	   // trace: groups zoned, groups in draft memory
++	void build();
++	bool unit_alive(int u) const;
++	int zone(int group) const { return ready && group >= 0 && group < static_cast<int>(zone_of.size()) ? zone_of[static_cast<std::size_t>(group)] : -1; }
++};
++
++ZonePlan& zones();

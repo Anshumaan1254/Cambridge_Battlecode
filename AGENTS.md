@@ -60,6 +60,24 @@ running or unfinished, and what to do next, so a new agent can continue without 
     Scripts in the scratchpad (lost with the container): `screen.sh VARIANT...` = `tools/ledger.py run V OPP --maps 'maps/comp/*.map26a'` for
     OPP in `_ch2 _mite _ifish _px9 _snk _fA`; results: `BASE=_ch2 python3 tools/screensum.py VARIANTS`.
 
+- **Checkpoint 22:05 UTC: results so far** (official 34 vs `_ch2` + 5 proxies; `_ch2` 129/170):
+  - **Economy is not routing, it is contact**: unopposed `_ch2` captures 151 gems by r100 and 564 by r300 (15 maps; better than the ladder
+    teams do contested: 136 / 480); on the ladder we get 111 / 401. By r150 (equal items) they deal 21% more camp damage, more champion damage
+    (1.66k vs 1.27k) and die less (0.9 vs 1.3). Fight openers decide 3-round trades ~4:1 and they open 55% of fights. The zone agent finds the
+    same (unopposed revisit gaps are already short; best `_z5` official pace 497.1 vs 502.7, gen2 +7 worse).
+  - Unopposed pace understates our race pace: ahead by >= `lead` (150) the bot banks smaller bags (tribute_min x 3/4); unopposed it always is.
+  - Builds (unopposed pace, official / var17 51 maps): our builds 502.7 / 501.6; IC (`build_style` 11) 526.4 / 535.9; ladder style 3: 538.8 / 531.1;
+    ifish 10: 534.8 / 532.6 (damage builds win only monolith 398 vs 437 and ambush): **no build change**.
+  - `recall_join` 132 (h2h 17): small plus; `finish_race` 70 / 150: 126 / 123 and slower unopposed (the rows races were decided by
+    split captures: three 22-gem bags bank in 3 turns, a 66 bag in 7): rejected; `big_reward` 100: 126 official; objective pool (stampede +
+    `maps/obj`, vs `_mite _ifish _px9`, 78 games): `_ch2` 53, `_s_br100` 55, `_s_brd` (+ dive 200) 54, `_s_brp` (+ reward_pre 3) 54, but h2h vs
+    `_ch2` there 9 / 11 / 12 of 26 (slugfests at the objective): parked. `aoe_reach5` 2 on the 28 generated maps 169/270 vs `_ch2` 181 (official +7,
+    generated -12; 88 distinct 305 vs 310, h2h 45/88): mixed. `pair_space` 1 / 2: 122 / 129; `burst_exit` 1 / 2: 130 (same games mostly).
+  - Draft synergy screen had a bug (LEGEND_DRAFT is ignored while `mapdraft` 6): rebuilt with `mapdraft=0`: `_d_ours` (fixed Ren, Stellar, C&I,
+    Varg, Ryth: the control), `_d_wt` (Ryth, Varg, Willow, Ren, Stellar), `_d_w5`, `_d_ci`, `_d_vt`, `_d_mar`, `_d_ven`; compare per team size with
+    `tools/pickscreen.py`. Combos queued: `_c_ar2rj`, `_c_ar2of` (open_first 3), `_c_ar2of2`, `_c_ar2rjof`. `ci_first` (`_s_cif`), `burst_retreat`
+    (`_s_bt10`, `_s_bt15`), `ci_health_first` (`_f_cih`) and fight-more params (`_f_fm115 _f_fb75 _f_crh45 _f_of65`) queued.
+
 ## S12. SESSION 12 (2026-10-19, same container as S10/S11): read this first
 
 - Shipped bot at the start: **`legend_m14`** (`submissions/legend.zip` sha256 50ca7600…, frozen `bots/_pg3`, S7R). Baseline for every A/B: `_pg3`.

@@ -1,6 +1,6 @@
 diff -ruN _ch2/src/brain.cpp _x_s13/src/brain.cpp
 --- _ch2/src/brain.cpp	2026-10-19 20:56:14.462361469 +0000
-+++ _x_s13/src/brain.cpp	2026-10-19 21:17:05.977742724 +0000
++++ _x_s13/src/brain.cpp	2026-10-19 21:39:52.261806949 +0000
 @@ -823,6 +823,24 @@
  	bool cancel = false;
  	if (recalling && threat_close && !world().ally_spawn.is_set(pos))
@@ -26,7 +26,55 @@ diff -ruN _ch2/src/brain.cpp _x_s13/src/brain.cpp
  	if (tributing && !(P.win_bank && wins_with(static_cast<int>(gems))))
  	{
  		// Turns still stuck in the channel: the bag stays carried until it lands, so counting from the bag gave
-@@ -3429,7 +3447,7 @@
+@@ -2559,6 +2577,15 @@
+ 		threshold = std::max(threshold, eff * static_cast<float>(obj_escape + 1));
+ 		camp_in += obj_in;
+ 	}
++	if (P.burst_retreat > 0.f && !W.ally_spawn.is_set(pos))
++	{
++		float eb = 0;
++		for (const auto& e : W.enemies)
++			if (e.alive && e.visible && !W.enemy_spawn.is_set(e.pos) &&
++				cheb(e.pos, pos) <= std::max(e.kit.attack_range + (e.kit.ranged ? 0 : 1), enemy_spell_reach(e, false)) + 2)
++				eb += e.str + e.burst();
++		threshold = std::max(threshold, P.burst_retreat * eb);
++	}
+ 	if (hp < threshold && P.finish_camp && camp_in > 0 && enemy_near_d > P.finish_enemy_d && task_group >= 0 &&
+ 		task_group < static_cast<int>(W.groups.size()))
+ 	{
+@@ -3194,6 +3221,31 @@
+ #endif
+ 	if (!any)
+ 		return false;
++	if (P.reward_pre > 0.f && P.big_reward > 0 && g.gems >= P.big_reward && !respawning && hp >= P.big_reward_hp * max_hp)
++	{
++		// reward_pre: the group dies within reward_pre rounds of the ring's damage: stand on a dead tile now so the reward lands
++		// under us (ladder stampede: an enemy waiting on a dead gem tile took 3 of our 4 kills while our ring stood at 4).
++		float k = 0;
++		if (ring_ready(g, g.hp_total, k) && k <= P.reward_pre)
++		{
++			const bc::bitboard dead = g.mask & ~W.camp_occ & ~W.walls;
++			if (!dead.is_empty() && (dead.is_set(pos) || step(dead, false, true)))
++			{
++				task = T_FARM;
++				std::size_t t = g.camps.size();
++				float bk = 1e30f;
++				for (std::size_t i = 0; i < g.camps.size(); ++i)
++					if (g.hp[i] > 0 && W.camp_occ.is_set(g.camps[i].pos) && cheb(pos, g.camps[i].pos) <= kit.attack_range && g.hp[i] < bk)
++						bk = g.hp[i], t = i;
++				if (!cast_done && t < g.camps.size())
++					spells_on_camp(g, t, false);
++				if (t < g.camps.size())
++					attack_chain_camp(g, t);
++				task_progress = round;
++				return true;
++			}
++		}
++	}
+ 	bc::bitboard goal = hit4;
+ 	goal &= ~hit3;
+ 	goal &= ~W.walls;
+@@ -3429,7 +3481,7 @@
  		// (the joiner may still be walking in while we stand next to the reward).
  		if (claimers && first_claimer < W.my_index && closer_lower_claimer)
  			{ WHY(4); return -1; }
@@ -35,7 +83,7 @@ diff -ruN _ch2/src/brain.cpp _x_s13/src/brain.cpp
  		{
  			// One collector per reward: allies standing on the tiles when it lands split it with no speed-up, and the
  			// second body sat out the 6 capture rounds (and often recalled home with half a bag) instead of walking on.
-@@ -3682,14 +3700,18 @@
+@@ -3682,14 +3734,18 @@
  				ehp += sc_recent[static_cast<std::size_t>(k)].hp;
  				edps += sc_recent[static_cast<std::size_t>(k)].dps;
  			}
@@ -57,7 +105,7 @@ diff -ruN _ch2/src/brain.cpp _x_s13/src/brain.cpp
  				{ WHY(10); return -1; }
  		}
  	}
-@@ -3719,7 +3741,7 @@
+@@ -3719,7 +3775,7 @@
  	{
  		// An enemy capturing a reward: any of our bodies on any tile of the group resets their capture (it
  		// completes 6 rounds after they leave, and they get nothing). Healthy, it is a steal; hurt, avoid.
@@ -66,7 +114,7 @@ diff -ruN _ch2/src/brain.cpp _x_s13/src/brain.cpp
  			value *= P.deny_capture_mult;
  		else
  			value *= 0.5f;
-@@ -3728,6 +3750,23 @@
+@@ -3728,6 +3784,27 @@
  	if (xm_sp)
  		xm_sp->time = time, xm_sp->value = value, xm_sp->score = value / std::max(1.f, time);
  #endif
@@ -74,23 +122,27 @@ diff -ruN _ch2/src/brain.cpp _x_s13/src/brain.cpp
 +	{
 +		// finish_race: the game ends at 1000 banked gems. With few gems still needed, the group that wins is the one whose
 +		// gems reach an altar first: rank finishing groups by walk + kill + capture + bank (far above any rate score), and
-+		// leave the others to the rate model.
++		// leave the others to the rate model. A reward next to us counts too (unopposed collision: two bodies left a 44-gem
++		// capture for a far 66-gem group when 62 were needed: +44 rounds).
 +		const int need = static_cast<int>(bc::constants::winning_gems) - static_cast<int>(bc::global_submitted_gems(team::ally)) -
 +			static_cast<int>(gems) - (P.team_bank ? C.others_carried() : 0);
-+		if (need > 0 && need <= P.finish_race && static_cast<int>(g.gems) >= need)
++		if (need > 0 && need <= P.finish_race && (static_cast<int>(g.gems) >= need || (g.st == ST_REWARD && d_tile <= 2)))
 +		{
 +			const int bag = static_cast<int>(gems + g.gems);
 +			int bank = recall_turns() + W.spawn_altar_d;
 +			for (int a = 0; a < static_cast<int>(W.altars.size()); ++a)
 +				bank = std::min(bank, nav().altar_dist(a, g.center, true));
 +			const float finish = time + static_cast<float>(bank + (bag + 9) / 10);
++#ifdef FR_TRACE
++			debug_block({ std::printf("FR r=%d %d g=%d st=%d gems=%d need=%d time=%.1f bank=%d finish=%.1f d=%d\n", round, static_cast<int>(type), g.id, static_cast<int>(g.st), g.gems, need, time, bank, finish, d_tile); });
++#endif
 +			return 1e4f / std::max(1.f, finish);
 +		}
 +	}
  	return value / std::max(1.f, time);
  }
  
-@@ -4487,11 +4526,38 @@
+@@ -4487,11 +4564,38 @@
  	return true;
  }
  
@@ -140,10 +192,46 @@ diff -ruN _ch2/src/brain.h _x_s13/src/brain.h
  	bool capture_group(Group& g);
  	bool wait_group(Group& g);
  	float group_score(const Group& g, int& eta, bool* need_pair = nullptr, int d_override = -1) const;
+diff -ruN _ch2/src/draft.cpp _x_s13/src/draft.cpp
+--- _ch2/src/draft.cpp	2026-10-19 20:56:14.462536427 +0000
++++ _x_s13/src/draft.cpp	2026-10-19 21:37:56.369701632 +0000
+@@ -398,6 +398,32 @@
+ 	{
+ 		// First pick: the map type alone.
+ 		const D first = pd_type == 2 ? D::prism : pd_type == 1 ? D::cassi_and_issac : D::ren;
++		if (P.ci_first && first != D::cassi_and_issac)
++		{
++			// ci_first: same team, Cassi & Issac picked first (picks are not exclusive: the order only sets body indices). The lower
++			// index captures shared rewards and wins claim ties: four of the ten ladder teams of Oct 19 pick C&I first; our C&I
++			// earned 70 / 111 gold per 100 rounds to their 118 / 174 (first emblem r499 / r375 vs r400 / r227).
++			std::vector<D> team{ first };
++			for (int k = 1; k < MP.team; ++k)
++			{
++				D best = D::stellar;
++				double bv = -1e9;
++				for (auto c : order)
++				{
++					if (has(team, c))
++						continue;
++					const double v = pd_score(c, team, enemy);
++					if (v > bv)
++						bv = v, best = c;
++				}
++				team.push_back(best);
++			}
++			if (has(team, D::cassi_and_issac))
++			{
++				bc::draft::pick(D::cassi_and_issac);
++				return true;
++			}
++		}
+ 		bc::draft::pick(first);
+ 		return true;
+ 	}
 diff -ruN _ch2/src/params.h _x_s13/src/params.h
 --- _ch2/src/params.h	2026-10-19 20:56:14.462734580 +0000
-+++ _x_s13/src/params.h	2026-10-19 21:17:05.973732513 +0000
-@@ -182,6 +182,22 @@
++++ _x_s13/src/params.h	2026-10-19 21:39:52.265733570 +0000
+@@ -182,6 +182,28 @@
  	int ic_home = 0;		   // 1: Home health emblem right after the first emblem when that one is in the damage stat (derived
  							   //    from the build, not the champion); 2: on every body; 3: once this body has recalled ic_home_recalls times
  	int ic_home_recalls = 6;   // ic_home 3
@@ -157,12 +245,18 @@ diff -ruN _ch2/src/params.h _x_s13/src/params.h
 +							   // advantage, an enemy on its tiles is contested by every healthy body (no_split off), from big_reward_hp health
 +	int big_reward_r = 12;
 +	float big_reward_hp = 0.4f;
++	float reward_pre = 0.f;		// > 0 (with big_reward): a ring body steps onto a dead tile of the big group once the ring kills it within this many rounds
 +	int big_reward_dive = 0;   // > 0: an enemy capturing a reward worth at least this many gems is denied whatever the threat (any of our
 +							   // bodies on any tile resets their capture: a death costs ~100 gems of farming, a monolith reward is 200-448)
 +	int recall_join = 0;	   // 1: a healthy body recalling to shop / heal (not a capture-recall, not a winning bag) cancels the recall when an
 +							   // enemy is within 7 and a healthy ally within 6 of us has an enemy within 5 (the user: fight while still able;
 +							   // ladder contest r26-31: our full-health Ren completed a recall as the team fight started, the other 5 lost it)
 +	float recall_join_hp = 0.7f;
++	float burst_retreat = 0.f;  // > 0: safety() also retreats when our health is below this x the burst (best ready spell + one hit) of the
++							   // visible enemies that can step into reach (spell reach + 2): 41% of our ladder deaths (Oct 19) came from >= 60%
++							   // health within 3 rounds, Cassi 31% health (220/700) stayed out next to casters and died to one area cast
++	int ci_first = 0;		   // 1: the parameter draft picks Cassi & Issac first when the planned team has them (same team, lower body
++							   // indices: they capture shared rewards and win claim ties; see draft.cpp param_pick)
  	float commit_hit = 2.0f;	   // > 0: the current target's score x this while we hit it in the last 2 rounds (finish what we started)
  	int commit_keep = 0;	   // 1: a camp we hit in the last 2 rounds is not dropped by the join limits
  	float half_grade = 0.f;	   // > 0: enemy-half risk cost x min(1, (d_ally - d_enemy) / (half_grade x (d_ally + d_enemy))) (0 = flat cost)

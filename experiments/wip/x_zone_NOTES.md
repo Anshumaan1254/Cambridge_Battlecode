@@ -35,6 +35,27 @@ Unopposed pace (ledger vs idle, mean of both sides): official 17 **502.7**, gen2
 | `_z6` | `_z3` + zone_idle 1, zone_wait 30 | 503.3 | | |
 | `_z7` | `_z3` with own 1.2 / other 1.0 (bonus only) | 510.6 | (16 maps) | |
 | `_z8` | `_z5` + zone_skip_obj 1 | 498.4 | | |
+| `_z9` | `_z5` + zone_claim 1 | 501.2 | 378.0 | |
+| `_z10` | `_z3` + zone_claim 1 | 501.1 | 374.9 | |
+| `_z11` | `_z10` + zone_pairs 1 + zone_skip_obj 1 | 501.4 | 378.7 | |
+| `_z12` | `_z11` with own 1.15 / other 0.85 | 505.7 | 378.1 | |
+
+Contested (official 34; wins / deaths ours-theirs; `_ch2`'s proxy cells: Mite 27 d246-399, ifish 25 d290-388, px9 26 d319-381,
+snk 26 d335-395, fA 25 d300-489, pooled 129/170):
+
+| variant | h2h vs `_ch2` | Mite | ifish | px9 | snk | fA | pooled |
+|---|---|---|---|---|---|---|---|
+| `_z3` (one zone per pick) | 18/34 d352-305 | 19 d376-377 | 20 d374-377 | 24 | 22 | 27 | **112** |
+| `_z10` (+ owner keeps claims) | 15/34 | 24 | 21 | 24 | 25 | 27 | 121 |
+| `_z11` (zones per pair of bodies) | **13/34** d393-302 | 26 | 25 | 24 | 26 | 30 | 131 |
+| `_z12` (`_z11` soft) | 11/34 | 26 | 23 | 25 | 24 | 27 | 125 |
+
+- One zone per pick spreads the bodies and costs fights (`_z3` vs Mite: deaths 376 vs `_ch2`'s 246). Zones per pair keep the proxy
+  score (131) but lose head-to-head to `_ch2` (13/34, deaths 393-302).
+- Contested local games (`_ch2` trace build vs `_ifish`, official 17, side A): own groups stand 23.1 rounds after respawn (ifish proxy
+  15.9; ladder 26.5 vs IC 13.8). The long tail (51 gaps > 30 rounds) is single wolves, single elks and gold clusters near spawn
+  (monolith wolf 6 steps from spawn idle 137 rounds while Ren, Stellar and Cassi were on our monolith, fighting or banking at a
+  contested altar). Next: `zone_keeper` (one single-body pick keeps the groups nearest spawn, one body's load).
 
 Findings so far:
 - `_z1` lost 18 rounds: on swirl (heavy packs that need 2-3 bodies) the penalty on other zones pushed every non-owner onto the

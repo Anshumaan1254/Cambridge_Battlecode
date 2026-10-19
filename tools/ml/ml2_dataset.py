@@ -62,6 +62,22 @@ FEATURES = [
 LABELS = ['die4', 'die8', 'kill8', 'net3', 'taken3', 'dealt3', 'act_hit1', 'act_away1', 'censored']
 
 
+VISION_R2 = 10 ** 6  # champion vision radius 8 (champion_designs[*].base_stats().vision_radius, x_coord_NOTES.md)
+
+
+def sees(p, q, p_in_bush, bush=None):
+	"""Champion at p sees one at q: within vision radius 8, and q not in a bush unless we stand in a bush within 2."""
+	dx, dy = p[0] - q[0], p[1] - q[1]
+	if dx * dx + dy * dy > VISION_R2:
+		return False
+	if q in _BUSH[0] and not (p_in_bush and max(abs(dx), abs(dy)) <= 2):
+		return False
+	return True
+
+
+_BUSH = [set()]
+
+
 def cheb(a, b):
 	return max(abs(a[0] - b[0]), abs(a[1] - b[1]))
 
@@ -112,6 +128,7 @@ def game_rows(path, geo, us_team, setname, gid):
 			elif c == '"':
 				bush.add((x, y))
 	spawn_set = {t: set(v) for t, v in spawn.items()}
+	_BUSH[0] = bush
 	dist = {t: bfs(grid, w, h, spawn[t]) for t in (0, 1)}
 	rounds = d['rounds']
 	R = {rr['r']: rr for rr in rounds}
@@ -215,13 +232,13 @@ def game_rows(path, geo, us_team, setname, gid):
 			for o in en:
 				q = info[o]['pos']
 				dd = cheb(p, q)
-				if dd > 9:
+				if dd > 8:  # own vision: a Chebyshev square of radius 8 (probed in game, session 13)
 					continue
-				if q in bush and not (inb and dd <= 2):
+				if not sees(p, q, inb):
 					hidden += dd <= 7
 					continue
 				vis.append((o, dd))
-			al = [(o, cheb(p, info[o]['pos'])) for o in info if o != b and team[o] == tb]
+			al = [(o, cheb(p, info[o]['pos'])) for o in info if o != b and team[o] == tb and sees(p, info[o]['pos'], inb)]
 			f = {}
 			f['hp_frac'] = me['hp'] / max(1, me['mh'])
 			f['hp'] = me['hp'] / 1000

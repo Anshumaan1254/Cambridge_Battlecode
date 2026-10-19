@@ -47,6 +47,23 @@ capturing 1.9 / 4.5, dead 13.1 / 9.6.
 
 No fuel problem: 72 of our turns roll over, all in rounds 1-6.
 
+## 2b. Deeper traces (session 13, later)
+
+- **Our farming is not the gap, contact is.** Unopposed, `_ch2` captures 151 gems by r100 and 564 by r300 (15 maps); the ladder teams
+  manage 136 / 480 while contested, and we fall to 111 / 401 on the ladder. By r150 (items still about equal) they deal 21% more camp damage
+  (16.1k vs 13.3k), more champion damage (1.66k vs 1.27k) and die less (0.9 vs 1.3 per game). First contacts (an enemy within 5 after 5+
+  quiet rounds; `tools/strategy_v2/contact.py`): we close the gap ourselves in 33% (they 20%) and the first 4 rounds go 205 dealt / 251
+  taken for us, 237 / 170 for them. Distance bands (`micro.py`): at 3 they deal 47 and take 31 per body-round, we 29 / 42.
+- **Unopposed pace understates race pace**: ahead by `lead` (150) the bot banks smaller bags; unopposed it always is (rows: 345 rounds to 990
+  on the ladder vs 393 unopposed to 1000).
+- **Contest centre fight** (r20-45, every game): both teams reach the centre by r25; ours splits: Ren recalls home at r31 (full health) or
+  keeps farming the centre gold 10-13 tiles from the fight (rallies are answered only within 9, never while capturing); their casters stand
+  at 3-4 in the altar bush and focus Cassi and Varg; our melee do not dive. Locally `_ch2` wins contest 9 of 10 against every proxy (deaths
+  7-37 vs 47-66): the mirror image of the ladder; the proxies cannot reproduce the ladder teams' caster play.
+- **Stampede ring race** (2306b82f_01, 72-1008): r55-118 they dealt 13.5k to the objective camps vs our 7.2k (6 bodies with tanks and casters
+  within attack range against our 5 casters at distance 4; our Issac farmed elsewhere while Cassi rang the objective) and 2.2k to our bodies.
+  Locally the same plan wins 8 of 10 stampede games (it loses both to the sneaky-bush proxy, whose ring out-damages ours).
+
 ## 3. What was built and measured (session 13)
 
 See AGENTS.md §S13 for the live state, `experiments/wip/x_s13.patch` (coordinator switches) and `experiments/wip/x_zone.patch` (zones agent).

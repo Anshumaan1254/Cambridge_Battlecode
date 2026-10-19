@@ -97,6 +97,14 @@ running or unfinished, and what to do next, so a new agent can continue without 
     then `_s_ra13*`, then candidate **`_cand1`** (= `_x_s13` + `aoe_reach5` 2 + `o2_ring_size` 0 + `recall_join` 1; hash b35c20488598) on pad17 + gen2
     and the 28 generated maps vs `_ch2` + the 5 proxies.
 
+- **Checkpoint 23:45 UTC**: ES exploiter run 1 failed (relative `ES_OUT`: `run-batch` resolves paths from the manifest folder; fixed in
+  `es_train.py`, restarted 23:25 with 12 generations). Draft / synergy results in SUGGESTIONS.md (Willow + two tanks 75/170, Willow for C&I 90,
+  C&I-first team 107, Varg-first 102, our fixed team 124 < parameter draft 129, `ci_first` 116): the draft stays. **New best combination
+  `_c_ar2of2` = `aoe_reach5` 2 + `open_first` 2 (hold at the edge of enemy reach with an opener ready): 138/170, h2h 19/34.** Candidate
+  **`_cand2`** = `_x_s13` + `aoe_reach5=2 open_first=2 o2_ring_size=0 recall_join=1`; queue (`$S/q14.sh`, `q15.sh`): `_cand2` official screen,
+  `_s_ra13`, `_s_rj2`, `_s_fx` (`flee_exit` 1: sideways step out of enemy / camp reach while fleeing), then `_ch2` and `_cand2` on generated +
+  pad17 + gen2 vs `_ch2` + 5 proxies, then `_c2_oh3` / `_c2_oh4` (`open_hold`), `_c2_sf1` / `_c2_sf2` (`strike_first`) on `_cand2`.
+
 ## S12. SESSION 12 (2026-10-19, same container as S10/S11): read this first
 
 - Shipped bot at the start: **`legend_m14`** (`submissions/legend.zip` sha256 50ca7600…, frozen `bots/_pg3`, S7R). Baseline for every A/B: `_pg3`.

@@ -1,0 +1,329 @@
+diff -ruN _ch2/src/brain.cpp _x_ml2/src/brain.cpp
+--- _ch2/src/brain.cpp	2026-10-19 20:56:14.462361469 +0000
++++ _x_ml2/src/brain.cpp	2026-10-19 23:27:05.841462111 +0000
+@@ -1,6 +1,7 @@
+ #include "brain.h"
+ #include "learn.h"
+ #include "draft.h"
++#include "ml2_model.h"
+ #ifdef LEGEND_TRACE
+ #include <map>
+ #endif
+@@ -1524,6 +1525,206 @@
+ 	return false;
+ }
+ 
++// ml2 (agent ml2, session 13): the features of tools/ml/ml2_dataset.py, computed from what this body sees, in the same
++// order and units (the logistic weights in ml2_model.h are on these raw values). Cost: loops over <= 10 bodies and the
++// camp groups near us (no distance fields), a few hundred fuel.
++void Brain::ml2_features(float* f) const
++{
++	auto& W = world();
++	for (int i = 0; i < ML2_NF; ++i)
++		f[i] = 0.f;
++	auto spell_up = [](const Kit& k, const std::array<int, 2>& c, int slot) { return slot >= 0 && c[static_cast<std::size_t>(slot)] <= 0; };
++	// self
++	float burst = 0;
++	const bool s_dmg = spell_up(kit, cd, kit.dmg), s_cc = spell_up(kit, cd, kit.cc), s_aoe = spell_up(kit, cd, kit.aoe);
++	if (s_dmg) burst = std::max(burst, focus * kit.dmg_mod);
++	if (s_cc) burst = std::max(burst, focus * kit.cc_mod);
++	if (s_aoe) burst = std::max(burst, focus * kit.aoe_mod);
++	if (spell_up(kit, cd, kit.reset)) burst = std::max(burst, str);
++	const bool my_spell = s_dmg || s_cc || s_aoe;
++	const bool my_dash = spell_up(kit, cd, kit.dash);
++	f[0] = hp / std::max(1.f, max_hp);
++	f[1] = hp / 1000.f;
++	f[2] = max_hp / 1000.f;
++	f[3] = str / 100.f;
++	f[4] = focus / 100.f;
++	f[5] = (str + focus * best_mod(kit) / 8.f + burst / 3.f) / 100.f;
++	f[6] = burst / 100.f;
++	f[7] = kit.ranged ? 1.f : 0.f;
++	f[8] = (type == CT::cassi || type == CT::issac) ? 1.f : 0.f;
++	f[9] = static_cast<float>(gems) / 100.f;
++	f[10] = my_spell ? 1.f : 0.f;
++	f[11] = my_dash ? 1.f : 0.f;
++	const int dh = std::min(W.dist_home(pos), 200), da = std::min(W.dist_away(pos), 200);
++	f[12] = static_cast<float>(std::min(dh, 60)) / 30.f;
++	const bool on_spawn = W.ally_spawn.is_set(pos);
++	f[13] = on_spawn ? 1.f : 0.f;
++	f[14] = da < dh - 3 ? 1.f : 0.f;
++	f[15] = std::abs(da - dh) <= 3 ? 1.f : 0.f;
++	f[16] = static_cast<float>(round) / 1000.f;
++	f[17] = bc::map::bushes().is_set(pos) ? 1.f : 0.f;
++	f[19] = type == CT::ren ? 1.f : 0.f;
++	f[20] = type == CT::stellar ? 1.f : 0.f;
++	f[21] = type == CT::cassi ? 1.f : 0.f;
++	f[22] = type == CT::issac ? 1.f : 0.f;
++	f[23] = type == CT::varg ? 1.f : 0.f;
++	f[24] = type == CT::ryth ? 1.f : 0.f;
++	// enemies: visible, within 8 (own vision)
++	const int my_reach = (kit.ranged ? 3 : 2) + (my_dash ? 2 : 0);
++	float allies_burst = 0;
++	for (const auto& a : W.allies)
++		if (a.handle != self && a.alive && a.visible && cheb(a.pos, pos) <= 6)
++			allies_burst += a.str;
++	int dmin = 10, nearest = -1, e_alive = 0;
++	float e_min5 = 3000.f, their_hp = 0, their_dps = 0, incoming = 0;
++	bool killable = false, in_reach = false, chaser = false, chaser_dash = false, spawn_near = false;
++	for (std::size_t i = 0; i < W.enemies.size(); ++i)
++	{
++		const auto& e = W.enemies[i];
++		if (!e.alive)
++			continue;
++		++e_alive;
++		if (!e.visible)
++			continue;
++		const int dd = cheb(e.pos, pos);
++		if (dd > 8)
++			continue;
++		const bool e_dmg = e.ready(e.kit.dmg), e_cc = e.ready(e.kit.cc), e_aoe = e.ready(e.kit.aoe);
++		const bool e_spell = e_dmg || e_cc || e_aoe;
++		const bool e_dash = e.ready(e.kit.dash);
++		const bool e_stun = e_cc || (e_aoe && e.kit.aoe_stuns);
++		const float eb = e.burst();
++		const float edps = e.str + e.focus * best_mod(e.kit) / 8.f + eb / 3.f;
++		if (dd <= 3)
++		{
++			f[25] += 1.f;
++			if (!e.kit.ranged || e_dash)
++				f[39] += 1.f;
++		}
++		if (dd <= 5)
++		{
++			f[26] += 1.f;
++			f[28] += e.hp / 1000.f;
++			f[30] += edps / 100.f;
++			if (e_spell)
++				f[32] += eb / 100.f;
++			if (e_stun)
++				f[33] += 1.f;
++			if (e_aoe)
++				f[34] += 1.f;
++			e_min5 = std::min(e_min5, e.hp);
++		}
++		if (dd <= 7)
++		{
++			f[27] += 1.f;
++			f[29] += e.hp / 1000.f;
++			f[31] += edps / 100.f;
++			if (W.enemy_spawn.is_set(e.pos))
++				spawn_near = true;
++		}
++		if (dd < dmin)
++			dmin = dd, nearest = static_cast<int>(i);
++		if (dd <= std::max(my_reach, my_spell ? 4 : 0) && e.hp <= str + burst + allies_burst)
++			killable = true;
++		if (dd <= 2 && e.type == CT::varg)
++			f[40] += 1.f;
++		if (dd <= 4 && e.type == CT::ren)
++			f[41] += 1.f;
++		// the estimate (not counting enemies on their own spawn)
++		if (W.enemy_spawn.is_set(e.pos))
++			continue;
++		int reach = (e.kit.ranged ? 3 : 2) + (e_dash ? 2 : 0);
++		if (e_spell)
++			reach = std::max(reach, 4);
++		their_hp += e.hp;
++		their_dps += edps * (e_stun ? 1.15f : 1.f);
++		if (dd <= reach)
++			incoming += e.str + eb / 2.f, in_reach = true;
++		if ((!e.kit.ranged || e_dash) && dd <= 3 + (e_dash ? 2 : 0))
++			chaser = true, chaser_dash |= e_dash;
++	}
++	f[35] = static_cast<float>(dmin) / 10.f;
++	f[36] = nearest >= 0 ? W.enemies[static_cast<std::size_t>(nearest)].hp / std::max(1.f, W.enemies[static_cast<std::size_t>(nearest)].max_hp) : 1.f;
++	f[37] = e_min5 / 1000.f;
++	f[38] = killable ? 1.f : 0.f;
++	f[42] = static_cast<float>(e_alive);
++	f[43] = spawn_near ? 1.f : 0.f;
++	// allies (visible; self counted in a_alive)
++	float our_hp = hp, our_dps = str + focus * best_mod(kit) / 8.f + burst / 3.f;
++	int a_alive = 0;
++	bool ally5 = false;
++	for (const auto& a : W.allies)
++	{
++		if (!a.alive)
++			continue;
++		++a_alive;
++		if (a.handle == self || !a.visible || !a.kit_ready)
++			continue;
++		const int dd = cheb(a.pos, pos);
++		const float bm = best_mod(a.kit);
++		const float adps = a.str + a.focus * bm / 8.f + std::max(a.str, a.focus * bm) / 3.f;
++		if (dd <= 3)
++			f[44] += 1.f;
++		if (dd <= 5)
++		{
++			f[45] += 1.f;
++			f[47] += a.hp / 1000.f;
++			if (a.hp < 0.3f * a.max_hp)
++				f[51] += 1.f;
++			ally5 = true;
++		}
++		if (dd <= 7)
++		{
++			f[46] += 1.f;
++			f[48] += a.hp / 1000.f;
++		}
++		if (dd <= 6)
++		{
++			f[49] += adps / 100.f;
++			if (a.hp > 0.25f * a.max_hp)
++			{
++				bool near_e = false;
++				for (const auto& e : W.enemies)
++					near_e |= e.alive && e.visible && cheb(e.pos, pos) <= 8 && cheb(a.pos, e.pos) <= 6;
++				if (near_e)
++					our_hp += a.hp, our_dps += adps;
++			}
++		}
++	}
++	f[50] = static_cast<float>(a_alive);
++	// awake camps within 3 (damaged, alive)
++	int ca = 0;
++	for (const auto& g : W.groups)
++	{
++		if (g.st != ST_ALIVE || cheb(g.center, pos) > 3 + g.radius)
++			continue;
++		for (std::size_t i = 0; i < g.camps.size() && i < g.hp.size(); ++i)
++			if (g.hp[i] > 0 && g.hp[i] < g.camps[i].max_hp && cheb(g.camps[i].pos, pos) <= 3)
++				++ca;
++	}
++	f[52] = static_cast<float>(ca);
++	if (on_spawn && in_reach)
++		our_hp += max_hp;
++	float adv = 10.f;
++	if (their_dps > 0 && their_hp > 0)
++		adv = (our_hp / std::max(1.f, their_dps)) / std::max(0.1f, their_hp / std::max(1.f, our_dps));
++	f[53] = std::log(std::max(0.01f, std::min(100.f, adv)));
++	f[54] = in_reach ? 1.f : 0.f;
++	f[55] = incoming / 100.f;
++	const float t_die = hp / std::max(1.f, incoming);
++	f[56] = (on_spawn || !chaser || (my_dash && !chaser_dash) || static_cast<float>(dh) + 1.f < t_die) ? 1.f : 0.f;
++	f[57] = ally5 ? 0.f : 1.f;
++}
++
++static float ml2_logit(const float* w, float b, const float* f)
++{
++	float z = b;
++	for (int i = 0; i < ML2_NF; ++i)
++		z += w[i] * f[i];
++	z = std::max(-30.f, std::min(30.f, z));
++	return 1.f / (1.f + std::exp(-z));
++}
++
+ bool Brain::combat()
+ {
+ 	auto& W = world();
+@@ -1813,6 +2014,7 @@
+ 	// Do not dive their spawn: it heals them and they block us.
+ 	if (W.enemy_spawn.is_set(tgt->pos) || cheb(tgt->pos, W.enemy_spawn_c) <= 3)
+ 		fight = fight && killable;
++	bool ml2_kill = killable; // a kill this turn (ours or the team's): the model never vetoes it
+ 	if (P.px_mode)
+ 	{
+ 		// Proxy of the top teams' fights: the team target is the lowest-health body we can hit this turn (a body the
+@@ -1847,6 +2049,7 @@
+ 				pk = key, pt = e;
+ 		}
+ 		const bool pkill = pt && pk < 1e5f;
++		ml2_kill |= pkill;
+ 		if (pt)
+ 			tgt = pt;
+ 		if (P.px_mode == 2)
+@@ -1914,6 +2117,44 @@
+ 		}
+ 		}
+ 	}
++	if (P.ml2_leave > 0.f || P.ml2_flee > 0.f || P.ml2_enter > 0.f || P.ml2_hold > 0)
++	{
++		// ml2: the danger model learned on real ladder games (P(we die within 8 rounds) from what we see). Against ladder
++		// teams our estimate called 1,100 contact states 'fight' (adv >= 1.3) in which the model gave >= 0.3 and the body
++		// died 45-71% of the time (doc: experiments/wip/x_ml2_NOTES.md).
++		ml2_p_die = 0, ml2_p_kill = 0;
++		if (nearest_enemy <= 7)
++		{
++			float mf[ML2_NF];
++			ml2_features(mf);
++			ml2_p_die = ml2_logit(ML2_W_DIE8, ML2_B_DIE8, mf);
++			if (P.ml2_enter > 0.f)
++				ml2_p_kill = ml2_logit(ML2_W_KILL8, ML2_B_KILL8, mf);
++#ifdef ML2_DEBUG
++			debug_block({
++				std::printf("ML2 r=%d b=%d p=%.4f f=", round, W.my_index, ml2_p_die);
++				for (int i = 0; i < ML2_NF; ++i)
++					std::printf("%.4f,", mf[i]);
++				std::printf("\n");
++			});
++#endif
++		}
++		if (P.ml2_leave > 0.f && fight && !ml2_kill && can_escape && ml2_p_die >= P.ml2_leave)
++			fight = false, ml2_exit_round = round;
++		if (P.ml2_hold > 0 && fight && !ml2_kill && !in_reach && round - ml2_exit_round <= P.ml2_hold)
++			fight = false; // we just left on the model: no proactive walk back in
++		if (P.ml2_enter > 0.f && !fight && ml2_p_kill >= P.ml2_enter && ml2_p_die < P.ml2_enter_die && d <= my_reach + 1 &&
++			!(W.enemy_spawn.is_set(tgt->pos) || cheb(tgt->pos, W.enemy_spawn_c) <= 3))
++			fight = true;
++		if (P.ml2_flee > 0.f && !fight && !in_reach && !ml2_kill && ml2_p_die >= P.ml2_flee && nearest_enemy <= P.flee_dist && task != T_CAPTURE)
++		{
++			ml2_exit_round = round;
++			post_danger(tgt->pos);
++			task = T_FLEE;
++			if (go_home_step(true))
++				return true;
++		}
++	}
+ 	XM(xm_fight(adv, t_kill_us, t_kill_them, our_hp, their_hp, our_dps, their_dps, allies_near, static_cast<int>(E.size()), fight, killable, in_reach,
+ 		can_escape, isolated, reserve, static_cast<int>(tgt->type), d, incoming, t_die, tgt->hp, backup, str + focus * best_mod(kit) / 8.f + my_burst / 3.f));
+ 	engaged = fight || in_reach || nearest_enemy <= 5;
+diff -ruN _ch2/src/brain.h _x_ml2/src/brain.h
+--- _ch2/src/brain.h	2026-10-19 20:56:14.462472645 +0000
++++ _x_ml2/src/brain.h	2026-10-19 23:18:30.688180368 +0000
+@@ -172,6 +172,11 @@
+ 				  int can_escape, int isolated, int reserve, int tgt_type, int tgt_d, float incoming, float t_die, float tgt_hp, int backup, float my_dps);
+ #endif
+ 
++	// ml2: fight / danger model (features in tools/ml/ml2_dataset.py order)
++	void ml2_features(float* f) const;
++	float ml2_p_die = 0, ml2_p_kill = 0;
++	int ml2_exit_round = -1000;
++
+ 	// combat helpers
+ 	float camp_dps() const;
+ 	float burst_vs(const Enemy& e) const;
+diff -ruN _ch2/src/ml2_model.h _x_ml2/src/ml2_model.h
+--- _ch2/src/ml2_model.h	1970-01-01 00:00:00.000000000 +0000
++++ _x_ml2/src/ml2_model.h	2026-10-19 23:28:36.919822968 +0000
+@@ -0,0 +1,12 @@
++// ml2 fight / danger model (agent ml2, session 13): logistic weights on the raw features of tools/ml/ml2_dataset.py,
++// fit by tools/ml/ml2_train.py --only-lr --export on 160 real ladder games (us = 1 folded into the bias).
++#pragma once
++constexpr int ML2_NF = 58;
++// generated by tools/ml/ml2_train.py (die8, 222407 rows, 160 games, skip []); weights on raw features
++// (dataset order, 0 = not in the model): hp_frac, hp, max_hp, str, focus, dps_self, burst_self, ranged, pair, gems, spell_ready, dash_ready, dhome, on_spawn, enemy_half, neutral, round, in_bush, bush4, is_Ren, is_Stellar, is_Cassi, is_Issac, is_Varg, is_Ryth, n_e3, n_e5, n_e7, hp_e5, hp_e7, dps_e5, dps_e7, burst_e5, stun_e5, area_e5, d_min, e_near_hpf, e_min_hp5, killable, melee_e3, varg_e2, ren_e4, e_alive, e_spawn_near, n_a3, n_a5, n_a7, hp_a5, hp_a7, dps_a6, a_alive, a_low5, camp_awake3, log_adv, in_reach, incoming, can_escape, isolated
++constexpr float ML2_B_DIE8 = -0.620337f; // bias, includes the us = 1 term
++constexpr float ML2_W_DIE8[58] = { -1.088386e+00f, -1.126238e+00f, -3.984097e-01f, -5.699476e-02f, -2.928655e-02f, -3.458819e-02f, 2.462754e-03f, -5.553065e-03f, 1.973707e-01f, -1.441251e-01f, 1.053592e-02f, -2.078228e-02f, -2.489854e-01f, -3.857243e-01f, 3.609700e-02f, 1.443434e-01f, 1.281803e+00f, -1.593126e-01f, 0.000000e+00f, -1.156423e-01f, 2.932308e-02f, 1.528202e-01f, 1.710566e-01f, -4.207975e-01f, 8.415407e-02f, 4.960684e-01f, 4.361363e-02f, -1.125467e-01f, 1.923741e-01f, 1.154370e-01f, 5.988418e-03f, 2.185174e-02f, 2.373145e-02f, -2.396620e-01f, 8.301259e-02f, 5.451621e-01f, 5.548108e-01f, -1.724135e-01f, -3.162220e-01f, -1.636672e-01f, 9.003909e-02f, 2.498005e-01f, 1.324145e-01f, -5.231143e-04f, -6.879506e-02f, 6.995533e-02f, 5.452495e-02f, -3.838841e-02f, -1.534656e-01f, -3.339064e-02f, -1.948526e-01f, 7.945738e-02f, 5.749676e-02f, -1.139944e-01f, 3.744993e-01f, 8.572473e-02f, -1.931400e-01f, -1.035836e-01f };
++// generated by tools/ml/ml2_train.py (kill8, 222407 rows, 160 games, skip []); weights on raw features
++// (dataset order, 0 = not in the model): hp_frac, hp, max_hp, str, focus, dps_self, burst_self, ranged, pair, gems, spell_ready, dash_ready, dhome, on_spawn, enemy_half, neutral, round, in_bush, bush4, is_Ren, is_Stellar, is_Cassi, is_Issac, is_Varg, is_Ryth, n_e3, n_e5, n_e7, hp_e5, hp_e7, dps_e5, dps_e7, burst_e5, stun_e5, area_e5, d_min, e_near_hpf, e_min_hp5, killable, melee_e3, varg_e2, ren_e4, e_alive, e_spawn_near, n_a3, n_a5, n_a7, hp_a5, hp_a7, dps_a6, a_alive, a_low5, camp_awake3, log_adv, in_reach, incoming, can_escape, isolated
++constexpr float ML2_B_KILL8 = -1.529239f; // bias, includes the us = 1 term
++constexpr float ML2_W_KILL8[58] = { 4.367763e-01f, -1.466373e-01f, 2.819215e-01f, 5.048458e-01f, 1.612127e-01f, -3.796208e-01f, 1.087991e-01f, 2.020505e-01f, -1.038420e-01f, -2.203538e-01f, -1.765651e-01f, -1.252787e-01f, -4.830823e-02f, -7.567994e-01f, 3.134291e-02f, 1.738641e-01f, 4.501666e-01f, 1.830654e-01f, 0.000000e+00f, -1.652475e-01f, 1.032167e-01f, -2.873252e-02f, -1.428196e-01f, -6.810395e-01f, -3.817884e-01f, 2.524343e-01f, 2.184177e-01f, 5.192077e-01f, -3.213972e-01f, -2.863218e-01f, -3.673745e-02f, -8.739628e-03f, 2.678479e-02f, -2.796006e-02f, -2.076623e-03f, -1.023977e+00f, -6.431534e-01f, -4.629150e-01f, 1.253589e+00f, -1.895294e-02f, -3.527670e-02f, -3.491901e-01f, -1.035339e-01f, -8.143414e-01f, -1.717366e-02f, -1.123551e-01f, 6.481114e-02f, 1.086766e-01f, 5.989712e-02f, 3.461909e-03f, -4.261638e-02f, 5.775653e-02f, -4.214858e-02f, 3.577819e-01f, 3.070949e-01f, -9.940475e-03f, 1.168473e-01f, -1.477909e-01f };
+diff -ruN _ch2/src/params.h _x_ml2/src/params.h
+--- _ch2/src/params.h	2026-10-19 20:56:14.462734580 +0000
++++ _x_ml2/src/params.h	2026-10-19 23:18:30.687713907 +0000
+@@ -488,6 +488,15 @@
+ 								// (ranged, an opener of ours ready): when the step enters an enemy's next-turn reach, hold at the
+ 								// edge (they step in, we cast first) for at most open_hold rounds per fight
+ 	int open_hold = 2;			// ... rounds
++
++	// Fight / danger model learned from real ladder games (agent ml2, session 13; experiments/wip/x_ml2_NOTES.md,
++	// tools/ml/ml2_*.py). P(this body dies within 8 rounds) from a logistic model on what the body sees (ml2_model.h),
++	// trained on 160 ladder games (ours vs ladder teams and top teams vs each other). All 0 = legend_m14_commit.
++	float ml2_leave = 0.f;		// a fight we can walk away from (no kill now) is dropped when P(die8) >= this
++	float ml2_flee = 0.f;		// not in reach, not fighting: walk away when P(die8) >= this and an enemy is within flee_dist
++	float ml2_enter = 0.f;		// not fighting: fight when P(kill8) >= this and P(die8) < ml2_enter_die (target within reach + 1)
++	float ml2_enter_die = 0.15f;
++	int ml2_hold = 0;			// after a model exit, keep out (no proactive fight) for this many rounds
+ };
+ 
+ inline constexpr Params P{};

@@ -105,6 +105,17 @@ running or unfinished, and what to do next, so a new agent can continue without 
   `_s_ra13`, `_s_rj2`, `_s_fx` (`flee_exit` 1: sideways step out of enemy / camp reach while fleeing), then `_ch2` and `_cand2` on generated +
   pad17 + gen2 vs `_ch2` + 5 proxies, then `_c2_oh3` / `_c2_oh4` (`open_hold`), `_c2_sf1` / `_c2_sf2` (`strike_first`) on `_cand2`.
 
+- **Checkpoint 23:55 UTC: release candidate 1 sent to the user** = `submissions/candidates/legend_m15_rc1_20261020.zip` (sha256 4bb34776…) =
+  `_cand2` (source hash 33f088e5eb74): official 34 vs the 5 proxies **141/170** (`_ch2` 129), h2h vs `_ch2` 20/34; wider pools running. Also:
+  `_c2_of6` (+ melee edge hold, `open_first` bit 4, new code) 139 / 20; `_g_q05` (GROUPED stance prior 0.5) 128 / 20; `_d_mar` 102, `_d_ven` 114.
+  **ML agent results** (`x_ml2_NOTES.md`): logistic P(die within 8 rounds) on 160 ladder games, AUC 0.81 on our bodies vs 0.60 for the bot's
+  own fight estimate; our bodies die x1.7 more often than others' in the same visible state; first variants `_mll40`, `_mlf40` 130/170
+  (level locally, as expected for a model calibrated on stronger opponents). The agent was told to stack its switches on `_cand2`.
+  New coordinator switches (all in `x_s13.patch`): `open_first` bit 4 (melee hold), `bush_ghost` N (an enemy that vanished in / next to a
+  bush stays in the danger map N rounds; `_c2_bg20`), `flee_exit` (`_s_fx`). Queue: `_s_ra13`, `_s_rj2`, `_s_fx` (on the `_ch2` base), wide
+  pools for `_cand2`, then on `_cand2`: `_c2_oh3`, `_c2_oh4` (`open_hold`), `_c2_sf1`, `_c2_sf2` (`strike_first`), `_c2_ea` (`engage_angle`),
+  `_c2_bg20`. The ES exploiter runs at nice 15 (CPU goes to the screens first).
+
 ## S12. SESSION 12 (2026-10-19, same container as S10/S11): read this first
 
 - Shipped bot at the start: **`legend_m14`** (`submissions/legend.zip` sha256 50ca7600…, frozen `bots/_pg3`, S7R). Baseline for every A/B: `_pg3`.

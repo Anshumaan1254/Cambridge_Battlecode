@@ -30,3 +30,18 @@ code: `experiments/wip/x_ic.patch` (switches in `params.h`, all off).
 | **Graded enemy-half risk** (`half_grade`: the 10-round risk cost of an enemy-half camp scales with its depth, (d_ally - d_enemy) / (k x (d_ally + d_enemy)), instead of the same cost one step past the midline) | IC spends 23% of its time in the neutral band (ours 17%) and takes 6.1 neutral captures a game (ours 4.3) | `_hg3` (k 0.3), `_hg5` (k 0.5) | 130 (76.5), 125 (73.5) | 19, 16 | not better: more midline farming means more contact with the proxies (`_px9` -5); h2h slightly positive at 0.3 |
 | **Finish the camp you started** (`commit_hit` 2: the current target's score x2 while we hit it in the last 2 rounds) | 17 traced unopposed official games: 198 times a body left a live camp it had hit (92 for a slightly better score, 67 on the join limits); IC re-hits respawned camps twice as fast and opens faster on interlock / lanes / rushbait-v2, where our abandonment is worst (lanes 28, rushbait-v2 27 per game) | `_ch2` | 129 (75.9); wider pools: 88 distinct maps 310 / 440 vs m14's 322, pad17 + gen2 148 / 240 vs 155 | **21 / 34; 51 / 88 (58.0%); 44 / 80** | non-transitive: beats legend_m14 head-to-head on every pool and is 7 rounds faster unopposed (rushbait-v2 670 -> 606, ambush 553 -> 508), but loses against the proxies on every pool. Against the control build (same code, switch off: 316 / 440, 155 / 240, h2h 43 / 88, 41 / 80) the proxy loss is 6-7 games (about 1 standard deviation) and the h2h gain 11 of 168 games (1.7 SD). Promising for the ladder if our proxies over-reward the current play; not shipped under the rule |
 | Finish the camp + ignore the join limits on it (`commit_keep`) | same (the 67 join-limit departures) | `_ck`, `_chk` | 128 (75.3), 130 (76.5) | 14, 19 | `commit_keep` alone is worse everywhere (two bodies end up on light camps); with `commit_hit` level with `_ch2` |
+| Softer commitment: x1.5 flat (`commit_hit` 1.5), or growing with the share of the camp already dead (`commit_prog` 1 / 2: x(1 + k x done)) | same | `_ch15`, `_cp1`, `_cp2` | 125, 132, 129 (control 134) | 21, 18, 22 | same pattern: all faster unopposed (506.7, 503.1, 502.9 vs 509.4) and >= 50% head-to-head, all slightly worse against the proxies; `_cp1` is the closest to level |
+
+### What would make these work
+
+1. **Commitment** (`commit_hit`, `commit_prog`) is the strongest lead: real waste found in traces, faster unopposed on the maps where IC opens
+   faster, and it beats the shipped bot head-to-head on every pool. Its proxy loss is about one standard deviation. A ladder A/B is the deciding
+   test: `submissions/candidates/legend_m14_commit_20261019.zip` (= `_ch2`). Locally, the next step would be to exempt bodies that see an
+   enemy within their danger reach (the loss is concentrated against the pressure proxy `_fA`).
+2. **Shared-memory capture flag**: the stale-reward walk is real, but guessing from a vanished claim costs more than it saves. With one more bit
+   per body ("I just captured group X") it becomes exact; the 8 bytes are full (4 spare bits), so it needs a comms repack (e.g. claims in 6 bits
+   on every map: the largest official map has 48 groups).
+3. **Home emblem**: only worth it if recalls are frequent *and* long; ours overlap the capture (the recall lands with the reward), so the 2 saved
+   turns rarely matter. Re-test if a future build recalls more from far away (big maps).
+4. **IC's draft / builds**: they lose inside our brain every time (sessions 6-12). They would need IC's execution (spells from distance 4-5,
+   fewer bodies at distance 1) first; see `docs/strategy_v2/12_IC_OCT19.md` section 2.

@@ -40,9 +40,16 @@ running or unfinished, and what to do next, so a new agent can continue without 
   (11), `_bulk` 126; `reward_claim_gone` 1: 125 (17; too eager: claims also leave rewards the ally abandons to heal); `o2_ring_size` 0: identical to its
   control on the official maps (as designed). **Commit switches**: `_ch2` (`commit_hit` 2) 129, **h2h 21/34**, pace 502.7 (control `_ic2` 509.4;
   rushbait-v2 670 -> 606, ambush 553 -> 508, elkring 452 -> 428); `_chk` (+ `commit_keep`) 130, h2h 19, pace 498.8; `_ck` 128, h2h 14, pace 498.0.
-  Non-transitive again (beats m14, loses ~5 of 170 to the proxies, mostly `_fA`): wider validation running (`$S/screen10.sh`: control `_ic2` cells,
-  `_pg3` on pad17 + gen2, then `validate.sh` = 88 distinct + pad17/gen2 + pace for `_ch2`, `_chk`, `_ic2`). Also queued: `half_grade` 0.3 / 0.5 (graded
-  enemy-half risk), `reward_claim_gone` 2 (claim held a whole capture).
+  Wider pools (88 distinct maps x 5 proxies = 440; pad17 + gen2 x 3 proxies = 240; m14 322 / 155, control `_ic2` 316 / 155, h2h 43/88, 41/80):
+  `_ch2` 310 / 148, **h2h 51/88, 44/80**; `_chk` 313 / 152, h2h 47/88, 35/80. Softer: `_ch15` 125, h2h 21; `commit_prog` 1 / 2 (`_cp1`, `_cp2`)
+  132 / 129, h2h 18 / 22, pace 503.1 / 502.9. `half_grade` 0.3 / 0.5: 130 / 125 (h2h 19 / 16). `reward_claim_gone` 2: 124 (15).
+  **Verdict: nothing passes the rule; `legend_m14` stays shipped.** The commit switch is the one lead (beats m14 head-to-head on every pool, faster
+  unopposed, ~1 SD worse vs the proxies): ladder candidate `submissions/candidates/legend_m14_commit_20261019.zip` (= `_ch2`, sha256 e49afea0…).
+  Code of every switch: `experiments/wip/x_ic.patch` on `_pg3` (rebuild: `SRC=bots/_pg3 tools/variant.sh _x_ic && (cd bots/_x_ic && patch -p1
+  --no-backup-if-mismatch < ../../experiments/wip/x_ic.patch)`, then `SRC=bots/_x_ic tools/variant.sh NAME switch=value`).
+- Next (if the user wants more): (1) ladder A/B of the commit candidate vs `legend_m14`; (2) commitment that releases when an enemy is within
+  danger reach (its losses concentrate on `_fA`); (3) a comms repack to give each body an "I captured" bit (makes the claim rule exact);
+  (4) ISSUES.md #1 (`o2_ring_size` 0) whenever the next build ships (no effect on the official maps).
 - **Bug found and fixed in my own change**: `capture_time` is 5; the literal 6 in `world.cpp` meant `capture_time + 1`. Replacing it with
   `capture_time` alone shifted respawn predictions one round early (control 132 instead of 134-135). Fixed to `capture_time + 1`; variants built
   before the fix (`_ic1`, `_rsz0`, `_rcg`, first `_icp`) carry it (`_icp`/`_icd` were rebuilt after the fix).

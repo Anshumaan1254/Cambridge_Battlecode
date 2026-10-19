@@ -47,7 +47,21 @@ finished at r406, the R team at r413), and one each on ambush, rows, packs, pilg
 6. **The opening**: groups 2-3 fall 20-60 rounds sooner than ours on fragment (r24 vs r84), eight (2-elk group at r25 vs our first
    pair kill at r133), interlock (r31 vs r58), lanes and ambush (2-elk group r88 vs r151). The other maps open alike.
 
-## 3. Tested in session 12 (A/B against `legend_m14`; details in `SUGGESTIONS.md` and AGENTS.md §S12)
+## 3. What our own traces showed (unopposed `legend_m14`, 17 official maps, `LEGEND_TRACE` build)
 
-See the results table there: Home emblem (three ways of choosing who buys it), IC's full build order, waiting longer for respawns
-(`max_wait`), recalling at lower health (`cap_recall_hp`), bigger banks (`tribute_min`, `early_tribute_min`).
+- **Camps abandoned after we hit them: 198 in 17 games** (lanes 28, rushbait-v2 27, interlock and fragment 16): 92 for a target that scored a
+  little higher, 67 on the join limits (a lower-index ally claims the same light camp). Example (interlock, r20-59): Ryth hit the wolf at (5,21)
+  three times, left it for a reward 12 steps away that Ren had already captured (Ren's claim vanished; Ryth could not see the tile), then for a
+  group 24 steps away; the wolf died at r59. IC kills the same three wolves at r10, r21, r31.
+- Body time unopposed: farm 64%, **wait 16.5%** (no group scores above zero: fragment 33%, contest 30%, rows 23%), tribute 12%, capture 6%.
+- Respawned camps unopposed are re-hit quickly on most maps (corners 5.9 rounds, fragment 4.7); slow on interlock 25.8, lanes 21.8,
+  pilgrimage 29.0, rushbait-v2 34.4: our long tail under opposition is mostly contact.
+
+## 4. Tested in session 12 (A/B against `legend_m14`)
+
+Full table with reasons: `SUGGESTIONS.md`. In short (pooled wins of 170 against five proxies; `legend_m14` 135, control 134):
+Home emblem 114 / 120 / 132, IC builds 105, IC draft + builds 112, IC draft 119, `max_wait` 24 / 30 120 / 118, recall at 45-50% health
+133 / 135, bigger banks 131 / 137 (h2h 13/34), bulk shopping 126-131, graded enemy-half risk 130 / 125, vanished-claim rule 125 / 124.
+**Finishing the camp we started** (`commit_hit`, `commit_prog`): 125-132, but 18-22 of 34 head-to-head, 51/88 and 44/80 on the wider pools, and
+6-7 rounds faster unopposed: the only lead, non-transitive, offered as a ladder candidate (`submissions/candidates/legend_m14_commit_20261019.zip`).
+Nothing passed the rule (>= the shipped bot head-to-head and not worse against the proxies), so `legend_m14` stays shipped.

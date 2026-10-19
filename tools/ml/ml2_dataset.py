@@ -104,7 +104,7 @@ def our_team(setname, stem, index):
 	if setname == 'ladder_oct19b':
 		r0 = index[stem[:11]]
 		return 0 if r0['side'] == 'A' else 1
-	if setname in ('ladder_oct18', 'sneaky_oct18'):
+	if setname in ('ladder_oct18', 'sneaky_oct18') or setname.startswith('local'):
 		return 0
 	return -1
 

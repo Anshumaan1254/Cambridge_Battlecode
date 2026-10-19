@@ -3,7 +3,7 @@
 Baseline `bots/_ch2` (legend_m14_commit). Copy `bots/_x_ml2` (switches default off), patch `experiments/wip/x_ml2.patch`
 (includes the new file `src/ml2_model.h`). Rebuild: `SRC=bots/_ch2 tools/variant.sh _x_ml2 && (cd bots/_x_ml2 && patch -p1
 --no-backup-if-mismatch < ../../experiments/wip/x_ml2.patch)`, then `SRC=bots/_x_ml2 tools/variant.sh _mlXX key=val`.
-Scripts (tools/ml/): `ml2_decode.py` (decode replay folders), `ml2_dataset.py` (contact dataset), `ml2_train.py` (models, CV, export
+Scripts (tools/ml/): `ml2_sum.py` (pooled proxy wins + deaths + identical games + h2h), `ml2_decode.py` (decode replay folders), `ml2_dataset.py` (contact dataset), `ml2_train.py` (models, CV, export
 of the logistic weights as `ml2_model.h` arrays), `ml2_diag.py` (where the bot's estimate is wrong), `ml2_parity.py` (in-game features
 of a `--define "ML2_DEBUG 1"` build vs the dataset's on the same game). sklearn installed with `pip install scikit-learn --break-system-packages`;
 run sklearn with `OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1` (multithreaded BLAS under the shared load stalled for 10 minutes).
@@ -33,10 +33,11 @@ run sklearn with `OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1` (multithreaded BLAS 
 | model (die8) | AUC all | AUC us | Brier us |
 |---|---|---|---|
 | bot's own estimate (log advantage, re-implemented) | 0.660 | **0.601** | - |
+| (final dataset: Chebyshev-8 own vision; numbers below are from it) | | | |
 | logistic, 57 features | 0.830 | 0.806 | 0.0937 |
 | logistic + "our bot" flag (exported) | 0.834 | 0.806 | 0.0925 |
 | tree depth 5 | 0.780 | 0.742 | 0.0988 |
-| boosted trees (sklearn HistGB, 200 x 15 leaves) | 0.858 | 0.829 | 0.0888 |
+| boosted trees (sklearn HistGB, 200 x 15 leaves; exported as `ml2_gb`) | 0.856 | 0.830 | 0.0888 |
 | logistic on our bodies only | - | 0.807 | 0.0932 |
 | logistic without contest games | 0.839 | 0.812 | 0.0773 |
 | kill8, logistic + flag | 0.838 | 0.883 | 0.0683 |
@@ -57,8 +58,26 @@ run sklearn with `OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1` (multithreaded BLAS 
 - Thresholds on our contact rows: P >= 0.3 flags 11.5% of rows (died 48%, covers 42% of the death rows), >= 0.4 7.3% (55%, 31%),
   >= 0.5 4.8% (61%, 22%).
 
+## States combat() calls winning that kill us (our ladder rows, in reach, bot adv >= 1.3, model P >= 0.3: 554 rows, 56% died;
+## same with P < 0.1: 2,071 rows, 4% died)
+- Profile (deadly vs safe): own health 37% vs 82% (374 vs 1,266), Cassi/Issac 56% vs 17% (Issac 39%), enemies within 3: 1.5 vs 0.7,
+  allies within 5: 2.1 vs 1.7 (the team estimate pools the allies' health, so a low body in a winning team fight still stays and is
+  focused), can_escape (bot heuristic) 32% vs 64%, killable 5% vs 18%.
+- In reach, no kill (our rows): stepping away halves deaths even where combat() says we cannot escape: P 0.3-0.5, can_escape 0:
+  hit 416 rows died 51% (kill8 20%), away 309 died 29% (10%); P >= 0.5: hit 74%, away 38%. With can_escape 1: 52% vs 23%, 70% vs 35%.
+  The other teams show the same (43% vs 24%; 71% vs 48%). Hence the switch `ml2_cornered` (the model veto also applies there).
+
+## Calibration on local games (the proxies are weaker killers than the ladder teams)
+- 6 local games `_ch2` play vs `_px9` (eight, fragment, swirl, collision, interlock, packs; decoded with the same pipeline, 4,836 rows of
+  our bodies): the exported logistic predicts 13.9% deaths within 8, real 9.1%. By bin (local vs ladder real rate): P 0.1-0.2: 6.8% vs
+  14.3%; 0.2-0.3: 13.0% vs 25.5%; 0.3-0.5: 25.8% vs 39.9%; >= 0.5: 61.4% vs 61.2%. In the same visible state our bodies die about half
+  as often against `_px9` as against ladder teams (except in the clearly lost states): a ladder-calibrated threshold is about 1.5-2x too
+  cautious locally, so local screens understate what the switch does on the ladder.
+
 ## Bot integration (`bots/_x_ml2`, all switches 0 = `_ch2`)
 - `ml2_features()` computes the 58 features in the dataset order from what the body sees; `ml2_logit()`; weights `ml2_model.h`.
+- `ml2_cornered` 1: `ml2_leave` also when combat() thinks a chaser cannot be outrun. `ml2_gb` 1: P from the exported boosted trees
+  (200 trees, 5,800 nodes, `ml2_gb_die8()`; arrays checked against sklearn: max |diff| 0.0; rollovers on gen16_98x99 unchanged, 8 / team).
 - In combat(), after every existing rule (commit, burst_exit, px targeting): `ml2_leave` T: drop a fight we can escape with no kill
   this turn (ours or the px team kill) when P(die8) >= T; `ml2_hold` N: no proactive re-entry for N rounds after a model exit;
   `ml2_enter` T (+ `ml2_enter_die`): fight when P(kill8) >= T and P(die8) < ml2_enter_die (target within reach + 1, not at their spawn);
@@ -69,7 +88,16 @@ run sklearn with `OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1` (multithreaded BLAS 
 - Fuel: one pass over <= 10 bodies and the camp groups near us, then 58 multiply-adds: negligible.
 
 ## Screen (official 34 vs `_ch2` + `_mite _ifish _px9 _snk _fA`; `_ch2` pooled 129/170)
-(pending)
+| variant | switches | pooled | h2h vs `_ch2` | our deaths (5 proxies) | their deaths | games changed |
+|---|---|---|---|---|---|---|
+| `_ml0` | control | (34/34 identical vs `_mite`) | | | | 0 |
+| `_ch2` | baseline | 129/170 75.9 | - | 1,490 | 2,052 | - |
+| `_mll40` | ml2_leave 0.4 | 130/170 76.5 | 16/34 (deaths 328-329) | 1,437 | 2,063 | 50 of 170 |
+- In local games vs `_px9` (6 official maps, debug build) the model's P is >= 0.3 in 14.6% of contact evaluations (ladder rows: 11.5%):
+  the proxies do produce the states the model flags; the veto only acts on the subset where we fight, have no kill and can escape.
+- What the high-risk rows of our ladder games did next (`hit` / `moved away` / `neither`) broken down for `neither` (P >= 0.3, 2,623 rows):
+  moved closer or sideways 2,073 (died 55%), stood 434 (53%), hit a camp 71 (52%), recalled 44 (75%). The bot walks toward or along
+  the enemy in most high-risk states it does not fight in: that is what `ml2_flee` targets.
 
 ## Next
 Screen results; then pick the best threshold, run the 88 distinct maps and the rollover check.

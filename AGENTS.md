@@ -3,15 +3,40 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-18 23:50 UTC (S7R: `legend_m14` shipped: no map-size gates; new-map A/B vs m13 / m12); earlier: 2026-10-18 (session 11; `legend_m10` shipped = `legend_m8`'s play with the default-branch ideas switched off; see §S11)**. Rule from the user: update this file and push at every step. Start with **§S11**, then **§S10**, **§S9**, **§S8**,
-  **§S7**, **§S7-SV2**, then §000000 (resume protocol), §00000, §0000, §000, §00. **All work stays on branch `ccr-a858cd03-q87cpi`**:
-  `git pull` (merge, never force) before every push. The repository's **default branch is `claude/lucid-pasteur-2jiojv`** (Oct 17, its
-  bot does not compile); this branch is 142 commits ahead of it. No PR unless the user asks.
+- Last updated: **2026-10-19 (session 12: `main` is now the only branch; IC analysis of 45 Oct 19 games, SUGGESTIONS.md / ISSUES.md; see §S12)**.
+  Rule from the user: update this file and push at every step. Start with **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
+  §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
+  on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
+  never force) before every push. No PR unless the user asks.
 - Competition: Cambridge Battlecode 2026a (CAMBC), 12 Oct to 18 Nov 2026. C++ bot compiled to wasm.
 - The submitted bot cannot be changed after submission and keeps nothing between matches. All "learning"
   is either offline (training parameters before submission) or in-match (adapting inside one game).
 
 ---
+
+## S12. SESSION 12 (2026-10-19, same container as S10/S11): read this first
+
+- Shipped bot at the start: **`legend_m14`** (`submissions/legend.zip` sha256 50ca7600…, frozen `bots/_pg3`, S7R). Baseline for every A/B: `_pg3`.
+- The user's request: examine the new INTERWIN.zip (Intercontinental Fish = IC, ladder #1, vs other teams), find what IC does efficiently,
+  implement it on a new bot, A/B vs the current legend, keep what helps; write **SUGGESTIONS.md** (strategies that should work in theory but did
+  not measure better) and **ISSUES.md** (anything hardcoded that may break when the map pool changes); **derive parameters, do not hardcode**;
+  notify the user about any hardcoding. Mid-session: explain / establish the shared-memory communication (it exists: comms.h; report in chat).
+- Analysis: `docs/strategy_v2/12_IC_OCT19.md`; replays `experiments/interwin_oct19/` (45 distinct games), tables in `analysis/`; tools
+  `tools/strategy_v2/ictab.py` (IC side by its Stellar-first table), `regap.py` (respawned camps left unattacked, first touch), `tools/screensum.py`
+  (pooled proxy cells + h2h vs `_pg3`), `tools/samegames.py` (identical-games check of a control). IC wins 32 of 44; deaths 3.2 per game (ours 7.6
+  vs the ifish proxy); captures per 100 rounds rise 3.9 -> 5.1 over r0-400 (ours flat 2.7-3.5); Stellar collects 1.44 captures / 262 gold per 100
+  alive rounds (ours 0.73 / 150); Power emblem first on its carries, **Home emblem (recall in 3 turns) second** on Stellar / Issac / Varg; respawned
+  camps re-hit after 13.8 rounds on average (ours 26.5: a long tail; unopposed our maps are fine except interlock, lanes, pilgrimage, rushbait-v2).
+- Code: `bots/_x_ic` = `_pg3` + `experiments/wip/x_ic.patch` (all switches off = m14 play; control `_ic0` 33/34 games identical vs Mite):
+  `ic_home` 1/2/3 (Home emblem: after a damage first emblem / on all / after N recalls), `build_style` 11 (IC builds), `recall_turns()` (recall
+  time aware of Home), `o2_ring_size` (ISSUES #1: drop the 60x50 term), `reward_claim_gone` (a living ally's claim leaving an unseen reward =
+  taken; found in a traced interlock game: Ryth walked 12 steps to a reward Ren had captured), `commit_hit` / `commit_keep` (do not leave a camp
+  we hit in the last 2 rounds: 198 such abandonments in 17 unopposed official games, 92 for a slightly better score, 67 on the join limits),
+  `mapdraft` 7 (IC's per-map table: proxy only). Recall counter `recalls_started`, `target_hit_round`.
+- Screen (official 34 vs `_mite _ifish _px9 _snk _fA` pooled 170 games; `_pg3` 135 = 79.4; h2h vs `_pg3`): control `_ic0` 134 (78.8), h2h 18/34;
+  Home after a damage emblem `_ich1` 114 (67.1); Home on all `_ich2` 120 (70.6); Home after 6 recalls `_ich3` 132 (77.6); IC builds `_icb` 105/170
+  (61.8); `max_wait` 24 worse. Running (scratchpad `screen2-6.sh`): `cap_recall_hp` 0.45/0.5, `tribute_min` 66, `early_tribute_min` 40, bulk shopping,
+  `reward_claim_gone`, `o2_ring_size` 0, IC proxy `_icp` (IC draft + builds) and `_icd` (IC draft only), commit switches + pace vs idle.
 
 ## S7R. SESSION 7 RESUMED (2026-10-18 20:05 UTC, the original S7 container, live in parallel with S11): read with §S11
 

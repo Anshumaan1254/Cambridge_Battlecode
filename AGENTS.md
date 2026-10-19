@@ -33,10 +33,21 @@ running or unfinished, and what to do next, so a new agent can continue without 
   taken; found in a traced interlock game: Ryth walked 12 steps to a reward Ren had captured), `commit_hit` / `commit_keep` (do not leave a camp
   we hit in the last 2 rounds: 198 such abandonments in 17 unopposed official games, 92 for a slightly better score, 67 on the join limits),
   `mapdraft` 7 (IC's per-map table: proxy only). Recall counter `recalls_started`, `target_hit_round`.
-- Screen (official 34 vs `_mite _ifish _px9 _snk _fA` pooled 170 games; `_pg3` 135 = 79.4; h2h vs `_pg3`): control `_ic0` 134 (78.8), h2h 18/34;
-  Home after a damage emblem `_ich1` 114 (67.1); Home on all `_ich2` 120 (70.6); Home after 6 recalls `_ich3` 132 (77.6); IC builds `_icb` 105/170
-  (61.8); `max_wait` 24 worse. Running (scratchpad `screen2-6.sh`): `cap_recall_hp` 0.45/0.5, `tribute_min` 66, `early_tribute_min` 40, bulk shopping,
-  `reward_claim_gone`, `o2_ring_size` 0, IC proxy `_icp` (IC draft + builds) and `_icd` (IC draft only), commit switches + pace vs idle.
+- Screen (official 34 vs `_mite _ifish _px9 _snk _fA` pooled 170 games; `_pg3` 135 = 79.4; h2h of 34 vs `_pg3`), all in SUGGESTIONS.md:
+  controls `_ic0` 134 (18), `_ic1` 132 (17; carried a capture-time bug, see below); Home emblem `_ich1` 114 (15), `_ich2` 120 (16), `_ich3` 132 (17);
+  IC builds `_icb` 105 (16); IC proxy `_icp` (IC table + builds) 112 (11), IC draft only `_icd` 119 (14); `max_wait` 24 / 30: 120 / 118; `cap_recall_hp`
+  0.45 / 0.5: 133 / 135 (16, 16); `tribute_min` 66: 131 (19); `early_tribute_min` 40: 137 (13: non-transitive); bulk shopping `_ss8` 130, `_crg120` 131
+  (11), `_bulk` 126; `reward_claim_gone` 1: 125 (17; too eager: claims also leave rewards the ally abandons to heal); `o2_ring_size` 0: identical to its
+  control on the official maps (as designed). **Commit switches**: `_ch2` (`commit_hit` 2) 129, **h2h 21/34**, pace 502.7 (control `_ic2` 509.4;
+  rushbait-v2 670 -> 606, ambush 553 -> 508, elkring 452 -> 428); `_chk` (+ `commit_keep`) 130, h2h 19, pace 498.8; `_ck` 128, h2h 14, pace 498.0.
+  Non-transitive again (beats m14, loses ~5 of 170 to the proxies, mostly `_fA`): wider validation running (`$S/screen10.sh`: control `_ic2` cells,
+  `_pg3` on pad17 + gen2, then `validate.sh` = 88 distinct + pad17/gen2 + pace for `_ch2`, `_chk`, `_ic2`). Also queued: `half_grade` 0.3 / 0.5 (graded
+  enemy-half risk), `reward_claim_gone` 2 (claim held a whole capture).
+- **Bug found and fixed in my own change**: `capture_time` is 5; the literal 6 in `world.cpp` meant `capture_time + 1`. Replacing it with
+  `capture_time` alone shifted respawn predictions one round early (control 132 instead of 134-135). Fixed to `capture_time + 1`; variants built
+  before the fix (`_ic1`, `_rsz0`, `_rcg`, first `_icp`) carry it (`_icp`/`_icd` were rebuilt after the fix).
+- The user also asked how the shared memory works (answered in chat: bytes 0-5 claims + team bag bits + stance, 6-7 one alert; claims are
+  leases resolved by the same tie-break in every body; measured gains listed there).
 
 ## S7R. SESSION 7 RESUMED (2026-10-18 20:05 UTC, the original S7 container, live in parallel with S11): read with §S11
 

@@ -1,6 +1,6 @@
 diff -ruN _ch2/src/brain.cpp _x_s13/src/brain.cpp
 --- _ch2/src/brain.cpp	2026-10-19 20:56:14.462361469 +0000
-+++ _x_s13/src/brain.cpp	2026-10-19 21:39:52.261806949 +0000
++++ _x_s13/src/brain.cpp	2026-10-19 23:05:59.321576874 +0000
 @@ -823,6 +823,24 @@
  	bool cancel = false;
  	if (recalling && threat_close && !world().ally_spawn.is_set(pos))
@@ -10,13 +10,13 @@ diff -ruN _ch2/src/brain.cpp _x_s13/src/brain.cpp
 +	{
 +		// recall_join: a teammate is fighting next to us and we are healthy: stay for the fight instead of teleporting out of it
 +		const auto& W = world();
-+		bool enemy7 = false;
++		bool enemy7 = P.recall_join >= 2; // 2: the ally's fight alone is enough (contest: our Ren was 10 tiles from the enemies)
 +		for (const auto& e : W.enemies)
 +			enemy7 |= e.visible && e.alive && cheb(e.pos, pos) <= 7 && !W.enemy_spawn.is_set(e.pos);
 +		if (enemy7)
 +			for (const auto& a : W.allies)
 +			{
-+				if (a.handle == self || !a.alive || !a.visible || cheb(a.pos, pos) > 6 || a.hp < 0.5f * a.max_hp)
++				if (a.handle == self || !a.alive || !a.visible || cheb(a.pos, pos) > (P.recall_join >= 2 ? 8 : 6) || a.hp < 0.5f * a.max_hp)
 +					continue;
 +				for (const auto& e : W.enemies)
 +					if (e.visible && e.alive && cheb(e.pos, a.pos) <= 5)
@@ -42,6 +42,17 @@ diff -ruN _ch2/src/brain.cpp _x_s13/src/brain.cpp
  	if (hp < threshold && P.finish_camp && camp_in > 0 && enemy_near_d > P.finish_enemy_d && task_group >= 0 &&
  		task_group < static_cast<int>(W.groups.size()))
  	{
+@@ -2914,8 +2941,8 @@
+ 	const bool opp = C.alert_kind == AL_OPPORTUNITY;
+ 	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
+ 	const bool their_endgame = theirs >= P.endgame_alarm;
+-	const float hp_gate = opp ? (their_endgame ? 0.25f : 0.4f) : 0.6f;
+-	const int max_d = opp ? (their_endgame ? 16 : 12) : 9;
++	const float hp_gate = opp ? (their_endgame ? 0.25f : 0.4f) : P.rally_hp;
++	const int max_d = opp ? (their_endgame ? 16 : 12) : P.rally_r;
+ 	if (hp < hp_gate * max_hp || ((task == T_CAPTURE || reward_here()) && !their_endgame))
+ 		return false;
+ 	const int d = cheb(C.alert_pos, pos);
 @@ -3194,6 +3221,31 @@
  #endif
  	if (!any)
@@ -230,8 +241,8 @@ diff -ruN _ch2/src/draft.cpp _x_s13/src/draft.cpp
  	}
 diff -ruN _ch2/src/params.h _x_s13/src/params.h
 --- _ch2/src/params.h	2026-10-19 20:56:14.462734580 +0000
-+++ _x_s13/src/params.h	2026-10-19 21:39:52.265733570 +0000
-@@ -182,6 +182,28 @@
++++ _x_s13/src/params.h	2026-10-19 23:04:02.021470614 +0000
+@@ -182,6 +182,31 @@
  	int ic_home = 0;		   // 1: Home health emblem right after the first emblem when that one is in the damage stat (derived
  							   //    from the build, not the champion); 2: on every body; 3: once this body has recalled ic_home_recalls times
  	int ic_home_recalls = 6;   // ic_home 3
@@ -257,6 +268,9 @@ diff -ruN _ch2/src/params.h _x_s13/src/params.h
 +							   // health within 3 rounds, Cassi 31% health (220/700) stayed out next to casters and died to one area cast
 +	int ci_first = 0;		   // 1: the parameter draft picks Cassi & Issac first when the planned team has them (same team, lower body
 +							   // indices: they capture shared rewards and win claim ties; see draft.cpp param_pick)
++	int rally_r = 9;		   // respond_to_alert: answer an ally's rally from at most this far (ladder contest r25-40: our Ren farmed the
++							   // centre triple 11-13 tiles from the team fight, 4 of ours lost to 5 of theirs; "help that does not come")
++	float rally_hp = 0.6f;	   // ... with at least this health fraction
  	float commit_hit = 2.0f;	   // > 0: the current target's score x this while we hit it in the last 2 rounds (finish what we started)
  	int commit_keep = 0;	   // 1: a camp we hit in the last 2 rounds is not dropped by the join limits
  	float half_grade = 0.f;	   // > 0: enemy-half risk cost x min(1, (d_ally - d_enemy) / (half_grade x (d_ally + d_enemy))) (0 = flat cost)

@@ -78,6 +78,25 @@ running or unfinished, and what to do next, so a new agent can continue without 
     `tools/pickscreen.py`. Combos queued: `_c_ar2rj`, `_c_ar2of` (open_first 3), `_c_ar2of2`, `_c_ar2rjof`. `ci_first` (`_s_cif`), `burst_retreat`
     (`_s_bt10`, `_s_bt15`), `ci_health_first` (`_f_cih`) and fight-more params (`_f_fm115 _f_fb75 _f_crh45 _f_of65`) queued.
 
+- **Checkpoint 23:15 UTC (after a container restart at 22:50; the user: "the final bot must crush every team in the zip and the current
+  legend; their strategies may change; best bot by this evening (IST); 3 more sessions; k-means / logistic regression allowed")**:
+  - All background jobs died with the restart; the filesystem survived (bots, scratchpad, ledger). Zone agent: stopped at the session limit,
+    nothing shippable (`x_zone_NOTES.md`: zones spread bodies and cost fights; pair zones 131 pooled but 13/34 h2h): **direction closed**.
+  - More screens (official, pooled of 170 / h2h of 34): `outmatch_flee_adv` 0.65 131 / 18, `fight_margin` 1.15 128 / 17, `cap_recall_hp` 0.45
+    128 / 19, `fight_back_margin` 0.75 126 / 16, `burst_retreat` 1.0 / 1.5 127 / 122, `ci_health_first` 116 / 14, `aoe_reach5` 2 + `recall_join`
+    136 / 19 (= `aoe_reach5` 2 alone), + `open_first` 3: 133 / 18. **Local contest is the mirror of the ladder**: `_ch2` beats every proxy there
+    9/10 with deaths 7-37 vs 47-66; the ladder teams draft the same casters and crush us: our proxies cannot reproduce their execution.
+  - Contest traces (r20-45): both teams reach the centre by r25; ours splits: Ren recalls home at r31 or keeps farming the centre gold 10-13
+    tiles from the fight (rallies are answered only within 9 and never while capturing), 4 of ours lose to 5. New switches in `x_s13.patch`:
+    `rally_r` / `rally_hp` (variants `_s_ra13`, `_s_ra13h`), `recall_join` 2 (an ally's fight within 8 is enough; `_s_rj2`).
+  - **Running**: (1) Opus agent **`mlfight`**: fight / danger model by logistic regression on ~190 decoded ladder games (ours and top-vs-top),
+    integrated as switches in `bots/_x_ml2`; notes `experiments/wip/x_ml2_NOTES.md`, patch `x_ml2.patch`, scripts `tools/ml/`. (2) **ES exploiter**:
+    `tools/rl/es_train.py` (now takes `ES_SRC`, `ES_OUT`, `ES_PREFIX`) trains `_x_s13`'s parameters and switches (39, space
+    `experiments/wip/x_es13_adv_space.json`) to beat `_ch2` on the official maps (`tune_out/es_adv/`, log in the scratchpad `es_adv.log`):
+    the result is a stronger sparring opponent (and maybe a candidate). (3) Queue: drafts `_d_*` (mapdraft 0 + forced picks), `_g_q05*`, `_s_cif`,
+    then `_s_ra13*`, then candidate **`_cand1`** (= `_x_s13` + `aoe_reach5` 2 + `o2_ring_size` 0 + `recall_join` 1; hash b35c20488598) on pad17 + gen2
+    and the 28 generated maps vs `_ch2` + the 5 proxies.
+
 ## S12. SESSION 12 (2026-10-19, same container as S10/S11): read this first
 
 - Shipped bot at the start: **`legend_m14`** (`submissions/legend.zip` sha256 50ca7600…, frozen `bots/_pg3`, S7R). Baseline for every A/B: `_pg3`.

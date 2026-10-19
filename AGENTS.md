@@ -40,6 +40,26 @@ running or unfinished, and what to do next, so a new agent can continue without 
   - Traced (fragment mirror, r28-44): the enemy woke an elk and stepped back; our Ren walked into its range and stood / walked next to it for 8
     rounds without attacking (740 -> 0, killed by the camp); our C&I at 220/700 stayed in the field and died to Stellar / Cassi area casts.
 
+- **More ladder findings (21:15 UTC)**: burst deaths (>= 60% health 3 rounds before) are 41% of ours (them 34%), 99 of 147 are Cassi & Issac,
+  the killer usually at distance 4-5, 68% of the damage from spells (`tools/strategy_v2/death_ctx.py`, `burst_ctx.py`). Opponents' contested
+  finish beats our UNOPPOSED pace on rows / lanes / monolith / pilgrimage / ambush; same-draft monolith game: they re-take each near group at
+  its respawn (every 55-70 rounds), we leave near groups 100-120 rounds. Stampede: the objective reward is stolen by bodies standing on its dead
+  gem tiles (we killed it 4 times vs the Varg-first team and captured once; vs IC we captured all 3 of its kills: 1080-0).
+- **Work in this container (checkpoint 21:20 UTC)**:
+  - Agent `zone` (Opus, background): draft-time farming zones / circuits on `bots/_x_zone` (variants `_z*`), notes `experiments/wip/x_zone_NOTES.md`,
+    patch `x_zone.patch` (committed by the checkpoint loop every 15 min). If it is gone: read its notes, rebuild from the patch, continue.
+  - Coordinator code `bots/_x_s13` = `_ch2` + `experiments/wip/x_s13.patch` (switches off = `_ch2` play): `finish_race` (endgame: groups that
+    finish the game alone score by landing time), `big_reward` / `big_reward_r` / `big_reward_hp` (fight for 100+ gem groups: whole team in the
+    threat check, contest an enemy waiting on a dead tile via `contest_tiles()`, every body contests their capture), `big_reward_dive` (deny an
+    enemy capture of a 200+ gem reward whatever the threat), `recall_join` (cancel a shop/heal recall to join a fight next to us).
+  - Screens (official 34 vs `_ch2` + the 5 proxies; `_ch2` pooled 129/170): `o2_ring_size` 0 130 (h2h 17, same games: SHIP, ISSUES #1);
+    **`aoe_reach5` 2: 136/170, h2h 19/34, deaths 328-409 (lead)**; `aoe_reach5` 1: 132, h2h 16; `spread_vs_splash` 1: 117, 2: 127 (both h2h 19): no.
+    Queued: `pair_space` 1/2, `burst_exit` 2/1; then `_s_c0` (control), `finish_race` 70/150, `big_reward` 100, `recall_join` (+ pace vs idle);
+    draft synergy `_d_wt` (Ryth, Varg, Willow, Ren, Stellar), `_d_w5` (Willow for C&I), `_d_ci` (C&I-first), `_d_vt` (Varg-first), `_d_mar`
+    (Marcella), `_d_ven` (Vendetta); then `_s_brd` (big_reward + dive 200), fight-more `_f_fm115`, `_f_fb75`, `_f_crh45`, `_f_of65`.
+    Scripts in the scratchpad (lost with the container): `screen.sh VARIANT...` = `tools/ledger.py run V OPP --maps 'maps/comp/*.map26a'` for
+    OPP in `_ch2 _mite _ifish _px9 _snk _fA`; results: `BASE=_ch2 python3 tools/screensum.py VARIANTS`.
+
 ## S12. SESSION 12 (2026-10-19, same container as S10/S11): read this first
 
 - Shipped bot at the start: **`legend_m14`** (`submissions/legend.zip` sha256 50ca7600…, frozen `bots/_pg3`, S7R). Baseline for every A/B: `_pg3`.

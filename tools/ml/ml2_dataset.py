@@ -14,6 +14,7 @@ Side of our bot ('us' = 1 on its bodies): ladder_oct19b from experiments/ladder_
 sneaky_oct18 team 0; the other sets are other teams only (us = 0 everywhere).
 """
 import collections
+import hashlib
 import json
 import math
 import os
@@ -195,7 +196,9 @@ def game_rows(path, geo, us_team, setname, gid):
 				elif k == 'dash' and rd[s]:
 					dash = True
 			dps = st + fo * best / 8.0 + burst / 3.0
-			info[b] = dict(pos=(c[3], c[4]), hp=c[5], mh=c[6], st=st, fo=fo, burst=burst, dps=dps, stun=stun, area=area, spell=spell,
+			# an ally's damage as the bot counts it in combat() (cooldowns of allies are not read): spells assumed up
+			adps = st + fo * best / 8.0 + max(st, fo * best) / 3.0
+			info[b] = dict(pos=(c[3], c[4]), hp=c[5], mh=c[6], st=st, fo=fo, burst=burst, dps=dps, adps=adps, stun=stun, area=area, spell=spell,
 						   dash=dash, ranged=t in RANGED, gems=c[8], t=t)
 		for b, me in info.items():
 			tb = team[b]
@@ -284,7 +287,7 @@ def game_rows(path, geo, us_team, setname, gid):
 			f['n_a7'] = len(a7)
 			f['hp_a5'] = sum(info[o]['hp'] for o in a5) / 1000
 			f['hp_a7'] = sum(info[o]['hp'] for o in a7) / 1000
-			f['dps_a6'] = sum(info[o]['dps'] for o, dd in al if dd <= 6) / 100
+			f['dps_a6'] = sum(info[o]['adps'] for o, dd in al if dd <= 6) / 100
 			f['a_alive'] = 1 + len(al)
 			f['a_low5'] = sum(1 for o in a5 if info[o]['hp'] < 0.3 * info[o]['mh'])
 			ca = 0
@@ -320,7 +323,7 @@ def game_rows(path, geo, us_team, setname, gid):
 				a = info[o]
 				if dd <= 6 and a['hp'] > 0.25 * a['mh'] and any(cheb(a['pos'], info[x]['pos']) <= 6 for x, _ in vis):
 					our_hp += a['hp']
-					our_dps += a['dps']
+					our_dps += a['adps']
 					nsup += 1
 			if p in spawn_set[tb] and in_reach:
 				our_hp += me['mh']
@@ -354,7 +357,8 @@ def game_rows(path, geo, us_team, setname, gid):
 			X.append([f[k] for k in FEATURES])
 			Y.append([float(die4), float(die8), float(kill8), (dl - tk) / 100, tk / 100, dl / 100, float(hit1), away, float(r + 8 > last_r)])
 			M.append((gid, b, r, int(tb == us_team), hidden, tb))
-	return X, Y, M, d['meta']
+	fp = hashlib.md5(json.dumps([d['meta']['drafts'], d['meta']['finalRound'], d['meta']['width'], d['rounds'][min(100, len(d['rounds']) - 1)]['ch']]).encode()).hexdigest()
+	return X, Y, M, dict(d['meta'], fp=fp)
 
 
 def main():
@@ -380,7 +384,8 @@ def main():
 			gid = len(G)
 			x, y, m, meta = game_rows(path, geo[stem], us, s, gid)
 			mp = stem.split('_')[-1]
-			G.append(dict(set=s, stem=stem, map=mp, us=us, drafts=meta['drafts'], outcome=meta.get('outcome'), final=meta.get('finalRound')))
+			G.append(dict(set=s, stem=stem, map=mp, us=us, drafts=meta['drafts'], outcome=meta.get('outcome'), final=meta.get('finalRound'), fp=meta['fp'],
+						   dup=any(g['fp'] == meta['fp'] for g in G)))
 			X += x; Y += y; M += m
 			print(f'{s} {stem}: {len(x)} rows', flush=True)
 	np.savez_compressed(out, X=np.array(X, dtype=np.float32), Y=np.array(Y, dtype=np.float32), M=np.array(M, dtype=np.int32),

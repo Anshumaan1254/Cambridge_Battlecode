@@ -1,6 +1,6 @@
 diff -ruN _pg3/src/brain.cpp _x_ic/src/brain.cpp
 --- a/src/brain.cpp	2026-10-19 18:10:45.813043112 +0000
-+++ b/src/brain.cpp	2026-10-19 18:45:10.580834370 +0000
++++ b/src/brain.cpp	2026-10-19 19:07:39.383201773 +0000
 @@ -41,6 +41,18 @@
  			rep(v, it, 5);
  }
@@ -71,7 +71,7 @@ diff -ruN _pg3/src/brain.cpp _x_ic/src/brain.cpp
  	// Islands are searched later (prebuild_fields): ~47k fuel on 100x100 maps, not needed in the opening rounds.
  	W.island_of.assign(W.groups.size(), -1);
  	W.islands_pending = true;
-@@ -486,6 +535,27 @@
+@@ -486,6 +535,33 @@
  	}
  	W.perceive(pos);
  	C.read(round);
@@ -87,19 +87,25 @@ diff -ruN _pg3/src/brain.cpp _x_ic/src/brain.cpp
 +			if (i != W.my_index && was >= 0 && was != now && was < static_cast<int>(W.groups.size()) && W.allies[k].alive)
 +			{
 +				auto& g = W.groups[static_cast<std::size_t>(was)];
-+				if (g.st == ST_REWARD && g.seen_round != round)
++				// Mode 2: only when the ally held the claim for a whole capture since the reward appeared (mode 1 also fired on
++				// allies that left a reward uncaptured to heal or flee, and the reward then expired: 125 of 170 vs 135).
++				const bool held = P.reward_claim_gone != 2 ||
++					round - std::max(prev_claim_since[k], g.reward_round) >= static_cast<int>(bc::constants::capture_time);
++				if (g.st == ST_REWARD && g.seen_round != round && held)
 +				{
 +					g.st = ST_RESPAWN;
 +					g.ready_round = round + g.respawn;
 +				}
 +			}
++			if (was != now)
++				prev_claim_since[k] = round;
 +			prev_claim[k] = now;
 +		}
 +	}
  	C.write_bag(static_cast<int>(gems));
  	{
  		// Learning signals: champion damage marks a painful place; an enemy dying near us relieves it.
-@@ -515,6 +585,11 @@
+@@ -515,6 +591,11 @@
  	if (P.mi_learn_burst || P.mi_lethal)
  		learn_burst();
  	XM(xm_pre());
@@ -111,7 +117,7 @@ diff -ruN _pg3/src/brain.cpp _x_ic/src/brain.cpp
  
  	if (flag(state, bc::champion_state::recalling) || flag(state, bc::champion_state::submitting_gems) ||
  		flag(state, bc::champion_state::teleporting))
-@@ -799,6 +874,8 @@
+@@ -799,6 +880,8 @@
  		{
  		}
  	}
@@ -120,7 +126,7 @@ diff -ruN _pg3/src/brain.cpp _x_ic/src/brain.cpp
  	while (build_idx < build.size() && gold >= 30)
  	{
  		const I item = build[build_idx];
-@@ -2408,7 +2485,7 @@
+@@ -2408,7 +2491,7 @@
  	if (dh >= BIG || dh <= (P.home_edge_fix ? 0 : 2))
  		return false;
  	const bool can_recall = dh > P.recall_min_dist && safe_to_recall();
@@ -129,7 +135,7 @@ diff -ruN _pg3/src/brain.cpp _x_ic/src/brain.cpp
  	const bool shopper = type != CT::tavi && build_idx < build.size();
  	const int shards = shopper ? static_cast<int>(gold / 30) : 0;
  	const bool hurt = hp < P.home_hp * max_hp;
-@@ -2745,7 +2822,7 @@
+@@ -2745,7 +2828,7 @@
  	// flip the choice each round and the champion oscillated in place for hundreds of rounds.
  	const bool committed = P.sticky_tribute && task == T_TRIBUTE && static_cast<int>(gems) >= 10;
  	// Recall and bank at the altar next to spawn when that beats walking (and heals and shops on the way).
@@ -138,7 +144,7 @@ diff -ruN _pg3/src/brain.cpp _x_ic/src/brain.cpp
  	const bool recall_bank = W.dist_home(pos) > P.recall_min_dist && via_home + 2 < dist && safe_to_recall() && !endgame;
  	// A long bank trip is worth a bigger bag: the threshold rises with the cheapest way to an altar from here,
  	// so a body far from every altar keeps farming and banks when its route passes close to one.
-@@ -2852,9 +2929,10 @@
+@@ -2852,9 +2935,10 @@
  	// for every camp group every turn).
  	if (item_flags_idx == build_idx)
  		return;
@@ -150,7 +156,7 @@ diff -ruN _pg3/src/brain.cpp _x_ic/src/brain.cpp
  		j += build[i] == I::jungle_shard_of_strength || build[i] == I::jungle_shard_of_health || build[i] == I::jungle_shard_of_focus;
  		d += build[i] == I::durability_shard_of_health || build[i] == I::durability_shard_of_strength || build[i] == I::durability_shard_of_focus;
  		m += build[i] == I::monster_shard_of_health || build[i] == I::monster_shard_of_strength || build[i] == I::monster_shard_of_focus;
-@@ -2862,9 +2940,29 @@
+@@ -2862,9 +2946,29 @@
  	jungle_ok = j >= 5;
  	durability_ok = d >= 5;
  	monster_ok = m >= 5;
@@ -180,7 +186,7 @@ diff -ruN _pg3/src/brain.cpp _x_ic/src/brain.cpp
  bool Brain::jungle_done() const
  {
  	refresh_item_flags();
-@@ -2953,7 +3051,7 @@
+@@ -2953,7 +3057,7 @@
  {
  	// Heal at spawn and come back: recall (5 turn ends, 3 with Home) beats walking once spawn is far.
  	const int hd = std::min(g.d_home_c, 60);
@@ -189,7 +195,7 @@ diff -ruN _pg3/src/brain.cpp _x_ic/src/brain.cpp
  	return 2 + std::min(2 * hd, recall + hd);
  }
  
-@@ -3373,7 +3471,10 @@
+@@ -3373,7 +3477,10 @@
  			const float solo_rounds = hp_left / std::max(10.f, ally_dps);
  			const bool heavy = follow_g || g.monolith || g.elk || (!g.harmless && (solo_rounds > P.join_min_rounds || g.attackers >= 2));
  			const int max_join = P.mi_two_bodies ? std::min(P.max_join, 1) : P.max_join; // mi_two_bodies (default branch)
@@ -201,7 +207,7 @@ diff -ruN _pg3/src/brain.cpp _x_ic/src/brain.cpp
  				{ WHY(6); return -1; }
  			// A joiner that arrives after the claimers are done walked for nothing (pilgrimage: Cassi crossed the map between
  			// two 68-gem packs for 300 rounds, hitting each one a few times before someone else captured it).
-@@ -3505,7 +3606,7 @@
+@@ -3505,7 +3612,7 @@
  			}
  		}
  		bool ring_ok = false;
@@ -210,7 +216,7 @@ diff -ruN _pg3/src/brain.cpp _x_ic/src/brain.cpp
  			ring_ok = ring_ready(g, hp_left, ring_kill);
  		if (ring_ok)
  		{
-@@ -3556,7 +3657,13 @@
+@@ -3556,7 +3663,13 @@
  			value += deny_bonus * static_cast<float>(g.gems) * share; // what they lose is the gems (default branch)
  		else
  			value *= 1.f + deny_bonus;
@@ -225,7 +231,7 @@ diff -ruN _pg3/src/brain.cpp _x_ic/src/brain.cpp
  		if (P.unknown_keep == 2 ? (g.seen_round < 0 || round - g.seen_round > 60) : (round - g.seen_round > 60 && !(P.unknown_keep && g.id == task_group)))
  			value *= P.unknown_discount;
  	}
-@@ -3872,7 +3979,13 @@
+@@ -3872,7 +3985,13 @@
  			tr_sc[g.id] = s;
  #endif
  			if (g.id == task_group)
@@ -239,7 +245,7 @@ diff -ruN _pg3/src/brain.cpp _x_ic/src/brain.cpp
  			else if (P.flip_window > 0 && g.id == left_group && round - left_round <= P.flip_window)
  				s /= P.flip_margin; // going back to a target we just left: A-B-A-B flips walk in place
  			if (s > best_s)
-@@ -4168,7 +4281,7 @@
+@@ -4168,7 +4287,7 @@
  		// Strong ladder teams do this after almost every capture far from home.
  		// Capture lands at the start of round since + capture_time + 1; a recall started in round R lands at
  		// R + recall_time. Start it so both land together (never earlier: an early teleport loses the reward).
@@ -248,7 +254,7 @@ diff -ruN _pg3/src/brain.cpp _x_ic/src/brain.cpp
  		const int start_at = capture_since + static_cast<int>(bc::constants::capture_time) + 1 - recall_t;
  		if (round >= std::max(capture_since + 1, start_at) && W_dist_home_ok() && safe_to_recall())
  		{
-@@ -4191,7 +4304,7 @@
+@@ -4191,7 +4310,7 @@
  				return true;
  			}
  			const bool bank_here = P.bank_first && adist < BIG && spawn_altar < BIG &&
@@ -257,7 +263,7 @@ diff -ruN _pg3/src/brain.cpp _x_ic/src/brain.cpp
  			const bool bag = static_cast<int>(gems) + g.gems >= bank_min(std::min(adist, spawn_altar < BIG ? 1 + spawn_altar : BIG));
  			if (bag && bank_here && !hurt)
  			{
-@@ -4341,7 +4454,7 @@
+@@ -4341,7 +4460,7 @@
  	if (!attack_unit(g.camps[idx].camp))
  		return false;
  	if (g.id == task_group)
@@ -268,8 +274,8 @@ diff -ruN _pg3/src/brain.cpp _x_ic/src/brain.cpp
  		++tr_hits;
 diff -ruN _pg3/src/brain.h _x_ic/src/brain.h
 --- a/src/brain.h	2026-10-19 18:10:45.812735385 +0000
-+++ b/src/brain.h	2026-10-19 18:42:56.763802041 +0000
-@@ -138,7 +138,12 @@
++++ b/src/brain.h	2026-10-19 19:07:39.383800009 +0000
+@@ -138,7 +138,13 @@
  	bool monster_done() const;
  	void refresh_item_flags() const;
  	mutable std::size_t item_flags_idx = static_cast<std::size_t>(-1);
@@ -279,11 +285,12 @@ diff -ruN _pg3/src/brain.h _x_ic/src/brain.h
 +	int recall_turns() const;
 +	int recalls_started = 0; // ic_home 3
 +	std::array<int, 6> prev_claim{ -1, -1, -1, -1, -1, -1 }; // reward_claim_gone: last round's claims
++	std::array<int, 6> prev_claim_since{}; // ... and the round each ally's claim took its value
 +	bool was_recalling = false;
  	bool has_home = false; // Home emblem (faster recall); we never buy it, kept for the capture-recall timing
  #ifdef XM_TRACE
  	// Prediction audit state (all updated inside debug_block, so it costs no fuel and changes no decision).
-@@ -238,6 +243,7 @@
+@@ -238,6 +244,7 @@
  
  	// memory
  	int task = T_NONE, task_group = -1, task_since = 0;
@@ -364,13 +371,33 @@ diff -ruN _pg3/src/params.h _x_ic/src/params.h
  	float o2_ring_share = 0.5f;	 // value share per caster
 diff -ruN _pg3/src/world.cpp _x_ic/src/world.cpp
 --- a/src/world.cpp	2026-10-19 18:10:45.812528334 +0000
-+++ b/src/world.cpp	2026-10-19 18:31:54.320253933 +0000
-@@ -479,7 +479,7 @@
++++ b/src/world.cpp	2026-10-19 19:11:23.380096140 +0000
+@@ -449,6 +449,8 @@
+ 			}
+ 			else if (s == 2)
+ 			{
++				if (g.st != ST_REWARD)
++					g.reward_round = round;
+ 				changed |= g.st != ST_REWARD;
+ 				g.st = ST_REWARD;
+ 				g.awake = false;
+@@ -479,7 +481,7 @@
  			else if (g.st == ST_REWARD && round - g.seen_round > 8)
  			{
  				g.st = ST_RESPAWN;
 -				g.ready_round = g.seen_round + 6 + g.respawn;
-+				g.ready_round = g.seen_round + static_cast<int>(bc::constants::capture_time) + g.respawn;
++				g.ready_round = g.seen_round + static_cast<int>(bc::constants::capture_time) + 1 + g.respawn; // the reward lands one round after the capture phases
  			}
  		}
  		g.enemy_on_tile = false;
+diff -ruN _pg3/src/world.h _x_ic/src/world.h
+--- a/src/world.h	2026-10-19 18:10:45.812207443 +0000
++++ b/src/world.h	2026-10-19 19:07:39.381115175 +0000
+@@ -43,6 +43,7 @@
+ 	// Dynamic memory
+ 	GroupState st = ST_ALIVE; // every group starts alive
+ 	int ready_round = 0;	  // first round it is alive again when respawning
++	int reward_round = -1000; // first round we saw it as a reward (reward_claim_gone 2)
+ 	int seen_round = -1;
+ 	std::vector<float> hp;	  // last seen health per camp
+ 	float hp_total = 0;

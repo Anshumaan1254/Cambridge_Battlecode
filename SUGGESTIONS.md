@@ -10,6 +10,24 @@ against the five sparring proxies (Mite `_mite`, ifish `_ifish`, ladder-calibrat
 about +-2 games). Head-to-head = 34 games against `legend_m14` itself. Ledger rows: `experiments/results/ledger/<variant>_vs_*.jsonl`;
 code: `experiments/wip/x_ic.patch` (switches in `params.h`, all off).
 
+## Session 13 (19 Oct, evening): the user's list, measured against `legend_m14_commit` (`_ch2`)
+
+Same method, baseline `_ch2` (pooled **129/170** vs the five proxies on the official maps; head-to-head 34 games vs `_ch2`). Code:
+`experiments/wip/x_s13.patch` (coordinator switches) on `_ch2`; parameter-only variants are `tools/variant.sh` copies of `_ch2`.
+Evidence for each idea: `docs/strategy_v2/13_LADDER_OCT19B.md` (50 ladder games of `legend_m14_commit`, 11 wins).
+
+| Strategy | Why it should help (evidence) | Variant | Pooled (of 170) | h2h vs `_ch2` | Verdict |
+|---|---|---|---|---|---|
+| **Enemy area spells reach 5** (`aoe_reach5` 2: range + radius, walk-compatible spells range + 1) | 41% of our ladder deaths are bursts from >= 60% health; the killer stands at 4-5 and 68% of the damage is spells; at distance 3-5 they out-trade us ~1.5:1 | `_s_ar2` | **136** | 19/34 | official +7, but the 28 generated maps 169/270 vs 181 (88 distinct 305 vs 310, h2h 45/88): not robust alone; tested in combinations |
+| `aoe_reach5` 1 (area spells only) | same | `_s_ar1` | 132 | 16/34 | level |
+| **Spacing vs splash** (`spread_vs_splash` 1 / 2) | Varg splash and area spells hit two bodies standing together | `_s_svs`, `_s_svs2` | 117, 127 | 19, 19 | worse / level against the proxies |
+| **Cassi apart from Issac** (`pair_space` 1 / 2) | 99 of our 147 ladder burst deaths are Cassi or Issac (they die together) | `_s_ps1`, `_s_ps2` | 122, 129 | 18, 18 | worse / level |
+| **Leave before the finisher** (`burst_exit` 1 / 2) | same | `_s_be1`, `_s_be2` | 130, 130 | 17, 17 | changes almost no game |
+| **Endgame finisher** (`finish_race` 70 / 150: with few gems still needed, the group whose gems land first) | ladder rows: we reached 990 at r345, they at r355, and they won at r358 with a 22-gem bag | `_s_fr70`, `_s_fr150` | 126, 123 | 16, 15 | worse, and slower unopposed (504.8 / 507.8 vs 502.7: bodies left a capture for a group that finishes alone). The rows races were decided by split captures (three 22-gem bags bank in 3 turns, one 66-gem bag in 7), not target choice |
+| **Fight for big rewards** (`big_reward` 100: whole team in the threat check, contest an enemy on the tiles; `big_reward_dive` 200: deny an enemy capture whatever the threat; `reward_pre` 3: a ring body stands on a dead tile before the kill) | ladder stampede: we killed the 360-gem objective 4 times vs the Varg-first team and captured once (they stood on its dead gem tiles); we stole all 3 of IC's kills (1080-0) | `_s_br100`, `_s_brd`, `_s_brp` | 126 (official) | 16 | objective pool (stampede + `maps/obj`, vs Mite / ifish / `_px9`, 78 games): 55 / 54 / 54 vs 53, but h2h vs `_ch2` there 9 / 11 / 12 of 26: the objective becomes a slugfest an equal team wins as often as we do |
+| **Damage-first builds** (IC `build_style` 11, ladder style 3, ifish 10, Mite 9) | the ladder teams deal ~20% more camp damage per round and kill faster | `_b11`, `_b3`, `_b10`, `_b9` | (pace) | - | unopposed pace official 526.4 / 538.8 / 534.8 / 556.0 vs 502.7; var17 (51 transposed maps) 535.9 / 531.1 / 532.6 vs 501.6. Faster only on monolith (398 vs 437) and ambush. Our farming is not the gap: unopposed we capture 151 gems by r100 and 564 by r300 (more than the ladder teams do contested, 136 / 480); contact costs us ~25% of it |
+| **Draft-time zones / circuits** (agent zone: sectors around spawn, k-medoids, zone bonus / penalty) | the ladder teams re-take near groups at each respawn | `_z3`-`_z12` | 112-131 | 11-18 | unopposed pace at best 497.1 vs 502.7; spreading bodies over zones costs fights (`_z3` deaths vs Mite 376 vs 246) (see `x_zone_NOTES.md`) |
+
 ## Session 12 (19 Oct): copying Intercontinental Fish (ladder #1; analysis `docs/strategy_v2/12_IC_OCT19.md`)
 
 | Strategy | Why it should help (evidence) | Variant | Pooled vs proxies (of 170) | h2h vs m14 | Verdict |

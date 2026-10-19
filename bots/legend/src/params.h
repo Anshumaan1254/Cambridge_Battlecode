@@ -131,11 +131,7 @@ struct Params
 
 	// Session 11: ideas from the default branch (claude/lucid-pasteur-2jiojv: the Oct 16 "round-2" bot, b5d4e56, and its
 	// Oct 17 merge a25ae20, which does not compile), ported onto legend_m8 at the user's request: "push the ideas into the
-	// bot; if they are detrimental I will notify you". Each one has its own switch (0 = legend_m8's behaviour).
-	// legend_m9 had them all on: vs legend_m8 58.0 / official 35.3, Mite proxy 63.6 (legend_m8 76.1), ifish proxy 51.1 (69.3),
-	// _px9 65.9 (78.4). legend_m10 ships them all off (= legend_m8's games). Alone on legend_m8 (88 games / official vs
-	// legend_m8): health_emblem 47.7 / 50.0, learn_burst 52.3 / 52.9, lethal 51.1 / 50.0, cd_slack 47.7 / 41.2, walk_cast
-	// 44.3 / 47.1, endgame_bank 48.9 / 50.0; learn_burst + lethal: 50.0 / 52.9, Mite proxy 77.3 / 88.2, _px9 63.6 (78.4).
+	// bot; if they are detrimental I will notify you". All on; each one has its own switch (0 = legend_m8's behaviour).
 	int mi_health_emblem = 0;	   // a Durability health emblem as the second emblem of every build
 	int mi_learn_burst = 0;		   // remember each enemy's biggest one-round hit on us; combat() uses it while its spells are up
 	int mi_lethal = 0;			   // leave a fight we can walk away from when an enemy within 5, spells up, has shown it can kill us from here
@@ -163,6 +159,7 @@ struct Params
 	int ward_bush_gap = 3;	   // ... (ward_bush 2)
 	int ward_bush_maps = 1;	   // 0 = ward bushes on every map; 1 = only on lone-monolith (contest-type) maps
 	int mapdraft = 6;		   // 0 = our composition choice; sparring proxies: 1 = Mite's per-map drafts, 2 = ifish's (draft.cpp)
+							   // 7 = Intercontinental Fish's per-map table (sparring proxy, session 12)
 							   // 3 = ours with the top teams' choices where they beat ours (rushbait-v2, interlock, expanse; stampede with md_stampede)
 	int md_stampede = 1;	   // mapdraft 3: stampede drafts the 2nd team's casters (Prism, Stellar, C&I, Ryth, Tavi) for the ring plan
 	// mapdraft 6 (parameter draft): open small-team map when area >= pd_open_area and mean group distance >= pd_open_dist; Varg as the
@@ -178,6 +175,17 @@ struct Params
 							   //     9 = Mite (Jungle, Durability in the damage stat, Bruiser health, Power)
 							   // 2 = value-model builds (tools/analysis/item_value.py): Bruiser over Power, early Treasure
 							   //     on the rich farmers, survival first on Cassi & Issac, builds that never run out
+							   // 11 = Intercontinental Fish (ladder #1, 45 games of Oct 19): carries open with Power in the damage stat,
+							   //     tanks with Bruiser + Durability health, Home health second on the carries, then Power forever
+	// Home emblem (recall takes 3 turn ends instead of 5). IC buys it second on the bodies whose first emblem is a damage
+	// emblem (Stellar, Issac, Varg); it recalls 28 times a game, 44% of them capture-recalls.
+	int ic_home = 0;		   // 1: Home health emblem right after the first emblem when that one is in the damage stat (derived
+							   //    from the build, not the champion); 2: on every body; 3: once this body has recalled ic_home_recalls times
+	int ic_home_recalls = 6;   // ic_home 3
+	float commit_hit = 2.0f;	   // > 0: the current target's score x this while we hit it in the last 2 rounds (finish what we started)
+	int commit_keep = 0;	   // 1: a camp we hit in the last 2 rounds is not dropped by the join limits
+	float half_grade = 0.f;	   // > 0: enemy-half risk cost x min(1, (d_ally - d_enemy) / (half_grade x (d_ally + d_enemy))) (0 = flat cost)
+	int reward_claim_gone = 0; // 1: a living ally's claim that leaves a reward we cannot see means the reward was taken (shared-memory read)
 	int rich_treasure_first = 0; // build_style 2: Ren and Stellar open with Treasure (1) or with r2's first emblem
 							   // (Ren Jungle health, Stellar Monster) and Treasure second (0); vs _v6 on the ladder
 							   // maps: 1 won 19/24 (gems +8,623), 0 won 21/24 (+9,385, deaths 441-670)
@@ -363,6 +371,7 @@ struct Params
 	int o2_ring = 3;			// objective group with live elks: casters (a range-4 damage/stun/area spell) cast from distance 4 and never step into camp reach
 								// 3: on 60x50 or whenever our team has Prism or Tavi (the parameter draft takes them on objective maps of any size)
 	int o2_ring_team = 5;		// o2_ring 3: only with this many champions per team (obj_pack4, 4 champions: ring 14/30 vs 20/30 without it; 5: 75/90 vs 51/90)
+	int o2_ring_size = 1;		// o2_ring 2-3: also ring on any 60x50 objective map whatever the draft (the stampede size; 0 = only the team test of o2_ring 3, ISSUES.md #1)
 								// (2 = on stampede only: elsewhere, e.g. ambush, it lost 5 of 11 changed games in session 10)
 	float o2_ring_clear = 160.f; // ring plan ready when the casters' spell damage clears the group within this many rounds
 	float o2_ring_share = 0.5f;	 // value share per caster

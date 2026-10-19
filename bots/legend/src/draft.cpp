@@ -247,12 +247,20 @@ constexpr int OURS[][5] = {
 	{ -1 }, { -1 }, { -1 }, { -1 }, { -1 }, { -1 }, { 3, 4, 9, -1, -1 }, { -1 }, { 8, 4, 3, 0, -1 }, { -1 }, { -1 }, { -1 },
 	{ -1 }, { -1 }, { 8, 4, 3, 0, -1 }, { 5, 4, 3, 0, 10 }, { -1 } };
 
+// mapdraft 7 (sparring proxy only): Intercontinental Fish's per-map draft, Stellar first (44 of the 45 Oct 19 INTERWIN games,
+// experiments/interwin_oct19; the same table in all of them).
+constexpr int ICT[][5] = {
+	{ 4, 8, 3, 0, 9 }, { 4, 8, 3, -1, -1 }, { 4, 10, 5, 3, 8 }, { 4, 8, 3, 0, 9 }, { 4, 8, 3, 0, 9 }, { 4, 8, 3, 0, 9 },
+	{ 3, 4, 9, -1, -1 }, { 4, 8, 3, -1, -1 }, { 4, 8, 3, 0, -1 }, { 4, 8, 3, 0, 9 }, { 4, 8, 3, 0, 9 }, { 4, 8, 3, -1, -1 },
+	{ 4, 8, 3, 0, 9 }, { 4, 5, 3, 9, -1 }, { 4, 8, 3, 0, -1 }, { 4, 10, 5, 3, 8 }, { 4, 8, 3, 0, -1 },
+	{ 4, 8, 3, -1, -1 }, { 4, 8, 3, 0, -1 }, { 4, 8, 3, 0, 9 } };
+
 bool table_pick(const std::vector<D>& mine)
 {
 	const int om = official_map();
 	if (P.mapdraft == 3 && (om < 0 || OURS[om][0] < 0 || (om == OM_STAMPEDE && !P.md_stampede)))
 		return false;
-	const int (*T)[5] = P.mapdraft == 3 ? OURS : P.mapdraft == 1 ? MITE : IFISH;
+	const int (*T)[5] = P.mapdraft == 7 ? ICT : P.mapdraft == 3 ? OURS : P.mapdraft == 1 ? MITE : IFISH;
 	const int ts = std::clamp(static_cast<int>(bc::draft::team_size()), 3, 5);
 	const int* row = T[om >= 0 ? om : 17 + ts - 3];
 	for (int k = 0; k < 5 && row[k] >= 0; ++k)
@@ -454,7 +462,7 @@ void play_draft()
 		{
 		}
 	}
-	if (P.mapdraft >= 1 && P.mapdraft <= 3)
+	if ((P.mapdraft >= 1 && P.mapdraft <= 3) || P.mapdraft == 7)
 	{
 		try
 		{

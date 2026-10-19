@@ -449,6 +449,8 @@ void World::perceive(vec2 me)
 			}
 			else if (s == 2)
 			{
+				if (g.st != ST_REWARD)
+					g.reward_round = round;
 				changed |= g.st != ST_REWARD;
 				g.st = ST_REWARD;
 				g.awake = false;
@@ -479,7 +481,7 @@ void World::perceive(vec2 me)
 			else if (g.st == ST_REWARD && round - g.seen_round > 8)
 			{
 				g.st = ST_RESPAWN;
-				g.ready_round = g.seen_round + 6 + g.respawn;
+				g.ready_round = g.seen_round + static_cast<int>(bc::constants::capture_time) + 1 + g.respawn; // the reward lands one round after the capture phases
 			}
 		}
 		g.enemy_on_tile = false;

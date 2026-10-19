@@ -41,6 +41,18 @@ void cycle(std::vector<I>& v, std::initializer_list<I> blocks, int n)
 			rep(v, it, 5);
 }
 
+bool is_home_shard(I it)
+{
+	return it == I::home_shard_of_health || it == I::home_shard_of_strength || it == I::home_shard_of_focus;
+}
+
+bool is_health_shard(I it)
+{
+	return it == I::monster_shard_of_health || it == I::power_shard_of_health || it == I::durability_shard_of_health ||
+		it == I::treasure_shard_of_health || it == I::jungle_shard_of_health || it == I::home_shard_of_health ||
+		it == I::bruiser_shard_of_health;
+}
+
 // Shard plans: five shards of a family complete its emblem; only the emblem grants the passive.
 std::vector<I> build_for(CT t, int bs)
 {
@@ -80,6 +92,36 @@ std::vector<I> build_for(CT t, int bs)
 				break;
 			}
 		rep(v, power, 300);
+		return v;
+	}
+	if (bs == 11)
+	{
+		// Intercontinental Fish (ladder #1; emblem order of its bodies in 36 games of Oct 19, experiments/interwin_oct19):
+		// Stellar PfE > HhE > DhE (17 of 36), Ren BhE > DhE > PfE, Cassi PfE > DfE > BhE, Issac PsE > HhE > DhE, Ryth BhE > DhE > PsE,
+		// Varg PsE > HhE; first emblem near r83 (Stellar), r74 (Ren). Power in the damage stat for the rest of the game.
+		const bool focus = t == CT::ren || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
+		const I pw = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
+		switch (t)
+		{
+		case CT::ren:
+		case CT::ryth:
+		case CT::marcella:
+			rep(v, I::bruiser_shard_of_health, 5);
+			rep(v, I::durability_shard_of_health, 5);
+			break;
+		case CT::cassi:
+		case CT::willow:
+			rep(v, pw, 5);
+			rep(v, I::durability_shard_of_focus, 5);
+			rep(v, I::bruiser_shard_of_health, 5);
+			break;
+		default: // Stellar, Prism, Tavi, Issac, Varg, Vendetta, Vesper
+			rep(v, pw, 5);
+			rep(v, I::home_shard_of_health, 5);
+			rep(v, I::durability_shard_of_health, 5);
+			break;
+		}
+		rep(v, pw, 300);
 		return v;
 	}
 	if (bs == 9)
@@ -393,6 +435,13 @@ void Brain::init()
 	W.init_static();
 	if (W.mono_mode && P.mono_build)
 		build = build_for(type, P.mono_build);
+	if ((P.ic_home == 1 || P.ic_home == 2) && build.size() >= 5)
+	{
+		// ic_home: a Home emblem second, on the bodies whose first emblem is a damage emblem (1) or on all (2).
+		const bool damage_first = !is_health_shard(build[0]);
+		if (P.ic_home == 2 || damage_first)
+			insert_home(5);
+	}
 	// Islands are searched later (prebuild_fields): ~47k fuel on 100x100 maps, not needed in the opening rounds.
 	W.island_of.assign(W.groups.size(), -1);
 	W.islands_pending = true;
@@ -486,6 +535,33 @@ void Brain::turn()
 	}
 	W.perceive(pos);
 	C.read(round);
+	if (P.reward_claim_gone)
+	{
+		// Shared memory says who works which group. A living ally whose claim leaves a reward we cannot see has taken it
+		// (interlock, session 12: Ren captured a wolf reward r17-22, its claim left at r23, and Ryth, 12 steps away and
+		// blind to the tile, walked off a wolf it had hit 3 times to capture a reward that was gone).
+		for (int i = 0; i < 6 && i < static_cast<int>(W.allies.size()); ++i)
+		{
+			const auto k = static_cast<std::size_t>(i);
+			const int was = prev_claim[k], now = C.claim[k];
+			if (i != W.my_index && was >= 0 && was != now && was < static_cast<int>(W.groups.size()) && W.allies[k].alive)
+			{
+				auto& g = W.groups[static_cast<std::size_t>(was)];
+				// Mode 2: only when the ally held the claim for a whole capture since the reward appeared (mode 1 also fired on
+				// allies that left a reward uncaptured to heal or flee, and the reward then expired: 125 of 170 vs 135).
+				const bool held = P.reward_claim_gone != 2 ||
+					round - std::max(prev_claim_since[k], g.reward_round) >= static_cast<int>(bc::constants::capture_time);
+				if (g.st == ST_REWARD && g.seen_round != round && held)
+				{
+					g.st = ST_RESPAWN;
+					g.ready_round = round + g.respawn;
+				}
+			}
+			if (was != now)
+				prev_claim_since[k] = round;
+			prev_claim[k] = now;
+		}
+	}
 	C.write_bag(static_cast<int>(gems));
 	{
 		// Learning signals: champion damage marks a painful place; an enemy dying near us relieves it.
@@ -515,6 +591,11 @@ void Brain::turn()
 	if (P.mi_learn_burst || P.mi_lethal)
 		learn_burst();
 	XM(xm_pre());
+	{
+		const bool rec = flag(state, bc::champion_state::recalling);
+		recalls_started += rec && !was_recalling;
+		was_recalling = rec;
+	}
 
 	if (flag(state, bc::champion_state::recalling) || flag(state, bc::champion_state::submitting_gems) ||
 		flag(state, bc::champion_state::teleporting))
@@ -799,6 +880,8 @@ void Brain::shop()
 		{
 		}
 	}
+	if (P.ic_home == 3 && recalls_started >= P.ic_home_recalls)
+		insert_home(build_idx);
 	while (build_idx < build.size() && gold >= 30)
 	{
 		const I item = build[build_idx];
@@ -2408,7 +2491,7 @@ bool Brain::home_trip()
 	if (dh >= BIG || dh <= (P.home_edge_fix ? 0 : 2))
 		return false;
 	const bool can_recall = dh > P.recall_min_dist && safe_to_recall();
-	const int cost = can_recall ? static_cast<int>(bc::constants::recall_time) : dh;
+	const int cost = can_recall ? recall_turns() : dh;
 	const bool shopper = type != CT::tavi && build_idx < build.size();
 	const int shards = shopper ? static_cast<int>(gold / 30) : 0;
 	const bool hurt = hp < P.home_hp * max_hp;
@@ -2745,7 +2828,7 @@ bool Brain::tribute(bool force)
 	// flip the choice each round and the champion oscillated in place for hundreds of rounds.
 	const bool committed = P.sticky_tribute && task == T_TRIBUTE && static_cast<int>(gems) >= 10;
 	// Recall and bank at the altar next to spawn when that beats walking (and heals and shops on the way).
-	const int via_home = static_cast<int>(bc::constants::recall_time) + W.spawn_altar_d;
+	const int via_home = recall_turns() + W.spawn_altar_d;
 	const bool recall_bank = W.dist_home(pos) > P.recall_min_dist && via_home + 2 < dist && safe_to_recall() && !endgame;
 	// A long bank trip is worth a bigger bag: the threshold rises with the cheapest way to an altar from here,
 	// so a body far from every altar keeps farming and banks when its route passes close to one.
@@ -2852,9 +2935,10 @@ void Brain::refresh_item_flags() const
 	// for every camp group every turn).
 	if (item_flags_idx == build_idx)
 		return;
-	int j = 0, d = 0, m = 0;
+	int j = 0, d = 0, m = 0, h = 0;
 	for (std::size_t i = 0; i < build_idx && i < build.size(); ++i)
 	{
+		h += is_home_shard(build[i]);
 		j += build[i] == I::jungle_shard_of_strength || build[i] == I::jungle_shard_of_health || build[i] == I::jungle_shard_of_focus;
 		d += build[i] == I::durability_shard_of_health || build[i] == I::durability_shard_of_strength || build[i] == I::durability_shard_of_focus;
 		m += build[i] == I::monster_shard_of_health || build[i] == I::monster_shard_of_strength || build[i] == I::monster_shard_of_focus;
@@ -2862,7 +2946,27 @@ void Brain::refresh_item_flags() const
 	jungle_ok = j >= 5;
 	durability_ok = d >= 5;
 	monster_ok = m >= 5;
+	home_ok = h >= 5;
 	item_flags_idx = build_idx;
+}
+
+void Brain::insert_home(std::size_t at)
+{
+	// A Home emblem (five Home health shards) at shard index `at`, rounded up to the next emblem boundary of the plan.
+	for (const I it : build)
+		if (is_home_shard(it))
+			return;
+	at = std::max(at, build_idx);
+	at = std::min(build.size(), (at + 4) / 5 * 5);
+	build.insert(build.begin() + static_cast<std::ptrdiff_t>(at), 5, I::home_shard_of_health);
+	item_flags_idx = static_cast<std::size_t>(-1);
+}
+
+int Brain::recall_turns() const
+{
+	// Recall takes recall_time turn ends, three with a Home emblem.
+	refresh_item_flags();
+	return static_cast<int>(bc::constants::recall_time) - (home_ok ? 2 : 0);
 }
 
 bool Brain::jungle_done() const
@@ -2953,7 +3057,7 @@ int Brain::trip_cost(const Group& g) const
 {
 	// Heal at spawn and come back: recall (5 turn ends, 3 with Home) beats walking once spawn is far.
 	const int hd = std::min(g.d_home_c, 60);
-	const int recall = static_cast<int>(bc::constants::recall_time);
+	const int recall = recall_turns();
 	return 2 + std::min(2 * hd, recall + hd);
 }
 
@@ -3373,7 +3477,10 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			const float solo_rounds = hp_left / std::max(10.f, ally_dps);
 			const bool heavy = follow_g || g.monolith || g.elk || (!g.harmless && (solo_rounds > P.join_min_rounds || g.attackers >= 2));
 			const int max_join = P.mi_two_bodies ? std::min(P.max_join, 1) : P.max_join; // mi_two_bodies (default branch)
-			if (!heavy || (!follow_g && claimers >= (g.monolith ? 4 : 1 + max_join) && !(W.obj_mode && g.objective && P.obj_team)))
+			// commit_keep: we are already hitting it; the join limits are for walking in, not for leaving a camp half done
+			// (17 unopposed official games: 67 camps we had hit left on this rule).
+			const bool committed = P.commit_keep && g.id == task_group && g.st == ST_ALIVE && round - target_hit_round <= 2;
+			if (!committed && (!heavy || (!follow_g && claimers >= (g.monolith ? 4 : 1 + max_join) && !(W.obj_mode && g.objective && P.obj_team))))
 				{ WHY(6); return -1; }
 			// A joiner that arrives after the claimers are done walked for nothing (pilgrimage: Cassi crossed the map between
 			// two 68-gem packs for 300 rounds, hitting each one a few times before someone else captured it).
@@ -3505,7 +3612,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			}
 		}
 		bool ring_ok = false;
-		if (P.o2_ring && (P.o2_ring == 1 || (W.W == 60 && W.H == 50) || (P.o2_ring == 3 && W.ring_comp && W.team_champs >= P.o2_ring_team)) && W.obj_mode && g.objective && g.attackers >= 1 && (sc_obj_focus < 0 || sc_obj_focus == g.id))
+		if (P.o2_ring && (P.o2_ring == 1 || (P.o2_ring_size && W.W == 60 && W.H == 50) || (P.o2_ring == 3 && W.ring_comp && W.team_champs >= P.o2_ring_team)) && W.obj_mode && g.objective && g.attackers >= 1 && (sc_obj_focus < 0 || sc_obj_focus == g.id))
 			ring_ok = ring_ready(g, hp_left, ring_kill);
 		if (ring_ok)
 		{
@@ -3556,7 +3663,13 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			value += deny_bonus * static_cast<float>(g.gems) * share; // what they lose is the gems (default branch)
 		else
 			value *= 1.f + deny_bonus;
-		time += enemy_half_penalty * risk;
+		// half_grade: the risk grows with depth into their half (walk distances from the two spawns), instead of the same
+		// cost one step past the midline as next to their spawn. IC spends 23% of its time in the neutral band (ours 17%)
+		// and takes 6.1 neutral captures a game (ours 4.3).
+		float depth = 1.f;
+		if (P.half_grade > 0.f)
+			depth = std::min(1.f, static_cast<float>(g.d_ally - g.d_enemy) / (P.half_grade * static_cast<float>(std::max(1, g.d_ally + g.d_enemy))));
+		time += enemy_half_penalty * risk * std::max(0.f, depth);
 		if (P.unknown_keep == 2 ? (g.seen_round < 0 || round - g.seen_round > 60) : (round - g.seen_round > 60 && !(P.unknown_keep && g.id == task_group)))
 			value *= P.unknown_discount;
 	}
@@ -3872,7 +3985,13 @@ void Brain::farm()
 			tr_sc[g.id] = s;
 #endif
 			if (g.id == task_group)
+			{
 				s *= P.mi_flip_guard && round < mi_sticky_until ? 1000.f : P.hysteresis; // mi_flip_guard: committed
+				// commit_hit: a live camp we hit in the last two rounds is worth finishing (17 unopposed official games:
+				// 92 switches away from a camp we had hit, for a target that scored a little higher; it heals and we walk).
+				if (P.commit_hit > 0.f && g.st == ST_ALIVE && round - target_hit_round <= 2)
+					s *= P.commit_hit;
+			}
 			else if (P.flip_window > 0 && g.id == left_group && round - left_round <= P.flip_window)
 				s /= P.flip_margin; // going back to a target we just left: A-B-A-B flips walk in place
 			if (s > best_s)
@@ -4168,7 +4287,7 @@ bool Brain::capture_group(Group& g)
 		// Strong ladder teams do this after almost every capture far from home.
 		// Capture lands at the start of round since + capture_time + 1; a recall started in round R lands at
 		// R + recall_time. Start it so both land together (never earlier: an early teleport loses the reward).
-		const int recall_t = static_cast<int>(bc::constants::recall_time) - (has_home ? 2 : 0);
+		const int recall_t = recall_turns();
 		const int start_at = capture_since + static_cast<int>(bc::constants::capture_time) + 1 - recall_t;
 		if (round >= std::max(capture_since + 1, start_at) && W_dist_home_ok() && safe_to_recall())
 		{
@@ -4191,7 +4310,7 @@ bool Brain::capture_group(Group& g)
 				return true;
 			}
 			const bool bank_here = P.bank_first && adist < BIG && spawn_altar < BIG &&
-				adist + static_cast<int>(bc::constants::recall_time) + P.bank_first_margin <= spawn_altar;
+				adist + recall_t + P.bank_first_margin <= spawn_altar;
 			const bool bag = static_cast<int>(gems) + g.gems >= bank_min(std::min(adist, spawn_altar < BIG ? 1 + spawn_altar : BIG));
 			if (bag && bank_here && !hurt)
 			{
@@ -4341,7 +4460,7 @@ bool Brain::attack_chain_camp(Group& g, std::size_t idx)
 	if (!attack_unit(g.camps[idx].camp))
 		return false;
 	if (g.id == task_group)
-		task_progress = round;
+		task_progress = round, target_hit_round = round;
 #ifdef LEGEND_TRACE
 	if (g.id == task_group)
 		++tr_hits;

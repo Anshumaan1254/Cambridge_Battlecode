@@ -3,8 +3,8 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-19 (session 12: `main` is now the only branch; IC analysis of 45 Oct 19 games, SUGGESTIONS.md / ISSUES.md; see §S12)**.
-  Rule from the user: update this file and push at every step. Start with **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
+- Last updated: **2026-10-19 (session 13: base = `legend_m14_commit`; 50 new ladder games analysed; see §S13)**.
+  Rule from the user: update this file and push at every step. Start with **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
   never force) before every push. No PR unless the user asks.
@@ -13,6 +13,32 @@ running or unfinished, and what to do next, so a new agent can continue without 
   is either offline (training parameters before submission) or in-match (adapting inside one game).
 
 ---
+
+## S13. SESSION 13 (2026-10-19 21:00 UTC, new container): read this first
+
+- **The user's request**: the main bot is now **`legend_m14_commit`** (= `_ch2`, zip sha256 e49afea0…, source hash 5f24a1979ddc; now
+  `submissions/legend.zip`, `bots/legend/src` = it + the inert `LEGEND_RUNTIME_PARAMS` block, wasm byte-identical). New input: `new_matches.zip`
+  = 10 match groups, **50 games, 11 wins** (`experiments/ladder_oct19b/`, `index.json` has map / our side / drafts / score; we are side B in
+  group cd6785ff). The new bot must beat these opponents by a wide margin; loopholes / exploits / reverse engineering allowed; **no hardcoded
+  map strategy** (everything derived from the map); ideas to test: a mobile body as a distraction, fight instead of recalling when still able,
+  team synergies (Willow + two tanks; other champions), and the user's list: (1) drop the 60x50 ring term (ISSUES #1), (2) draft-time farming
+  zones and routes (port `tools/strategy_v2/map_plan.py`, spec in doc 03), (3) `aoe_reach5`, `spread_vs_splash`, `pair_space`, `burst_exit`
+  one at a time, (4) validate commitment. Opus subagents only for heavy work, few parallel tasks, checkpoints here. The four PDFs in the upload
+  are personal documents (invoices, a boarding pass, a paper): not used, not committed.
+- Setup in a new container: `tools/setup_session.sh` (now also builds `_ch2` from `submissions/history/legend_m14_commit_20261019.zip`, `_x_ic`, `_snk`).
+- **Ladder findings (doc 13 in progress; tables `experiments/ladder_oct19b/analysis/`, `pergame.txt`; tools `tools/strategy_v2/ladder_pergame.py`,
+  `ladder_deaths.py` take the side of each game from `index.json`)**:
+  - Opponents (one per group, by draft): 2306b82f Varg/Ryth-first (0/5), 25464f3d C&I-first + Tavi/Willow/Vendetta (0/5), 43bd73e8 C&I-first (1/5),
+    44b9a95f Varg-first (2/5), 5f7de946 Tavi/Willow casters (1/5), 6713bf97 Ren-first = old ifish table (2/5), 78da97d8 C&I-first + Vendetta/Tavi (1/5),
+    c3f76526 Stellar-first = IC (1/5), c6ed5477 Stellar-first + Tavi (1/5), cd6785ff C&I + Tavi (2/5, we are side B).
+  - Per game (47 non-contest): deaths 7.2 vs 5.5, camp gems 733 vs 993, captures home / neutral / enemy 15.9 / 2.6 / 0.4 vs 19.3 / 6.1 / 1.3,
+    camp damage per round 81 vs 108 (per camp round: their Stellar 170 vs 144, Ryth 114 vs 86, Issac 78 vs 60).
+  - **contest 0/3 with 87, 66, 51 deaths** (they earn 10-24k gold to our 1.5-2.8k); swirl 20 and 24 deaths, fragment 21 / 17 (mirror drafts),
+    eight 20 / 17 / 20, collision up to 12: the blowouts are death cascades.
+  - **Close races lost by timing**: rows 990-1012 (we reached 990 at r345, they 990 at r355 and won with a 22-gem bag at r358), 990-1023, 990-1056;
+    lanes 918-1016 etc.: needs an endgame finisher (fastest bag >= the gems still needed), not the best gem rate.
+  - Traced (fragment mirror, r28-44): the enemy woke an elk and stepped back; our Ren walked into its range and stood / walked next to it for 8
+    rounds without attacking (740 -> 0, killed by the camp); our C&I at 220/700 stayed in the field and died to Stellar / Cassi area casts.
 
 ## S12. SESSION 12 (2026-10-19, same container as S10/S11): read this first
 

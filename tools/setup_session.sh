@@ -92,12 +92,18 @@ SRC=bots/_x_pd2 tools/variant.sh _pd2 mapdraft=6 > /dev/null
 # _x_pg = _pd2 + experiments/wip/x_pg.patch (size-free ring and contest gates); _pg3 = legend_m14 candidate
 SRC=bots/_pd2 tools/variant.sh _x_pg > /dev/null && (cd bots/_x_pg && patch -s -p1 --no-backup-if-mismatch < ../../experiments/wip/x_pg.patch)
 SRC=bots/_x_pg tools/variant.sh _pg3 o2_ring=3 mono_size50=2 pd_obj_multi=1 > /dev/null
-for b in _pg3 _pd2 _pd _fc _fw _m11 _rm _ST _m2 _m3 _x_gp _m4 _m4x _m5a _px9 _xp4 _m7 _fA _fB _fC _mite _ifish _m8 _cS3 _m9 _m10 legend idle; do cambc build $b > /dev/null && echo "built $b"; done
+# Session 13: _ch2 = legend_m14_commit (the main bot from Oct 19) = the zip's sources exactly (hash 5f24a1979ddc);
+# _x_ic = _pg3 + x_ic.patch (all session-12 switches, off); _x_sn / _snk = the sneaky-bush proxy (x_sn.patch on _m10)
+mkdir -p bots/_ch2 && rm -rf bots/_ch2/src && (cd bots/_ch2 && python3 -c "import zipfile;zipfile.ZipFile('../../submissions/history/legend_m14_commit_20261019.zip').extractall('.')") && cp bots/legend/.gitignore bots/_ch2/
+SRC=bots/_pg3 tools/variant.sh _x_ic > /dev/null && (cd bots/_x_ic && patch -s -p1 --no-backup-if-mismatch < ../../experiments/wip/x_ic.patch)
+SRC=bots/_m10 tools/variant.sh _x_sn > /dev/null && (cd bots/_x_sn && patch -s -p1 --no-backup-if-mismatch < ../../experiments/wip/x_sn.patch)
+SRC=bots/_x_sn tools/variant.sh _snk mapdraft=4 build_style=9 > /dev/null
+for b in _pg3 _ch2 _snk _pd2 _pd _fc _fw _m11 _rm _ST _m2 _m3 _x_gp _m4 _m4x _m5a _px9 _xp4 _m7 _fA _fB _fC _mite _ifish _m8 _cS3 _m9 _m10 legend idle; do cambc build $b > /dev/null && echo "built $b"; done
 python3 - <<'EOF'
 import sys; sys.path.insert(0, 'tools'); import ledger
 want = {'_rm': '339a961d3427', '_ST': 'ca21cbfe785b', '_eA': '0ee193334b60', '_eB': '654605b27deb', '_eC': '116ccc8b53b1',
 		'_m2': '1684aa2a482c', '_m3': '86c9e8f3de35', '_x_gp': '92e199947185', '_m4': '0dc2a2aac28a',
-		'_m5a': '5620bb02867a', '_xp4': '6a1a52e4ddb8', '_m7': '61dd9019869d', '_mite': '688b37be81e3', '_ifish': '6fde429be694', '_m8': '540e17bfe5a4', '_cS3': '540e17bfe5a4', '_m9': '0df32fa5ee2d', '_m10': 'a0e6030bf0f4', '_m11': '0dd8010eaf12', '_fw': '104743e4f1d5', '_fc': '531e7331a283', '_pd': '8ede6d7d3aa1', '_pd2': 'c8272a7e1846', '_pg3': 'cdc6dc9027f3', '_fA': '25fe5950b034', '_fB': 'f8e472c342f3', '_fC': 'ef5391dcc92b'}
+		'_m5a': '5620bb02867a', '_xp4': '6a1a52e4ddb8', '_m7': '61dd9019869d', '_mite': '688b37be81e3', '_ifish': '6fde429be694', '_m8': '540e17bfe5a4', '_cS3': '540e17bfe5a4', '_m9': '0df32fa5ee2d', '_m10': 'a0e6030bf0f4', '_m11': '0dd8010eaf12', '_fw': '104743e4f1d5', '_fc': '531e7331a283', '_pd': '8ede6d7d3aa1', '_pd2': 'c8272a7e1846', '_pg3': 'cdc6dc9027f3', '_ch2': '5f24a1979ddc', '_snk': '70c95c1095f6', '_fA': '25fe5950b034', '_fB': 'f8e472c342f3', '_fC': 'ef5391dcc92b'}
 for b, h in want.items():
 	got = ledger.src_hash(b)
 	print(f'{b:5s} {got} {"ok" if got == h else "MISMATCH (expected " + h + ")"}')

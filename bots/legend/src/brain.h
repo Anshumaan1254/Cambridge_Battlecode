@@ -138,7 +138,13 @@ private:
 	bool monster_done() const;
 	void refresh_item_flags() const;
 	mutable std::size_t item_flags_idx = static_cast<std::size_t>(-1);
-	mutable bool jungle_ok = false, durability_ok = false, monster_ok = false;
+	mutable bool jungle_ok = false, durability_ok = false, monster_ok = false, home_ok = false;
+	void insert_home(std::size_t at);
+	int recall_turns() const;
+	int recalls_started = 0; // ic_home 3
+	std::array<int, 6> prev_claim{ -1, -1, -1, -1, -1, -1 }; // reward_claim_gone: last round's claims
+	std::array<int, 6> prev_claim_since{}; // ... and the round each ally's claim took its value
+	bool was_recalling = false;
 	bool has_home = false; // Home emblem (faster recall); we never buy it, kept for the capture-recall timing
 #ifdef XM_TRACE
 	// Prediction audit state (all updated inside debug_block, so it costs no fuel and changes no decision).
@@ -238,6 +244,7 @@ private:
 
 	// memory
 	int task = T_NONE, task_group = -1, task_since = 0;
+	int target_hit_round = -100; // commit_hit / commit_keep: last round we hit a camp of task_group
 	int task_progress = -1; // giveup_progress: last round we hit, captured or waited at task_group
 	int ward_round = -100;
 	vec2 ward_pos{ -1, -1 }; // where our ward was last placed (ward_bush)

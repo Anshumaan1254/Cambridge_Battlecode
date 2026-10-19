@@ -1,6 +1,6 @@
 diff -ruN _pg3/src/brain.cpp _x_ic/src/brain.cpp
 --- a/src/brain.cpp	2026-10-19 18:10:45.813043112 +0000
-+++ b/src/brain.cpp	2026-10-19 19:07:39.383201773 +0000
++++ b/src/brain.cpp	2026-10-19 19:37:31.071181470 +0000
 @@ -41,6 +41,18 @@
  			rep(v, it, 5);
  }
@@ -231,7 +231,7 @@ diff -ruN _pg3/src/brain.cpp _x_ic/src/brain.cpp
  		if (P.unknown_keep == 2 ? (g.seen_round < 0 || round - g.seen_round > 60) : (round - g.seen_round > 60 && !(P.unknown_keep && g.id == task_group)))
  			value *= P.unknown_discount;
  	}
-@@ -3872,7 +3985,13 @@
+@@ -3872,7 +3985,17 @@
  			tr_sc[g.id] = s;
  #endif
  			if (g.id == task_group)
@@ -241,11 +241,15 @@ diff -ruN _pg3/src/brain.cpp _x_ic/src/brain.cpp
 +				// 92 switches away from a camp we had hit, for a target that scored a little higher; it heals and we walk).
 +				if (P.commit_hit > 0.f && g.st == ST_ALIVE && round - target_hit_round <= 2)
 +					s *= P.commit_hit;
++				// commit_prog: the same, growing with the share of the group already dead (a camp almost done is the
++				// cheapest gems on the map; one barely started is not).
++				if (P.commit_prog > 0.f && g.st == ST_ALIVE && round - target_hit_round <= 2 && g.max_hp > 0.f)
++					s *= 1.f + P.commit_prog * std::clamp(1.f - g.hp_total / g.max_hp, 0.f, 1.f);
 +			}
  			else if (P.flip_window > 0 && g.id == left_group && round - left_round <= P.flip_window)
  				s /= P.flip_margin; // going back to a target we just left: A-B-A-B flips walk in place
  			if (s > best_s)
-@@ -4168,7 +4287,7 @@
+@@ -4168,7 +4291,7 @@
  		// Strong ladder teams do this after almost every capture far from home.
  		// Capture lands at the start of round since + capture_time + 1; a recall started in round R lands at
  		// R + recall_time. Start it so both land together (never earlier: an early teleport loses the reward).
@@ -254,7 +258,7 @@ diff -ruN _pg3/src/brain.cpp _x_ic/src/brain.cpp
  		const int start_at = capture_since + static_cast<int>(bc::constants::capture_time) + 1 - recall_t;
  		if (round >= std::max(capture_since + 1, start_at) && W_dist_home_ok() && safe_to_recall())
  		{
-@@ -4191,7 +4310,7 @@
+@@ -4191,7 +4314,7 @@
  				return true;
  			}
  			const bool bank_here = P.bank_first && adist < BIG && spawn_altar < BIG &&
@@ -263,7 +267,7 @@ diff -ruN _pg3/src/brain.cpp _x_ic/src/brain.cpp
  			const bool bag = static_cast<int>(gems) + g.gems >= bank_min(std::min(adist, spawn_altar < BIG ? 1 + spawn_altar : BIG));
  			if (bag && bank_here && !hurt)
  			{
-@@ -4341,7 +4460,7 @@
+@@ -4341,7 +4464,7 @@
  	if (!attack_unit(g.camps[idx].camp))
  		return false;
  	if (g.id == task_group)
@@ -334,7 +338,7 @@ diff -ruN _pg3/src/draft.cpp _x_ic/src/draft.cpp
  		{
 diff -ruN _pg3/src/params.h _x_ic/src/params.h
 --- a/src/params.h	2026-10-19 18:10:45.913943997 +0000
-+++ b/src/params.h	2026-10-19 18:45:10.587044873 +0000
++++ b/src/params.h	2026-10-19 19:37:31.072834213 +0000
 @@ -159,6 +159,7 @@
  	int ward_bush_gap = 3;	   // ... (ward_bush 2)
  	int ward_bush_maps = 1;	   // 0 = ward bushes on every map; 1 = only on lone-monolith (contest-type) maps
@@ -343,7 +347,7 @@ diff -ruN _pg3/src/params.h _x_ic/src/params.h
  							   // 3 = ours with the top teams' choices where they beat ours (rushbait-v2, interlock, expanse; stampede with md_stampede)
  	int md_stampede = 1;	   // mapdraft 3: stampede drafts the 2nd team's casters (Prism, Stellar, C&I, Ryth, Tavi) for the ring plan
  	// mapdraft 6 (parameter draft): open small-team map when area >= pd_open_area and mean group distance >= pd_open_dist; Varg as the
-@@ -174,6 +175,17 @@
+@@ -174,6 +175,18 @@
  							   //     9 = Mite (Jungle, Durability in the damage stat, Bruiser health, Power)
  							   // 2 = value-model builds (tools/analysis/item_value.py): Bruiser over Power, early Treasure
  							   //     on the rich farmers, survival first on Cassi & Issac, builds that never run out
@@ -355,13 +359,14 @@ diff -ruN _pg3/src/params.h _x_ic/src/params.h
 +							   //    from the build, not the champion); 2: on every body; 3: once this body has recalled ic_home_recalls times
 +	int ic_home_recalls = 6;   // ic_home 3
 +	float commit_hit = 0.f;	   // > 0: the current target's score x this while we hit it in the last 2 rounds (finish what we started)
++	float commit_prog = 0.f;   // > 0: the current target's score x (1 + this x share of its health already removed) while we hit it
 +	int commit_keep = 0;	   // 1: a camp we hit in the last 2 rounds is not dropped by the join limits
 +	float half_grade = 0.f;	   // > 0: enemy-half risk cost x min(1, (d_ally - d_enemy) / (half_grade x (d_ally + d_enemy))) (0 = flat cost)
 +	int reward_claim_gone = 0; // 1: a living ally's claim that leaves a reward we cannot see means the reward was taken (shared-memory read)
  	int rich_treasure_first = 0; // build_style 2: Ren and Stellar open with Treasure (1) or with r2's first emblem
  							   // (Ren Jungle health, Stellar Monster) and Treasure second (0); vs _v6 on the ladder
  							   // maps: 1 won 19/24 (gems +8,623), 0 won 21/24 (+9,385, deaths 441-670)
-@@ -359,6 +371,7 @@
+@@ -359,6 +372,7 @@
  	int o2_ring = 3;			// objective group with live elks: casters (a range-4 damage/stun/area spell) cast from distance 4 and never step into camp reach
  								// 3: on 60x50 or whenever our team has Prism or Tavi (the parameter draft takes them on objective maps of any size)
  	int o2_ring_team = 5;		// o2_ring 3: only with this many champions per team (obj_pack4, 4 champions: ring 14/30 vs 20/30 without it; 5: 75/90 vs 51/90)

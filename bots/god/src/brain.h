@@ -32,6 +32,7 @@ struct ScoreParts
 class Brain
 {
 public:
+	void safe_fallback(); // F6 watchdog (main.cpp)
 	void turn();
 
 private:
@@ -244,6 +245,18 @@ private:
 	bool altar_ours(std::size_t i) const; // our half by its approach tiles (the altar tile itself is a wall: no distance)
 	bool escort_alert() const; // the alert slot holds a fresh ESCORT (DANGER posted at an altar tile)
 	int my_slot = -1;		   // P.dm_plan: our pick slot in the draft plan (-1 unknown)
+	// F4 anchors (P.anchors): the team's anchor order (fixed at init), this turn's anchors, our role.
+	std::vector<int> anchor_order;
+	std::array<bool, 8> anchor_now{};
+	bool is_anchor = false;
+	int anchor_rank = -1, anchor_altar = -1;
+	int bag_caution_now = P.bag_caution;
+	void update_anchors();
+	bool gank_carrier();		  // F6
+	bool deny_enemy_altar();	  // F6
+	std::vector<int> enemy_tribute_seen; // F6: rounds we saw an enemy tributing at each altar
+	bool chain_keep(const Group& g, int recall_t, bool bag, bool rich); // F5: a nearby target beats the home trip
+	bool body_is_anchor(int i) const { return i >= 0 && i < 8 && anchor_now[static_cast<std::size_t>(i)]; }
 	bool plan_ward(bool force); // P.ward_plan
 	std::array<vec2, 8> ew_pos{};	 // P.ward_enemy: last seen enemy ward per enemy index (owner)
 	std::array<int, 8> ew_round{};

@@ -5,6 +5,7 @@
 
 int main()
 {
+	int fails = 0; // P.watchdog: turns in a row that threw out of turn()
 	while (true)
 	{
 		try
@@ -13,9 +14,18 @@ int main()
 				play_draft();
 			else
 				brain().turn();
+			if (P.watchdog)
+				fails = 0;
 		}
 		catch (...)
 		{
+			if (P.watchdog && !bc::is_draft() && ++fails >= 3)
+			{
+#ifdef LEGEND_TRACE
+				debug_block({ std::printf("WATCHDOG r=%u fails=%d\n", bc::round_number(), fails); });
+#endif
+				brain().safe_fallback();
+			}
 		}
 #ifdef LEGEND_TRACE
 		debug_block({

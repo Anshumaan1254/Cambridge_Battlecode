@@ -588,7 +588,7 @@ struct Params
 
 	// Aggression
 	float steal_hp_frac = 0.55f; // need this health fraction to farm on the enemy half
-	int gank_bag = 25;			 // chase a visible carrier with at least this many gems
+	int gank_bag = 25;			 // chase a visible carrier with at least this many gems (read only with P.gank, F6; unused in v8)
 	float deny_hp_frac = 0.6f;	 // contest an enemy's capture (step on its tiles) from this health fraction
 	float deny_capture_mult = 1.3f; // value multiplier for contesting an enemy's capture
 
@@ -703,6 +703,40 @@ struct Params
 								// gems pays ward_avoid_cost rounds for a group or altar within 6 of one (their vision reveals the bag)
 	int ward_avoid_bag = 30;
 	float ward_avoid_cost = 8.f;
+
+	// ---- Anchors and the Prism banker (F4). 0 = v8.
+	int anchors = 0;			// 0 off; 1 / 2 anchors; 3 = by team size (1 with 3 champions, 2 with 4-5). Ranking every body computes alike from
+								// the team's types: Vesper, Marcella, Prism, then the lowest base health; the top living ones are anchors
+	float anchor_trib = 0.6f;	// anchor: tribute_min x this (banks smaller bags)
+	int anchor_bag_caution = 20; // anchor: avoids even fights it can leave while carrying this many gems (everyone: bag_caution 40)
+	float anchor_ehp = 3.f;		// anchor: enemy_half_penalty x this
+	float anchor_ml2 = 0.1f;	// anchor: danger-model leave / flee threshold (everyone 0.2)
+	float anchor_home_w = 0.5f; // anchor: rounds of cost per tile between a group and its altar (two anchors: two different altars)
+	int handoff = 0;			// 1: a non-anchor capturing a reward with an anchor within handoff_r skips its capture-recall; once the anchor
+								// stands on the group it steps off (one collector, the region never empties, the timer keeps running)
+	int handoff_r = 4;
+	float handoff_bonus = 1.5f;	// anchor: value x this for a reward an ally holds for it
+	int prism_bank = 0;			// 1: our Prism (focus grows with its bag) holds bags: banks only a winning bag, in the endgame or below prism_bank_hp
+	float prism_bank_hp = 0.35f;
+
+	// ---- Chain farming (F5). 0 = v8's capture-recall triggers (health < cap_recall_hp 0.61, gold after the capture >= 60, a bankable bag).
+	int chain_farm = 0;			// 1: after a capture, recall only when hurt, or when the home trip (bank + shop) is worth more per round than the
+								// best target within chain_r (scored as usual): keep farming from capture to capture while healthy
+	float chain_hp = 0.5f;		// fighters' health trigger (anchors keep cap_recall_hp)
+	float chain_bag = 1.5f;		// fighters bank from bank_min x this (anchors x 1; the Prism banker never recalls to bank)
+	int chain_gold = 150;		// shopping trigger with chain farming on
+	int chain_r = 12;			// groups within this many tiles compete with the home trip
+	float chain_bank_w = 0.5f;	// home trip value: chain_bank_w x (bag + gold_value x gold) over (recall + rest + walk back)
+
+	// ---- Smaller items (F6). 0 = v8.
+	int gank = 0;				// 1: a healthy body moves to intercept a visible enemy carrier with >= gank_bag gems within gank_r (its path home
+								// predicted from their spawn's distance field), when our side near it is not weaker (gank_margin)
+	int gank_r = 10;			// ... 14 for the hunter role (the FARMER counter plan)
+	float gank_margin = 1.f;
+	int deny_altar = 0;			// 1: when the enemy has >= deny_altar_at banked or the race says they finish first, the lowest-index living non-anchor
+								// body waits within 2 of the altar they use most (tributes we saw; else their spawn's nearest), locking it
+	int deny_altar_at = 850;
+	int watchdog = 0;			// 1: after 3 turns in a row that threw, a minimal safe turn (hit an adjacent enemy, else step toward spawn)
 
 	// ---- Sparring proxies (testing only, docs/TESTING.md; never on in a submission): a fixed playing style, optionally switching at
 	// set rounds, built from existing GOD mechanisms. 1 farmer (stays home, avoids fights), 2 invader (PUSH: their half free, deny,

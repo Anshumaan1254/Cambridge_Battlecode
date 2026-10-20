@@ -864,6 +864,10 @@ void Brain::turn()
 		dbg_path = 6;
 	if (!acted && P.pxs_style && style_now() == 6 && W.my_index < P.pxs_deny_bodies && (acted = pxs_deny_altar()))
 		dbg_path = 9;
+	if (!acted && P.deny_altar && (acted = deny_enemy_altar()))
+		dbg_path = 11;
+	if (!acted && P.gank && (acted = gank_carrier()))
+		dbg_path = 10;
 	if (!acted && (acted = respond_to_alert()))
 		dbg_path = 7;
 	if (!acted && P.mono_fort && W.mono_mode && round < P.mono_fort_until)
@@ -2892,7 +2896,7 @@ bool Brain::combat()
 	// P.pair_low_hp: Cassi & Issac leave a fight they can walk away from earlier (ladder: 64% of our 59 pair deaths were
 	// triggered by the partner below 25% health, the other partner healthy (73% above 75%) and 7+ tiles away).
 	const float low_hp = (type == CT::cassi || type == CT::issac) ? P.pair_low_hp : 0.25f;
-	if (fight && !killable && can_escape && (hp < low_hp * max_hp || (static_cast<int>(gems) >= P.bag_caution && adv < 1.5f && !(P.no_altar_gold && W.no_altar_now()))))
+	if (fight && !killable && can_escape && (hp < low_hp * max_hp || (static_cast<int>(gems) >= (P.anchors ? bag_caution_now : P.bag_caution) && adv < 1.5f && !(P.no_altar_gold && W.no_altar_now()))))
 		fight = false;
 	// mi_lethal (default branch): it has shown it can kill us from here; leave unless the kill is ours first.
 	if (P.mi_lethal && fight && !killable && !(in_reach && !can_escape) && lethal >= hp)
@@ -3080,14 +3084,14 @@ bool Brain::combat()
 		// ml2_cornered: also when combat() thinks a chaser cannot be outrun. Ladder rows in reach, no kill, P(die8) 0.3-0.5 with
 		// can_escape = 0: our bodies that hit died 51% (kill8 20%), those that stepped away 29% (P >= 0.5: 74% vs 38%).
 		const float ml2_sup = (P.sup_mode & 8) ? P.sup_ml2_bonus * std::min(1.f, sup_hp / std::max(1.f, max_hp)) : 0.f;
-		if (P.ml2_leave > 0.f && fight && !ml2_kill && (can_escape || P.ml2_cornered) && ml2_p_die >= P.ml2_leave + ml2_sup)
+		if (P.ml2_leave > 0.f && fight && !ml2_kill && (can_escape || P.ml2_cornered) && ml2_p_die >= (P.anchors && is_anchor ? P.anchor_ml2 : P.ml2_leave) + ml2_sup)
 			fight = false, ml2_exit_round = round;
 		if (P.ml2_hold > 0 && fight && !ml2_kill && !in_reach && round - ml2_exit_round <= P.ml2_hold)
 			fight = false; // we just left on the model: no proactive walk back in
 		if (P.ml2_enter > 0.f && !fight && ml2_p_kill >= P.ml2_enter && ml2_p_die < P.ml2_enter_die && d <= my_reach + 1 &&
 			!(W.enemy_spawn.is_set(tgt->pos) || cheb(tgt->pos, W.enemy_spawn_c) <= 3))
 			fight = true;
-		if (P.ml2_flee > 0.f && !fight && !in_reach && !ml2_kill && ml2_p_die >= P.ml2_flee + ml2_sup && nearest_enemy <= P.flee_dist && task != T_CAPTURE)
+		if (P.ml2_flee > 0.f && !fight && !in_reach && !ml2_kill && ml2_p_die >= (P.anchors && is_anchor ? P.anchor_ml2 : P.ml2_flee) + ml2_sup && nearest_enemy <= P.flee_dist && task != T_CAPTURE)
 		{
 			ml2_exit_round = round;
 			post_danger(tgt->pos);
@@ -3839,6 +3843,60 @@ bool Brain::safety()
 	return go_home();
 }
 
+void Brain::update_anchors()
+{
+	// F4: the order is a function of the team's champion types, so every body computes the same one; the top n living bodies anchor.
+	auto& W = world();
+	if (anchor_order.empty())
+	{
+		std::vector<std::pair<float, int>> r;
+		for (int i = 0; i < static_cast<int>(W.allies.size()); ++i)
+		{
+			const auto t = W.allies[static_cast<std::size_t>(i)].type;
+			const float pri = t == CT::vesper_vale ? 3.f : t == CT::marcella ? 2.f : t == CT::prism ? 1.f : 0.f;
+			const auto ti = static_cast<std::size_t>(t);
+			const float bh = ti < bc::champion_designs.size() ? static_cast<float>(bc::champion_designs[ti].base_stats().base_health) : 1000.f;
+			r.push_back({ -1e5f * pri + bh + 0.001f * static_cast<float>(i), i });
+		}
+		std::sort(r.begin(), r.end());
+		for (const auto& x : r)
+			anchor_order.push_back(x.second);
+	}
+	const int n = P.anchors == 3 ? (W.team_champs <= 3 ? 1 : 2) : std::clamp(P.anchors, 0, 2);
+	anchor_now.fill(false);
+	is_anchor = false, anchor_rank = -1;
+	int k = 0;
+	for (int i : anchor_order)
+	{
+		if (k >= n)
+			break;
+		if (!W.allies[static_cast<std::size_t>(i)].alive)
+			continue;
+		if (i < 8)
+			anchor_now[static_cast<std::size_t>(i)] = true;
+		if (i == W.my_index)
+			is_anchor = true, anchor_rank = k;
+		++k;
+	}
+	anchor_altar = -1;
+	if (is_anchor)
+	{
+		// Our-half altars by walking distance from our spawn; anchor k keeps to altar k (two anchors, two altars when there are two).
+		std::vector<std::pair<int, int>> al;
+		for (std::size_t i = 0; i < W.altars.size(); ++i)
+			if (altar_ours(i))
+			{
+				int dh = BIG;
+				for (const auto t : W.altar_approach[i])
+					dh = std::min(dh, W.dist_home(t));
+				al.push_back({ dh, static_cast<int>(i) });
+			}
+		std::sort(al.begin(), al.end());
+		if (!al.empty())
+			anchor_altar = al[static_cast<std::size_t>(anchor_rank) % al.size()].second;
+	}
+}
+
 void Brain::update_mode()
 {
 	fight_margin = P.fight_margin;
@@ -4040,6 +4098,16 @@ void Brain::update_mode()
 		fight_margin += P.pair_caution;
 		isolated_fight_adv += P.pair_caution;
 	}
+	if (P.anchors)
+	{
+		update_anchors();
+		bag_caution_now = is_anchor ? P.anchor_bag_caution : P.bag_caution;
+		if (is_anchor)
+		{
+			tribute_min = std::max(10, static_cast<int>(static_cast<float>(tribute_min) * P.anchor_trib));
+			enemy_half_penalty *= P.anchor_ehp;
+		}
+	}
 	if (P.pxs_style)
 	{
 		// Sparring proxy styles (testing only): strong, fixed settings on top of everything else.
@@ -4163,6 +4231,8 @@ bool Brain::tribute(bool force)
 	const int ticks = static_cast<int>((gems + 9) / 10);
 	const bool endgame = round + dist + ticks + P.endgame_margin >= static_cast<int>(bc::constants::max_rounds);
 	const bool winning = wins_with(static_cast<int>(gems)) && gems > 0;
+	if (P.prism_bank && type == CT::prism && !force && !endgame && !winning && hp >= P.prism_bank_hp * max_hp)
+		return false; // F4 Prism banker: the bag is focus (+1 per gem); bank it only when it wins, at the end, or when we may lose it
 	const bool risky = enemy_near_field && static_cast<int>(gems) >= P.tribute_risky;
 	// Once a bank trip starts, finish it: re-deciding every turn let a passing enemy or the on-the-way test
 	// flip the choice each round and the champion oscillated in place for hundreds of rounds.
@@ -4769,6 +4839,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 	auto& W = world();
 	auto& C = comms();
 	eta = BIG;
+	float value_mult_handoff = 1.f; // F4 (P.handoff): a reward an ally holds for us, the anchor
 	if (g.monolith && !P.farm_monolith)
 		{ WHY(1); return -1; }
 	if (P.obj_open_rounds > 0 && W.obj_mode && round < P.obj_open_rounds && !g.objective && g.d_enemy - g.d_ally < P.obj_open_margin)
@@ -4913,6 +4984,11 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 				const auto k = static_cast<std::size_t>(i);
 				const bool still = ally_prev_round[k] == round - 1 && ally_prev_pos[k] == a.pos;
 				const int a_arr = still ? ally_still_since[k] : round;
+				if (P.handoff && P.anchors && is_anchor && !body_is_anchor(i))
+				{
+					value_mult_handoff = P.handoff_bonus; // F4: the ally holds it for us (capture_group steps it off when we arrive)
+					continue;
+				}
 				if (!on || a_arr < my_arr || (a_arr == my_arr && i < W.my_index))
 					{ WHY(12); return -1; }
 			}
@@ -5125,6 +5201,8 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 	}
 
 	float value = ((P.no_altar_gold && W.no_altar_now() && !g.unlock ? 0.f : static_cast<float>(g.gems)) + gold_v * static_cast<float>(g.gold)) * share;
+	if (P.handoff)
+		value *= value_mult_handoff;
 	if (P.pxs_style)
 	{
 		const int s = style_now();
@@ -5196,6 +5274,8 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 		time += 25.f;
 	if (P.om_sight && sc_sight.x >= 0 && cheb(g.center, sc_sight) <= P.om_sight_r)
 		time += P.om_sight_cost; // an ally saw an enemy here: a cost, not a wall (P.om_sight)
+	if (P.anchors && is_anchor && anchor_altar >= 0)
+		time += P.anchor_home_w * static_cast<float>(cheb(g.center, W.altars[static_cast<std::size_t>(anchor_altar)])); // F4: stay near our altar
 	if (P.ward_enemy && static_cast<int>(gems) >= P.ward_avoid_bag && near_enemy_ward(g.center, 6))
 		time += P.ward_avoid_cost; // their ward sees our bag here (P.ward_enemy)
 	if (P.threat_map)
@@ -5828,6 +5908,40 @@ bool Brain::wait_group(Group& g)
 
 bool Brain::capture_group(Group& g)
 {
+	if (P.handoff && P.anchors && !is_anchor && g.st == ST_REWARD && g.mask.is_set(pos))
+	{
+		// F4 reward hand-off: an anchor on the group takes it alone (we step off; the region never empties, the timer keeps running);
+		// an anchor close by: no capture-recall, hold the tiles for it.
+		auto& W = world();
+		bool anchor_on = false, anchor_near = false;
+		for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 8; ++i)
+		{
+			const auto& a = W.allies[static_cast<std::size_t>(i)];
+			if (!body_is_anchor(i) || i == W.my_index || !a.alive || !a.visible || a.channeling)
+				continue;
+			anchor_on |= g.mask.is_set(a.pos);
+			anchor_near |= cheb(a.pos, g.center) <= g.radius + P.handoff_r;
+		}
+		if (anchor_on)
+		{
+			bc::bitboard off;
+			off.draw_chebyshev(pos, 1.f);
+			off &= ~g.mask & ~W.walls & ~W.ally_occ & ~W.enemy_occ & ~W.camp_occ;
+			if (!off.is_empty() && step(off, false, false))
+			{
+				blacklist[static_cast<std::size_t>(g.id)] = round + 8;
+				task = T_NONE;
+				return true;
+			}
+		}
+		else if (anchor_near)
+		{
+			if (capture_group_id != g.id)
+				capture_group_id = g.id, capture_since = round;
+			place_ward(round - ward_round > 4);
+			return true;
+		}
+	}
 	if (g.mask.is_set(pos))
 	{
 		if (g.id == task_group)
@@ -5867,13 +5981,27 @@ bool Brain::capture_group(Group& g)
 			}
 			const bool bank_here = P.bank_first && adist < BIG && spawn_altar < BIG &&
 				adist + recall_t + P.bank_first_margin <= spawn_altar;
-			const bool bag = static_cast<int>(gems) + g.gems >= bank_min(std::min(adist, spawn_altar < BIG ? 1 + spawn_altar : BIG));
+			const bool bag = static_cast<int>(gems) + g.gems >= bank_min(std::min(adist, spawn_altar < BIG ? 1 + spawn_altar : BIG)) &&
+				!(P.prism_bank && type == CT::prism && !wins_with(static_cast<int>(gems) + g.gems));
 			if (bag && bank_here && !hurt)
 			{
 				place_ward(round - ward_round > 4);
 				return true;
 			}
-			if (rich || hurt || bag)
+			bool recall_now = rich || hurt || bag;
+			if (P.chain_farm)
+			{
+				// F5 chain farming: fighters recall later (lower health trigger, bigger bags, gold for a whole emblem), and not at all while a
+				// target next to us is worth more per round than the trip home. Anchors keep the v8 health trigger and bank at bank_min.
+				const bool anc = P.anchors && is_anchor;
+				const bool c_hurt = hp < (anc ? P.cap_recall_hp : P.chain_hp) * max_hp;
+				const bool c_rich = shopper && gold + static_cast<std::uint32_t>(g.gold) >= static_cast<std::uint32_t>(P.chain_gold);
+				const int need = bank_min(std::min(adist, spawn_altar < BIG ? 1 + spawn_altar : BIG));
+				const bool c_bag = static_cast<int>(gems) + g.gems >= static_cast<int>(static_cast<float>(need) * (anc ? 1.f : P.chain_bag)) &&
+					!(P.prism_bank && type == CT::prism && !wins_with(static_cast<int>(gems) + g.gems));
+				recall_now = c_hurt || ((c_bag || c_rich) && !chain_keep(g, recall_t, c_bag, c_rich));
+			}
+			if (recall_now)
 			{
 				try
 				{
@@ -5894,6 +6022,171 @@ bool Brain::capture_group(Group& g)
 	if (g.mask.is_set(pos))
 		capture_group_id = g.id, capture_since = round; // the capture starts in the turn we step on
 	return mv;
+}
+
+bool Brain::chain_keep(const Group& g, int recall_t, bool bag, bool rich)
+{
+	// The trip home pays the bag (banked safe) and the gold (shards); it costs recall + a rest turn + the walk back out. A target within
+	// chain_r scored as usual (value / rounds) beats it: keep farming. Only the 4 nearest groups are scored (fuel).
+	auto& W = world();
+	const float back = static_cast<float>(std::max(0, W.dist_home(pos)));
+	const float v_home = P.chain_bank_w * ((bag ? static_cast<float>(gems + static_cast<std::uint32_t>(g.gems)) : 0.f) + (rich ? gold_v * static_cast<float>(gold + static_cast<std::uint32_t>(g.gold)) : 0.f));
+	const float s_home = v_home / std::max(1.f, static_cast<float>(recall_t) + 1.f + back);
+	std::array<std::pair<int, int>, 4> near{};
+	int nn = 0;
+	for (const auto& o : W.groups)
+	{
+		if (o.id == g.id || blacklist[static_cast<std::size_t>(o.id)] > round)
+			continue;
+		const int d = cheb(o.center, pos);
+		if (d > P.chain_r)
+			continue;
+		if (nn < 4)
+			near[static_cast<std::size_t>(nn++)] = { d, o.id };
+		else
+		{
+			std::size_t w = 0;
+			for (std::size_t k = 1; k < 4; ++k)
+				if (near[k].first > near[w].first)
+					w = k;
+			if (d < near[w].first)
+				near[w] = { d, o.id };
+		}
+	}
+	if (nn == 0)
+		return false;
+	prepare_scoring();
+	for (int k = 0; k < nn; ++k)
+	{
+		int eta = 0;
+		if (group_score(W.groups[static_cast<std::size_t>(near[static_cast<std::size_t>(k)].second)], eta) > s_home)
+			return true;
+	}
+	return false;
+}
+
+bool Brain::gank_carrier()
+{
+	// F6 carrier interception: a carrier walks home (their spawn's field descends) or recalls; meet it on the way, where we arrive first.
+	auto& W = world();
+	if (hp < 0.6f * max_hp || static_cast<int>(gems) >= P.bag_caution)
+		return false;
+	const int r = (P.opp_model && role_hunter) ? 14 : P.gank_r;
+	const Enemy* c = nullptr;
+	for (const auto& e : W.enemies)
+		if (e.alive && e.visible && static_cast<int>(e.gems) >= P.gank_bag && !e.tributing && !W.enemy_spawn.is_set(e.pos) && cheb(e.pos, pos) <= r &&
+			(!c || e.gems > c->gems))
+			c = &e;
+	if (!c)
+		return false;
+	// Not weaker near it: us plus visible allies within 6 of it against the enemies within 4 of it (health x damage).
+	float oh = hp, od = str + focus * best_mod(kit) / 8.f, th = 0, td = 0;
+	for (const auto& a : W.allies)
+		if (a.handle != self && a.alive && a.visible && cheb(a.pos, c->pos) <= 6)
+			oh += a.hp, od += a.str + a.focus * best_mod(a.kit) / 8.f;
+	for (const auto& e : W.enemies)
+		if (e.alive && e.visible && cheb(e.pos, c->pos) <= 4)
+			th += e.hp, td += e.str + e.focus * best_mod(e.kit) / 8.f + e.burst() / 3.f;
+	if (oh * od < P.gank_margin * th * td)
+		return false;
+	vec2 t = c->pos;
+	vec2 goal_t = c->pos;
+	for (int k = 1; k <= 8; ++k)
+	{
+		vec2 nb = t;
+		int bd = W.dist_away(t);
+		for (int dy = -1; dy <= 1; ++dy)
+			for (int dx = -1; dx <= 1; ++dx)
+			{
+				const vec2 q{ t.x + dx, t.y + dy };
+				if (bc::map::is_in_bounds(q) && !W.walls.is_set(q) && W.dist_away(q) < bd)
+					bd = W.dist_away(q), nb = q;
+			}
+		if (nb == t)
+			break;
+		t = nb;
+		if (cheb(pos, t) <= k)
+		{
+			goal_t = t;
+			break;
+		}
+	}
+	bc::bitboard goal;
+	goal.draw_chebyshev(goal_t, 1.f);
+	goal &= ~W.walls;
+	task = T_FIGHT;
+	return step(goal, false, true);
+}
+
+bool Brain::deny_enemy_altar()
+{
+	// F6 DENY-ALTAR: near their finish one body waits at the altar they bank at, with a lock (use_locks) and its fight rules.
+	auto& W = world();
+	if (enemy_tribute_seen.size() != W.altars.size())
+		enemy_tribute_seen.assign(W.altars.size(), 0);
+	for (const auto& e : W.enemies)
+		if (e.alive && e.visible && e.tributing)
+			for (std::size_t i = 0; i < W.altars.size(); ++i)
+				if (cheb(e.pos, W.altars[i]) <= 1)
+					++enemy_tribute_seen[i];
+	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
+	if (theirs < P.deny_altar_at && race_state == 0)
+		return false;
+	int role = -1;
+	for (int i = 0; i < static_cast<int>(W.allies.size()); ++i)
+		if (W.allies[static_cast<std::size_t>(i)].alive && !(P.anchors && body_is_anchor(i)))
+		{
+			role = i;
+			break;
+		}
+	if (role != W.my_index || hp < 0.6f * max_hp || static_cast<int>(gems) >= 30)
+		return false;
+	int best = -1, bs = -1, bd = BIG;
+	for (std::size_t i = 0; i < W.altars.size(); ++i)
+	{
+		if (altar_ours(i))
+			continue;
+		int da = BIG;
+		for (const auto t : W.altar_approach[i])
+			da = std::min(da, W.dist_away(t));
+		if (enemy_tribute_seen[i] > bs || (enemy_tribute_seen[i] == bs && da < bd))
+			bs = enemy_tribute_seen[i], bd = da, best = static_cast<int>(i);
+	}
+	if (best < 0)
+		return false;
+	const vec2 a = W.altars[static_cast<std::size_t>(best)];
+	task = T_WAIT;
+	if (cheb(pos, a) <= 2)
+		return true;
+	bc::bitboard goal;
+	goal.draw_chebyshev(a, 2.f);
+	goal &= ~W.walls;
+	return step(goal, true, true);
+}
+
+void Brain::safe_fallback()
+{
+	// F6 watchdog: the turn logic threw three times in a row. Do something harmless with plain SDK calls: hit an adjacent enemy, else
+	// walk toward our spawn (heals there).
+	try
+	{
+		auto& me = bc::self();
+		for (const auto& c : bc::champions(team::enemy))
+		{
+			bc::detail::champion_info i{};
+			if (bc::detail::sdk_champion(handle_of(c), &i) == 0 && cheb({ i.x, i.y }, me.position()) <= 1)
+			{
+				me.attack(c);
+				return;
+			}
+		}
+		const auto sp = bc::map::spawn_region(team::ally).positions();
+		if (!sp.empty())
+			me.move_towards(sp.front());
+	}
+	catch (...)
+	{
+	}
 }
 
 bool Brain::W_dist_home_ok() const { return world().dist_home(pos) > P.cap_recall_min_home && world().dist_home(pos) < BIG; }

@@ -76,4 +76,19 @@ were played on 3.0 with Heart of Ruin in the drafts), or the sprint runs the old
 
 ## 4. Measured (cambc 2.2.5 = the documents' rules)
 
-(filled in below as the cells finish)
+Original 17 official maps (`maps/comp`), both sides, 34 games per cell; ledger rows in `experiments/results/ledger/` (the 2.2.5 ledger).
+
+| Bot | `_mite` | `_ifish` | `_px9` | `_snk` | `_fA` | proxies (of 170) | h2h vs legend_m15 | unopposed pace |
+|---|---|---|---|---|---|---|---|---|
+| legend_m15 (`legend`) | 28 | 27 | 29 | 32 | 33 | **149** | - | 508.1 |
+| GOD v5 (`_god_c`, compat build) | 25 | 23 | 26 | 25 | 28 | 127 | 13/34 | 506.0 |
+| GOD with gold_value 0.22, burst_retreat 0 (`_gc_old`) | 25 | 26 | 23 | 29 | 30 | 133 | 19/34 | |
+| GOD with gold_value 0.22 only (`_gc_gv`) | | | | | | | 19/34 | |
+| GOD with burst_retreat 0 only (`_gc_br`) | | | | | | | 14/34 | |
+
+- Under the documents' rules GOD v5 loses to legend_m15 (13/34, 22 fewer proxy wins). Its patch-3.0 `gold_value` 0.33 is the main cause
+  (gold is worth less when a wolf pays 22 gems, not 4): with 0.22 it beats legend_m15 head-to-head 19/34, but is still 16 proxy wins
+  behind (non-transitive). Which of GOD's other switches costs those wins: next table.
+- `bots/_god_d` = `_god_c` with `gold_value = SDK_HAS_HOR ? 0.33 : 0.22` and `burst_retreat = SDK_HAS_HOR ? 1.2 : 0`: **wasm identical to GOD v5
+  on SDK 3.0.1, identical to `_gc_old` on SDK 2.2.5** (checked by sha256), so one source plays GOD v5 under patch 3.0 and the row above under the
+  documents' rules.

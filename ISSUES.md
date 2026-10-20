@@ -49,6 +49,15 @@ or engineering limits.
 | 21 | `draft.cpp` objective draft (`MP.objective`, Prism first, the caster ring) | fires on any map whose only gem group is heavy, including one midway between the spawns (nx50x50: 2 elks + 6 gems, two altars next to it, 27 gold clusters per side); the ring lost it 72-1008 twice on the ladder (Nyx, f8a4f886) with 37 deaths: both teams meet there every respawn | the caster team dies to Power-stacked melee on a contested centre; `pd_obj_side` (objective nearer to us than to them by `pd_obj_mid` 2 steps) under test | high |
 | 22 | `gold_rank_of()` (brain.cpp, `gold_rank`) | a fixed ranking of champion types for who collects a landed reward (Stellar, Prism > Tavi, Cassi, Willow, Vesper > Issac, Marcella, Vendetta > Varg, Ryth > Ren, Heart of Ruin); not map dependent, but it encodes the patch-3.0 value of gold per champion (Power in the damage stat) | a future patch that changes the stat growth per shard changes the right order | low |
 
+## Session 15 (sprint documents: `docs/sprint/RULES_DIFF.md`)
+
+| # | Where | What is hardcoded | Why it matters | Severity |
+|---|---|---|---|---|
+| 23 | GOD v5 source (`brain.cpp`, `draft.cpp`, `common.h`) | `champion_type::heart_of_ruin`, `champion_draft::heart_of_ruin`, `camp_type::golem`, `ability_dash::modifier / radius` named directly | the sprint's API page (BotAPICpp.md, = SDK 2.2.5 enums) has none of them: **the zip fails to compile there** and the team leaves matchmaking. Fixed in `experiments/wip/x_sdkcompat.patch` (`bots/_god_c`, `_god_d`) | **high** |
+| 24 | `brain.cpp` nearest-altar choice: `d += 6; // three hits to clear it` | an enemy-locked altar costs 6 steps (3 hits) | 3 hits in the sprint docs, 5 since patch 3.0; `bc::constants::altar_lock_hits` has the engine's value (not changed yet: it would change GOD v5's games) | low |
+| 25 | `_god_d` `params.h`: `gold_value`, `burst_retreat` follow `SDK_HAS_HOR` | the tuning is chosen by the ruleset the engine compiles us with (Heart of Ruin present = patch 3.0) | a future engine with Heart of Ruin but the old economy (or the reverse) gets the wrong pair; a map-derived gold value (gold rate / gem rate of the map) would be the principled form | medium |
+| 26 | ward rhythm: `round - ward_round < 10` (brain.cpp) | a new ward at most every 10 rounds | the sprint docs allow a ward move every round (patch 3.0: cooldown 10), so under the old rules we ward less than we could | low |
+
 ## Proxy-only hardcoding (off in the shipped bot)
 
 `draft.cpp` `official_map()` (recognises the 17 official maps by size and camp mix) and the per-map tables `MITE`, `IFISH`, `OURS`

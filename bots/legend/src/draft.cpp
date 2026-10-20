@@ -398,6 +398,32 @@ bool param_pick(const std::vector<D>& mine)
 	{
 		// First pick: the map type alone.
 		const D first = pd_type == 2 ? D::prism : pd_type == 1 ? D::cassi_and_issac : D::ren;
+		if (P.ci_first && first != D::cassi_and_issac)
+		{
+			// ci_first: same team, Cassi & Issac picked first (picks are not exclusive: the order only sets body indices). The lower
+			// index captures shared rewards and wins claim ties: four of the ten ladder teams of Oct 19 pick C&I first; our C&I
+			// earned 70 / 111 gold per 100 rounds to their 118 / 174 (first emblem r499 / r375 vs r400 / r227).
+			std::vector<D> team{ first };
+			for (int k = 1; k < MP.team; ++k)
+			{
+				D best = D::stellar;
+				double bv = -1e9;
+				for (auto c : order)
+				{
+					if (has(team, c))
+						continue;
+					const double v = pd_score(c, team, enemy);
+					if (v > bv)
+						bv = v, best = c;
+				}
+				team.push_back(best);
+			}
+			if (has(team, D::cassi_and_issac))
+			{
+				bc::draft::pick(D::cassi_and_issac);
+				return true;
+			}
+		}
 		bc::draft::pick(first);
 		return true;
 	}

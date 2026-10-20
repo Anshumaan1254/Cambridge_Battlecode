@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-19 (session 13: base = `legend_m14_commit`; 50 new ladder games analysed; see §S13)**.
+- Last updated: **2026-10-20 04:20 UTC (session 13: SHIPPED `legend_m15` = `_mlkc40`, the ladder-trained danger model; see §S13, last checkpoints)**.
   Rule from the user: update this file and push at every step. Start with **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
@@ -130,6 +130,18 @@ running or unfinished, and what to do next, so a new agent can continue without 
   `SRC=bots/_mlkc40 tools/variant.sh _x_fin`, then `cd bots && diff -ruN _cand2/src _x_s13/src` applied with `patch -p1` inside `_x_fin`, then
   restore `recall_join` 1, `o2_ring_size` 0, `aoe_reach5` 2, `open_first` 2 in params.h). Variants `_xf0` (control), `_xf_bg20`, `_xf_of6`,
   `_xf_sf1`, `_xf_oh3`, `_xf_ea` queued (`$S/q19.sh` -> `screen_ml.sh`: official 34 vs `_mlkc40` + 5 proxies; `BASE=_mlkc40 tools/screensum.py`).
+
+- **SHIPPED `legend_m15` (04:20 UTC, Oct 20)** = `_mlkc40` (source hash 8eb9563d0d5b; `submissions/legend.zip` sha256 4caf8438…, history
+  `submissions/history/legend_m15_20261020.zip`, BUILDS row; `bots/legend/src` = `_mlkc40` + the inert `LEGEND_RUNTIME_PARAMS` block, wasm
+  byte-identical). Rebuild `_mlkc40` in a new container: `_cand2` = `_x_s13` (= `_ch2` + `experiments/wip/x_s13.patch`) + `aoe_reach5=2 open_first=2
+  o2_ring_size=0 recall_join=1`; `_x_ml2c` = `_cand2` + `experiments/wip/x_ml2.patch`; `_mlkc40` = `_x_ml2c` + `ml2_leave=0.4f ml2_flee=0.4f ml2_cornered=1`
+  (or simply copy `bots/legend` and drop the runtime block). Evidence: official 34 vs the 5 proxies 149/170 (`_ch2` 129), h2h vs `_ch2` 22/34;
+  67 more maps 475/670 (`_ch2` 452; pad17 128 vs 118, gen2 165 vs 153, generated 182 vs 181), our deaths 3,725 vs 4,297, h2h vs `_ch2` 71/134,
+  vs `_cand2` 77/134; pace 508.1 vs 502.7 (only rushbait-v2: 699 vs 606, from `aoe_reach5` vs idle enemies at spawn; ISSUES #16); 0 faults;
+  rollovers unchanged. Stacked tweaks on it all worse (`_xf_*`: bush ghost 141, melee hold 144, hold 3 144, strike first 136, engage angle 141;
+  SUGGESTIONS.md). ML agent (session limit hit 03:50; notes `x_ml2_NOTES.md`): `_mlkc30` 142, `_mlka40` (in-match recalibration) 146.
+  ISSUES.md: #1 fixed, #15 (model fixed to the Oct 19 opponents), #16 added. **Next**: the user's ladder check of `legend_m15`; locally, a
+  decision model (P(die | step away) vs P(die | hit)), contest / stampede execution (the proxies cannot reproduce the ladder teams there).
 
 ## S12. SESSION 12 (2026-10-19, same container as S10/S11): read this first
 

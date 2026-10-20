@@ -91,6 +91,7 @@ private:
 	bool respond_to_alert();
 	void farm();
 	bool farm_group(Group& g);
+	bool contest_tiles(Group& g); // big_reward: stand on a dead tile of a big group an enemy waits on
 	bool capture_group(Group& g);
 	bool wait_group(Group& g);
 	float group_score(const Group& g, int& eta, bool* need_pair = nullptr, int d_override = -1) const;
@@ -171,6 +172,16 @@ private:
 	void xm_fight(float adv, float tku, float tkt, float ohp, float thp, float odps, float tdps, int na, int ne, int fight, int killable, int in_reach,
 				  int can_escape, int isolated, int reserve, int tgt_type, int tgt_d, float incoming, float t_die, float tgt_hp, int backup, float my_dps);
 #endif
+
+	// ml2: fight / danger model (features in tools/ml/ml2_dataset.py order)
+	void ml2_features(float* f) const;
+	float ml2_p_die = 0, ml2_p_kill = 0;
+	int ml2_exit_round = -1000;
+	void ml2_learn(bool died);
+	float ml2_off = 0;				  // ml2_adapt: learned logit offset (this opponent vs the ladder)
+	std::array<int, 24> ml2_buf_r{};  // evaluations waiting for their label (round, logit)
+	std::array<float, 24> ml2_buf_z{};
+	int ml2_buf_n = 0;
 
 	// combat helpers
 	float camp_dps() const;

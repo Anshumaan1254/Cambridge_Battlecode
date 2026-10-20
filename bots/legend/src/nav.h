@@ -49,3 +49,4 @@ struct Nav
 Nav& nav();
 // P.spread_vs_splash: tiles to avoid below enemy reach (next to an ally under a splash threat); null when off.
 inline const bc::bitboard* g_soft_avoid = nullptr;
+inline bool g_exit_first = false; // P.flee_exit: go_home_step while fleeing (step_field may take a sideways exit step)

@@ -42,6 +42,21 @@ Evidence for each idea: `docs/strategy_v2/13_LADDER_OCT19B.md` (50 ladder games 
 | Cassi & Issac health first (`ci_health_first` 1) | C&I are 99 of 147 burst deaths | `_f_cih` | 116 | 14 | worse |
 | **Draft-time zones / circuits** (agent zone: sectors around spawn, k-medoids, zone bonus / penalty) | the ladder teams re-take near groups at each respawn | `_z3`-`_z12` | 112-131 | 11-18 | unopposed pace at best 497.1 vs 502.7; spreading bodies over zones costs fights (`_z3` deaths vs Mite 376 vs 246) (see `x_zone_NOTES.md`) |
 
+### Session 13, later (20 Oct): on top of the shipped `legend_m15` (`_mlkc40`, pooled 149/170)
+
+Official 34 vs the 5 proxies, head-to-head of 34 vs `_mlkc40`. Code: `experiments/wip/x_fin.patch` on `_mlkc40` (`bots/_x_fin`; control `_xf0`
+34/34 games identical vs Mite).
+
+| Strategy | Why it should help | Variant | Pooled (of 170) | h2h vs `_mlkc40` | Verdict |
+|---|---|---|---|---|---|
+| Bush ghosts (`bush_ghost` 20: an enemy that vanished in / next to a bush stays in the danger map 20 rounds) | the ladder teams spend 2.4x our bush time and open from it; 48% of our champion deaths had a bush hitter | `_xf_bg20` | 141 | 17 | worse: bodies avoid ground no enemy holds |
+| Melee hold at the edge of enemy reach with Ren / Ryth stun ready (`open_first` bit 4) | openers win the first 3 rounds ~4:1 | `_xf_of6` | 144 | 12 | worse |
+| Hold 3 rounds instead of 2 (`open_hold` 3) | same | `_xf_oh3` | 144 | 18 | worse vs the proxies |
+| Strike first with a spell ready (`strike_first` 1) | same | `_xf_sf1` | 136 | 16 | worse |
+| End the engage walk outside the target's allies' reach (`engage_angle` 1) | 68% of the burst damage on us is spells from 4-5 | `_xf_ea` | 141 | 17 | worse |
+| Danger model at P >= 0.3 instead of 0.4 (`_mlkc30`) | a stricter veto | `_mlkc30` | 142 | 17 (vs `_cand2`) | worse locally: drops fights the team wins (the proxies kill less than the ladder teams) |
+| In-match recalibration of the danger model (`ml2_adapt` 0.05: an offset learned from our own deaths in this game) | the opponents may change their play | `_mlka40` | 146 | 20 (vs `_cand2`) | level with the fixed model (149); insurance if the final pool / opponents differ; not shipped |
+
 ## Session 12 (19 Oct): copying Intercontinental Fish (ladder #1; analysis `docs/strategy_v2/12_IC_OCT19.md`)
 
 | Strategy | Why it should help (evidence) | Variant | Pooled vs proxies (of 170) | h2h vs m14 | Verdict |

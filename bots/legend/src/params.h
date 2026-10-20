@@ -182,6 +182,33 @@ struct Params
 	int ic_home = 0;		   // 1: Home health emblem right after the first emblem when that one is in the damage stat (derived
 							   //    from the build, not the champion); 2: on every body; 3: once this body has recalled ic_home_recalls times
 	int ic_home_recalls = 6;   // ic_home 3
+	// Session 13 switches (all 0 = legend_m14_commit's games)
+	int finish_race = 0;	   // > 0: when the team needs at most this many gems (1000 - banked - every bag we carry), a group that finishes the
+							   // game alone scores by when its gems land on an altar (walk + kill + capture + bank), not by gem rate (ladder rows,
+							   // Oct 19: we banked 990 at r345 and lost at r358 to a 22-gem bag while every body walked to a 66-gem group)
+	int big_reward = 0;		   // > 0: groups worth at least this many gems are fought for (ladder stampede, Oct 19: we killed the 360-gem
+							   // objective 4 times, the enemy captured 3 of the rewards from dead camp tiles it stood on while our bodies stayed
+							   // 8+ tiles away): the threat check counts our bodies within big_reward_r of the group and needs only half the
+							   // advantage, an enemy on its tiles is contested by every healthy body (no_split off), from big_reward_hp health
+	int big_reward_r = 12;
+	float big_reward_hp = 0.4f;
+	float reward_pre = 0.f;		// > 0 (with big_reward): a ring body steps onto a dead tile of the big group once the ring kills it within this many rounds
+	int big_reward_dive = 0;   // > 0: an enemy capturing a reward worth at least this many gems is denied whatever the threat (any of our
+							   // bodies on any tile resets their capture: a death costs ~100 gems of farming, a monolith reward is 200-448)
+	int recall_join = 1;	   // 1: a healthy body recalling to shop / heal (not a capture-recall, not a winning bag) cancels the recall when an
+							   // enemy is within 7 and a healthy ally within 6 of us has an enemy within 5 (the user: fight while still able;
+							   // ladder contest r26-31: our full-health Ren completed a recall as the team fight started, the other 5 lost it)
+	float recall_join_hp = 0.7f;
+	float burst_retreat = 0.f;  // > 0: safety() also retreats when our health is below this x the burst (best ready spell + one hit) of the
+							   // visible enemies that can step into reach (spell reach + 2): 41% of our ladder deaths (Oct 19) came from >= 60%
+							   // health within 3 rounds, Cassi 31% health (220/700) stayed out next to casters and died to one area cast
+	int ci_first = 0;		   // 1: the parameter draft picks Cassi & Issac first when the planned team has them (same team, lower body
+							   // indices: they capture shared rewards and win claim ties; see draft.cpp param_pick)
+	int rally_r = 9;		   // respond_to_alert: answer an ally's rally from at most this far (ladder contest r25-40: our Ren farmed the
+							   // centre triple 11-13 tiles from the team fight, 4 of ours lost to 5 of theirs; "help that does not come")
+	float rally_hp = 0.6f;	   // ... with at least this health fraction
+	int flee_exit = 0;		   // 1: a body walking home from inside enemy reach / an awake camp's range takes a sideways step out of it when
+							   // every step toward home stays inside (nav.cpp step_field)
 	float commit_hit = 2.0f;	   // > 0: the current target's score x this while we hit it in the last 2 rounds (finish what we started)
 	int commit_keep = 0;	   // 1: a camp we hit in the last 2 rounds is not dropped by the join limits
 	float half_grade = 0.f;	   // > 0: enemy-half risk cost x min(1, (d_ally - d_enemy) / (half_grade x (d_ally + d_enemy))) (0 = flat cost)
@@ -371,7 +398,7 @@ struct Params
 	int o2_ring = 3;			// objective group with live elks: casters (a range-4 damage/stun/area spell) cast from distance 4 and never step into camp reach
 								// 3: on 60x50 or whenever our team has Prism or Tavi (the parameter draft takes them on objective maps of any size)
 	int o2_ring_team = 5;		// o2_ring 3: only with this many champions per team (obj_pack4, 4 champions: ring 14/30 vs 20/30 without it; 5: 75/90 vs 51/90)
-	int o2_ring_size = 1;		// o2_ring 2-3: also ring on any 60x50 objective map whatever the draft (the stampede size; 0 = only the team test of o2_ring 3, ISSUES.md #1)
+	int o2_ring_size = 0;		// o2_ring 2-3: also ring on any 60x50 objective map whatever the draft (the stampede size; 0 = only the team test of o2_ring 3, ISSUES.md #1)
 								// (2 = on stampede only: elsewhere, e.g. ambush, it lost 5 of 11 changed games in session 10)
 	float o2_ring_clear = 160.f; // ring plan ready when the casters' spell damage clears the group within this many rounds
 	float o2_ring_share = 0.5f;	 // value share per caster
@@ -478,16 +505,29 @@ struct Params
 								// rounds from ready (open with the burst)		// the team-kill estimate counts allies' spells at half weight (cooldowns unknown)
 
 	// Fight micro v2 (agent fight2, session 9; docs/strategy_v2/08 section 2, experiments/wip/x_f2_NOTES.md). All 0 = legend_m6.
-	int aoe_reach5 = 0;			// F1: an enemy area spell (ready, or cooldown unknown) threatens range + radius (5), not 4: danger
+	int aoe_reach5 = 2;			// F1: an enemy area spell (ready, or cooldown unknown) threatens range + radius (5), not 4: danger
 								// map, combat()'s reach/incoming, the channel stun check, engage_angle. 2: also walk-compatible
 								// spells (Cassi's stun) range + 1. 3: only the danger map for routes (combat() stays at 4)
 	int aoe_cast5 = 3;			// F2: our area spells aim at a tile within range whose radius catches the target (reach 5), most
 								// enemies first: engage() (ranged), cast_on_nearer, px targeting reach, killable
-	int open_first = 0;			// F3 (bits): 1 = after a fight step, cast a walk-compatible spell that now reaches the target
+	int open_first = 2;			// F3 (bits): 1 = after a fight step, cast a walk-compatible spell that now reaches the target
 								// (Cassi's stun: walk + stun = the opener); 2 = proactive fight, no cast/attack possible this turn
 								// (ranged, an opener of ours ready): when the step enters an enemy's next-turn reach, hold at the
 								// edge (they step in, we cast first) for at most open_hold rounds per fight
 	int open_hold = 2;			// ... rounds
+
+	// Fight / danger model learned from real ladder games (agent ml2, session 13; experiments/wip/x_ml2_NOTES.md,
+	// tools/ml/ml2_*.py). P(this body dies within 8 rounds) from a logistic model on what the body sees (ml2_model.h),
+	// trained on 160 ladder games (ours vs ladder teams and top teams vs each other). All 0 = legend_m14_commit.
+	float ml2_leave = 0.4f;		// a fight we can walk away from (no kill now) is dropped when P(die8) >= this
+	float ml2_flee = 0.4f;		// not in reach, not fighting: walk away when P(die8) >= this and an enemy is within flee_dist
+	float ml2_enter = 0.f;		// not fighting: fight when P(kill8) >= this and P(die8) < ml2_enter_die (target within reach + 1)
+	float ml2_enter_die = 0.15f;
+	int ml2_hold = 0;			// after a model exit, keep out (no proactive fight) for this many rounds
+	float ml2_adapt = 0.f;		// > 0: learning rate of an in-match logit offset (labels: died within 8 rounds of an evaluation or not)
+	float ml2_adapt_min = -2.f, ml2_adapt_max = 1.f; // ... bounds of the offset
+	int ml2_cornered = 1;		// 1: ml2_leave also when combat() thinks we cannot outrun a chaser (the cornered rule would trade)
+	int ml2_gb = 0;				// 1: P(die8) from the boosted trees (held-out AUC on our bodies 0.829 vs the logistic's 0.806)
 };
 
 #ifdef LEGEND_RUNTIME_PARAMS

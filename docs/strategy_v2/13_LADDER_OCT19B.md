@@ -67,3 +67,10 @@ No fuel problem: 72 of our turns roll over, all in rounds 1-6.
 ## 3. What was built and measured (session 13)
 
 See AGENTS.md §S13 for the live state, `experiments/wip/x_s13.patch` (coordinator switches) and `experiments/wip/x_zone.patch` (zones agent).
+
+Shipped: **`legend_m15`** (`_mlkc40`): `legend_m14_commit` + a danger model learned from these ladder games (logistic P(die within 8
+rounds), AUC 0.81 on our ladder bodies vs 0.60 for the bot's own fight estimate; drop escapable fights and walk away at P >= 0.4; a deadly
+state counts as cornered, so the body trades instead of giving free hits) + `aoe_reach5` 2, `open_first` 2, `recall_join` 1, `o2_ring_size` 0.
+Locally: 149/170 vs the 5 proxies on the official maps (`_ch2` 129), 475/670 on 67 more maps (452), deaths -13%. Everything that did not
+measure better is in SUGGESTIONS.md (session 13 tables). The proxies are our own code family, so the ladder decides.
+

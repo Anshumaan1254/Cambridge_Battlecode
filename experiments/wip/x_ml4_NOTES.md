@@ -71,10 +71,41 @@ Rows of our bodies (us = 1) in the patch-3.0 games, nx50x41 (GOD v2 stall) skipp
   the ally block re-balanced (`hp_a5` -0.11 -> +0.60, `n_a5` +0.10 -> -0.24, `hp_a7` -0.43 -> -0.62, `n_a7` +0.08 -> +0.31: collinear, net
   about the same), `gems` -0.22 -> +0.09 (a carrier near enemies is a target now), `is_Stellar` +0.01 -> -0.06.
 
-## Ledger (h2h vs `_g4`, both sides, --jobs 1; `_g5br` = GOD v5 27/40 on the 20 maps, deaths 654-727)
-- Pool: `maps/nyx_new` + `maps/comp30` + `maps/loss_oct20` (21 maps, 42 games). Commands (resumable; rows land in
-  `experiments/results/ledger_v3/_g5ml_vs__g4.jsonl`, `_g5ml30_vs__g4.jsonl`, and `_g5br_vs__g4.jsonl` for the new map):
-  `python3 tools/ledger.py run _g5ml _g4 --maps 'maps/nyx_new/*.map26a,maps/comp30/*.map26a,maps/loss_oct20/*.map26a' --jobs 1`, the same for
-  `_g5ml30`, then `python3 tools/ledger.py run _g5br _g4 --maps 'maps/loss_oct20/*.map26a' --jobs 1`;
-  `python3 tools/ledger.py table _g5ml --opps _g4 --maps '...'`. Source hashes: `_g5br` 2b1f22387b05, `_g5ml` 36ae4426efe2, `_g5ml30` 58b6426f021b.
-- (running since 11:37 UTC; results below when they land)
+## Ledger (both sides, --jobs 1; pool `maps/nyx_new` + `maps/comp30` + `maps/loss_oct20` = 21 maps, 42 games; `_g5br` = GOD v5)
+Variants: `_g5ml` = `_g5br` + the new header (`ml2_leave` / `ml2_flee` 0.4 as shipped), `_g5ml30` = at 0.3, `_g5ml20` = at 0.2 (the
+flag rate of the shipped model at 0.4: 7-8% of our contact rows), `_g5br60` = the shipped model at 0.6 (the flag rate of the new model
+at 0.4). Rows: `experiments/results/ledger_v3/<bot>_vs_<opp>.jsonl` (my runs also added the new map's games to `_g5br_vs__g4`, `_mite`,
+`_ifish`, `_px9`). Source hashes: `_g5br` 2b1f22387b05, `_g5ml` 36ae4426efe2, `_g5ml30` 58b6426f021b, `_g5ml20` (variant of `_x_ml4`), 0 faults everywhere.
+
+| bot | model, threshold | vs `_g4` (our deaths - theirs) | flips vs `_g5br` (W->L / L->W, identical games) | vs `_mite` | vs `_ifish` | vs `_px9` | proxies pooled |
+|---|---|---|---|---|---|---|---|
+| `_g5br` (GOD v5) | shipped, 0.4 | **28/42** (697-754) | - | 40/42 (576-1271) | 35/42 (635-1216) | 34/42 (560-1203) | 109/126 |
+| `_g5ml` | new, 0.4 | **18/42** (855-633) | 11 / 1, 12 identical | - | - | - | - |
+| `_g5ml30` | new, 0.3 | 22/42 (741-703) | 7 / 1, 9 | - | - | - | - |
+| `_g5ml20` | new, 0.2 | 27/42 (627-819) | 6 / 5, 9 | 40/42 (435-1322) | 35/42 (629-1265) | 36/42 (584-1196) | **111/126** |
+| `_g5br60` | shipped, 0.6 | 24/42 (749-721) | 7 / 3, 14 | - | - | - | - |
+
+- `_g5ml`'s 11 lost games are death cascades on the fight maps (fragment_v3 B 8 -> 38 deaths, nx31x31_c4 B 25 -> 67, interlock_v3 A / B
+  18 -> 30 and 23 -> 39, contest_v3 A, corners_v3 both sides, eight_v3 B): with the recalibrated P the exit rule fires about half as often
+  and the body stays in the brawl. The shipped model with its threshold raised to 0.6 (`_g5br60`, the same flag rate) loses the same maps
+  (24/42): **locally, exiting less often is what costs games**, whichever model ranks the states. With the threshold lowered to the old flag
+  rate (`_g5ml20`), the new ranking is level with the shipped one head-to-head (27 vs 28; our deaths 627 vs 697, theirs 819 vs 754) and
+  against the proxies (111/126 vs 109/126; vs Mite our deaths 435 vs 576).
+- Why the ladder calibration does not transfer: the labels of the patch-3.0 games were produced by a bot that already left at P >= 0.4,
+  so the states it left show fewer deaths than they would have had; a model refit on them learns that those states are safer, and the
+  bot that uses it stops leaving them. P is a snapshot risk under the policy that produced the data (the same lesson as `ml2_stay` in
+  session 13), and the local `_g4` punishes staying just as the ladder does.
+
+## Verdict
+- **Not shipped.** The retrained model (`old+nyx:4+p3`, in `bots/_x_ml4` and `experiments/wip/x_ml4.patch`) ranks our deaths better on
+  held-out patch-3.0 ladder rows (AUC 0.805 vs 0.796, +0.010 [+0.004, +0.016], 5/5 folds, all three sets; a tie if the GOD-v2 stall game is
+  counted) and is better calibrated for those games (Brier 0.064 vs 0.073), but as a drop-in (`_g5ml`, 0.4) it loses 18/42 vs `_g4` where
+  GOD v5 scores 28/42, and at 0.3 still 22/42. The gain in ranking is small; the loss from the calibration shift is large.
+- `_g5ml20` (new model, thresholds 0.2) is the only variant that is not worse: level head-to-head and against the three proxies, with 10%
+  fewer deaths of ours and 9% more kills. It is a ladder A/B candidate (the ranking was learned on the ladder's killers, which our proxies
+  cannot reproduce), not a local gain: ship it only on ladder evidence.
+- Cheaper lesson for the coordinator's queue: the shipped model's threshold is already on the right side locally (0.6 loses 4 games;
+  session 13 found 0.3 worse than 0.4 too).
+- Next if anyone continues: (1) more patch-3.0 ladder games (the 25 losses were what made the refit measurable; 50-100 more would settle
+  the ranking gain), (2) a refit that de-biases the policy feedback (weight the rows the bot left by the counterfactual death rate from the
+  old data, or train only on the rows where the bot did not leave), (3) the kill8 head is refit too but unused (`ml2_enter` 0).

@@ -17,6 +17,11 @@ Reproduce the model: `python3 tools/ml/ml2_decode.py DEC set=dir ...` (sets belo
 without --export-gb), then `ml2_model.h` = header + `ML2_NF = 58` + the three files.
 
 ## State (update at every step; container clock)
+- 00:20: official 34 on the stack: `_mlkc30` 142/170 (h2h vs `_cand2` 17/34), `_mlka40` (adapt) 146/170 (20/34): `_mlkc40` (149, 19/34)
+  stays the pick. Queue continues with ablations on `_ch2`: `_mlc40` (no flee), `_mlca40`, `_mlgc40` (boosted trees).
+- 00:13: wide validation of `_mlkc40` done: 67 maps vs the 5 proxies 475/670 (`_ch2` 452), our deaths -13%, h2h vs `_cand2` 77/134,
+  vs `_ch2` 71/134. Queue (`$S/ml2/queue9.sh`): `_mlkc30` and `_mlka40` (official, vs `_cand2` + proxies + `_ch2`), then `_mlc40`,
+  `_mlca40`, `_mlgc40` on `_ch2`.
 - 00:05: coordinator: `_mlkc40` is the ship candidate. Running (`$S/ml2/queue8.sh`, log `$S/ml2/screen5.log`): wide validation of
   `_mlkc40` (`$S/ml2/wide2.sh`: maps/*.map26a + maps/pad17 + maps/gen2 vs `_cand2`, `_ch2` and the 5 proxies; the coordinator runs `_cand2` /
   `_ch2` vs the proxies on the same pools), then `_mlka40` (stacked + adapt) vs `_cand2` + proxies + `_ch2`, then `_mlc40`, `_mlca40`,
@@ -127,9 +132,22 @@ without --export-gb), then `ml2_model.h` = header + `ML2_NF = 58` + the three fi
 |---|---|---|---|---|---|
 | `_cand2` | 141/170 82.9 | 29 24 27 31 30 | - | 20/34 | 1,315 |
 | **`_mlkc40`** (leave 0.4, flee 0.4, cornered) | **149/170 87.6** | 28 27 29 32 33 | **19/34 (309-340)** | 22/34 (313-432) | 1,180 |
+| `_mlkc30` (same at 0.3) | 142/170 83.5 | 30 24 28 30 30 | 17/34 (272-363) | 23/34 (259-392) | 1,154 |
+| `_mlka40` (`_mlkc40` + ml2_adapt 0.05) | 146/170 85.9 | 27 27 28 31 33 | 20/34 (367-380) | 24/34 (287-386) | 1,157 |
+- 0.3 drops more fights and loses some (the local proxies kill less than the ladder teams: a lower bar is too cautious here).
+- The in-match recalibration is level with the fixed model locally (146 vs 149, h2h 20 vs 19): against ladder teams its offset should
+  stay near 0, so it would behave like `_mlkc40` there; it is insurance if the final map pool or opponents differ. Not needed to ship.
 
 ## Wide validation of `_mlkc40` (generated 27 + pad17 16 + gen2 24 = 67 maps, 134 games per cell)
-- vs `_cand2`: **77/134 57.5%** (deaths 767-1,031). Proxies and `_ch2`: running.
+| pool (games per proxy) | `_ch2` vs 5 proxies | `_mlkc40` vs 5 proxies | per proxy `_mite _ifish _px9 _snk _fA` (`_ch2`) | h2h `_mlkc40` vs `_cand2` |
+|---|---|---|---|---|
+| generated maps/*.map26a (54) | 181/270 67.0 | 182/270 67.4 | 42 34 32 39 35 (38 34 36 36 37) | 28/54 |
+| pad17 (32) | 118/160 73.8 | **128/160 80.0** | 27 23 25 25 28 (25 20 20 26 27) | 16/32 |
+| gen2 (48) | 153/240 63.8 | **165/240 68.8** | 31 31 33 31 39 (25 29 29 34 36) | 27/48 |
+| all 67 maps (134) | 452/670 67.5 (deaths 4,297-5,373) | **475/670 70.9** (deaths **3,725**-5,407) | 100 88 90 95 102 (88 83 85 96 100) | **77/134 57.5** (767-1,031) |
+- h2h vs `_ch2` on the 67 maps: 71/134 (53.0%). `_cand2`'s own proxy cells on these pools: the coordinator's run (not in the ledger yet
+  at 00:13; its partial h2h vs `_ch2`: 22/48 generated, 25/48 gen2).
+- Weak spots: generated maps vs `_px9` (32 vs 36) and `_fA` (35 vs 37), `_snk` on gen2 (31 vs 34).
 
 ## Next
 - Wide results; `_mlka40` (adapt) vs `_mlkc40`; thresholds 0.3 / 0.5 on the stack if CPU allows.

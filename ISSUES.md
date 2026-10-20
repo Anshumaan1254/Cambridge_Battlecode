@@ -38,6 +38,15 @@ or engineering limits.
 | 15 | **ladder-trained danger model** (`ml2_model.h`: logistic weights for P(die within 8 rounds), 58 features) and its cut-offs `ml2_leave` / `ml2_flee` 0.4 | trained on 160 decoded ladder games of Oct 19 (our bodies and the top teams'); the 0.4 cut-offs were chosen against the local proxies (0.3 was worse). Not map dependent, but **fixed to the opponents of Oct 19**: if the ladder teams change their play, the model is stale. `ml2_adapt` (in-match offset from our own deaths, level locally) is in the code, off. Retrain with `tools/ml/ml2_dataset.py` + `ml2_train.py` on new replays |
 | 16 | `aoe_reach5` 2: an enemy whose cooldowns we have not seen counts its area spell as ready, reach 5 | idle / passive enemies that stand at their spawn block the groups within 5 of it: unopposed rushbait-v2 699 rounds vs 606 (the only official map that changes). Real opponents move, so the cost should be small; derived from the kit, not the map. **Held-out cost**: on the 78 gem-scarce / objective test maps (`maps/gold*`, `maps/obj`) it loses 32 of 468 games vs the proxies (`legend_m15` 355, without it 387), while it wins 12 of 170 on the official maps and is level on 67 other maps. No map-feature gate found (it helps on elkring and monolith, both heavy-gem maps). Fallback zip: `submissions/candidates/legend_m15_noreach5_20261020.zip` |
 
+## Session 14 (GOD v3 / v4, patch 3.0)
+
+| # | Where | What | Risk | Severity |
+|---|---|---|---|---|
+| 17 | `world.cpp` `altar_no_camp` 2 | an altar whose only approach tile is a camp's spawn tile opens when that camp is dead; the rule looks only at the 8 neighbours of the altar (Chebyshev 1, the tribute range) and at camp tiles; an altar walled off in any other way (holes on every side, a wall box with no gap) is "no altar" and the map is played for gold earned | a map where a teleport crystal could reach the altar's side is not handled (ISSUES #18) | low |
+| 18 | `tribute()` / `no_altar_gold` | on a map with no usable altar the bot never tributes and values gems at 0; it does not try teleport crystals to reach a walled-off altar | if the final pool has an altar reachable only by crystal, we never bank there | medium |
+| 19 | `stall_guard` 10, `stall_dash_off` 150, `dash_gain1` | literals: a stalled walking task is dropped after 10 rounds, hole routing is off for 150 rounds | tuned on nx61x71 / nx60x60 only | low |
+| 20 | `pd_obj_heavy` uses `obj_min_hp` 4500 at draft time | same thresholds as the brain's objective mode (ISSUES #7) | a heavy objective just under 4,500 health gets no caster draft | medium |
+
 ## Proxy-only hardcoding (off in the shipped bot)
 
 `draft.cpp` `official_map()` (recognises the 17 official maps by size and camp mix) and the per-map tables `MITE`, `IFISH`, `OURS`

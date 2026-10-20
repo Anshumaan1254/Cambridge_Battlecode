@@ -1,6 +1,6 @@
 diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
 --- bots/_g4/src/brain.cpp	2026-10-20 10:13:52.705410239 +0000
-+++ bots/_x_g5/src/brain.cpp	2026-10-20 10:48:11.959797216 +0000
++++ bots/_x_g5/src/brain.cpp	2026-10-20 10:56:11.371780305 +0000
 @@ -96,6 +96,97 @@
  		rep(v, power, 300);
  		return v;
@@ -166,7 +166,17 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  		fight = false;
  	// mi_lethal (default branch): it has shown it can kill us from here; leave unless the kill is ours first.
  	if (P.mi_lethal && fight && !killable && !(in_reach && !can_escape) && lethal >= hp)
-@@ -3020,7 +3132,7 @@
+@@ -2866,7 +2978,8 @@
+ 		{
+ 			// Only while no enemy is near: with enemies around the old line stays (gold_mono_48 vs _k1: the two
+ 			// monoliths are 9 tiles apart; 20 of our 33 deaths were next to ours and they took 2 of our 3 kills).
+-			const bool obj = P.obj_shield && g.objective && W.obj_mode && enemy_near_d > P.obj_shield_enemy_d;
++			const bool team_g = (W.obj_mode && g.objective) || (task_team && g.id == task_group && ((P.altar_no_camp >= 2 && g.unlock) || (P.mono_team && g.monolith && g.camps.size() == 1)));
++			const bool obj = P.obj_shield && team_g && enemy_near_d > P.obj_shield_enemy_d;
+ 			for (std::size_t i = 0; i < g.camps.size(); ++i)
+ 			{
+ 				const int d = cheb(g.camps[i].pos, pos);
+@@ -3020,7 +3133,7 @@
  	const int ours = static_cast<int>(bc::global_submitted_gems(team::ally));
  	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
  	gold_v = P.gold_value;
@@ -175,7 +185,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	{
  		// Gold only turns into gems through the shards it buys, and a shard pays off over the rounds left: +5
  		// strength on 40-50 is about +5% farming rate, which earns back 30 gold x gold_value = 6.6 gems in
-@@ -3150,6 +3262,8 @@
+@@ -3150,6 +3263,8 @@
  	if (gems == 0)
  		return false;
  	auto& W = world();
@@ -184,7 +194,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	if (P.mi_island_bank > 0 && inside_island())
  	{
  		// No altar inside an island (default branch): recall out (the bag is kept) once it is worth banking.
-@@ -3920,7 +4034,9 @@
+@@ -3920,7 +4035,9 @@
  				// part of the time (ranged_exposure). taken = sum_k str_k x (q t_{k-1} + t_k - t_{k-1} - 1).
  				// A melee champion on a pack of n equal camps takes (n+1)/(2n) of the old constant-incoming
  				// product, which overstated a pack by up to 2x.
@@ -195,17 +205,17 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  				std::array<float, 8> hs{}, ss{};
  				int n = 0;
  				float raw = 0;
-@@ -4004,7 +4120,8 @@
+@@ -4004,7 +4121,8 @@
  			time = static_cast<float>(d_adj + wait) + ring_kill + 6.f;
  			share = P.o2_ring_share;
  		}
 -		else if (!solo_ok && W.obj_mode && g.objective && P.obj_team && g.attackers >= P.obj_team_attackers && (sc_obj_focus < 0 || sc_obj_focus == g.id) &&
 +		else if (!solo_ok && ((W.obj_mode && g.objective && P.obj_team && g.attackers >= P.obj_team_attackers && (sc_obj_focus < 0 || sc_obj_focus == g.id)) ||
-+							  (P.altar_no_camp >= 2 && g.unlock)) &&
++							  (P.altar_no_camp >= 2 && g.unlock) || (P.mono_team && g.monolith && g.camps.size() == 1 && (!W.obj_mode || g.objective))) &&
  			obj_team_ready(g, hp_left, team_kill))
  		{
  			// Objective map: too heavy for us and the bodies already on it, but not for the whole team.
-@@ -4036,7 +4153,7 @@
+@@ -4036,7 +4154,7 @@
  		}
  	}
  
@@ -214,6 +224,26 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	if (!g.ours)
  	{
  		const float risk = sc_risk;
+@@ -4923,7 +5041,9 @@
+ bool Brain::farm_group(Group& g)
+ {
+ 	auto& W = world();
+-	const bool obj = W.obj_mode && g.objective;
++	// Team targets outside objective mode (session 14): the camp group that unlocks an altar and lone monoliths (mono_team) use the same
++	// gather / attackers-first / shield rules while the team plan is on.
++	const bool obj = (W.obj_mode && g.objective) || (task_team && ((P.altar_no_camp >= 2 && g.unlock) || (P.mono_team && g.monolith && g.camps.size() == 1)));
+ 	const bool obj_first = obj && P.obj_attackers_first;
+ 	if (contest_tiles(g))
+ 		return true;
+@@ -4960,7 +5080,7 @@
+ 				debug_block({ std::printf("GW r=%d %d near=%d need=%d since=%d awake=%d\n", round, static_cast<int>(type), near, need, obj_gather_since, (int)g.awake); });
+ #endif
+ 				task = T_WAIT;
+-				go_group(g, 4, true);
++				go_group(g, std::max(4, g.max_range + 1), true); // outside the group's real reach (patch 3.0: elk 4, monolith 5)
+ 				return true;
+ 			}
+ 		}
 diff -ruN bots/_g4/src/draft.cpp bots/_x_g5/src/draft.cpp
 --- bots/_g4/src/draft.cpp	2026-10-20 10:13:52.707005123 +0000
 +++ bots/_x_g5/src/draft.cpp	2026-10-20 10:35:38.400954266 +0000
@@ -333,7 +363,7 @@ diff -ruN bots/_g4/src/nav.h bots/_x_g5/src/nav.h
  	bool ensure_group(int id, long long fuel_floor = 45000);
 diff -ruN bots/_g4/src/params.h bots/_x_g5/src/params.h
 --- bots/_g4/src/params.h	2026-10-20 10:13:52.709297892 +0000
-+++ bots/_x_g5/src/params.h	2026-10-20 10:48:11.957903888 +0000
++++ bots/_x_g5/src/params.h	2026-10-20 10:56:11.367801267 +0000
 @@ -176,6 +176,8 @@
  							   //     9 = Mite (Jungle, Durability in the damage stat, Bruiser health, Power)
  							   // 2 = value-model builds (tools/analysis/item_value.py): Bruiser over Power, early Treasure
@@ -343,7 +373,7 @@ diff -ruN bots/_g4/src/params.h bots/_x_g5/src/params.h
  							   // 11 = Intercontinental Fish (ladder #1, 45 games of Oct 19): carries open with Power in the damage stat,
  							   //     tanks with Bruiser + Durability health, Home health second on the carries, then Power forever
  	// Home emblem (recall takes 3 turn ends instead of 5). IC buys it second on the bodies whose first emblem is a damage
-@@ -209,6 +211,27 @@
+@@ -209,6 +211,32 @@
  							   // centre triple 11-13 tiles from the team fight, 4 of ours lost to 5 of theirs; "help that does not come")
  	float rally_hp = 0.6f;	   // ... with at least this health fraction
  	int pd_hor3 = 1;			   // patch 3.0: Heart of Ruin instead of Cassi & Issac at team size 3 (draft.cpp pd_score)
@@ -361,6 +391,11 @@ diff -ruN bots/_g4/src/params.h bots/_x_g5/src/params.h
 +	int stall_guard = 0;	   // > 0: a walking task (farm, capture, tribute, home, flee) that stays inside a 3x3 box this many rounds without acting
 +							   // drops its target; a dash kit also routes without hole crossings for stall_dash_off rounds (fields rebuilt)
 +	int stall_dash_off = 150;
++	int mono_team = 0;		   // 1: a lone monolith group (one camp: 20,000 health, 200 strength, range 5 since patch 3.0; 200 gems + 300 gold a kill) is a
++							   // team target on any map, like an objective group: scored with the whole living team's damage when obj_team_ready says the
++							   // team clears it within obj_clear_max absorbing at most obj_absorb of its health pool, gathered outside its reach first,
++							   // the nearest body alone counts its hits (obj_shield). The solo plan never clears it; 7 of the 20 Nyx maps have one and Nyx
++							   // took contest_v3's twice (400 gems) while we never touched it
 +	int elk_exposure = 0;	   // 1: the farm model's ranged exposure (share of the time a lone ranged body is in reach of the camps it is not hitting)
 +							   // is 1 for groups with a camp whose range reaches past our attack range (patch 3.0: elk / golem 4, monolith 5; a
 +							   // body at range 3 stands inside their reach the whole time), ranged_exposure for the others

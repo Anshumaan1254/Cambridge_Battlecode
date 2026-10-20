@@ -1,0 +1,390 @@
+diff -ruN bots/god/src/brain.cpp bots/_x_g9/src/brain.cpp
+--- bots/god/src/brain.cpp	2026-10-20 17:55:18.383016184 +0000
++++ bots/_x_g9/src/brain.cpp	2026-10-20 17:57:20.129421741 +0000
+@@ -701,6 +701,8 @@
+ 				break;
+ 			}
+ 	}
++	if (P.cd_hidden > 0)
++		mark_hidden_camps();
+ 	build_danger();
+ 	if (P.kill_captures > 0.f)
+ 		for (const auto& g : W.groups)
+@@ -759,6 +761,10 @@
+ 	const vec2 pos0 = pos;
+ 	const bool dmg_up0 = kit.dmg >= 0 && cd[static_cast<std::size_t>(kit.dmg)] <= 0, aoe_up0 = kit.aoe >= 0 && cd[static_cast<std::size_t>(kit.aoe)] <= 0;
+ #endif
++#ifdef CD_TRACE
++	const vec2 cd_pos0 = pos;
++	const bool cd_in0 = in_awake_camp_range();
++#endif
+ 	bool acted = false;
+ 	if (P.mono_rg && regroup_active() && (P.mono_rg_fight_r <= 0 || enemies_within(P.mono_rg_fight_r) == 0))
+ 		acted = go_home(), dbg_path = 9;
+@@ -839,6 +845,30 @@
+ 			}
+ 	});
+ #endif
++#ifdef CD_TRACE
++	debug_block({
++		// Camp-death audit: every turn we were hit since the last one, stand in an awake camp's range, or stand in the real range of
++		// a live camp we cannot see: the camps around us as the world model holds them.
++		bool hidden = false;
++		for (const auto& g : W.groups)
++			if (g.st == ST_ALIVE && !g.harmless && cheb(g.center, cd_pos0) <= 10)
++				for (std::size_t i = 0; i < g.camps.size(); ++i)
++					if (g.hp[i] > 0 && g.camps[i].str > 0 && cheb(g.camps[i].pos, cd_pos0) <= g.camps[i].range && !W.vis.is_set(g.camps[i].pos))
++						hidden = true;
++		if (hp < last_hp - 0.5f || cd_in0 || hidden)
++		{
++			std::printf("CD r=%d ch=%d p=%d,%d>%d,%d hp=%.0f/%.0f last=%.0f path=%d task=%d g=%d en=%d inA=%d |", round, static_cast<int>(type), cd_pos0.x, cd_pos0.y, pos.x, pos.y,
++				hp, max_hp, last_hp, dbg_path, task, task_group, enemy_near_d, static_cast<int>(cd_in0));
++			for (const auto& g : W.groups)
++				if (cheb(g.center, cd_pos0) <= 10)
++					for (std::size_t i = 0; i < g.camps.size(); ++i)
++						if (g.camps[i].str > 0 && cheb(g.camps[i].pos, cd_pos0) <= g.camps[i].range + 1)
++							std::printf(" g%d:%d:d%d/%d:h%.0f:st%d:v%d:s%d:a%d", g.id, static_cast<int>(g.camps[i].type), cheb(g.camps[i].pos, cd_pos0), g.camps[i].range, g.hp[i],
++								static_cast<int>(g.st), static_cast<int>(W.vis.is_set(g.camps[i].pos)), static_cast<int>(g.seen_round == round), static_cast<int>(g.awake));
++			std::printf("\n");
++		}
++	});
++#endif
+ 	C.write_self(W.my_index, (task == T_FARM || task == T_CAPTURE || task == T_WAIT) ? task_group : -1);
+ 	last_hp = hp;
+ }
+@@ -902,7 +932,7 @@
+ 	const bool guard = P.stall_guard > 0 && (task == T_TRIBUTE || task == T_HOME || task == T_FLEE);
+ 	const bool walking = task == T_FARM || task == T_CAPTURE || guard;
+ 	const bool on_reward = task == T_CAPTURE && task_group >= 0 && W.groups[static_cast<std::size_t>(task_group)].mask.is_set(pos);
+-	if (!walking || (task_group < 0 && !guard) || on_reward || last_act_round >= round - 1 || W.ally_spawn.is_set(pos) || cheb(pos, ust_anchor) > 1 ||
++	if (!walking || (task_group < 0 && !guard) || on_reward || last_act_round >= round - 1 || W.ally_spawn.is_set(pos) || cheb(pos, ust_anchor) > ((P.dash_box > 0 && kit.dash >= 0 && P.dash_holes) ? P.dash_box : 1) ||
+ 		flag(state, bc::champion_state::recalling) || flag(state, bc::champion_state::submitting_gems) || flag(state, bc::champion_state::teleporting))
+ 	{
+ 		ust_anchor = pos;
+@@ -1179,6 +1209,45 @@
+ 
+ bool Brain::in_awake_camp_range() const { return camp_danger.is_set(pos); }
+ 
++// P.cd_hidden: a camp we cannot see (a wall or a bush between us) keeps its last known state, so one woken by someone else hits us while
++// the world model says it sleeps: no camp danger, safe_to_recall() (ladder: Cassi recalled 13 times next to a wolf behind a wall, each
++// recall cancelled by its next hit; Stellar 3 times behind a bush row). Health lost since our last turn with no visible enemy near is
++// that hit: every live camp we cannot see whose range covers the tile we stood on counts as awake for P.cd_hidden rounds.
++void Brain::mark_hidden_camps()
++{
++	auto& W = world();
++	if (cd_hidden_round.size() != W.groups.size())
++		cd_hidden_round.assign(W.groups.size(), -1000);
++	if (hp < last_hp - 0.5f && enemies_within(6) == 0)
++		for (const auto& g : W.groups)
++			if (g.st == ST_ALIVE && !g.harmless && !g.awake && cheb(g.center, pos) <= 12)
++				for (std::size_t i = 0; i < g.camps.size(); ++i)
++					if (g.hp[i] > 0 && g.camps[i].str > 0 && cheb(g.camps[i].pos, pos) <= g.camps[i].range && !W.vis.is_set(g.camps[i].pos))
++					{
++						cd_hidden_round[static_cast<std::size_t>(g.id)] = round;
++						break;
++					}
++	if (cd_hidden_forced.size() != W.groups.size())
++		cd_hidden_forced.assign(W.groups.size(), 0);
++	for (auto& g : W.groups)
++	{
++		auto& forced = cd_hidden_forced[static_cast<std::size_t>(g.id)];
++		if (g.st == ST_ALIVE && round - cd_hidden_round[static_cast<std::size_t>(g.id)] < P.cd_hidden)
++		{
++			if (!g.awake)
++				g.awake = true, forced = 1;
++		}
++		else if (forced)
++		{
++			// The mark lapsed: back to what the world model knew (World::update keeps an unseen group's flag, so the forced
++			// value would otherwise stay for as long as the group stays out of sight).
++			if (g.seen_round != round)
++				g.awake = false;
++			forced = 0;
++		}
++	}
++}
++
+ int Brain::enemies_within(int r) const
+ {
+ 	int n = 0;
+@@ -3060,6 +3129,7 @@
+ 	auto& W = world();
+ 	float camp_in = 0, obj_in = 0;
+ 	int escape = 0, obj_escape = 0;
++	const bool cd_on = P.cd_range && (P.cd_enemy_d <= 0 || enemy_near_d > P.cd_enemy_d);
+ 	for (const auto& g : W.groups)
+ 		if (g.st == ST_ALIVE && g.awake && !g.harmless && g.near.is_set(pos))
+ 		{
+@@ -3070,11 +3140,14 @@
+ 			for (std::size_t i = 0; i < g.camps.size(); ++i)
+ 			{
+ 				const int d = cheb(g.camps[i].pos, pos);
+-				if (g.hp[i] <= 0 || d > 3)
++				const int rng = (cd_on && (P.cd_range & 1)) ? g.camps[i].range : 3; // patch 3.0: elk / golem 4, monolith 5
++				if (g.hp[i] <= 0 || d > rng)
+ 					continue;
+ 				bool shielded = false;
++				// cd_range bit 4: a camp beyond the old range 3 counts only when no visible ally stands strictly nearer to it (it hits
++				// the nearest champion in its range: behind a melee ally a ranged body at 3 takes nothing from the pack's far elk).
+ 				for (const auto& a : W.allies)
+-					if (P.safety_v2 || obj)
++					if (P.safety_v2 || obj || (cd_on && (P.cd_range & 4) && d > 3))
+ 					if (a.handle != self && a.alive && a.visible && cheb(a.pos, g.camps[i].pos) < d)
+ 					{
+ 						shielded = true;
+@@ -3085,16 +3158,87 @@
+ 				if (obj)
+ 				{
+ 					obj_in += g.camps[i].str;
+-					obj_escape = std::max(obj_escape, 4 - d);
++					obj_escape = std::max(obj_escape, rng + 1 - d);
+ 					continue;
+ 				}
+ 				camp_in += g.camps[i].str;
+-				escape = std::max(escape, 4 - d);
++				escape = std::max(escape, rng + 1 - d);
++			}
++		}
++	// cd_range bit 64: an exact escape floor on top of the old line: the camps that reach us by their engine range (beyond 3 only when no
++	// visible ally stands strictly nearer to the camp: it hits its nearest champion), at the damage we take after our emblems, for the steps
++	// out of reach (Chebyshev, or the real path with bit 16), + 1 health. Never below the old line, so it bites only where the old line was
++	// short: a monolith at d1 (5 steps out, the old line paid 4 rounds of raw strength within 3), an elk at d4 (no line at all), a long walk
++	// out along a wall or the map edge. Team targets keep their own line (obj_in).
++	float exact_in = 0;
++	int exact_steps = 0;
++	if (cd_on && (P.cd_range & 64))
++	{
++		for (const auto& g : W.groups)
++			if (g.st == ST_ALIVE && g.awake && !g.harmless && g.near.is_set(pos))
++			{
++				const bool team_g = (W.obj_mode && g.objective) || (task_team && g.id == task_group && ((P.altar_no_camp >= 2 && g.unlock) || (P.mono_team && g.monolith && g.camps.size() == 1)));
++				if (P.obj_shield && team_g && enemy_near_d > P.obj_shield_enemy_d)
++					continue;
++				for (std::size_t i = 0; i < g.camps.size(); ++i)
++				{
++					const int d = cheb(g.camps[i].pos, pos);
++					if (g.hp[i] <= 0 || g.camps[i].str <= 0 || d > g.camps[i].range)
++						continue;
++					bool shielded = false;
++					if (d > 3)
++						for (const auto& a : W.allies)
++							if (a.handle != self && a.alive && a.visible && cheb(a.pos, g.camps[i].pos) < d)
++							{
++								shielded = true;
++								break;
++							}
++					if (shielded)
++						continue;
++					exact_in += g.camps[i].str;
++					exact_steps = std::max(exact_steps, g.camps[i].range + 1 - d);
++				}
++			}
++		exact_in *= (jungle_done() ? 0.7f : 1.f) * (durability_done() ? 0.9f : 1.f);
++	}
++	// cd_range bit 16: the walk out of reach by the real shortest path (walls, holes, camps, the map edge), not Chebyshev: at the east edge
++	// of elkring_v3 Cassi at distance 3 of an elk walked south 4 steps at distance 3 before leaving its range 4 (180 -> 0).
++	if (cd_on && (P.cd_range & 16) && (camp_in > 0 || exact_in > 0) && bc::fuel_remaining() > 30000)
++	{
++		const int box_r = std::min(12, escape + 6);
++		const bc::bitboard blocked = W.walls | W.camp_occ;
++		bc::bitboard roots;
++		roots.draw_chebyshev(pos, static_cast<float>(box_r));
++		roots &= ~camp_danger;
++		roots &= ~blocked;
++		if (!roots.is_empty())
++		{
++			bc::bitboard dest, visited;
++			dest.set(pos);
++			bc::bitboard walls2 = blocked;
++			walls2.set(pos, false);
++			bc::distance_field f;
++			f.compute_to(walls2, roots, dest, visited, static_cast<std::uint16_t>(2 * box_r));
++			const auto v = f.get(pos);
++			if (v != bc::distance_field::unreachable)
++			{
++				if (camp_in > 0)
++					escape = std::max(escape, static_cast<int>(v));
++				if (exact_in > 0)
++					exact_steps = std::max(exact_steps, static_cast<int>(v));
+ 			}
+ 		}
++	}
+ 	// P.pair_retreat_hp: Cassi & Issac walk home from camps earlier (a body caught low by an enemy kills both bodies).
+ 	const float rhp = (type == CT::cassi || type == CT::issac) ? std::max(P.retreat_hp, P.pair_retreat_hp) : P.retreat_hp;
+-	float threshold = std::max(rhp * max_hp, camp_in * static_cast<float>(P.safety_v2 ? escape + 1 : 4));
++	// cd_range: walking out from distance d takes range + 1 - d steps and the camp hits at each one inside its range (an elk at distance 1:
++	// 3 more hits after we turn; four rounds of strength was the range-3 margin, a body leaving at 240 of 600 next to an elk died at the edge)
++	// cd_range bit 8: the margin is the escape itself (max(4, steps) rounds) and the line holds at equality (an elk at d1 with 240 left:
++	// 3 hits out = 180, a 4th round of hitting first = 240 = dead).
++	const int camp_rounds = P.safety_v2 ? escape + 1 : ((cd_on && (P.cd_range & 1)) ? std::max(4, escape + ((P.cd_range & 8) ? 0 : 1)) : 4);
++	float threshold = std::max(rhp * max_hp, camp_in * static_cast<float>(camp_rounds) + ((cd_on && (P.cd_range & 8) && camp_in > 0) ? 1.f : 0.f));
++	if (exact_in > 0)
++		threshold = std::max(threshold, exact_in * static_cast<float>(exact_steps) + 1.f);
+ 	if (obj_in > 0)
+ 	{
+ 		// Objective camps: only those that target us (no ally nearer), after our emblems, for the steps out of
+@@ -3141,6 +3285,16 @@
+ 		threshold = 0;
+ 	if (hp < threshold && P.win_bank && camp_in <= 0 && enemy_near_d > P.finish_enemy_d && gems > 0 && wins_with(static_cast<int>(gems)))
+ 		threshold = 0; // the bag wins the game: tribute() banks it before anything else
++	bool latched = false;
++	if ((P.cd_range & 2) && cd_on && cd_latch_hp > 0.f && hp >= threshold)
++	{
++		// We retreated from camp damage and have not healed: out of the camp's reach the line falls to retreat_hp and the farm walk led
++		// straight back in (ladder: 22 of 73 camp deaths stepped in and out of an elk's reach, hit every round). Keep going home.
++		if (W.ally_spawn.is_set(pos) || hp >= cd_latch_hp || round - cd_latch_round > P.cd_latch_max || (P.win_bank && gems > 0 && wins_with(static_cast<int>(gems))))
++			cd_latch_hp = 0.f;
++		else
++			threshold = hp + 1.f, latched = true;
++	}
+ 	if (hp >= threshold)
+ 	{
+ 		// On spawn, health is restored only after a turn ends there: after a recall or a walk home, rest one
+@@ -3155,7 +3309,19 @@
+ #ifdef LEGEND_TRACE
+ 	debug_block({ if (W.obj_mode) std::printf("SF r=%d %d hp=%.0f/%.0f thr=%.0f camp_in=%.0f obj_in=%.0f\n", round, static_cast<int>(type), hp, max_hp, threshold, camp_in, obj_in); });
+ #endif
+-	if (in_awake_camp_range() && camp_in > 0)
++	// cd_range bit 32: retreating inside an awake camp's engine range, step out of it first even when the scan above saw no camp (a body
++	// at d4 of an elk went home through the elk's reach: elkring_v3, the elk stands between the north spawn and the east camps).
++	const bool cd_flee = cd_on && (P.cd_range & 32) && in_awake_camp_range();
++	if ((P.cd_range & 2) && cd_on && (camp_in > 0 || exact_in > 0 || cd_flee) && !latched)
++	{
++		cd_latch_hp = std::max(cd_latch_hp, threshold);
++		cd_latch_round = round;
++	}
++#ifdef CD_TRACE
++	debug_block({ std::printf("CDS r=%d ch=%d hp=%.0f/%.0f thr=%.0f camp_in=%.0f esc=%d latched=%d latch=%.0f inA=%d en=%d\n", round, static_cast<int>(type), hp, max_hp, threshold, camp_in,
++		escape, static_cast<int>(latched), cd_latch_hp, static_cast<int>(in_awake_camp_range()), enemy_near_d); });
++#endif
++	if (in_awake_camp_range() && (camp_in > 0 || cd_flee))
+ 	{
+ 		task = T_FLEE;
+ 		const bc::bitboard out = ~camp_danger;
+@@ -3996,6 +4162,27 @@
+ 			follow_g = true;
+ 		}
+ 	}
++	// open_follow (session 14): the same blob opening on every map, led by the first body after the first pick, only onto heavy groups.
++	if (!follow_g && P.open_follow_until > 0 && !W.mono_mode && round < P.open_follow_until && W.my_index >= P.open_follow_from)
++	{
++		int leader = -1;
++		for (int i = P.open_follow_from; i < static_cast<int>(W.allies.size()) && i < 6; ++i)
++			if (W.allies[static_cast<std::size_t>(i)].alive && C.claim[static_cast<std::size_t>(i)] >= 0)
++			{
++				leader = i;
++				break;
++			}
++		if (leader >= 0 && leader != W.my_index)
++		{
++			const int lid = C.claim[static_cast<std::size_t>(leader)];
++			if (lid >= 0 && lid < static_cast<int>(W.groups.size()) && W.groups[static_cast<std::size_t>(lid)].max_hp >= P.open_follow_hp)
++			{
++				if (g.id != lid)
++					{ WHY(14); return -1; }
++				follow_g = true;
++			}
++		}
++	}
+ 	const int d_tile = d_override >= 0 ? d_override : nav().group_dist(g, pos);
+ 	if (d_tile >= BIG)
+ 		{ WHY(3); return -1; }
+@@ -5240,7 +5427,15 @@
+ 		return true;
+ 	if (P.mi_kite && task_kite && g.id == task_group && !obj && kite_group(g))
+ 		return true;
+-	if (obj && task_team && P.obj_gather > 1 && g.st == ST_ALIVE && !g.awake && g.hp_total / std::max(10.f, dps_on(g)) > P.obj_solo_rounds)
++	const auto& C = comms();
++	int g_claimers = 0; // gather_any: living allies (me included) that claim this group
++	if (P.gather_any > 0 && g.id == task_group)
++		for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 6; ++i)
++			if (W.allies[static_cast<std::size_t>(i)].alive && (i == W.my_index || C.claim[static_cast<std::size_t>(i)] == g.id))
++				++g_claimers;
++	const bool gather_obj = obj && task_team && P.obj_gather > 1;
++	const bool gather_grp = P.gather_any > 0 && !obj && g_claimers >= 2;
++	if ((gather_obj || gather_grp) && g.st == ST_ALIVE && !g.awake && g.hp_total / std::max(10.f, dps_on(g)) > P.obj_solo_rounds)
+ 	{
+ 		// Objective: bodies arriving one by one were worn down by the camps (6 elks hit for 360 a round) and
+ 		// left it half dead for the enemy (stampede vs _v6: 1,707 of 17,400 left for 130 rounds, then their
+@@ -5253,12 +5448,14 @@
+ 				continue;
+ 			++alive_n;
+ 			const vec2 ap = i == W.my_index ? pos : a.pos;
++			if (gather_grp && i != W.my_index && C.claim[static_cast<std::size_t>(i)] != g.id)
++				continue; // gather_any: only this group's claimers count (and are waited for)
+ 			if ((i == W.my_index || (a.visible && a.seen_round == round)) && nav().group_dist(g, ap) <= P.obj_gather_r)
+ 				++near;
+ 		}
+ 		if (obj_gather_group != g.id)
+ 			obj_gather_group = g.id, obj_gather_since = -1;
+-		const int need = std::min(P.obj_gather, alive_n);
++		const int need = gather_obj ? std::min(P.obj_gather, alive_n) : std::min(P.gather_any, g_claimers);
+ 		if (near < need)
+ 		{
+ 			if (nav().group_dist(g, pos) <= P.obj_gather_r && obj_gather_since < 0)
+diff -ruN bots/god/src/brain.h bots/_x_g9/src/brain.h
+--- bots/god/src/brain.h	2026-10-20 17:55:18.410994399 +0000
++++ bots/_x_g9/src/brain.h	2026-10-20 17:57:20.130616841 +0000
+@@ -267,6 +267,11 @@
+ 	vec2 ward_pos{ -1, -1 }; // where our ward was last placed (ward_bush)
+ 	float last_hp = 0;
+ 	int last_hit_round = -100;
++	int cd_latch_round = -1000;		   // P.cd_range bit 2: round of the last retreat from camp damage ...
++	float cd_latch_hp = 0;			   // ... and the health line it retreated at (0 = no latch)
++	std::vector<int> cd_hidden_round;  // P.cd_hidden: per group, the last round a camp of it we cannot see hit us
++	std::vector<char> cd_hidden_forced; // ... the group's awake flag is ours (forced), not the engine's
++	void mark_hidden_camps();
+ 	std::vector<int> blacklist; // per group: round until which we ignore it
+ 	std::vector<float> dmg_on;  // kill_captures: our damage on each group since its last respawn
+ 	void note_dmg(int gid, float amount);
+diff -ruN bots/god/src/params.h bots/_x_g9/src/params.h
+--- bots/god/src/params.h	2026-10-20 17:55:18.412895754 +0000
++++ bots/_x_g9/src/params.h	2026-10-20 17:57:43.481712735 +0000
+@@ -210,6 +210,27 @@
+ 	float burst_retreat = SDK_HAS_HOR ? 1.2f : 0.f;  // > 0: safety() also retreats when our health is below this x the burst (best ready spell + one hit) of the
+ 							   // visible enemies that can step into reach (spell reach + 2): 41% of our ladder deaths (Oct 19) came from >= 60%
+ 							   // health within 3 rounds, Cassi 31% health (220/700) stayed out next to casters and died to one area cast
++	// Camp deaths (Oct 20 ladder, GOD v3 vs five top teams: 93 of our 455 body deaths were camps, 66 with no enemy within 6, median
++	// health 0.07 three rounds before; experiments/wip/x_cd_NOTES.md). All 0 = GOD v5's games.
++	int cd_range = 0;		   // bits: 1 = safety() counts every camp within its engine attack range (elk / golem 4, monolith 5: the scan still
++							   // stopped at 3, so at distance 4 of an elk a body saw no camp damage: it stood there, or stepped 3 <-> 4 between the flee
++							   // step and the farm walk, hit every round) and the escape takes range + 1 - d steps (max(4, steps + 1) rounds of camp
++							   // strength); 2 = a body that retreated from camp damage keeps going home (recall once out of reach) until it is above the
++							   // line it retreated at again (spawn heals): outside the range the line fell to retreat_hp and it walked back in;
++							   // 4 = a camp beyond distance 3 counts only when no visible ally is strictly nearer to it (the camp's target);
++							   // 8 = margin max(4, steps) rounds instead of max(4, steps + 1), and the line holds at equality;
++							   // 16 = the steps out of reach by the real shortest path (walls, holes, the map edge) when longer than Chebyshev;
++							   // 32 = retreating inside an awake camp's engine range, step out of it first even when the scan saw none;
++							   // 64 = an exact escape floor over the old line: camps reaching us by engine range (beyond 3 only unshielded), after
++							   //      our emblems, x the steps out, + 1 (the old line stays the minimum)
++	int cd_latch_max = 40;	   // ... the retreat latch lapses after this many rounds
++	int cd_enemy_d = 0;		   // > 0: cd_range applies only while no enemy was seen within this distance (with an enemy near, the old line keeps
++							   // the fight: fragment_v3 vs _pw, the higher line sent all three bodies home from a half-dead elk at r43-48 with the
++							   // enemy 2-6 tiles away; they were caught recalling, 2 died, the game went 12-1022 instead of 820-138)
++	int cd_hidden = 0;		   // > 0: health lost since our last turn with no visible enemy within 6 marks every live camp we cannot see (a wall or a
++							   // bush between us) whose range covers us as awake for this many rounds: danger map, safety(), no recall into its hits
++							   // (ladder: Cassi recalled 13 times next to a wolf behind a wall, each recall cancelled by its next hit)
++
+ 	int ci_first = 0;		   // 1: the parameter draft picks Cassi & Issac first when the planned team has them (same team, lower body
+ 							   // indices: they capture shared rewards and win claim ties; see draft.cpp param_pick)
+ 	int rally_r = 9;		   // respond_to_alert: answer an ally's rally from at most this far (ladder contest r25-40: our Ren farmed the
+@@ -280,6 +301,19 @@
+ 	int build_tail = SDK_HAS_HOR ? 1 : 0;	   // build_style 2 lists end after 24-30 emblems; 1: then Power in the damage stat for ever (the five top teams of
+ 							   // Oct 20: 950 Power-dmg emblems in 25 games; our Ren sat on 612 gold unspent on average, 13,410 on the no-altar map),
+ 							   // 2: the Bruiser cycle for ever
++	// Opening stack (session 14; Nyx trace on nx60x60: four Nyx bodies hit each elk within 3 rounds of each other and killed a 2-elk group in
++	// 20 rounds, first capture r46, 148 gems banked by r200; our four arrived 12 rounds apart, split after the first elk and heal-tripped: 58
++	// rounds, first capture r92, 38 banked by r200 unopposed). All 0 = no change.
++	int open_follow_until = 0;	   // > 0: before this round the lowest-index living claimant from index open_follow_from leads, and every body from
++								   // that index farms the leader's group while that group's camps hold >= open_follow_hp health in total (an elk
++								   // group, a wolf pack); the first pick (Ren: dash kit, the spawn gold clusters) farms alone, as Nyx's does
++	int open_follow_from = 1;
++	float open_follow_hp = 2000.f;
++	int gather_any = 0;			   // > 0: the objective gather rule on every map: the first claimer at a heavy, sleeping group (alone it needs more than
++								   // obj_solo_rounds) holds one tile outside the group's engine range until min(gather_any, living claimers) claimers are within
++								   // obj_gather_r, at most obj_gather_max rounds (Nyx: 4 bodies hit an elk within 3 rounds of each other, 9 rounds per elk)
++	int dash_box = 0;			   // > 0: on a hole map a dash kit's unstick box is this wide (Chebyshev) instead of 1: a mobility dash moves 2 tiles and
++								   // reset the box every time (nx60x60: Ren dashed into a hole pocket and back out for 32 rounds, 20 of them standing)
+ 	int hor_strike = SDK_HAS_HOR ? 1 : 0;		   // 1: a melee champion with a damaging dash (Heart of Ruin) uses it as its fight spell in engage(): it dashes onto a tile
+ 							   // within dash range that has the target inside the landing radius (most enemies hit first). Before, only the ranged branch
+ 							   // set strike_dash, and mob_dash() blocks a damaging dash within strike_dash_hold of an enemy: on nx31x31_c3 vs legend_m15 our

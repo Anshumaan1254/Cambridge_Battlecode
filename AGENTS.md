@@ -368,6 +368,11 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   v6, `_g8s`, `_g8sb`, and `_g8sb` vs `_g8s`. Next: re-screen the Heart of Ruin draft priors (`pd_hor3`, `pd_hor_prior`, `pd_counter_hor` were tuned
   while Heart of Ruin could not dash), `cd_range` 32 on v7.
 
+- **v7 follow-ups (q25-q27, done)**: control `_g9x0` (= v7 + the x_g7 switches off, `experiments/wip/x_g9.patch`) 42/42 games identical to v7. Rejected
+  (SUGGESTIONS table): `cd_range` 32 (h2h vs v7 21/42, outside cells 157 vs 160, unopposed camp deaths halved), `pd_hor_prior` 0.9 (h2h vs v7 16/42; +9
+  vs legend_m15 only) and 0.7 (same pattern), `pd_hor3` 0 (82 vs 86 over three cells). **GOD v7 stays shipped.** The striking-HoR proxy `_pws` is now
+  the hardest sparring partner (v6 18/42, v7 26/42). Next ideas: the round-1 elk-stack opening (SUGGESTIONS), a draft prior measured against `_pws`.
+
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first
 

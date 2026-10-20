@@ -189,3 +189,17 @@ clusters, the casters' spells on the elk), not a waiting rule; and the one-by-on
 `burst_dash` makes us careful about a dash that our sparring opponents (our own code family, which had the same strike-dash bug) never use in a fight;
 the fair test against a proxy whose Heart of Ruin strikes (`_pws`) is running. `cd_range` 32 halves unopposed camp deaths and is faster, wins two of
 three outside cells but loses 4 games head-to-head: worth a re-test on top of v7 (42-game cells move +-3).
+
+### Session 14, on top of GOD v7 (`bots/_x_g9` = `bots/god` v7 + `experiments/wip/x_g9.patch`: the parked switches of x_g7, all off; control 42/42 games identical to v7)
+
+| Variant | What | vs GOD v7 (h2h) | vs GOD v2 | vs `_pws` (striking HoR) | vs legend_m15 | vs `_pw` / `_pc` |
+|---|---|---|---|---|---|---|
+| **GOD v7** | shipped | - | 31 | 26 | 29 | 35 / 39 |
+| `_g9c32` | `cd_range` 32 (a retreating body steps out of an awake camp's engine range first) | 21 | 28 | 29 | 30 | 33 / 37 |
+| `_g9hp9` | `pd_hor_prior` 0.9 (Heart of Ruin replaces Varg / Ryth at sizes 4-5) | **16** | 26 | 26 | **38** | not run |
+| `_g9hp7` | `pd_hor_prior` 0.7 | - | 27 | 26 | **37** | - |
+| `_g9h3o` | `pd_hor3` 0 (Cassi & Issac instead of Heart of Ruin at size 3) | - | 28 | 26 | 28 | - |
+
+None ships. The camp rule halves unopposed camp deaths (96 -> 48) and is level head-to-head, but loses 3 games over five outside cells. A higher Heart of
+Ruin prior wins 8-9 more games against legend_m15 (pre-patch tuning: contest, corners, the large new maps) but loses big five-champion maps to GOD v2 and
+16 of 42 against v7 itself: Heart of Ruin is a better third pick (pd_hor3 stays), not a better fourth or fifth.

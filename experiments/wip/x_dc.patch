@@ -1,0 +1,35 @@
+diff -ruN _mlkc40/src/brain.cpp _x_dc/src/brain.cpp
+--- _mlkc40/src/brain.cpp	2026-10-19 23:48:38.862340349 +0000
++++ _x_dc/src/brain.cpp	2026-10-20 04:49:12.608502297 +0000
+@@ -3092,6 +3092,15 @@
+ 		fight_margin += P.pair_caution;
+ 		isolated_fight_adv += P.pair_caution;
+ 	}
++	if (P.decoy && kit.dash >= 0 && type != CT::cassi && type != CT::issac && round >= P.decoy_from && round < P.decoy_until &&
++		hp >= P.decoy_hp * max_hp && gems < 10 && !world().obj_mode && !world().mono_mode)
++	{
++		// decoy (the user's idea, session 13): the free dash body (Ren in our draft) works the enemy half while healthy and empty-handed:
++		// their bodies leave their camps to answer it (the ladder teams' contested finish beats our unopposed pace), the dash gets it out,
++		// and the ML exit rule (ml2_leave / ml2_cornered) drops the fights that would kill it.
++		enemy_half_penalty *= P.decoy_half;
++		deny_bonus += P.decoy_deny;
++	}
+ }
+ 
+ bool Brain::on_the_way(int altar) const
+diff -ruN _mlkc40/src/params.h _x_dc/src/params.h
+--- _mlkc40/src/params.h	2026-10-19 23:48:38.945511935 +0000
++++ _x_dc/src/params.h	2026-10-20 04:49:12.609061760 +0000
+@@ -207,6 +207,12 @@
+ 	int rally_r = 9;		   // respond_to_alert: answer an ally's rally from at most this far (ladder contest r25-40: our Ren farmed the
+ 							   // centre triple 11-13 tiles from the team fight, 4 of ours lost to 5 of theirs; "help that does not come")
+ 	float rally_hp = 0.6f;	   // ... with at least this health fraction
++	int decoy = 0;			   // 1: the free dash body (not Cassi / Issac) works the enemy half while healthy and carrying < 10 gems (update_mode)
++	int decoy_from = 0;		   // ... from this round
++	int decoy_until = 600;	   // ... until this round
++	float decoy_hp = 0.7f;	   // ... with at least this health fraction
++	float decoy_half = 0.2f;   // ... its enemy_half_penalty x this
++	float decoy_deny = 0.5f;   // ... and deny_bonus + this
+ 	int flee_exit = 0;		   // 1: a body walking home from inside enemy reach / an awake camp's range takes a sideways step out of it when
+ 							   // every step toward home stays inside (nav.cpp step_field)
+ 	float commit_hit = 2.0f;	   // > 0: the current target's score x this while we hit it in the last 2 rounds (finish what we started)

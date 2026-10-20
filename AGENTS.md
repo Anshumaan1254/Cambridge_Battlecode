@@ -167,6 +167,14 @@ running or unfinished, and what to do next, so a new agent can continue without 
   145/170 (h2h 17): off. `_m16a` (no reach5 + big_reward) 135. ML agent phase 2 (`x_ml3.patch`, `bots/_x_ml3`): `ml2_enter` 0.3 / 0.4 / 0.5
   149 / 147 / 148 (h2h 17 / 16 / 17), recall cancel never fires, two-action model 142 (h2h 19): ties at best, nothing shipped.
 
+- **Checkpoint 05:05 UTC**: ML agent finished (final report in `experiments/wip/x_ml2_NOTES.md`; phase 2 `x_ml3.patch` / `bots/_x_ml3`:
+  nothing beats `_mlkc40`; skipping the early flee raises deaths 31-49%; recall cancel never fires; only the exit rule holds). Wide pool, `_pz_ar0`
+  (no aoe_reach5) vs `_mite _ifish _px9 _snk` 98 / 87 / 93 / 93 (`_mlkc40` 100 / 88 / 90 / 95): level, so `aoe_reach5` stays (official +12,
+  ladder deaths from spells at 4-5; held-out cost recorded in ISSUES). Running: `q27` (rest of `_pz_ar0` wide), `q28` (`_ml3e30` wide: the
+  "fight more" tie), `q29` **decoy** (the user's distraction idea: `bots/_x_dc` = `_mlkc40` + `experiments/wip/x_dc.patch`; the free dash
+  body = Ren works the enemy half while healthy and carrying < 10: `enemy_half_penalty` x `decoy_half`, `deny_bonus` + `decoy_deny`;
+  `_dc0` control, `_dc1` (0.2 / +0.5, r0-600), `_dc2` (0 / +1.0), `_dc3` (r150-2000); official 34 vs `_mlkc40` + 5 proxies).
+
 ## S12. SESSION 12 (2026-10-19, same container as S10/S11): read this first
 
 - Shipped bot at the start: **`legend_m14`** (`submissions/legend.zip` sha256 50ca7600…, frozen `bots/_pg3`, S7R). Baseline for every A/B: `_pg3`.

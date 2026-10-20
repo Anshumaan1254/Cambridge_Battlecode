@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Per-map wins of several bots against one opponent from the ledger (both sides: 2 games per map).
-usage: python3 tools/ledger_maps.py OPP BOT [BOT ...] [--dir experiments/results/ledger_v3]"""
+usage: python3 tools/ledger_maps.py OPP BOT [BOT ...] [--dir DIR]   (default: the current engine's ledger)"""
 import json, os, sys, collections
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import ledger
 a = sys.argv[1:]
-d = a[a.index('--dir') + 1] if '--dir' in a else 'experiments/results/ledger_v3'
+d = a[a.index('--dir') + 1] if '--dir' in a else ledger.LEDGER
 if '--dir' in a:
     i = a.index('--dir'); del a[i:i + 2]
 opp, bots = a[0], a[1:]

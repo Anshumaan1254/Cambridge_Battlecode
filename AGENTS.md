@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-20 (session 14: SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
+- Last updated: **2026-10-20 (session 14: GOD v8 in progress on cambc 3.0.2, plan docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
   Rule from the user: update this file and push at every step. Start with **§S14**, then **§S13-GOD**, **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
@@ -372,6 +372,12 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   (SUGGESTIONS table): `cd_range` 32 (h2h vs v7 21/42, outside cells 157 vs 160, unopposed camp deaths halved), `pd_hor_prior` 0.9 (h2h vs v7 16/42; +9
   vs legend_m15 only) and 0.7 (same pattern), `pd_hor3` 0 (82 vs 86 over three cells). **GOD v7 stays shipped.** The striking-HoR proxy `_pws` is now
   the hardest sparring partner (v6 18/42, v7 26/42). Next ideas: the round-1 elk-stack opening (SUGGESTIONS), a draft prior measured against `_pws`.
+- **18:55 UTC: GOD v8 started** (the user's `GOD_IMPROVEMENT_PLAN.md`, now `docs/strategy_v2/GOD_IMPROVEMENT_PLAN.md`; structured plan and progress log
+  `docs/strategy_v2/16_GOD_V8_PLAN.md`). **Engine now cambc 3.0.2** (Heart of Ruin hotfix; `cambc.toml`, `setup_session.sh`); `tools/ledger.py` keys the
+  directory by the full version (3.0.2 -> `experiments/results/ledger_v3_0_2/`, 3.0.1 stays `ledger_v3/`) and rows carry `engine`. Working copy
+  `bots/_x_v8` = v7 + `experiments/wip/x_v8.patch`: `hor_strike` 2 (contact strike, exposure tie-break, shield waits for the strike while health >=
+  `hor_shield_hp` 0.5), `hor_camp` N (dash onto a camp pack). HOR_TRACE nx31x31_c3 vs `_m15`: 21 strikes (v7 ~10), won 1141-297. Running `$S/q30.sh`
+  (3.0.2 baseline `_g8s`: `_g4` 31, `_pws` 25 so far), then `q31.sh` (`_v8x0` control, `_v8s2`, `_v8c1`, `_v8s2h12`, `_v8c2`).
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

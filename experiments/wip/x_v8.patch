@@ -1,0 +1,153 @@
+diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
+--- god/src/brain.cpp	2026-10-20 17:55:18.383016184 +0000
++++ _x_v8/src/brain.cpp	2026-10-20 18:48:46.641947299 +0000
+@@ -815,6 +815,8 @@
+ 
+ 	if (P.mi_chip)
+ 		chip_passing();
++	if (shield_deferred && !cast_done && (in_awake_camp_range() || enemies_within(4) > 0))
++		cast_self(kit.shield);
+ 	place_ward(false);
+ 	update_priority();
+ 	if (P.unstick_rounds > 0)
+@@ -1449,11 +1451,16 @@
+ 				if (bc::map::walls().is_set(mid))
+ 					continue;
+ 			}
+-			int n = 0;
++			int n = 0, ex = 0;
+ 			for (const auto& o : W.enemies)
+-				if (o.alive && o.visible && cheb(p, o.pos) <= rad)
+-					++n;
+-			const int dd = cheb(p, e.pos);
++				if (o.alive && o.visible)
++				{
++					if (cheb(p, o.pos) <= rad)
++						++n;
++					else if (P.hor_strike >= 2 && cheb(p, o.pos) <= std::max(1, o.kit.attack_range))
++						++ex; // an enemy the dash does not stun can hit the landing tile
++				}
++			const int dd = cheb(p, e.pos) + 4 * ex;
+ 			if (n > best_n || (n == best_n && dd < best_d))
+ 				best_n = n, best_d = dd, best = p;
+ 		}
+@@ -1616,8 +1623,17 @@
+ 		if (best)
+ 			cast_unit_champ(kit.heal, best->ch);
+ 	}
++	shield_deferred = false;
+ 	if (kit.shield >= 0 && ready(kit.shield) && hp < 0.9f * max_hp && (in_awake_camp_range() || enemies_within(4) > 0))
+-		cast_self(kit.shield);
++	{
++		// v8 (hor_strike 2): Heart of Ruin's shield and strike dash share the turn's one cast. Casting the shield here, before combat(),
++		// took the strike away on the turns an enemy stood in dash reach. Healthy with the dash ready: the shield waits (end of turn).
++		if (P.hor_strike >= 2 && kit.dash_mod > 0.f && ready(kit.dash) && hp >= P.hor_shield_hp * max_hp &&
++			enemies_within(static_cast<int>(kit.dash_range + kit.dash_radius)) > 0)
++			shield_deferred = true;
++		else
++			cast_self(kit.shield);
++	}
+ }
+ 
+ void Brain::use_locks()
+@@ -2840,6 +2856,10 @@
+ 	if (d <= kit.attack_range)
+ 	{
+ 		dbg_eng += 10;
++		// v8 (hor_strike 2): in contact the strike dash still lands. A dash to another tile within 2 that keeps the target in the
++		// landing radius hits it (and every enemy next to the landing tile) for focus x dash_mod and stuns; melee attacks after the dash.
++		if (P.hor_strike >= 2 && kit.dash_mod > 0.f && !cast_done && strike_dash_at(e))
++			dbg_eng = 19, d = cheb(pos, e.pos);
+ 		const bool want_stun = e.channeling || e.kit.ranged == false || P.px_mode && P.px_stun_first;
+ 		if (want_stun)
+ 			cast_unit_champ(kit.cc, ec);
+@@ -5047,10 +5067,57 @@
+ 
+ bool Brain::W_dist_home_ok() const { return world().dist_home(pos) > P.cap_recall_min_home && world().dist_home(pos) < BIG; }
+ 
++bool Brain::hor_camp_dash(Group& g, std::size_t idx)
++{
++	// v8 (hor_camp): Heart of Ruin's dash lands on every camp within dash_radius for focus x dash_mod (175 at base focus: more than a
++	// gem or gold cluster's 120 health) and stuns them (a stunned camp skips its attack). spells_on_camp() knew only damage, stun and
++	// area spells, so the dash was never used on camps. Land within attack reach of the target camp, so the attack after it still hits.
++	auto& W = world();
++	const auto& c = g.camps[idx];
++	const int rng = std::max(1, static_cast<int>(kit.dash_range));
++	const int rad = std::max(0, static_cast<int>(kit.dash_radius));
++	const bc::bitboard blocked = Nav::blocked_now(pos);
++	vec2 best = pos;
++	int best_n = P.hor_camp - 1;
++	for (int dy = -rng; dy <= rng; ++dy)
++		for (int dx = -rng; dx <= rng; ++dx)
++		{
++			const vec2 p{ pos.x + dx, pos.y + dy };
++			if ((dx == 0 && dy == 0) || !bc::map::is_in_bounds(p) || blocked.is_set(p) || cheb(p, c.pos) > kit.attack_range || W.enemy_spawn.is_set(p))
++				continue;
++			if ((std::abs(dx) == 2 || std::abs(dy) == 2) && bc::map::walls().is_set(vec2{ pos.x + dx / 2, pos.y + dy / 2 }))
++				continue;
++			int n = 0;
++			for (std::size_t i = 0; i < g.camps.size(); ++i)
++				n += g.hp[i] > 0 && W.camp_occ.is_set(g.camps[i].pos) && cheb(p, g.camps[i].pos) <= rad;
++			if (n > best_n)
++				best_n = n, best = p;
++		}
++	if (best == pos)
++		return false;
++	try
++	{
++		if (bc::self().abilities()[static_cast<std::size_t>(kit.dash)].use(best))
++		{
++			note_dmg(g.id, focus * kit.dash_mod * static_cast<float>(best_n));
++			cast_done = true;
++			after_move(true);
++			return true;
++		}
++	}
++	catch (...)
++	{
++	}
++	return false;
++}
++
+ bool Brain::spells_on_camp(Group& g, std::size_t idx, bool save_cc)
+ {
+ 	const auto& c = g.camps[idx];
+ 	const int d = cheb(pos, c.pos);
++	if (P.hor_camp > 0 && kit.dash >= 0 && kit.dash_mod > 0.f && !save_cc && d <= kit.attack_range && ready(kit.dash) &&
++		enemy_near_d > P.strike_dash_hold && hor_camp_dash(g, idx))
++		return true;
+ 	if (kit.aoe >= 0 && d <= static_cast<int>(kit.aoe_range) && (!kit.aoe_stuns || !save_cc) && ready(kit.aoe))
+ 	{
+ 		// Centre the blast on the camp with the most live neighbours.
+diff -ruN god/src/brain.h _x_v8/src/brain.h
+--- god/src/brain.h	2026-10-20 17:55:18.410994399 +0000
++++ _x_v8/src/brain.h	2026-10-20 18:48:46.636671962 +0000
+@@ -199,6 +199,7 @@
+ 	bool cast_unit_champ(int slot, const bc::champion& c);
+ 	bool cast_ground(int slot, vec2 p);
+ 	bool strike_dash_at(const Enemy& e); // P.hor_strike: damaging dash onto a tile with the target in the landing radius
++	bool hor_camp_dash(Group& g, std::size_t idx); // P.hor_camp: damaging dash onto a camp pack
+ 	bool cast_self(int slot);
+ 	bool ready(int slot) const { return slot >= 0 && cd[static_cast<std::size_t>(slot)] <= 0 && can_cast && !cast_done; }
+ 	void support_spells();
+@@ -210,6 +211,7 @@
+ 	bool step(const bc::bitboard& goals, bool avoid_danger, bool allow_dash);
+ 	int mob_dash() const;
+ 	bool strike_dash = false;
++	bool shield_deferred = false; // hor_strike 2: the shield was held for the strike dash this turn (cast at the end of the turn if no cast happened)
+ 	bool go_group(Group& g, int stop_at, bool avoid);
+ 	bool go_altar(int id);
+ 	bool go_home_step(bool avoid);
+diff -ruN god/src/params.h _x_v8/src/params.h
+--- god/src/params.h	2026-10-20 17:55:18.412895754 +0000
++++ _x_v8/src/params.h	2026-10-20 18:48:46.635748928 +0000
+@@ -286,6 +286,9 @@
+ 							   // Heart of Ruin spent 391 rounds within 3 of an enemy and landed the dash on one once (62 of its 70 dashes were walking)
+ 	int burst_dash = 0;		   // 1: Enemy::burst() counts a ready damaging dash (Heart of Ruin: 1.75 x focus) like a spell; the fight estimate, burst
+ 							   // retreat, burst_exit, danger map and the ml2 burst_e5 input read it (before: no dash damage; build_react already had it)
++	int hor_camp = 0;	   // v8: a damaging dash (Heart of Ruin) farming a group dashes onto a tile in reach of the target camp with >= this many live
++				   // camps in its landing radius (all hit and stunned); 0 = off. Only while no enemy is within strike_dash_hold.
++	float hor_shield_hp = 0.5f; // hor_strike 2: the shield waits for the strike while health >= this share and the dash is ready with an enemy in its reach
+ 	int strike_dash_hold = 9;   // patch 3.0: a damaging dash (Heart of Ruin) is not used to walk while an enemy was seen within this many tiles
+ 	int flee_exit = 0;		   // 1: a body walking home from inside enemy reach / an awake camp's range takes a sideways step out of it when
+ 							   // every step toward home stays inside (nav.cpp step_field)

@@ -22,17 +22,28 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from bench import load_stats  # noqa: E402  (the same parser the panels use)
 
+def _engine_version():
+	try:
+		return subprocess.run(['cambc', '--version'], capture_output=True, text=True).stdout.split()[-1]
+	except (OSError, IndexError):
+		return '2'
+
+
+ENGINE = _engine_version()
+
+
 def _engine_ledger():
-	"""Results depend on the engine as much as on the bots: cambc 3.x (the Oct 20 balance patch) gets its own ledger directory,
-	so no game played on an older engine is reused (the rows are keyed by bot sources only). LEDGER_DIR overrides."""
+	"""Results depend on the engine as much as on the bots: each engine gets its own ledger directory, so no game played on another
+	engine is reused (the rows are keyed by bot sources only). 2.x -> ledger/, 3.0.1 -> ledger_v3/ (patch 3.0), any later engine ->
+	ledger_v<full version> (3.0.2 = the Heart of Ruin hotfix, same SDK headers as 3.0.1: a major-version key reused 3.0.1 rows). LEDGER_DIR overrides."""
 	if os.environ.get('LEDGER_DIR'):
 		return os.environ['LEDGER_DIR']
 	try:
-		v = subprocess.run(['cambc', '--version'], capture_output=True, text=True).stdout.split()[-1]
-		major = int(v.split('.')[0])
-	except (OSError, ValueError, IndexError):
+		major = int(ENGINE.split('.')[0])
+	except ValueError:
 		major = 2
-	return os.path.join(ROOT, 'experiments', 'results', 'ledger' if major < 3 else f'ledger_v{major}')
+	sub = 'ledger' if major < 3 else 'ledger_v3' if ENGINE == '3.0.1' else 'ledger_v' + ENGINE.replace('.', '_')
+	return os.path.join(ROOT, 'experiments', 'results', sub)
 
 
 LEDGER = _engine_ledger()
@@ -86,7 +97,7 @@ def row_from_stats(bot, opp, map_name, side, path, release, when):
 			'release': release, 'win': s['outcome'] == us, 'loss': s['outcome'] == them, 'rounds': s['rounds'],
 			'gems': [s['gems'][us], s['gems'][them]], 'deaths': [s['per'][us]['deaths'], s['per'][them]['deaths']],
 			'kills': [s['per'][us]['kills'], s['per'][them]['kills']], 'gold': [s['per'][us]['gold'], s['per'][them]['gold']],
-			'faults': int(s['faults'].get(us, 0)), 'when': when}
+			'faults': int(s['faults'].get(us, 0)), 'when': when, 'engine': ENGINE}
 
 
 def append(bot, opp, rows):

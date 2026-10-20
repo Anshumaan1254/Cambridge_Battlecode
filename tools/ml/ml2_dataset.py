@@ -11,7 +11,11 @@ Labels: die4 / die8 (this body dies within 4 / 8 rounds), kill8 (an enemy champi
 net3 (champion damage this body deals minus takes over the next 3 rounds), taken3 (taken), act_hit1 (it hits a champion
 next round), act_away1 (its distance to the nearest enemy grows next round).
 Side of our bot ('us' = 1 on its bodies): ladder_oct19b from experiments/ladder_oct19b/index.json, ladder_oct18 and
-sneaky_oct18 team 0; the other sets are other teams only (us = 0 everywhere).
+sneaky_oct18 team 0, the Oct 20 ladder sets (set names starting with 'nyx' or 'losses': we are side A = team 0); the other
+sets are other teams only (us = 0 everywhere).
+Patch (ml4, session 14): a set whose name starts with 'nyx', 'losses', 'p3' or 'local3' is a patch-3.0 game (champion base
+stats of patch 3.0, Tavi's stun 1.4 x focus, Heart of Ruin); every other set is an Oct 18-19 game (patch 2.2.5 stats, Tavi 2.2).
+The strength / focus of a body are the base stats of its engine plus its items, as the bot reads them from the engine.
 """
 import collections
 import hashlib
@@ -26,11 +30,44 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
 sys.path.insert(0, os.path.join(ROOT, 'tools', 'strategy_v2'))
-from analyze import stats_of  # noqa: E402
+from analyze import BASE as BASE_V3, stat_points  # noqa: E402
+
+# Champion base stats before patch 3.0 (health, growth, strength, growth, focus, growth; the Oct 18-19 replays were played
+# on cambc 2.2.5): the old analyze.py table.
+BASE_V2 = {
+	'Cassi': (700, 71.25, 30, 3.5, 70, 15), 'Issac': (900, 95, 40, 4.75, 100, 10),
+	'Ryth': (1200, 100, 50, 5, 100, 10), 'VesperVale': (900, 100, 45, 5, 100, 10),
+	'Prism': (700, 75, 35, 3.5, 80, 10), 'Stellar': (750, 75, 35, 3.5, 100, 10),
+	'Vendetta': (800, 100, 70, 5, 100, 10), 'Marcella': (1200, 100, 45, 5, 50, 10),
+	'Tavi': (750, 75, 35, 5, 100, 10), 'Willow': (700, 50, 45, 3, 105, 5),
+	'Ren': (900, 100, 40, 5, 100, 10), 'Varg': (1000, 100, 50, 5, 100, 10),
+}
+BASE_OF = {2: BASE_V2, 3: BASE_V3}
+PRISM_FOCUS_PER_GEM = {2: 0.2, 3: 1.0}  # Prism's passive (patch 3.0: 0.2 -> 1 focus per carried gem)
+
+
+def stats_of(champ, items, patch=3, gems=0):
+	"""analyze.stats_of with the base stats of the given patch (the bot reads the engine's stats: they include the items)."""
+	h0, hg, s0, sg, f0, fg = BASE_OF[patch][champ]
+	pts, passives, spent = stat_points(items)
+	hp = h0 + hg * pts['h']
+	st = s0 + sg * pts['s']
+	if champ == 'Ryth':
+		st += 0.01 * (hp - h0)
+	fo = f0 + fg * pts['f']
+	if champ == 'Prism':
+		fo += PRISM_FOCUS_PER_GEM[patch] * gems
+	return hp, st, fo, passives, spent, pts
+
+
+def patch_of(setname):
+	return 3 if setname.startswith(('nyx', 'losses', 'p3', 'local3')) else 2
 
 CH = ['Ryth', 'VesperVale', 'Vendetta', 'Cassi', 'Issac', 'Stellar', 'Prism', 'Marcella', 'Willow', 'Ren', 'Varg', 'Tavi', 'HeartOfRuin']
 RANGED = {'Cassi', 'Stellar', 'Prism', 'Tavi', 'Willow', 'VesperVale'}
-# slot -> (kind, modifier); kinds: dmg, cc (stun, damage = mod x focus), aoe (radius 1, mod x focus; Ryth's stuns), reset, dash, heal, shield
+# slot -> (kind, modifier); kinds: dmg, cc (stun, damage = mod x focus), aoe (radius 1, mod x focus; Ryth's stuns), reset,
+# dash (patch 3.0: Heart of Ruin's dash lands for mod x focus and stuns; the bot's best_mod() counts it like a spell modifier,
+# its burst() does not), heal, shield. KIT = patch 2.2.5 (Tavi's stun 2.2 x focus); KIT_V3 = patch 3.0 (Tavi 1.4, Heart of Ruin).
 KIT = {
 	'Ryth': {0: ('aoe', 1.0), 1: ('reset', 0)}, 'VesperVale': {0: ('reset', 0), 1: ('dash', 0)},
 	'Vendetta': {0: ('reset', 0), 1: ('dash', 0)}, 'Cassi': {0: ('dmg', 2.0), 1: ('cc', 0.0)},
@@ -39,6 +76,8 @@ KIT = {
 	'Willow': {0: ('heal', 3.0), 1: ('reset', 0)}, 'Ren': {0: ('cc', 1.25), 1: ('dash', 0)},
 	'Varg': {0: ('reset', 0), 1: ('shield', 2.5)}, 'Tavi': {0: ('reset', 0), 1: ('cc', 2.2)},
 }
+KIT_V3 = dict(KIT, Tavi={0: ('reset', 0), 1: ('cc', 1.4)}, HeartOfRuin={0: ('shield', 1.5), 1: ('dash', 1.75)})
+KIT_OF = {2: KIT, 3: KIT_V3}
 STUNS = {'Ryth', 'Cassi', 'Prism', 'Ren', 'Tavi'}  # a ready stun spell (Ryth's area stuns)
 AREA = {'Ryth', 'Stellar', 'Prism'}
 TYPES_1H = ['Ren', 'Stellar', 'Cassi', 'Issac', 'Varg', 'Ryth']
@@ -104,12 +143,15 @@ def our_team(setname, stem, index):
 	if setname == 'ladder_oct19b':
 		r0 = index[stem[:11]]
 		return 0 if r0['side'] == 'A' else 1
-	if setname in ('ladder_oct18', 'sneaky_oct18') or setname.startswith('local'):
+	if setname in ('ladder_oct18', 'sneaky_oct18') or setname.startswith(('local', 'nyx', 'losses')):
 		return 0
 	return -1
 
 
-def game_rows(path, geo, us_team, setname, gid):
+def game_rows(path, geo, us_team, setname, gid, patch=None):
+	if patch is None:
+		patch = patch_of(setname)
+	kit_table = KIT_OF[patch]
 	d = json.load(open(path))
 	w, h, grid = geo['w'], geo['h'], geo['grid']
 	bodies = {b['index']: b for b in d['meta']['bodies']}
@@ -187,12 +229,12 @@ def game_rows(path, geo, us_team, setname, gid):
 		alive = {b: c for b, c in ch.items() if c[7] and c[3] >= 0}
 		info = {}
 		for b, c in alive.items():
-			key = (b, json.dumps(c[11]))
+			key = (b, json.dumps(c[11]), c[8] if btype[b] == 'Prism' else 0)
 			if key not in stats_cache:
-				stats_cache[key] = stats_of(btype[b], c[11])
+				stats_cache[key] = stats_of(btype[b], c[11], patch, c[8])
 			mh, st, fo, passives, spent, pts = stats_cache[key]
 			t = btype[b]
-			kit = KIT.get(t, {})
+			kit = kit_table.get(t, {})
 			rd = {s: ready(b, s, r) for s in kit}
 			burst = 0.0
 			best = 0.0
@@ -210,8 +252,10 @@ def game_rows(path, geo, us_team, setname, gid):
 						area |= k == 'aoe'
 				elif k == 'reset' and rd[s]:
 					burst = max(burst, st)
-				elif k == 'dash' and rd[s]:
-					dash = True
+				elif k == 'dash':
+					best = max(best, m)  # Heart of Ruin: best_mod() includes the dash landing modifier (burst() does not)
+					if rd[s]:
+						dash = True
 			dps = st + fo * best / 8.0 + burst / 3.0
 			# an ally's damage as the bot counts it in combat() (cooldowns of allies are not read): spells assumed up
 			adps = st + fo * best / 8.0 + max(st, fo * best) / 3.0
@@ -399,10 +443,11 @@ def main():
 				continue
 			us = our_team(s, stem, index)
 			gid = len(G)
-			x, y, m, meta = game_rows(path, geo[stem], us, s, gid)
-			mp = stem.split('_')[-1]
-			G.append(dict(set=s, stem=stem, map=mp, us=us, drafts=meta['drafts'], outcome=meta.get('outcome'), final=meta.get('finalRound'), fp=meta['fp'],
-						   dup=any(g['fp'] == meta['fp'] for g in G)))
+			patch = patch_of(s)
+			x, y, m, meta = game_rows(path, geo[stem], us, s, gid, patch)
+			mp = geo[stem].get('map') or stem.split('_')[-1]
+			G.append(dict(set=s, stem=stem, map=mp, us=us, patch=patch, drafts=meta['drafts'], outcome=meta.get('outcome'), final=meta.get('finalRound'),
+						   fp=meta['fp'], dup=any(g['fp'] == meta['fp'] for g in G)))
 			X += x; Y += y; M += m
 			print(f'{s} {stem}: {len(x)} rows', flush=True)
 	np.savez_compressed(out, X=np.array(X, dtype=np.float32), Y=np.array(Y, dtype=np.float32), M=np.array(M, dtype=np.int32),

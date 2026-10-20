@@ -108,14 +108,14 @@ for b in _mlkc40 _g4 god; do cambc build $b > /dev/null && echo "built $b"; done
 # _pws = Heart of Ruin, Ren, Stellar, Ryth, Varg forced with Power builds and the striking Heart of Ruin); _x_v8 = v7 + experiments/wip/x_v8.patch.
 v7() { mkdir -p bots/$1 && rm -rf bots/$1/src && (cd bots/$1 && python3 -c "import zipfile;zipfile.ZipFile('../../submissions/history/god_v7_20261020.zip').extractall('.')") && cp bots/legend/.gitignore bots/$1/; }
 v7 _g8s && sed -i 's/int hor_strike = SDK_HAS_HOR ? 1 : 0;/int hor_strike = 1;/' bots/_g8s/src/params.h
-for p in _pw _pc _ph _pws; do v7 $p && (cd bots/$p && patch -s -p1 --no-backup-if-mismatch < ../../experiments/proxies/$p.patch); done
+for p in _pw _pc _ph _pws _pm; do v7 $p && (cd bots/$p && patch -s -p1 --no-backup-if-mismatch < ../../experiments/proxies/$p.patch); done
 [ -d bots/_x_v8/src ] || { v7 _x_v8 && (cd bots/_x_v8 && patch -s -p1 --no-backup-if-mismatch < ../../experiments/wip/x_v8.patch); }
 mkdir -p bots/_m15 && rm -rf bots/_m15/src && cp -r bots/legend/src bots/_m15/ && cp bots/legend/.gitignore bots/_m15/   # _m15 = legend_m15 (bots/legend, ledger name of the v6-v8 cells)
-for b in _g8s _pw _pc _ph _pws _m15 _x_v8; do cambc build $b > /dev/null && echo "built $b"; done
+for b in _g8s _pw _pc _ph _pws _pm _m15 _x_v8; do cambc build $b > /dev/null && echo "built $b"; done
 for b in _pg3 _ch2 _snk _pd2 _pd _fc _fw _m11 _rm _ST _m2 _m3 _x_gp _m4 _m4x _m5a _px9 _xp4 _m7 _fA _fB _fC _mite _ifish _m8 _cS3 _m9 _m10 legend idle; do cambc build $b > /dev/null && echo "built $b"; done
 python3 - <<'EOF'
 import sys; sys.path.insert(0, 'tools'); import ledger
-want = {'_m15': '7f1fbbaa8fa8', '_g8s': '152375f0f792', '_pw': '827ab7268c47', '_pc': '79a41047e8e1', '_ph': '23077c2e8e95', '_pws': '1bc4daa14baf', '_mlkc40': '8eb9563d0d5b', '_g4': '19a1785457d3', '_rm': '339a961d3427', '_ST': 'ca21cbfe785b', '_eA': '0ee193334b60', '_eB': '654605b27deb', '_eC': '116ccc8b53b1',
+want = {'_pm': 'dc55f8d8ba35', '_m15': '7f1fbbaa8fa8', '_g8s': '152375f0f792', '_pw': '827ab7268c47', '_pc': '79a41047e8e1', '_ph': '23077c2e8e95', '_pws': '1bc4daa14baf', '_mlkc40': '8eb9563d0d5b', '_g4': '19a1785457d3', '_rm': '339a961d3427', '_ST': 'ca21cbfe785b', '_eA': '0ee193334b60', '_eB': '654605b27deb', '_eC': '116ccc8b53b1',
 		'_m2': '1684aa2a482c', '_m3': '86c9e8f3de35', '_x_gp': '92e199947185', '_m4': '0dc2a2aac28a',
 		'_m5a': '5620bb02867a', '_xp4': '6a1a52e4ddb8', '_m7': '61dd9019869d', '_mite': '688b37be81e3', '_ifish': '6fde429be694', '_m8': '540e17bfe5a4', '_cS3': '540e17bfe5a4', '_m9': '0df32fa5ee2d', '_m10': 'a0e6030bf0f4', '_m11': '0dd8010eaf12', '_fw': '104743e4f1d5', '_fc': '531e7331a283', '_pd': '8ede6d7d3aa1', '_pd2': 'c8272a7e1846', '_pg3': 'cdc6dc9027f3', '_ch2': '5f24a1979ddc', '_snk': '70c95c1095f6', '_fA': '25fe5950b034', '_fB': 'f8e472c342f3', '_fC': 'ef5391dcc92b'}
 for b, h in want.items():

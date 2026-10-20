@@ -120,6 +120,14 @@ void Learner::tick(int round, bool leader, bool me_alive)
 	// land in lumps of one capture, so the gem term blends in half of the previous window's.
 	const int ours = static_cast<int>(bc::global_submitted_gems(team::ally));
 	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
+	if (frozen)
+	{
+		// A window played under a counter plan says nothing about the learner's stance: restart the window.
+		window_start = round;
+		ours0 = ours, theirs0 = theirs, prev_diff = 0;
+		ally_deaths0 = ally_deaths, enemy_deaths0 = enemy_deaths, our_half0 = ally_deaths_our_half;
+		return;
+	}
 	const float diff = static_cast<float>((ours - ours0) - (theirs - theirs0));
 	const float gem_term = 0.67f * diff + 0.33f * prev_diff;
 	prev_diff = diff;

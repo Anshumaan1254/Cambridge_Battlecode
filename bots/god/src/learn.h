@@ -39,6 +39,7 @@ struct Learner
 	int ally_deaths_our_half = 0, our_half0 = 0;
 	std::vector<bool> ally_alive, enemy_alive;
 	float last_reward = 0;
+	bool frozen = false; // P.opp_model: the team plays a counter plan, not the learner's stance: windows are not scored
 	float prev_diff = 0; // previous window's banked-gem difference (smooths the lumps)
 
 	// ---- pain map (per body): coarse cells of CELL x CELL tiles

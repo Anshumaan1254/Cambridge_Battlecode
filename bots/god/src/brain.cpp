@@ -1,4 +1,5 @@
 #include "brain.h"
+#include "opponent.h"
 #include "learn.h"
 #include "draft.h"
 #include "ml2_model.h"
@@ -668,9 +669,18 @@ void Brain::turn()
 		C.read(round);
 		C.write_bag(0);
 		C.write_self(W.my_index, -1);
+		if (P.opp_model)
+			learner().frozen = C.plan >= PLAN_INVADER;
 		learner().tick(round, W.my_index == 0, false);
+		if (P.opp_model || P.om_sight)
+			om_tick();
 		if (W.my_index == 0)
-			C.write_stance(learner().stance);
+		{
+			if (P.opp_model)
+				C.write_plan(opp_model().plan_id(learner().stance));
+			else
+				C.write_stance(learner().stance);
+		}
 		task = T_NONE;
 		return;
 	}
@@ -707,9 +717,18 @@ void Brain::turn()
 	{
 		// Learning signals: champion damage marks a painful place; an enemy dying near us relieves it.
 		auto& L = learner();
+		if (P.opp_model)
+			L.frozen = C.plan >= PLAN_INVADER;
 		L.tick(round, W.my_index == 0, true);
+		if (P.opp_model || P.om_sight)
+			om_tick();
 		if (W.my_index == 0)
-			C.write_stance(L.stance);
+		{
+			if (P.opp_model)
+				C.write_plan(opp_model().plan_id(L.stance));
+			else
+				C.write_stance(L.stance);
+		}
 		if (hp < last_hp - 0.5f)
 		{
 			last_hit_round = round;
@@ -803,6 +822,8 @@ void Brain::turn()
 		dbg_path = 5;
 	if (!acted && (acted = shop_trip()))
 		dbg_path = 6;
+	if (!acted && P.pxs_style && style_now() == 6 && W.my_index == 0 && (acted = pxs_deny_altar()))
+		dbg_path = 9;
 	if (!acted && (acted = respond_to_alert()))
 		dbg_path = 7;
 	if (!acted && P.mono_fort && W.mono_mode && round < P.mono_fort_until)
@@ -905,6 +926,233 @@ void Brain::learn_burst()
 	}
 	mi_last_round = round;
 	mi_camp_in_prev = mi_camp_in;
+}
+
+bool Brain::is_altar_tile(vec2 p) const
+{
+	for (const auto& a : world().altars)
+		if (a == p)
+			return true;
+	return false;
+}
+
+bool Brain::escort_alert() const
+{
+	// The escort reuses the DANGER code at an altar tile (no enemy can stand there); with om_sight on, DANGER elsewhere is a sighting.
+	const auto& C = comms();
+	return C.alert_kind == AL_DANGER && (!P.om_sight || is_altar_tile(C.alert_pos));
+}
+
+void Brain::om_tick()
+{
+	// Every body, every turn (alive or dead). Leader: close the window (classify, broadcast, reset the shared invasion counter), then
+	// gather this turn's signals. Every living body: count itself once per window in the invasion counter, post sightings.
+	auto& W = world();
+	auto& C = comms();
+	const int wid = round / std::max(1, P.om_window);
+	if (P.opp_model && W.my_index == 0)
+	{
+		auto& M = opp_model();
+		if (M.win_id < 0)
+		{
+			std::vector<bc::champion_type> et;
+			for (const auto& e : W.enemies)
+				et.push_back(e.type);
+			M.set_prior(et);
+			M.win_id = wid;
+			om_theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
+			om_ad = W.ally_deaths, om_ed = W.enemy_deaths, om_ad_home = learner().ally_deaths_our_half;
+			om_gst.assign(W.groups.size(), -1);
+		}
+		if (wid != M.win_id)
+		{
+			M.cur.inv = C.inv_count;
+			M.end_window(static_cast<int>(W.allies.size()), round);
+#ifdef OPP_TRACE
+			debug_block({
+				const auto& w = M.cur;
+				std::printf("OM r=%d inv=%d ad=%d ed=%d multi=%d home=%d pack=%d banks=%d gems=%d lump=%d ward=%d/%d/%d locks=%d cancels=%d altar=%d bush=%d unseen=%d heavy=%d alive=%d contact=%.2f mu=%.2f cus=%.2f/%.2f fired=%d ev=",
+					round, w.inv, w.ally_deaths, w.enemy_deaths, w.multi_deaths, w.ally_deaths_home, w.pack, w.bank_events, w.bank_gems, w.bank_lump, w.ward_home, w.ward_altar, w.ward_bush,
+					w.locks, w.cancels, w.altar_presence, w.bush_hits, w.unseen_hits, w.heavy_lost, w.alive_rounds, M.contact, M.cus_mu, M.cus_pos, M.cus_neg, static_cast<int>(M.fired));
+				for (int a = 1; a < ARC_COUNT; ++a)
+					std::printf("%.2f,", M.ev[static_cast<std::size_t>(a)]);
+				std::printf(" s=");
+				for (int a = 1; a < ARC_COUNT; ++a)
+					std::printf("%.2f,", M.score[static_cast<std::size_t>(a)]);
+				std::printf(" arc=%s plan=%d\n", arc_name(M.arc), M.plan_id(learner().stance));
+			});
+#endif
+			C.reset_invasion();
+			M.cur = OmWindow{};
+			M.win_id = wid;
+		}
+		auto& w = M.cur;
+		++w.rounds;
+		const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
+		if (theirs > om_theirs)
+		{
+			++w.bank_events;
+			w.bank_gems += theirs - om_theirs;
+			w.bank_lump = std::max(w.bank_lump, theirs - om_theirs);
+		}
+		om_theirs = theirs;
+		const int dad = W.ally_deaths - om_ad, ded = W.enemy_deaths - om_ed;
+		if (dad > 0)
+		{
+			w.ally_deaths += dad;
+			if (dad >= 2 || round - om_last_ad_round <= 3)
+				++w.multi_deaths; // two of us down within 3 rounds: a pack fight
+			om_last_ad_round = round;
+		}
+		w.enemy_deaths += std::max(0, ded);
+		w.ally_deaths_home += std::max(0, learner().ally_deaths_our_half - om_ad_home);
+		om_ad = W.ally_deaths, om_ed = W.enemy_deaths, om_ad_home = learner().ally_deaths_our_half;
+		if (alive)
+		{
+			++w.alive_rounds;
+			om_observe();
+		}
+	}
+	if (!alive)
+		return;
+	auto ours_half = [&](vec2 p) { return !W.enemy_spawn.is_set(p) && W.dist_home(p) < W.dist_away(p); };
+	if (P.opp_model && om_inv_win != wid)
+		for (const auto& e : W.enemies)
+			if (e.alive && e.visible && ours_half(e.pos))
+			{
+				C.bump_invasion();
+				om_inv_win = wid;
+				break;
+			}
+	if (P.om_sight)
+	{
+		const bool busy = C.fresh(round, 6) && (C.alert_kind == AL_RALLY || C.alert_kind == AL_OPPORTUNITY || (C.alert_kind == AL_DANGER && is_altar_tile(C.alert_pos)));
+		if (!busy)
+		{
+			const Enemy* best = nullptr;
+			for (const auto& e : W.enemies)
+				if (e.alive && e.visible && ours_half(e.pos) && (!best || W.dist_home(e.pos) < W.dist_home(best->pos)))
+					best = &e;
+			if (best && !(C.alert_kind == AL_DANGER && C.fresh(round, 2) && cheb(C.alert_pos, best->pos) <= 3))
+				C.post(AL_DANGER, best->pos, round);
+		}
+	}
+}
+
+void Brain::om_observe()
+{
+	// The leader's own view this turn (only it classifies; other bodies reach it through the invasion counter and the alert slot).
+	auto& W = world();
+	auto& w = opp_model().cur;
+	const int wid = round / std::max(1, P.om_window);
+	// Largest pack: enemies within 4 of one visible enemy, itself included.
+	for (const auto& e : W.enemies)
+	{
+		if (!e.alive || !e.visible)
+			continue;
+		int n = 0;
+		for (const auto& o : W.enemies)
+			n += o.alive && o.visible && cheb(o.pos, e.pos) <= 4;
+		w.pack = std::max(w.pack, n);
+	}
+	// Enemies, locks next to our altars (altars on our half).
+	for (std::size_t i = 0; i < W.altars.size(); ++i)
+	{
+		const vec2 a = W.altars[i];
+		if (W.dist_home(a) > W.dist_away(a))
+			continue;
+		for (const auto& e : W.enemies)
+			w.altar_presence += e.alive && e.visible && cheb(e.pos, a) <= 3;
+		if (W.enemy_locks.is_set(a))
+		{
+			if (om_lock_win != wid)
+				om_lock_win = wid, om_lock_mask = 0;
+			if (i < 30 && !(om_lock_mask & (1 << i)))
+				om_lock_mask |= 1 << i, ++w.locks;
+		}
+	}
+	// Our own tribute cancelled under threat (handle_channel) this turn or last.
+	if (tribute_cancel_round >= round - 1 && tribute_cancel_round != om_cancel_seen)
+		om_cancel_seen = tribute_cancel_round, ++w.cancels;
+	// Health lost with no visible attacker in reach and no awake camp on us: hit from a bush or from out of sight.
+	if (hp < last_hp - 1.f && !in_awake_camp_range())
+	{
+		bool seen = false;
+		for (const auto& e : W.enemies)
+			seen |= e.alive && e.visible && cheb(e.pos, pos) <= std::max(e.kit.attack_range + (e.kit.ranged ? 0 : 1), 5);
+		if (!seen)
+		{
+			++w.unseen_hits;
+			bc::bitboard near;
+			near.draw_chebyshev(pos, 4.f);
+			if (!(near & bc::map::bushes()).is_empty())
+				++w.bush_hits;
+		}
+	}
+	// Enemy wards (one per champion): counted once per window per owner, by where they stand.
+	if (round % 2 == 0)
+		try
+		{
+			for (const auto& wd : bc::vision::wards(team::enemy))
+			{
+				const std::uint32_t h = ward_owner(wd);
+				const vec2 p = wd.position();
+				int idx = -1;
+				for (int i = 0; i < static_cast<int>(W.enemies.size()) && i < 8; ++i)
+					if (h != 0 && W.enemies[static_cast<std::size_t>(i)].handle == h)
+						idx = i;
+				if (idx < 0)
+				{
+					// Owner unknown (2.2.x SDK): one count per ward tile per window.
+					if (om_ward_tiles_win != wid)
+						om_ward_tiles.clear(), om_ward_tiles_win = wid;
+					if (std::find(om_ward_tiles.begin(), om_ward_tiles.end(), p) != om_ward_tiles.end() || om_ward_tiles.size() >= 16)
+						continue;
+					om_ward_tiles.push_back(p);
+				}
+				else
+				{
+					if (om_ward_win[static_cast<std::size_t>(idx)] == wid + 1)
+						continue;
+					om_ward_win[static_cast<std::size_t>(idx)] = wid + 1;
+				}
+				if (W.dist_home(p) < W.dist_away(p))
+				{
+					++w.ward_home;
+					if (bc::map::bushes().is_set(p))
+						++w.ward_bush;
+				}
+				for (const auto& a : W.altars)
+					if (cheb(a, p) <= 6 && W.dist_home(a) <= W.dist_away(a))
+					{
+						++w.ward_altar;
+						break;
+					}
+			}
+		}
+		catch (...)
+		{
+		}
+	// Heavy groups we saw go from alive to taken while no ally claimed them.
+	if (om_gst.size() == W.groups.size())
+	{
+		const auto& C = comms();
+		for (const auto& g : W.groups)
+		{
+			if (!(g.monolith || g.gems >= P.om_heavy) || g.seen_round != round)
+				continue;
+			int& prev = om_gst[static_cast<std::size_t>(g.id)];
+			if (prev == ST_ALIVE && g.st != ST_ALIVE)
+			{
+				bool claimed = task_group == g.id;
+				for (int i = 0; i < 6 && i < static_cast<int>(W.allies.size()); ++i)
+					claimed |= C.claim[static_cast<std::size_t>(i)] == g.id;
+				if (!claimed)
+					++w.heavy_lost;
+			}
+			prev = g.st;
+		}
+	}
 }
 
 void Brain::dl_record()
@@ -1298,7 +1546,7 @@ int Brain::nearest_altar(int& dist) const
 			d += P.lock_hits_sdk ? 2 * static_cast<int>(bc::constants::altar_lock_hits) : 6; // hits to clear it (patch 3.0: 5)
 		if (altar_unsafe(static_cast<int>(i)))
 			d += P.unsafe_altar_penalty; // contested and enemies seen there: our carriers die on the way
-		if (P.escort_alt_w > 0.f && P.escort_bag > 0 && static_cast<int>(gems) >= P.escort_bag && round - W.altar_enemy_round[i] <= P.escort_quiet)
+		if (P.escort_alt_w > 0.f && P.escort_bag > 0 && static_cast<int>(gems) >= (P.opp_model ? escort_bag_now : P.escort_bag) && round - W.altar_enemy_round[i] <= P.escort_quiet)
 			d += static_cast<int>(P.escort_alt_w * static_cast<float>((gems + 9) / 10));
 		if (d < dist)
 			dist = d, best = static_cast<int>(i);
@@ -1782,7 +2030,7 @@ void Brain::place_ward(bool force)
 {
 	// ward_bush_maps 1: bush warding only on lone-monolith maps (contest): there it adds 7-27 points to the blob opening; elsewhere it
 	// lost to the top-team proxies on the official maps (Mite 70.6 vs 82.4, ifish 73.5 vs 79.4) and the ladder confirmed it.
-	const int wb = (P.ward_bush_maps == 1 && !world().mono_mode) ? 0 : P.ward_bush;
+	const int wb = P.pxs_style && style_now() == 5 ? 2 : P.opp_model && ward_bush_now >= 0 ? ward_bush_now : (P.ward_bush_maps == 1 && !world().mono_mode) ? 0 : P.ward_bush; // a plan's ward mode first
 	if (!force && round - ward_round < (wb >= 2 ? std::min(10, P.ward_bush_gap) : 10))
 		return;
 	auto& W = world();
@@ -2704,7 +2952,7 @@ bool Brain::combat()
 	if (fight)
 	{
 		last_fight_round = round;
-		if (!(P.alert_prio && comms().fresh(round, 6) && (comms().alert_kind == AL_OPPORTUNITY || (P.escort_bag > 0 && comms().alert_kind == AL_DANGER))))
+		if (!(P.alert_prio && comms().fresh(round, 6) && (comms().alert_kind == AL_OPPORTUNITY || (P.escort_bag > 0 && (P.om_sight ? escort_alert() : comms().alert_kind == AL_DANGER)))))
 			comms().post(AL_RALLY, tgt->pos, round);
 		learner().on_fight(round);
 		task = T_FIGHT;
@@ -3228,7 +3476,8 @@ bool Brain::altar_unsafe(int i) const
 bool Brain::bag_needs_escort(int i) const
 {
 	auto& W = world();
-	if (P.escort_bag <= 0 || static_cast<int>(gems) < P.escort_bag)
+	const int eb = P.opp_model ? escort_bag_now : P.escort_bag;
+	if (eb <= 0 || static_cast<int>(gems) < eb)
 		return false;
 	const vec2 at = W.altars[static_cast<std::size_t>(i)];
 	bool hot = round - W.altar_enemy_round[static_cast<std::size_t>(i)] <= P.escort_quiet;
@@ -3414,6 +3663,15 @@ void Brain::update_mode()
 	if (round < P.early_round)
 		tribute_min = std::min(tribute_min, P.early_tribute_min); // bank small and early: gold and safety
 	stance = comms().stance;
+	if (P.opp_model)
+	{
+		// Every addition of the opponent model sits behind its constexpr switch, so the build without it has the same instructions in
+		// the hot paths (fuel-floored scoring makes even a few extra instructions change which groups get scored).
+		escort_bag_now = P.escort_bag, group_r_now = P.group_radius, ward_bush_now = -1, role_guard = role_hunter = false;
+		plan_now = comms().plan;
+		if (plan_now >= PLAN_INVADER)
+			stance = preset_of(plan_now).stance; // a counter plan brings its own stance
+	}
 	if (P.mono_grouped_until > 0 && world().mono_mode && round < P.mono_grouped_until)
 		stance = STANCE_GROUPED; // lone-monolith maps: the first contact is a team wipe for whoever arrives piecemeal
 	isolated_fight_adv = P.isolated_fight_adv + dl_val(dl_iso, dl_iso_r);
@@ -3435,6 +3693,29 @@ void Brain::update_mode()
 		enemy_half_penalty *= 0.4f;
 		deny_bonus += 0.4f;
 		fight_margin = std::max(1.0f, fight_margin - 0.2f);
+	}
+	if (P.opp_model)
+	{
+		// Counter plan (opponent.h): the preset's directions x the plan's magnitude, on top of the stance; deficit, learned fight record
+		// and the race below still apply after it.
+		const auto& pr = preset_of(plan_now);
+		const float k = plan_now == PLAN_INVADER ? P.om_k_invader : plan_now == PLAN_DEATHBALL ? P.om_k_deathball : plan_now == PLAN_OBJECTIVE ? P.om_k_objective :
+			plan_now == PLAN_ALTAR ? P.om_k_altar : plan_now == PLAN_AMBUSH ? P.om_k_ambush : 0.f;
+		if (k > 0.f)
+		{
+			fight_margin += k * pr.dfm;
+			enemy_half_penalty *= std::pow(pr.ehp, k);
+			deny_bonus = std::max(0.f, deny_bonus + k * pr.ddeny);
+			tribute_min = std::max(10, static_cast<int>(static_cast<float>(tribute_min) * std::pow(pr.trib, k)));
+			isolated_fight_adv += k * pr.diso;
+			if (P.escort_bag > 0)
+				escort_bag_now = std::max(10, static_cast<int>(static_cast<float>(P.escort_bag) * std::pow(pr.esc, k)));
+			group_r_now = std::max(4, static_cast<int>(static_cast<float>(P.group_radius) * std::pow(pr.grp, k)));
+			if (pr.ward_bush)
+				ward_bush_now = 2;
+			role_guard = pr.guard;
+		}
+		role_hunter = pr.hunter;
 	}
 	// Numbers: fewer of us alive than of them means their pack meets our singles. Play defensively.
 	{
@@ -3573,6 +3854,61 @@ void Brain::update_mode()
 		fight_margin += P.pair_caution;
 		isolated_fight_adv += P.pair_caution;
 	}
+	if (P.pxs_style)
+	{
+		// Sparring proxy styles (testing only): strong, fixed settings on top of everything else.
+		const int s = style_now();
+		if (s == 1)
+		{
+			enemy_half_penalty *= 8.f;
+			fight_margin += 0.6f;
+			deny_bonus = 0.f;
+			isolated_fight_adv += 0.5f;
+		}
+		else if (s == 2 || s == 3)
+		{
+			enemy_half_penalty *= 0.1f;
+			deny_bonus += 0.8f;
+			fight_margin = std::max(0.9f, fight_margin - 0.3f);
+		}
+		else if (s == 4)
+			enemy_half_penalty *= 0.5f;
+	}
+}
+
+int Brain::style_now() const
+{
+	int s = P.pxs_style;
+	if (P.pxs_style2 && P.pxs_switch > 0 && round >= P.pxs_switch)
+		s = P.pxs_style2;
+	if (P.pxs_style3 && P.pxs_switch2 > 0 && round >= P.pxs_switch2)
+		s = P.pxs_style3;
+	return s;
+}
+
+bool Brain::pxs_deny_altar()
+{
+	// Proxy style 6: body 0 stands next to the other team's best altar (their half, nearest their spawn); use_locks() locks it, combat()
+	// hits tributers. Hurt, it goes home like anyone else (safety() runs first).
+	auto& W = world();
+	int best = -1, bd = BIG;
+	for (std::size_t i = 0; i < W.altars.size(); ++i)
+	{
+		const vec2 a = W.altars[i];
+		if (W.dist_away(a) >= W.dist_home(a) || W.dist_away(a) >= bd)
+			continue;
+		best = static_cast<int>(i), bd = W.dist_away(a);
+	}
+	if (best < 0 || hp < 0.5f * max_hp)
+		return false;
+	const vec2 a = W.altars[static_cast<std::size_t>(best)];
+	task = T_WAIT;
+	if (cheb(pos, a) <= 2)
+		return true;
+	bc::bitboard goal;
+	goal.draw_chebyshev(a, 2.f);
+	goal &= ~W.walls;
+	return step(goal, true, true);
 }
 
 bool Brain::on_the_way(int altar) const
@@ -3730,7 +4066,7 @@ bool Brain::reward_here()
 bool Brain::respond_to_alert()
 {
 	auto& C = comms();
-	if (P.escort_bag > 0 && C.fresh(round, 6) && C.alert_kind == AL_DANGER && P.alert_radius <= 0)
+	if (P.escort_bag > 0 && C.fresh(round, 6) && (P.om_sight ? escort_alert() : C.alert_kind == AL_DANGER) && P.alert_radius <= 0)
 	{
 		// ESCORT (the DANGER code): a carrier waits for us at a hot altar; stand next to it, between it and the enemy side.
 		const int d = cheb(C.alert_pos, pos);
@@ -4600,6 +4936,19 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 	}
 
 	float value = ((P.no_altar_gold && W.no_altar_now() && !g.unlock ? 0.f : static_cast<float>(g.gems)) + gold_v * static_cast<float>(g.gold)) * share;
+	if (P.pxs_style)
+	{
+		const int s = style_now();
+		if (s == 4 && (g.monolith || g.gems >= P.om_heavy))
+			value *= P.pxs_obj_mult; // proxy: objective rusher
+		else if (s == 5)
+		{
+			bc::bitboard near;
+			near.draw_chebyshev(g.center, static_cast<float>(g.radius + 2));
+			if (!(near & bc::map::bushes()).is_empty())
+				value *= 1.3f; // proxy: ambusher prefers camps with bushes next to them
+		}
+	}
 	if (!g.ours)
 	{
 		const float risk = sc_risk;
@@ -4654,6 +5003,8 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 	}
 	if (sc_alert && alert_zone.is_set(g.center))
 		time += 25.f;
+	if (P.om_sight && sc_sight.x >= 0 && cheb(g.center, sc_sight) <= P.om_sight_r)
+		time += P.om_sight_cost; // an ally saw an enemy here: a cost, not a wall (P.om_sight)
 	if (P.threat_map)
 	{
 		// Where the enemies seen recently can be now, against what we can bring there (us + visible allies within 8 of it).
@@ -4688,7 +5039,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			if (i != W.my_index && cg >= 0 && cg < static_cast<int>(W.groups.size()) && W.allies[static_cast<std::size_t>(i)].alive)
 				near = std::min(near, cheb(W.groups[static_cast<std::size_t>(cg)].center, g.center));
 		}
-		float rad = static_cast<float>(P.group_radius), fw = P.group_far_w;
+		float rad = static_cast<float>(P.opp_model ? group_r_now : P.group_radius), fw = P.group_far_w;
 		if (P.mono_group_w > 0.f && W.mono_mode && round < P.mono_grouped_until)
 			rad = static_cast<float>(P.mono_group_r), fw = P.mono_group_w;
 		if (near < BIG && static_cast<float>(near) > rad)
@@ -4893,6 +5244,13 @@ void Brain::prepare_scoring()
 			if (e.alive && e.seen_round >= 0 && round - e.seen_round <= P.tm_memory && sc_threat_n < static_cast<int>(sc_threat.size()) && !W.enemy_spawn.is_set(e.pos))
 				sc_threat[static_cast<std::size_t>(sc_threat_n++)] = { e.pos, round - e.seen_round, e.hp, e.str + e.focus * best_mod(e.kit) / 8.f + e.burst() / 3.f };
 	sc_alert = !alert_zone.is_empty();
+	if (P.om_sight)
+	{
+		sc_sight = { -1, -1 };
+		const auto& C = comms();
+		if (C.alert_kind == AL_DANGER && C.fresh(round, P.om_sight_age) && !is_altar_tile(C.alert_pos))
+			sc_sight = C.alert_pos;
+	}
 	// Objective team plan: one group for the whole team, the objective group claimed by the lowest-index body (ours included).
 	sc_obj_focus = -1;
 	if (P.obj_focus && W.obj_mode)
@@ -4912,7 +5270,7 @@ void Brain::farm()
 	auto& W = world();
 	if (task != T_CAPTURE && cast_en_route())
 		return;
-	if (P.style == 1 || round < P.deathball_until)
+	if (P.style == 1 || round < P.deathball_until || (P.pxs_style && style_now() == 3))
 	{
 		int leader = -1;
 		for (int i = 0; i < static_cast<int>(W.allies.size()); ++i)
@@ -5683,6 +6041,21 @@ bool Brain::farm_group(Group& g)
 		}
 	}
 	std::size_t t = pick(kit.attack_range);
+	if (P.pxs_style && style_now() == 5 && t < g.camps.size() && can_move && !bc::map::bushes().is_set(pos))
+	{
+		// Proxy: ambusher farms from a bush next to it (unseen by passers-by; it opens on them).
+		bc::bitboard goal;
+		goal.draw_chebyshev(g.camps[t].pos, static_cast<float>(kit.attack_range));
+		bc::bitboard adj;
+		adj.draw_chebyshev(pos, 1.f);
+		goal &= adj & bc::map::bushes() & ~W.walls & ~g.mask;
+		if (!goal.is_empty() && step(goal, false, false))
+		{
+			t = pick(kit.attack_range);
+			if (t == g.camps.size())
+				return true;
+		}
+	}
 	if (t == g.camps.size())
 	{
 		// The group field is rooted at every spawn tile, dead camps included; once we are "there" by the field,

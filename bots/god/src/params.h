@@ -659,6 +659,48 @@ struct Params
 	float ml2_adapt_min = -2.f, ml2_adapt_max = 1.f; // ... bounds of the offset
 	int ml2_cornered = 1;		// 1: ml2_leave also when combat() thinks we cannot outrun a chaser (the cornered rule would trade)
 	int ml2_gb = 0;				// 1: P(die8) from the boosted trees (held-out AUC on our bodies 0.829 vs the logistic's 0.806)
+
+	// ---- Opponent model and counter plans (F1; opponent.h, docs/CHANGES.md, docs/COMMS.md). All 0 / off = GOD v8 play.
+	int opp_model = 0;			// 1: the leader classifies the enemy every om_window rounds (farmer, invader, deathball, objective, altar,
+								// ambush) and broadcasts a plan id (bit 7 of bytes 0-2, replacing the stance bits; ids 0-2 = the stance);
+								// every body applies the plan's preset in update_mode() after the stance block (deficit / race on top)
+	int om_window = 20;			// rounds per classification window (also the invasion counter's window)
+	int om_start = 100;			// no plan change before this round (both teams farm their own half in the opening)
+	float om_lambda = 0.6f;		// exponential forgetting of the archetype scores per window (a fired change detector halves it)
+	float om_thresh = 0.35f;	// smoothed score an archetype needs to become the plan
+	float om_margin = 0.1f;		// ... and its lead over the current one
+	float om_drop = 0.6f;		// the plan returns to the stance learner when its score falls below om_drop x om_thresh
+	int om_min_windows = 3;		// minimum windows per plan, unless the change detector fires
+	float om_cus_k = 0.15f;		// CUSUM on the contact level: slack per window
+	float om_cus_h = 0.6f;		// ... alarm level
+	float om_cus_alpha = 0.2f;	// ... running mean rate
+	int om_cus_warm = 3;		// ... windows before it may fire
+	int om_obj_lump = 100;		// an enemy bank of at least this many gems at once is objective evidence (a monolith pays 200)
+	int om_heavy = 60;			// a group of at least this many gems (or a monolith) is heavy (objective evidence when taken unclaimed)
+	float om_prior = 0.f;		// weight of the enemy-draft prior (0 = off)
+	float om_k_invader = 1.f;	// preset magnitude per counter plan (opponent.cpp preset_of: directions)
+	float om_k_deathball = 1.f;
+	float om_k_objective = 1.f;
+	float om_k_altar = 1.f;
+	float om_k_ambush = 1.f;
+	int om_sight = 0;			// 1: every body posts an enemy it sees on our half as DANGER in the alert slot (when no RALLY / OPPORTUNITY /
+								// ESCORT younger than 6 rounds is there); groups within om_sight_r of a fresh one cost om_sight_cost rounds.
+								// A scoring cost, not a routing wall: the old DANGER zone (alert_radius 8, routes) measured worse
+	int om_sight_r = 5;
+	float om_sight_cost = 25.f;
+	int om_sight_age = 8;		// rounds a sighting stays fresh
+
+	// ---- Sparring proxies (testing only, docs/TESTING.md; never on in a submission): a fixed playing style, optionally switching at
+	// set rounds, built from existing GOD mechanisms. 1 farmer (stays home, avoids fights), 2 invader (PUSH: their half free, deny,
+	// lower fight bar), 3 deathball (2 + the whole team follows the lowest living body: P.style 1's blob), 4 objective rusher (heavy
+	// groups and monoliths x pxs_obj_mult), 5 bush ambusher (farms standing in bushes, bush wards), 6 altar denier (body 0 camps the
+	// other team's altar with a lock; the rest farm).
+	int pxs_style = 0;
+	int pxs_style2 = 0;			// style from round pxs_switch (0 = no switch)
+	int pxs_switch = 0;
+	int pxs_style3 = 0;			// style from round pxs_switch2
+	int pxs_switch2 = 0;
+	float pxs_obj_mult = 3.f;
 };
 
 #ifdef LEGEND_RUNTIME_PARAMS

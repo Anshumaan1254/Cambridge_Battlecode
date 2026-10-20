@@ -21,10 +21,15 @@ void Comms::read(int round)
 	if (!bag_on)
 		bag_tens = 0;
 	stance = ((b[0] >> 7) & 1) | (((b[1] >> 7) & 1) << 1);
+	if (P.opp_model)
+	{
+		plan = stance | (((b[2] >> 7) & 1) << 2);
+		inv_count = ((b[3] >> 7) & 1) | (((b[4] >> 7) & 1) << 1) | (((b[5] >> 7) & 1) << 2);
+	}
 	const std::uint16_t raw = static_cast<std::uint16_t>(b[6] | (b[7] << 8));
 	// Bit 7 of byte 2 flips on every post: re-posting the same alert (a fight still going on at one tile)
 	// refreshes it for the team instead of letting it expire (P.alert_refresh).
-	const int toggle = P.alert_refresh ? (b[2] >> 7) & 1 : 0;
+	const int toggle = P.alert_refresh && !P.opp_model ? (b[2] >> 7) & 1 : 0; // the plan id owns byte 2's bit 7 when the model is on
 	if (raw != last_raw || toggle != last_toggle)
 	{
 		last_raw = raw;
@@ -60,13 +65,50 @@ void Comms::write_stance(int s)
 	stance = s;
 }
 
+void Comms::write_plan(int id)
+{
+	// Same bits as the stance for ids 0-2 (byte 2's bit 7 stays 0), so a model that detects nothing writes the v8 bytes.
+	for (int i = 0; i < 3; ++i)
+	{
+		const std::uint8_t old = bc::shared_memory[static_cast<std::size_t>(i)];
+		const std::uint8_t bit = static_cast<std::uint8_t>(((id >> i) & 1) << 7);
+		bc::shared_memory[static_cast<std::size_t>(i)] = static_cast<std::uint8_t>((old & 0x7F) | bit);
+	}
+	plan = id;
+	stance = id & 3;
+}
+
+void Comms::bump_invasion()
+{
+	int v = 0;
+	for (int i = 0; i < 3; ++i)
+		v |= ((bc::shared_memory[static_cast<std::size_t>(3 + i)] >> 7) & 1) << i;
+	v = std::min(7, v + 1);
+	for (int i = 0; i < 3; ++i)
+	{
+		const std::uint8_t old = bc::shared_memory[static_cast<std::size_t>(3 + i)];
+		bc::shared_memory[static_cast<std::size_t>(3 + i)] = static_cast<std::uint8_t>((old & 0x7F) | (((v >> i) & 1) << 7));
+	}
+	inv_count = v;
+}
+
+void Comms::reset_invasion()
+{
+	for (int i = 0; i < 3; ++i)
+	{
+		const std::uint8_t old = bc::shared_memory[static_cast<std::size_t>(3 + i)];
+		bc::shared_memory[static_cast<std::size_t>(3 + i)] = static_cast<std::uint8_t>(old & 0x7F);
+	}
+	inv_count = 0;
+}
+
 void Comms::post(int kind, vec2 tile, int round)
 {
 	const int idx = tile.y * bc::map::width() + tile.x;
 	const std::uint16_t raw = static_cast<std::uint16_t>((kind << 14) | (idx & 0x3FFF));
 	std::array<std::uint8_t, 2> b{ static_cast<std::uint8_t>(raw & 0xFF), static_cast<std::uint8_t>(raw >> 8) };
 	bc::shared_memory.write(6, std::span<std::uint8_t>{ b });
-	if (P.alert_refresh)
+	if (P.alert_refresh && !P.opp_model)
 	{
 		const std::uint8_t old = bc::shared_memory[2];
 		bc::shared_memory[2] = static_cast<std::uint8_t>(old ^ 0x80);

@@ -50,6 +50,14 @@ inline int cheb(vec2 a, vec2 b)
 
 inline std::uint32_t handle_of(const bc::champion& c) { return static_cast<std::uint32_t>(static_cast<bc::handle_champion_t>(c)); }
 inline std::uint32_t handle_of(const bc::camp& c) { return static_cast<std::uint32_t>(static_cast<bc::handle_camp_t>(c)); }
+// A ward's owner: the 3.0 SDK has ward::owner(), the 2.2.x one does not (0 = unknown; callers then tell wards apart by tile).
+template <class Wd> std::uint32_t ward_owner(const Wd& w)
+{
+	if constexpr (requires { w.owner(); })
+		return handle_of(w.owner());
+	else
+		return 0;
+}
 
 // One engine call returning a champion's live record; false when hidden.
 inline bool read_champion(std::uint32_t handle, bc::detail::champion_info& out)

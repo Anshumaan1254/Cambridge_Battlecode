@@ -221,6 +221,27 @@ private:
 	int mob_dash() const;
 	bool strike_dash = false;
 	bool shield_deferred = false;
+	// Opponent model (P.opp_model, P.om_sight; opponent.h). update_mode() sets the plan's working values every turn; with the switches off
+	// they equal the params.h values.
+	int plan_now = 0;
+	int escort_bag_now = P.escort_bag;
+	int group_r_now = P.group_radius;
+	int ward_bush_now = -1; // >= 0: the plan's ward_bush mode replaces P.ward_bush
+	bool role_guard = false, role_hunter = false;
+	int om_inv_win = -1;	// window this body last added to the invasion counter
+	int om_theirs = 0, om_ad = 0, om_ed = 0, om_ad_home = 0, om_last_ad_round = -1000, om_cancel_seen = -1000;
+	std::array<int, 8> om_ward_win{};	// per enemy index: window its ward was last counted
+	std::vector<vec2> om_ward_tiles;	// ... wards of unknown owner (2.2.x SDK) counted this window
+	int om_ward_tiles_win = -1;
+	std::vector<int> om_gst;			// per group: state the leader last saw (heavy groups taken unclaimed)
+	int om_lock_win = -1, om_lock_mask = 0;
+	vec2 sc_sight{ -1, -1 };			// P.om_sight: fresh DANGER sighting this turn (scoring cost)
+	void om_tick();
+	int style_now() const; // P.pxs_style: the proxy style this round
+	bool pxs_deny_altar();
+	void om_observe();
+	bool is_altar_tile(vec2 p) const;
+	bool escort_alert() const; // the alert slot holds a fresh ESCORT (DANGER posted at an altar tile)
 	struct DLRow
 	{
 		int round = -1000;

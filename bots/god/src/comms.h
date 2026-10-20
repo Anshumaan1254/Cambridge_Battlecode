@@ -5,6 +5,9 @@
 // Bytes 6-7: team alert: bits 0-13 tile index (y * W + x), bits 14-15 kind.
 // P.team_bank (maps with at most 62 groups): claims use bits 0-5 and bit 6 of bytes 0-5 holds a 6-bit team sum
 //            of carried gems in tens (each body adds the change of its own min(10, bag / 10)).
+// P.opp_model (docs/COMMS.md): bit 7 of bytes 0-2 = plan id (3 bits, leader only; 0-2 are the stance values above, so the bytes
+//            are unchanged while no archetype is detected; alert_refresh must stay off), bit 7 of bytes 3-5 = invasion counter
+//            (3 bits, saturating; each body adds 1 once per om_window in which it sees an enemy on our half; the leader resets it).
 #pragma once
 #include "common.h"
 
@@ -21,6 +24,8 @@ struct Comms
 	int bodies = 0;
 	std::array<int, 6> claim{};		// group id or -1
 	int stance = 0;					// team stance broadcast by the leader
+	int plan = 0;					// P.opp_model: plan id (bit 7 of bytes 0-2)
+	int inv_count = 0;				// P.opp_model: invasion counter (bit 7 of bytes 3-5)
 	int alert_kind = AL_NONE;
 	vec2 alert_pos{ -1, -1 };
 	int alert_round = -1000;		// round we first saw the current alert value
@@ -33,6 +38,9 @@ struct Comms
 	void read(int round);
 	void write_self(int index, int group);
 	void write_stance(int s);
+	void write_plan(int id);
+	void bump_invasion();
+	void reset_invasion();
 	void write_bag(int gems);
 	int others_carried() const { return bag_on ? 10 * (bag_tens - my_bag) : 0; }
 	void post(int kind, vec2 tile, int round);

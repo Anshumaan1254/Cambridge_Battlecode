@@ -58,6 +58,21 @@ or engineering limits.
 | 25 | `_god_d` `params.h`: `gold_value`, `burst_retreat` follow `SDK_HAS_HOR` | the tuning is chosen by the ruleset the engine compiles us with (Heart of Ruin present = patch 3.0) | a future engine with Heart of Ruin but the old economy (or the reverse) gets the wrong pair; a map-derived gold value (gold rate / gem rate of the map) would be the principled form | medium |
 | 26 | ward rhythm: `round - ward_round < 10` (brain.cpp) | a new ward at most every 10 rounds | the sprint docs allow a ward move every round (patch 3.0: cooldown 10), so under the old rules we ward less than we could | low |
 
+## Session 14, GOD v8 (from the Oct 20 code review, `docs/strategy_v2/GOD_IMPROVEMENT_PLAN.md` §3; v8 switches in `bots/_x_v8`)
+
+| # | Where | What | Risk | Severity | v8 switch |
+|---|---|---|---|---|---|
+| 27 | `engage()` contact branch | Heart of Ruin's strike dash only on approach (B2) | the strongest spell unused once adjacent | high | `hor_strike` 2 |
+| 28 | `support_spells()` | the shield spends the turn's one cast before `combat()` can strike (B3) | strike lost on contact turns | medium | `hor_strike` 2 |
+| 29 | `mob_dash()` `strike_dash_hold` 9 (literal radius) | travel dashes spend the strike (B4) | dash on cooldown when the fight starts | medium | `strike_dash_hold` |
+| 30 | `spells_on_camp()` | no damaging dash on camps (B5) | slower farming with Heart of Ruin | medium | `hor_camp` |
+| 31 | `post_danger()` / one alert slot | DANGER never posted; a RALLY replaces a fresh OPPORTUNITY (B9) | the cheapest kill (an enemy tribute) lost to a skirmish | medium | `alert_prio` |
+| 32 | `combat()` backup | unseen allies count as backup by their claim's centre, even walking home hurt (B10) | phantom support, lone deaths | high | `sup_mode` 2 |
+| 33 | `ml2_model.h` | the danger model gives nearby allies no net credit (B11) | one-by-one retreats | high | `sup_mode` 8 |
+| 34 | `build_for()` focus lists (`CT_HOR` and the casters typed in) and the "+15 focus" comments | the damage stat of the endless tail is a typed list; the 3.0.2 hotfix cut Heart of Ruin's focus growth 20% and nothing noticed (B17) | a weekly patch re-values a stat | medium | `hor_build`; P1-7 open |
+| 35 | `brain.cpp` HoR passive 0.5 in `fm_mode` 1 | the engine constant `heart_of_ruin_missing_health_damage_max_bonus` exists only in the 3.0 SDK, so the value is typed (gated by `CT_HOR`, which never matches on 2.2.x) | a patch to the passive | low | `fm_mode` |
+| 36 | `gv_map` reference (`gv_rho_ref` 6.3, `gv_exp` 0.5) | the map-derived gold value is anchored at the median gold / gem rate ratio of the 21-map pool (4.4-9.6, elk-arena 20.5) | a new pool with a different economy | low | `gv_map` |
+
 ## Proxy-only hardcoding (off in the shipped bot)
 
 `draft.cpp` `official_map()` (recognises the 17 official maps by size and camp mix) and the per-map tables `MITE`, `IFISH`, `OURS`

@@ -1,7 +1,57 @@
 diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
 --- god/src/brain.cpp	2026-10-20 17:55:18.383016184 +0000
-+++ _x_v8/src/brain.cpp	2026-10-20 18:58:44.853604020 +0000
-@@ -815,6 +815,8 @@
++++ _x_v8/src/brain.cpp	2026-10-20 19:01:43.749604134 +0000
+@@ -255,7 +255,17 @@
+ 		switch (t)
+ 		{
+ 		case CT::ren:
+-		case CT_HOR: // patch 3.0: melee, focus-scaled dash stun and shield like Ren's spells (+15 focus, +100 health per shard)
++		case CT_HOR: // patch 3.0: melee, focus-scaled dash stun and shield like Ren's spells (3.0.2: +12 focus, +4 strength, +100 health per shard)
++			if (t == CT_HOR && (P.hor_build == 1 || P.hor_build == 2))
++			{
++				rep(v, I::jungle_shard_of_health, 5);
++				rep(v, I::durability_shard_of_health, 5);
++				rep(v, I::bruiser_shard_of_health, 5);
++				rep(v, I::treasure_shard_of_focus, 5);
++				rep(v, I::monster_shard_of_focus, 5);
++				cycle(v, { I::bruiser_shard_of_focus, I::bruiser_shard_of_health }, 8);
++				break;
++			}
+ 			if (P.rich_treasure_first)
+ 				rep(v, I::treasure_shard_of_focus, 5);
+ 			else
+@@ -350,7 +360,9 @@
+ 		{
+ 			// The list must never run out (session 14): Power in the damage stat (1) or the Bruiser mix (2) for the rest of the game.
+ 			const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
+-			if (P.build_tail == 1)
++			if (t == CT_HOR && P.hor_build >= 2)
++				cycle(v, { I::bruiser_shard_of_health, I::bruiser_shard_of_focus }, 30);
++			else if (P.build_tail == 1)
+ 				rep(v, focus ? I::power_shard_of_focus : I::power_shard_of_strength, 300);
+ 			else
+ 				cycle(v, { focus ? I::bruiser_shard_of_focus : I::bruiser_shard_of_strength, focus ? I::bruiser_shard_of_focus : I::bruiser_shard_of_strength, I::bruiser_shard_of_health }, 40);
+@@ -522,6 +534,19 @@
+ 	const auto abl = me.abilities();
+ 	ab.assign(abl.begin(), abl.end());
+ 	build = build_for(type, P.build_style);
++	if (P.tail_stat && P.build_tail == 1 && !build.empty() && (build.back() == I::power_shard_of_focus || build.back() == I::power_shard_of_strength))
++	{
++		const float vf = focus_growth * (kit.dmg_mod + kit.cc_mod + kit.aoe_mod + kit.dash_mod) / 8.f;
++		const float vs = str_growth * (1.f + (kit.reset >= 0 ? 1.f / 8.f : 0.f));
++		const I want = vf > vs ? I::power_shard_of_focus : I::power_shard_of_strength;
++#ifdef GV_TRACE
++		debug_block({ std::printf("TAIL ch=%d vf=%.2f vs=%.2f tail=%s list=%s\n", static_cast<int>(type), vf, vs, want == I::power_shard_of_focus ? "focus" : "str",
++			build.back() == I::power_shard_of_focus ? "focus" : "str"); });
++#endif
++		const I have = build.back();
++		for (std::size_t i = build.size(); i-- > 0 && build[i] == have;)
++			build[i] = want;
++	}
+ 	if (P.mi_health_emblem)
+ 	{
+ 		// mi_health_emblem (default branch): a Durability health emblem (-10% damage taken, +5 health points) right after the
+@@ -815,6 +840,8 @@
  
  	if (P.mi_chip)
  		chip_passing();
@@ -10,7 +60,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	place_ward(false);
  	update_priority();
  	if (P.unstick_rounds > 0)
-@@ -958,6 +960,11 @@
+@@ -958,6 +985,11 @@
  		}
  		if (d <= 4 && (e.ready(e.kit.cc) || (e.ready(e.kit.aoe) && e.kit.aoe_stuns)))
  			stunner_close = true;
@@ -22,7 +72,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  		else if (P.aoe_reach5 && e.ready(e.kit.aoe) && e.kit.aoe_stuns && d <= static_cast<int>(e.kit.aoe_range + e.kit.aoe_radius))
  			stunner_close = true; // Ryth's area stun cancels a tribute from 5
  	}
-@@ -1449,11 +1456,16 @@
+@@ -1449,11 +1481,16 @@
  				if (bc::map::walls().is_set(mid))
  					continue;
  			}
@@ -43,7 +93,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  			if (n > best_n || (n == best_n && dd < best_d))
  				best_n = n, best_d = dd, best = p;
  		}
-@@ -1616,8 +1628,17 @@
+@@ -1616,8 +1653,17 @@
  		if (best)
  			cast_unit_champ(kit.heal, best->ch);
  	}
@@ -62,7 +112,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  }
  
  void Brain::use_locks()
-@@ -2059,10 +2080,11 @@
+@@ -2059,10 +2105,11 @@
  		float dps = e->str + e->focus * best_mod(e->kit) / 8.f + eb / 3.f;
  		if (e->ready(e->kit.cc) || (e->ready(e->kit.aoe) && e->kit.aoe_stuns))
  			++stunners, dps *= 1.15f;
@@ -76,7 +126,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	}
  	// Our side: self plus visible allies within 6 (with their spells, not just basic attacks).
  	float my_burst = 0;
-@@ -2071,11 +2093,74 @@
+@@ -2071,11 +2118,74 @@
  	if (ready(kit.aoe)) my_burst = std::max(my_burst, focus * kit.aoe_mod);
  	if (ready(kit.reset)) my_burst = std::max(my_burst, str);
  	float our_hp = hp, our_dps = str + focus * best_mod(kit) / 8.f + my_burst / 3.f;
@@ -151,7 +201,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	for (const auto& a : W.allies)
  		if (a.handle != self && a.alive && a.visible && cheb(a.pos, pos) <= 6 && (!P.support_filter || can_support(a, E)))
  		{
-@@ -2113,7 +2198,7 @@
+@@ -2113,7 +2223,7 @@
  				if (g.hp[i] <= 0 || g.camps[i].str <= 0)
  					continue;
  				const vec2 c = g.camps[i].pos;
@@ -160,7 +210,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  				for (int k = 0; k < side_n; ++k)
  				{
  					const int dd = cheb(side_pos[static_cast<std::size_t>(k)], c);
-@@ -2144,7 +2229,7 @@
+@@ -2144,7 +2254,7 @@
  
  	// Backup: allies in sight, plus hidden allies whose claimed camp is close (they are a few steps away).
  	// Half our deaths on the ladder were lone champions caught by two or more enemies.
@@ -169,7 +219,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	int dead_allies = 0;
  	{
  		const auto& C = comms();
-@@ -2156,7 +2241,7 @@
+@@ -2156,7 +2266,7 @@
  				++dead_allies;
  				continue;
  			}
@@ -178,7 +228,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  				continue;
  			const int cg = i < 6 ? C.claim[static_cast<std::size_t>(i)] : -1;
  			const vec2 at = a.visible ? a.pos : (cg >= 0 && cg < static_cast<int>(W.groups.size()) ? W.groups[static_cast<std::size_t>(cg)].center : vec2{ -100, -100 });
-@@ -2233,6 +2318,40 @@
+@@ -2233,6 +2343,40 @@
  	const bool on_spawn = W.ally_spawn.is_set(pos);
  	const bool can_escape = on_spawn || !chaser || (ready(kit.dash) && !chaser_dash) || static_cast<float>(dh) + 1.f < t_die;
  
@@ -219,7 +269,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	bool fight = false;
  	// P.pair_kill_adv: a low Cassi or Issac (below pair_low_hp) needs this advantage for a 'sure kill' (allies' burst is a guess).
  	const bool low_pair = (type == CT::cassi || type == CT::issac) && hp < P.pair_low_hp * max_hp;
-@@ -2436,14 +2555,15 @@
+@@ -2436,14 +2580,15 @@
  		}
  		// ml2_cornered: also when combat() thinks a chaser cannot be outrun. Ladder rows in reach, no kill, P(die8) 0.3-0.5 with
  		// can_escape = 0: our bodies that hit died 51% (kill8 20%), those that stepped away 29% (P >= 0.5: 74% vs 38%).
@@ -237,7 +287,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  		{
  			ml2_exit_round = round;
  			post_danger(tgt->pos);
-@@ -2494,7 +2614,8 @@
+@@ -2494,7 +2639,8 @@
  	if (fight)
  	{
  		last_fight_round = round;
@@ -247,7 +297,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  		learner().on_fight(round);
  		task = T_FIGHT;
  		return engage(*tgt);
-@@ -2556,7 +2677,7 @@
+@@ -2556,7 +2702,7 @@
  			{
  			}
  		}
@@ -256,7 +306,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  		{
  			// Melee champions can still swing after walking.
  			if (!kit.ranged && can_attack)
-@@ -2596,7 +2717,7 @@
+@@ -2596,7 +2742,7 @@
  			{
  			}
  		}
@@ -265,7 +315,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  			return true;
  		if (W.ally_spawn.is_set(pos))
  		{
-@@ -2840,6 +2961,10 @@
+@@ -2840,6 +2986,10 @@
  	if (d <= kit.attack_range)
  	{
  		dbg_eng += 10;
@@ -276,7 +326,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  		const bool want_stun = e.channeling || e.kit.ranged == false || P.px_mode && P.px_stun_first;
  		if (want_stun)
  			cast_unit_champ(kit.cc, ec);
-@@ -3010,6 +3135,28 @@
+@@ -3010,6 +3160,28 @@
  	return true;
  }
  
@@ -305,7 +355,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  bool Brain::safe_to_recall() const
  {
  	// Any damage cancels a recall: no awake camp in range and no enemy that could reach us during the channel.
-@@ -3114,6 +3261,8 @@
+@@ -3114,6 +3286,8 @@
  				const int d = cheb(e.pos, pos);
  				if (d <= reach + 2)
  					eb += e.str + e.burst();
@@ -314,7 +364,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  				else if (P.burst_far > 0.f && d <= reach + P.burst_far_d)
  					eb += P.burst_far * (e.str + e.burst()); // burst_far: the ones one or two steps from reach
  			}
-@@ -3225,7 +3374,21 @@
+@@ -3225,7 +3399,21 @@
  	}
  	const int ours = static_cast<int>(bc::global_submitted_gems(team::ally));
  	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
@@ -337,7 +387,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	if (P.math_gold && !(P.no_altar_gold && world().no_altar_now()))
  	{
  		// Gold only turns into gems through the shards it buys, and a shard pays off over the rounds left: +5
-@@ -3238,7 +3401,7 @@
+@@ -3238,7 +3426,7 @@
  		float left = static_cast<float>(static_cast<int>(bc::constants::max_rounds) - round);
  		if (lead_g > 0 && round > 0)
  			left = std::min(left, static_cast<float>(static_cast<int>(bc::constants::winning_gems) - lead_g) * static_cast<float>(round) / static_cast<float>(lead_g));
@@ -346,7 +396,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	}
  	if (ours - theirs >= P.lead)
  	{
-@@ -3418,6 +3581,14 @@
+@@ -3418,6 +3606,14 @@
  	// farming (the bag is safer moving with us than dying at their altar) unless the game is on the line.
  	if (altar_unsafe(a) && !endgame && !winning && !force)
  		return false;
@@ -361,7 +411,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	task = T_TRIBUTE;
  	const vec2 altar = W.altars[static_cast<std::size_t>(a)];
  	if (cheb(pos, altar) > 1)
-@@ -3469,6 +3640,18 @@
+@@ -3469,6 +3665,18 @@
  bool Brain::respond_to_alert()
  {
  	auto& C = comms();
@@ -380,7 +430,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	if (!C.fresh(round, 6) || (C.alert_kind != AL_RALLY && C.alert_kind != AL_OPPORTUNITY))
  		return false;
  	// An enemy channelling a tribute (posted as an opportunity) is the cheapest kill in the game, and the
-@@ -5047,10 +5230,57 @@
+@@ -5047,10 +5255,57 @@
  
  bool Brain::W_dist_home_ok() const { return world().dist_home(pos) > P.cap_recall_min_home && world().dist_home(pos) < BIG; }
  
@@ -468,11 +518,16 @@ diff -ruN god/src/brain.h _x_v8/src/brain.h
  	bool go_home_step(bool avoid);
 diff -ruN god/src/params.h _x_v8/src/params.h
 --- god/src/params.h	2026-10-20 17:55:18.412895754 +0000
-+++ _x_v8/src/params.h	2026-10-20 18:58:44.851791857 +0000
-@@ -286,6 +286,36 @@
++++ _x_v8/src/params.h	2026-10-20 19:01:43.748466266 +0000
+@@ -286,6 +286,41 @@
  							   // Heart of Ruin spent 391 rounds within 3 of an enemy and landed the dash on one once (62 of its 70 dashes were walking)
  	int burst_dash = 0;		   // 1: Enemy::burst() counts a ready damaging dash (Heart of Ruin: 1.75 x focus) like a spell; the fight estimate, burst
  							   // retreat, burst_exit, danger map and the ml2 burst_e5 input read it (before: no dash damage; build_react already had it)
++	int tail_stat = 0;	   // v8 P1-7: build_tail 1's endless Power stat from the engine, not a typed champion list: focus when focus_growth x
++				   // (sum of our spell modifiers) / 8 (cooldown) beats strength_growth x (1 + 1/8 with an attack reset), else strength
++	int hor_build = 0;	   // v8 P0-1f Heart of Ruin builds after the 3.0.2 hotfix (focus per shard 15 -> 12, health still +100): 1 health first
++				   // (Jungle, Durability, Bruiser health) then Ren's focus emblems; 2 = 1 + a Bruiser health / focus tail instead of
++				   // Power focus (its passive pays a body that stays alive at low health); 3 = Ren's list + that tail
 +	int gv_map = 0;	   // v8 P1-6: gold_value from the map: rho = sum(gold / respawn) / sum(gems / respawn) over the camp groups (engine
 +				   // rewards), value = gold_value x (rho / gv_rho_ref)^gv_exp, clamped 0.15-0.5. The review's formula (0.22 at rho 4,
 +				   // 0.33 at 10) gave 0.23-0.31 on 19 of the 21 official maps (their rho is 4.4-9.6, median 6.3; elk-arena 20.5): the 0.22

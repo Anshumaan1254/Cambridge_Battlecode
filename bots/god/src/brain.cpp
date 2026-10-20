@@ -1172,6 +1172,8 @@ int Brain::nearest_altar(int& dist) const
 	{
 		nav().ensure_altar(static_cast<int>(i));
 		int d = nav().altar_dist(static_cast<int>(i), pos);
+		if (P.altar_no_camp >= 2 && !W.altar_open(static_cast<int>(i)))
+			continue; // its approach tile is a living camp's spawn tile
 		if (W.altar_locked_by_enemy(static_cast<int>(i)))
 			d += 6; // three hits to clear it
 		if (altar_unsafe(static_cast<int>(i)))
@@ -2162,7 +2164,7 @@ bool Brain::combat()
 	// P.pair_low_hp: Cassi & Issac leave a fight they can walk away from earlier (ladder: 64% of our 59 pair deaths were
 	// triggered by the partner below 25% health, the other partner healthy (73% above 75%) and 7+ tiles away).
 	const float low_hp = (type == CT::cassi || type == CT::issac) ? P.pair_low_hp : 0.25f;
-	if (fight && !killable && can_escape && (hp < low_hp * max_hp || (static_cast<int>(gems) >= P.bag_caution && adv < 1.5f && !(P.no_altar_gold && W.no_altar))))
+	if (fight && !killable && can_escape && (hp < low_hp * max_hp || (static_cast<int>(gems) >= P.bag_caution && adv < 1.5f && !(P.no_altar_gold && W.no_altar_now()))))
 		fight = false;
 	// mi_lethal (default branch): it has shown it can kill us from here; leave unless the kill is ours first.
 	if (P.mi_lethal && fight && !killable && !(in_reach && !can_escape) && lethal >= hp)
@@ -3130,7 +3132,7 @@ void Brain::update_mode()
 	const int ours = static_cast<int>(bc::global_submitted_gems(team::ally));
 	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
 	gold_v = P.gold_value;
-	if (P.math_gold && !(P.no_altar_gold && world().no_altar))
+	if (P.math_gold && !(P.no_altar_gold && world().no_altar_now()))
 	{
 		// Gold only turns into gems through the shards it buys, and a shard pays off over the rounds left: +5
 		// strength on 40-50 is about +5% farming rate, which earns back 30 gold x gold_value = 6.6 gems in
@@ -3260,8 +3262,8 @@ bool Brain::tribute(bool force)
 	if (gems == 0)
 		return false;
 	auto& W = world();
-	if (P.no_altar_gold && W.no_altar)
-		return false; // no usable altar on this map: the bag can never be banked (gold earned decides at r2000)
+	if (P.no_altar_gold && W.no_altar_now())
+		return false; // no usable altar now: the bag cannot be banked (gold earned decides at r2000, or the unlock group opens an altar)
 	if (P.mi_island_bank > 0 && inside_island())
 	{
 		// No altar inside an island (default branch): recall out (the bag is kept) once it is worth banking.
@@ -4032,7 +4034,9 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 				// part of the time (ranged_exposure). taken = sum_k str_k x (q t_{k-1} + t_k - t_{k-1} - 1).
 				// A melee champion on a pack of n equal camps takes (n+1)/(2n) of the old constant-incoming
 				// product, which overstated a pack by up to 2x.
-				const float q = kit.ranged && !tank_melee ? P.ranged_exposure : 1.f;
+				float q = kit.ranged && !tank_melee ? P.ranged_exposure : 1.f;
+				if (P.elk_exposure && q < 1.f && g.max_range > kit.attack_range)
+					q = 1.f; // elk / golem / monolith reach past our attack range: we stand inside it the whole time
 				std::array<float, 8> hs{}, ss{};
 				int n = 0;
 				float raw = 0;
@@ -4116,7 +4120,8 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			time = static_cast<float>(d_adj + wait) + ring_kill + 6.f;
 			share = P.o2_ring_share;
 		}
-		else if (!solo_ok && W.obj_mode && g.objective && P.obj_team && g.attackers >= P.obj_team_attackers && (sc_obj_focus < 0 || sc_obj_focus == g.id) &&
+		else if (!solo_ok && ((W.obj_mode && g.objective && P.obj_team && g.attackers >= P.obj_team_attackers && (sc_obj_focus < 0 || sc_obj_focus == g.id)) ||
+							  (P.altar_no_camp >= 2 && g.unlock)) &&
 			obj_team_ready(g, hp_left, team_kill))
 		{
 			// Objective map: too heavy for us and the bodies already on it, but not for the whole team.
@@ -4148,7 +4153,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 		}
 	}
 
-	float value = ((P.no_altar_gold && W.no_altar ? 0.f : static_cast<float>(g.gems)) + gold_v * static_cast<float>(g.gold)) * share;
+	float value = ((P.no_altar_gold && W.no_altar_now() && !g.unlock ? 0.f : static_cast<float>(g.gems)) + gold_v * static_cast<float>(g.gold)) * share;
 	if (!g.ours)
 	{
 		const float risk = sc_risk;

@@ -212,7 +212,10 @@ struct Params
 	float rally_hp = 0.6f;	   // ... with at least this health fraction
 	int pd_hor3 = 1;			   // patch 3.0: Heart of Ruin instead of Cassi & Issac at team size 3 (draft.cpp pd_score)
 	// Session 14 (GOD v3, the Nyx games of Oct 20). All 0 = GOD v2's games.
-	int altar_no_camp = 1;	   // 1: altar approach tiles never include a camp's spawn tile (nx50x41: the only neighbour of the one altar is a monolith
+	int altar_no_camp = 2;	   // 1: altar approach tiles never include a camp's spawn tile (nx50x41: the only neighbour of the one altar is a monolith
+							   // 2: a camp tile is an approach tile only while that camp is dead (a dead camp's tile is standable and a body on it delays the
+							   //    respawn): the altar opens when the camp dies, the group that blocks it is the team's unlock target (its gems count even
+							   //    in the no-altar gold mode and the team plan may take it; nx50x41: 2 monoliths, 40,000 health, 400 gems)
 							   // tile; six bodies stood next to the sleeping monolith for 1,000+ rounds trying to step onto it); an altar with no
 							   // approach tile left is unusable, and with no usable altar reachable from spawn the map has no banking (World::no_altar)
 	int no_altar_gold = 1;	   // 1: on a map with no usable altar the gems are worth nothing: groups score by gold only (full gold_value, no
@@ -222,6 +225,9 @@ struct Params
 	int stall_guard = 10;	   // > 0: a walking task (farm, capture, tribute, home, flee) that stays inside a 3x3 box this many rounds without acting
 							   // drops its target; a dash kit also routes without hole crossings for stall_dash_off rounds (fields rebuilt)
 	int stall_dash_off = 150;
+	int elk_exposure = 0;	   // 1: the farm model's ranged exposure (share of the time a lone ranged body is in reach of the camps it is not hitting)
+							   // is 1 for groups with a camp whose range reaches past our attack range (patch 3.0: elk / golem 4, monolith 5; a
+							   // body at range 3 stands inside their reach the whole time), ranged_exposure for the others
 	int pd_obj_heavy = 1;	   // 1: the draft's objective map (Prism first, the caster ring) also needs the lone gem group to be heavy: total camp health
 							   // >= obj_min_hp with >= obj_min_attackers camps that fight back (nx50x50: one elk + gem cluster group and 27 gold
 							   // clusters per side took the caster draft: 72-1008). Same test as World::detect_objective

@@ -46,6 +46,9 @@ void World::init_static()
 		for (const auto& g : bc::map::camp_groups())
 			for (const auto& c : g.camps())
 				camp_tiles.set(c.spawn_position());
+	altar_block_g.assign(altars.size(), -1);
+	altar_block_c.assign(altars.size(), -1);
+	std::vector<vec2> blocked_tiles; // mode 2: camp tiles kept as approach tiles, resolved to their group below (groups are built after this)
 	for (auto a : altars)
 	{
 		std::vector<vec2> app;
@@ -54,9 +57,24 @@ void World::init_static()
 			for (int dx = -1; dx <= 1; ++dx)
 			{
 				const vec2 p{ a.x + dx, a.y + dy };
-				if ((dx || dy) && p.x >= 0 && p.y >= 0 && p.x < W && p.y < H && !bit(walls_lin, p.y * W + p.x) && !(P.altar_no_camp && camp_tiles.is_set(p)))
-					app.push_back(p);
+				if (!((dx || dy) && p.x >= 0 && p.y >= 0 && p.x < W && p.y < H && !bit(walls_lin, p.y * W + p.x)))
+					continue;
+				if (P.altar_no_camp && camp_tiles.is_set(p))
+				{
+					if (P.altar_no_camp >= 2 && app.empty())
+						blocked_tiles.push_back(p); // only used when no free tile exists (resolved after the free ones below)
+					continue;
+				}
+				app.push_back(p);
 			}
+		if (app.empty() && P.altar_no_camp >= 2)
+			for (auto p : blocked_tiles)
+				if (cheb(p, a) <= 1)
+				{
+					app.push_back(p); // the altar opens when this camp dies
+					break;
+				}
+		blocked_tiles.clear();
 		altar_approach.push_back(std::move(app));
 	}
 
@@ -178,6 +196,16 @@ void World::init_static()
 		}
 		groups.push_back(std::move(G));
 	}
+	if (P.altar_no_camp >= 2)
+		for (std::size_t i = 0; i < altars.size(); ++i)
+			for (auto t : altar_approach[i])
+				for (auto& g : groups)
+					for (std::size_t c = 0; c < g.camps.size(); ++c)
+						if (g.camps[c].pos == t)
+						{
+							altar_block_g[i] = g.id, altar_block_c[i] = static_cast<int>(c);
+							g.unlock = true;
+						}
 	hops.assign(groups.size(), Hop{});
 	mono_share = mono_rate_total > 0 ? mono_rate_lone / mono_rate_total : 0;
 	// mono_size50: only on 50x50 maps (contest and its copies). On the 24 generated monolith-only test maps (maps/gold*/gold_mono*, 30-80
@@ -543,6 +571,36 @@ void World::update_alive(int round)
 			e.alive = alive != 0;
 		}
 	}
+}
+
+bool World::altar_open(int i) const
+{
+	const auto k = static_cast<std::size_t>(i);
+	if (altar_approach[k].empty())
+		return false;
+	if (P.altar_no_camp < 2 || altar_block_g[k] < 0)
+		return true;
+	const auto& g = groups[static_cast<std::size_t>(altar_block_g[k])];
+	// Open while the blocking camp is dead: the reward waits (ST_REWARD), or the group respawns later, or its camp is at 0 health.
+	return g.st == ST_REWARD || g.st == ST_RESPAWN || (g.st == ST_ALIVE && g.seen_round >= 0 && g.hp[static_cast<std::size_t>(altar_block_c[k])] <= 0);
+}
+
+bool World::no_altar_now() const
+{
+	if (no_altar)
+		return true;
+	if (P.altar_no_camp < 2)
+		return false;
+	for (std::size_t i = 0; i < altars.size(); ++i)
+		if (altar_open(static_cast<int>(i)) && !altar_approach[i].empty())
+		{
+			int d = BIG;
+			for (auto t : altar_approach[i])
+				d = std::min(d, home.get(t));
+			if (d < BIG)
+				return false;
+		}
+	return true;
 }
 
 const bc::bitboard& World::route_walls() const { return P.dash_holes && dash_kit && round >= dash_off_until ? dash_walls : walls; }

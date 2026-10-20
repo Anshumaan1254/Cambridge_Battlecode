@@ -41,6 +41,7 @@ struct Group
 	int radius = 0;		// Chebyshev reach of the tiles from the centre
 	bool ours = true;
 	bool objective = false; // objective map (P.obj_plan): one of the few heavy groups that hold most of the gems
+	bool unlock = false;	// P.altar_no_camp 2: killing this group opens an altar whose approach tile it stands on
 
 	// Dynamic memory
 	GroupState st = ST_ALIVE; // every group starts alive
@@ -157,6 +158,9 @@ struct World
 	Field home; // steps from our spawn
 	int spawn_altar_d = BIG; // walking steps from our spawn to the nearest altar's approach tile
 	bool no_altar = false;	 // no usable altar reachable from our spawn (P.altar_no_camp): banking is impossible on this map
+	std::vector<int> altar_block_g, altar_block_c; // P.altar_no_camp 2: the group / camp index whose spawn tile is an altar's only approach (-1 none)
+	bool altar_open(int i) const;	// the altar's approach tiles are standable now (its blocking camp, if any, is dead)
+	bool no_altar_now() const;		// no altar is open now (static no_altar, or every altar blocked by a living camp)
 	int dash_off_until = -1; // P.stall_guard: until this round this body routes without hole crossings (route_walls)
 	bc::bitboard home_reach; // tiles reachable on foot from our spawn
 	Field away; // steps from enemy spawn

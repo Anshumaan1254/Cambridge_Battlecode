@@ -199,6 +199,11 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   (deaths 708-692). Queued (`q4.sh`): `_g5u` vs `_m15` + 3 proxies + idle, then farming-commitment variants `_g5ch3` (`commit_hit` 3),
   `_g5mt8` (`max_trips` 8), `_g5jr2` (`join_reach` 2.0) vs idle and `_g4`. A Fable subagent retrains the danger model on the Nyx games
   (`bots/_x_ml4`, `experiments/wip/x_ml4_NOTES.md`, variants `_g5ml`, `_g5ml30`). Candidate for the next ship: `_g5u`.
+- **13:40 UTC: SHIPPED GOD v4** = `_g5u` (`submissions/god.zip` sha256 db10fc92…, history `god_v4_20261020.zip`, `bots/god/src` = it; BUILDS row):
+  h2h vs `_g4` 25/40, vs `_m15` **30/40**, `_mite` 35, `_ifish` 31, `_px9` 30, idle 40/40 (pace 1034.4), 0 faults. Rejected on top of v3:
+  `elk_exposure` 21/40, `gold_value` 0.5 / 0.22: 19 / 22 (0.33 stays). Running `q4.sh` rest: `_g5ch3` / `_g5mt8` / `_g5jr2` (commitment)
+  vs idle and `_g4`. Next: `mono_team` (team plan for lone monoliths on any map: 7 of the 20 maps have one; Nyx killed contest_v3's twice),
+  `burst_retreat` 1.2, the ML retrain (agent).
 - 10:40 UTC: handoff written. Nothing left running (the baseline of S14.6 finished; the checkpoint loop of session 13 stops with the container).
   Also measured before the handoff: `_g4fm` (GOD v2 + `fight_margin` 1.15) h2h vs GOD v2 10/34 on the old official files: rejected.
   Untested queue from session 13 (cheap to resume, all on `bots/god`): `ml2_leave`/`ml2_flee` 0.5 and 0.3, `tribute_min` 30 (games are

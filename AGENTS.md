@@ -143,6 +143,15 @@ running or unfinished, and what to do next, so a new agent can continue without 
   ISSUES.md: #1 fixed, #15 (model fixed to the Oct 19 opponents), #16 added. **Next**: the user's ladder check of `legend_m15`; locally, a
   decision model (P(die | step away) vs P(die | hit)), contest / stampede execution (the proxies cannot reproduce the ladder teams there).
 
+- **Checkpoint 04:45 UTC**: running (scratchpad scripts, lost with the container; results land in the ledger): `q20.sh` = held-out pools
+  (gold, gold2, gold3, obj; 78 maps) for `_mlkc40` and `_ch2` vs `_mite _px9 _ifish`; `q21.sh` = **objective-reward theft** test on
+  `maps/obj` + stampede (26 games per cell): stealing proxies `_stl` (= `_mlkc40` + `big_reward` 100 + `big_reward_dive` 200: stands on our
+  dead objective tiles like the ladder teams did) and `_stlm` (+ Mite draft / builds / ring); defences on `_mlkc40`: `_m15br` (big_reward 100),
+  `_m15brd` (+ dive 200), `_m15brp` (+ reward_pre 3), vs `_stl _stlm _mite _ifish _px9`. ML agent resumed (03:50 reset) on `ml2_enter`
+  (kill model: fight more when P(kill8) high and P(die8) low) and the action-conditioned decision model, baseline `_mlkc40`.
+  Rows traced (ladder 25464f3d_03): at 990 every body walked to far groups; Cassi's 66 capture landed 13 steps from our altar (7 tribute
+  turns) while they split the last group 3 x 22 (3 turns each): geometry + pace, not a last-rounds choice; `finish_race` changed no local rows game.
+
 ## S12. SESSION 12 (2026-10-19, same container as S10/S11): read this first
 
 - Shipped bot at the start: **`legend_m14`** (`submissions/legend.zip` sha256 50ca7600…, frozen `bots/_pg3`, S7R). Baseline for every A/B: `_pg3`.

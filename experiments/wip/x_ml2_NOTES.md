@@ -17,6 +17,17 @@ Reproduce the model: `python3 tools/ml/ml2_decode.py DEC set=dir ...` (sets belo
 without --export-gb), then `ml2_model.h` = header + `ML2_NF = 58` + the three files.
 
 ## State (update at every step; container clock)
+- 04:10 (after a container restart; session limit reset): **`_mlkc40` SHIPPED as legend_m15** (coordinator). New baseline `_mlkc40`;
+  phase 2 = `ml2_enter` (fight more when the model says we win) + `ml2_recall_kill` (cancel a heal / shop recall for such a fight).
+  Copy `bots/_x_ml3` = `_mlkc40` src + `experiments/wip/x_ml3.patch` (rebuild: `SRC=bots/_mlkc40 tools/variant.sh _x_ml3 && (cd bots/_x_ml3 &&
+  patch -p1 < ../../experiments/wip/x_ml3.patch)`); control `_ml3c0` 34/34 games identical to `_mlkc40` vs `_mite`. Screen running
+  (`$S/ml2/q10.sh`, log `screen10.log`; official 34 vs `_mlkc40` + 5 proxies): `_ml3e40`, `_ml3er40`, `_ml3e50`, `_ml3e30`.
+  Ship rule (coordinator): pooled >= 149 and h2h >= 17/34 vs `_mlkc40`. Summary: `BASE=_mlkc40 OPPS=_mite,_ifish,_px9,_snk,_fA python3
+  tools/screensum.py ...` / `BASE=_mlkc40 python3 tools/ml/ml2_sum.py ...`.
+- Evidence for entering (our ladder rows, held-out logistic P): states with P(kill8) >= 0.4 and P(die8) < 0.15 are 4.4% of our contact
+  rows (the other teams' rows: 9.8%); there our bodies hit a champion next round in 38% of them (kill8 79%, die8 6%, net damage +163
+  over 3 rounds) and did not in 62% (kill8 59%, die8 7%, net -20; 81% of those with an enemy within 4). Hitting adds +0.20 kills at no
+  visible death cost (observational).
 - 00:20: official 34 on the stack: `_mlkc30` 142/170 (h2h vs `_cand2` 17/34), `_mlka40` (adapt) 146/170 (20/34): `_mlkc40` (149, 19/34)
   stays the pick. Queue continues with ablations on `_ch2`: `_mlc40` (no flee), `_mlca40`, `_mlgc40` (boosted trees).
 - 00:13: wide validation of `_mlkc40` done: 67 maps vs the 5 proxies 475/670 (`_ch2` 452), our deaths -13%, h2h vs `_cand2` 77/134,
@@ -124,6 +135,11 @@ without --export-gb), then `ml2_model.h` = header + `ML2_NF = 58` + the three fi
 | `_mlf40` | leave 0.4, flee 0.4 | 130/170 76.5 | 27 26 25 25 27 | 16/34 (328-329) | 1,441 | 2,050 |
 | **`_mlcf40`** | **leave 0.4, flee 0.4, cornered** | **141/170 82.9** | 31 24 27 27 32 | **20/34 (299-407)** | **1,209** | 1,987 |
 | `_mlhp45` | ablation: cornered veto from health < 45% | 133/170 78.2 | 29 27 24 25 28 | 20/34 (248-348) | 1,072 | 1,909 |
+| `_mlc40` | leave 0.4, cornered (no flee) | 141/170 82.9 | | 20/34 (304-405) | 1,208 | 1,986 |
+| `_mlca40` | `_mlc40` + adapt 0.05 | 143/170 84.1 | | 18/34 (271-396) | 1,183 | 2,070 |
+| `_mlgc40` | boosted trees instead of the logistic | 135/170 79.4 | | 17/34 (305-328) | 1,271 | 1,937 |
+- `ml2_flee` adds nothing (`_mlc40` = `_mlcf40` within one game); the boosted trees, better by AUC (0.830 vs 0.806), play worse (135 vs 141):
+  the logistic's smoother ranking suits a threshold rule; keep the logistic.
 - The health-only rule cuts our deaths even more but wins 8 games fewer than the model: the model chooses better which low-health
   fights to drop (it keeps the ones the team wins; their deaths 1,987 vs 1,909).
 
@@ -137,6 +153,17 @@ without --export-gb), then `ml2_model.h` = header + `ML2_NF = 58` + the three fi
 - 0.3 drops more fights and loses some (the local proxies kill less than the ladder teams: a lower bar is too cautious here).
 - The in-match recalibration is level with the fixed model locally (146 vs 149, h2h 20 vs 19): against ladder teams its offset should
   stay near 0, so it would behave like `_mlkc40` there; it is insurance if the final map pool or opponents differ. Not needed to ship.
+
+## Phase 2 on `_mlkc40` (official 34 vs `_mlkc40` + 5 proxies; `_mlkc40` 149/170, deaths 1,180-2,062)
+| variant | switches (on top of `_mlkc40`) | pooled | per proxy `_mite _ifish _px9 _snk _fA` | h2h vs `_mlkc40` (deaths) | identical games |
+|---|---|---|---|---|---|
+| `_ml3c0` | control | 34/34 identical vs `_mite` | | | |
+| `_ml3e40` | ml2_enter 0.4 (P(die8) < 0.15) | 147/170 86.5 | 27 27 29 32 32 | 16/34 (340-329) | 127/170 |
+- Two-action model (`tools/ml/ml2_tlearner.py`, weights `src/ml2_tl.h`): four logistic models P(die8 / kill8 | x) on the rows where the body
+  hit a champion next round vs stepped away (83,516 rows, 15,680 ours). Direct-method check, value = kill8 - 1.5 die8, our rows: recommended
+  hit and hit +0.36 / and stepped away +0.04; recommended away and stepped away -0.09 / and hit -0.31 (all teams the same pattern). The
+  value difference is wide (our in-reach rows: quantiles 5/25/50/75/95% = -0.75 / -0.32 / -0.01 / +0.22 / +0.52), so the margins are large.
+  Switch `ml2_tl` (bit 1 enter, bit 2 leave), `ml2_tl_lam` 1.5, `ml2_tl_margin`; variants `_ml3t25`, `_ml3t40` (enter only).
 
 ## Wide validation of `_mlkc40` (generated 27 + pad17 16 + gen2 24 = 67 maps, 134 games per cell)
 | pool (games per proxy) | `_ch2` vs 5 proxies | `_mlkc40` vs 5 proxies | per proxy `_mite _ifish _px9 _snk _fA` (`_ch2`) | h2h `_mlkc40` vs `_cand2` |

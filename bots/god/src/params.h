@@ -1,10 +1,15 @@
 // Every tunable weight and threshold lives here so variants can be generated for self-play tuning.
 #pragma once
+#include "common.h"
+// Two rulesets (docs/sprint/RULES_DIFF.md): the engine we are compiled with tells which one runs. SDK_HAS_HOR (Heart of Ruin in the SDK)
+// = patch 3.0: GOD v5's values. Without it (the sprint handbook's rules: old camp values, no Golem, no Heart of Ruin) the seven values
+// marked SDK_HAS_HOR take legend_m15's: on cambc 2.2.5 they won 148 of 170 vs the five proxies on the official maps (legend_m15 149,
+// GOD v5's values 127; gold_value 0.33 and altar_no_camp 2 cost most: corners, lanes, pilgrimage), 18/34 head-to-head vs legend_m15.
 
 struct Params
 {
 	// Task valuation
-	float gold_value = 0.33f;		 // gem-equivalent value of one gold (patch 3.0: a wolf pays 4 gems + 40 gold, an elk 15 + 90: 0.22 -> 0.33 won 158/170 vs
+	float gold_value = SDK_HAS_HOR ? 0.33f : 0.22f;		 // gem-equivalent value of one gold (patch 3.0: a wolf pays 4 gems + 40 gold, an elk 15 + 90: 0.22 -> 0.33 won 158/170 vs
 									 // the 5 proxies (0.22: 145), h2h 20/34 and on the patch-style maps 21/34 vs 0.22; 0.44-0.66 level vs the proxies, worse vs legend_m15)
 	float deny_bonus = 0.043f;		 // extra value for camps on the enemy half (they lose what we take) (ES: 0.55 -> 0.043)
 	float enemy_half_penalty = 10.f; // rounds-equivalent risk cost for enemy-half camps
@@ -202,7 +207,7 @@ struct Params
 							   // enemy is within 7 and a healthy ally within 6 of us has an enemy within 5 (the user: fight while still able;
 							   // ladder contest r26-31: our full-health Ren completed a recall as the team fight started, the other 5 lost it)
 	float recall_join_hp = 0.7f;
-	float burst_retreat = 1.2f;  // > 0: safety() also retreats when our health is below this x the burst (best ready spell + one hit) of the
+	float burst_retreat = SDK_HAS_HOR ? 1.2f : 0.f;  // > 0: safety() also retreats when our health is below this x the burst (best ready spell + one hit) of the
 							   // visible enemies that can step into reach (spell reach + 2): 41% of our ladder deaths (Oct 19) came from >= 60%
 							   // health within 3 rounds, Cassi 31% health (220/700) stayed out next to casters and died to one area cast
 	int ci_first = 0;		   // 1: the parameter draft picks Cassi & Issac first when the planned team has them (same team, lower body
@@ -212,17 +217,17 @@ struct Params
 	float rally_hp = 0.6f;	   // ... with at least this health fraction
 	int pd_hor3 = 1;			   // patch 3.0: Heart of Ruin instead of Cassi & Issac at team size 3 (draft.cpp pd_score)
 	// Session 14 (GOD v3, the Nyx games of Oct 20). All 0 = GOD v2's games.
-	int altar_no_camp = 2;	   // 1: altar approach tiles never include a camp's spawn tile (nx50x41: the only neighbour of the one altar is a monolith
+	int altar_no_camp = SDK_HAS_HOR ? 2 : 0;	   // 1: altar approach tiles never include a camp's spawn tile (nx50x41: the only neighbour of the one altar is a monolith
 							   // 2: a camp tile is an approach tile only while that camp is dead (a dead camp's tile is standable and a body on it delays the
 							   //    respawn): the altar opens when the camp dies, the group that blocks it is the team's unlock target (its gems count even
 							   //    in the no-altar gold mode and the team plan may take it; nx50x41: 2 monoliths, 40,000 health, 400 gems)
 							   // tile; six bodies stood next to the sleeping monolith for 1,000+ rounds trying to step onto it); an altar with no
 							   // approach tile left is unusable, and with no usable altar reachable from spawn the map has no banking (World::no_altar)
-	int no_altar_gold = 1;	   // 1: on a map with no usable altar the gems are worth nothing: groups score by gold only (full gold_value, no
+	int no_altar_gold = SDK_HAS_HOR ? 1 : 0;	   // 1: on a map with no usable altar the gems are worth nothing: groups score by gold only (full gold_value, no
 							   // end-of-game decay), no tribute trips, the bag never makes a body cautious (the tiebreak at r2000: gold earned, then kills)
-	int dash_gain1 = 1;		   // 1: at a hole crossing where every improving walking step is a hole, a ready dash that gains one field step is taken
+	int dash_gain1 = SDK_HAS_HOR ? 1 : 0;		   // 1: at a hole crossing where every improving walking step is a hole, a ready dash that gains one field step is taken
 							   // (nx61x71: two crossing holes chained diagonally; the field's path went hole -> hole and the body waited forever)
-	int stall_guard = 10;	   // > 0: a walking task (farm, capture, tribute, home, flee) that stays inside a 3x3 box this many rounds without acting
+	int stall_guard = SDK_HAS_HOR ? 10 : 0;	   // > 0: a walking task (farm, capture, tribute, home, flee) that stays inside a 3x3 box this many rounds without acting
 							   // drops its target; a dash kit also routes without hole crossings for stall_dash_off rounds (fields rebuilt)
 	int stall_dash_off = 150;
 	int mono_team = 0;		   // 1: a lone monolith group (one camp: 20,000 health, 200 strength, range 5 since patch 3.0; 200 gems + 300 gold a kill) is a
@@ -233,7 +238,7 @@ struct Params
 	int elk_exposure = 0;	   // 1: the farm model's ranged exposure (share of the time a lone ranged body is in reach of the camps it is not hitting)
 							   // is 1 for groups with a camp whose range reaches past our attack range (patch 3.0: elk / golem 4, monolith 5; a
 							   // body at range 3 stands inside their reach the whole time), ranged_exposure for the others
-	int pd_obj_heavy = 1;	   // 1: the draft's objective map (Prism first, the caster ring) also needs the lone gem group to be heavy: total camp health
+	int pd_obj_heavy = SDK_HAS_HOR ? 1 : 0;	   // 1: the draft's objective map (Prism first, the caster ring) also needs the lone gem group to be heavy: total camp health
 							   // >= obj_min_hp with >= obj_min_attackers camps that fight back (nx50x50: one elk + gem cluster group and 27 gold
 							   // clusters per side took the caster draft: 72-1008). Same test as World::detect_objective
 

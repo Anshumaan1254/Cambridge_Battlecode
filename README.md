@@ -13,7 +13,19 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Current build: **GOD v5** (`submissions/god.zip`, session 14, Oct 20): GOD v4 + the burst retreat
+## Current build: **GOD v5.1** (`submissions/god.zip`, session 15, Oct 20): GOD v5 for both rulesets
+
+The sprint documents (`docs/sprint/GameRules.md`, `BotAPICpp.md`) describe the game before patch 3.0 and an API without Heart of Ruin, Golem or
+the damaging dash fields; GOD v5 named all three and **did not compile against that API** (a failed compile removes the team from matchmaking).
+GOD v5.1 names them through `requires`-expressions (`common.h`: `SDK_HAS_HOR`, `CT_HOR`, `D_HOR`, `CAMP_GOLEM`) and, when the SDK has no Heart of
+Ruin, takes legend_m15's values for the seven settings that were tuned for patch 3.0. Details: `docs/sprint/RULES_DIFF.md`.
+
+| Engine the platform compiles with | What GOD v5.1 is | Measured |
+|---|---|---|
+| cambc 3.0.x (patch 3.0, Heart of Ruin) | **byte-identical wasm to GOD v5** | GOD v5's numbers below |
+| cambc 2.2.x / the handbook's API (old balance) | GOD with legend_m15's settings (`_go_all0`, byte-identical wasm) | official 34 vs the 5 proxies 148/170 (legend_m15 149, GOD v5's settings 127); h2h vs legend_m15 18/34 |
+
+## Previous build: **GOD v5** (`submissions/god.zip`, session 14, Oct 20): GOD v4 + the burst retreat
 
 Against Nyx (20 ladder games after patch 3.0) 51% of our deaths were bursts from 60%+ health, 49% by ranged champions stacking Power
 emblems in their damage stat: one Stellar cast plus a hit took half a body's health. GOD v5 retreats one cast earlier: `safety()` leaves when

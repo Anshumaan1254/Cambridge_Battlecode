@@ -8,6 +8,7 @@
 #include "draft.h"
 
 #include <cstdio>
+#include <span>
 
 #include "common.h"
 #include "params.h"
@@ -90,7 +91,7 @@ void analyse()
 			case bc::camp_type::monolith: has_mono = true, ++attackers; break;
 			case bc::camp_type::gem_cluster: has_gem = true; break;
 			case bc::camp_type::gold_cluster: has_gold = true; break;
-			case bc::camp_type::golem: has_elk = true, ++attackers; break; // patch 3.0: a heavy single camp (5000 hp, range 4)
+			case CAMP_GOLEM: has_elk = true, ++attackers; break; // patch 3.0: a heavy single camp (5000 hp, range 4)
 			default: break;
 			}
 		}
@@ -319,7 +320,7 @@ void derive_params()
 }
 
 bool is_caster(D c) { return c == D::stellar || c == D::prism || c == D::tavi || c == D::vesper_vale || c == D::willow; }
-bool is_front(D c) { return c == D::ren || c == D::varg || c == D::ryth || c == D::vendetta || c == D::marcella || c == D::heart_of_ruin; }
+bool is_front(D c) { return c == D::ren || c == D::varg || c == D::ryth || c == D::vendetta || c == D::marcella || c == D_HOR; }
 
 double prior(D c)
 {
@@ -335,7 +336,7 @@ double prior(D c)
 	case D::vendetta: return 0.3;
 	case D::marcella: return 0.2;
 	case D::vesper_vale: return 0.12;
-	case D::heart_of_ruin: return 0.5; // patch 3.0's new champion: see pd_hor3
+	case D_HOR: return 0.5; // patch 3.0's new champion: see pd_hor3
 	default: return 0.1;
 	}
 }
@@ -384,9 +385,9 @@ double pd_score(D c, const std::vector<D>& team, const std::vector<D>& enemy)
 	// pd_hor3 (patch 3.0): at team size 3, outside the objective / open farming types, Heart of Ruin (1000 health, a stunning dash, a
 	// self shield) instead of the nerfed pair: Ren, Heart of Ruin, Stellar won 20-23 of 24 vs legend_m15 / Mite / ifish proxies on the
 	// four 3-champion official maps, Ren, Stellar, C&I 19 (fragment 6 vs 4, packs 5-6 vs 4); at sizes 4-5 the pair stays (45-47 vs 40 of 54).
-	if (P.pd_hor3 && MP.team == 3 && !MP.objective && !MP.open_small)
+	if (SDK_HAS_HOR && P.pd_hor3 && MP.team == 3 && !MP.objective && !MP.open_small) // no penalty on the pair when the SDK has no HoR
 	{
-		if (c == D::heart_of_ruin)
+		if (c == D_HOR)
 			v += 1.2;
 		if (c == D::cassi_and_issac)
 			v -= 0.5;
@@ -411,8 +412,9 @@ bool param_pick(const std::vector<D>& mine)
 	if (!mp_ready)
 		derive_params();
 	const std::vector<D> enemy = bc::draft::current_draft(team::enemy);
-	static const D order[] = { D::ren, D::stellar, D::cassi_and_issac, D::varg, D::ryth, D::tavi, D::prism, D::vendetta, D::marcella,
-		D::vesper_vale, D::willow, D::heart_of_ruin };
+	static const D order_all[] = { D::ren, D::stellar, D::cassi_and_issac, D::varg, D::ryth, D::tavi, D::prism, D::vendetta, D::marcella,
+		D::vesper_vale, D::willow, D_HOR };
+	const std::span<const D> order(order_all, std::size(order_all) - (SDK_HAS_HOR ? 0 : 1)); // Heart of Ruin only when the SDK has it
 	auto has = [](const std::vector<D>& v, D c) { return std::find(v.begin(), v.end(), c) != v.end(); };
 	if (mine.empty())
 	{

@@ -1,0 +1,279 @@
+diff -ruN god_v5/src/brain.cpp god_v5_1/src/brain.cpp
+--- god_v5/src/brain.cpp	2026-10-20 12:52:10.087278534 +0000
++++ god_v5_1/src/brain.cpp	2026-10-20 12:50:06.612266605 +0000
+@@ -65,7 +65,7 @@
+ 		// its no-contact farming maps (rows, expanse: 0 deaths either side) Monster in the damage stat, then Power (style 4).
+ 		const int om = official_map();
+ 		const int style = bs == 10 ? (om == OM_ROWS || om == OM_EXPANSE ? 4 : 3) : bs;
+-		const bool focus = t == CT::ren || t == CT::heart_of_ruin || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
++		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
+ 		const I power = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
+ 		if (style == 4)
+ 			rep(v, focus ? I::monster_shard_of_focus : I::monster_shard_of_strength, 5);
+@@ -73,7 +73,7 @@
+ 			switch (t)
+ 			{
+ 			case CT::ren:
+-			case CT::heart_of_ruin: // patch 3.0: melee, focus-scaled dash stun and shield like Ren's spells (+15 focus, +100 health per shard)
++			case CT_HOR: // patch 3.0: melee, focus-scaled dash stun and shield like Ren's spells (+15 focus, +100 health per shard)
+ 			case CT::ryth:
+ 			case CT::marcella:
+ 				rep(v, I::bruiser_shard_of_health, 5);
+@@ -102,7 +102,7 @@
+ 		// ThE, Issac TsE, Varg ThE), then Jungle in the damage stat (casters) or Bruiser health (melee), Durability, then Power in the damage
+ 		// stat for the rest of the game (1,097 Power-dmg emblems in 20 games: their Stellar ends with 20-27 of them). The patch made gold
+ 		// plentiful (gold clusters 120 HP for 20 gold, kills 100): damage snowballs into more gold.
+-		const bool focus = t == CT::ren || t == CT::heart_of_ruin || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
++		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
+ 		const I pw = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
+ 		switch (t)
+ 		{
+@@ -117,7 +117,7 @@
+ 			rep(v, I::bruiser_shard_of_health, 5);
+ 			break;
+ 		case CT::ren:
+-		case CT::heart_of_ruin:
++		case CT_HOR:
+ 			rep(v, I::treasure_shard_of_health, 5);
+ 			rep(v, I::bruiser_shard_of_health, 5);
+ 			rep(v, I::durability_shard_of_health, 5);
+@@ -147,14 +147,14 @@
+ 		// Session 14 hybrids. 13: Treasure first (gold snowball), then our survival emblems (Jungle health on Ren / Ryth, Monster dmg then
+ 		// Durability health on the carries, as build_style 2), then Power in the damage stat for ever (instead of Bruiser cycles: late
+ 		// game our bodies reached 7,000 health and 500 damage while Nyx's Stellar one-shot them). 14: the same without Treasure first.
+-		const bool focus = t == CT::ren || t == CT::heart_of_ruin || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
++		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
+ 		const I pw = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
+ 		const I tr = focus ? I::treasure_shard_of_focus : I::treasure_shard_of_strength;
+ 		const I mo = focus ? I::monster_shard_of_focus : I::monster_shard_of_strength;
+ 		switch (t)
+ 		{
+ 		case CT::ren:
+-		case CT::heart_of_ruin:
++		case CT_HOR:
+ 			if (bs == 13) rep(v, I::treasure_shard_of_health, 5);
+ 			rep(v, I::jungle_shard_of_health, 5);
+ 			if (bs == 14) rep(v, I::treasure_shard_of_focus, 5);
+@@ -192,12 +192,12 @@
+ 		// Intercontinental Fish (ladder #1; emblem order of its bodies in 36 games of Oct 19, experiments/interwin_oct19):
+ 		// Stellar PfE > HhE > DhE (17 of 36), Ren BhE > DhE > PfE, Cassi PfE > DfE > BhE, Issac PsE > HhE > DhE, Ryth BhE > DhE > PsE,
+ 		// Varg PsE > HhE; first emblem near r83 (Stellar), r74 (Ren). Power in the damage stat for the rest of the game.
+-		const bool focus = t == CT::ren || t == CT::heart_of_ruin || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
++		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
+ 		const I pw = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
+ 		switch (t)
+ 		{
+ 		case CT::ren:
+-		case CT::heart_of_ruin: // patch 3.0: melee, focus-scaled dash stun and shield like Ren's spells (+15 focus, +100 health per shard)
++		case CT_HOR: // patch 3.0: melee, focus-scaled dash stun and shield like Ren's spells (+15 focus, +100 health per shard)
+ 		case CT::ryth:
+ 		case CT::marcella:
+ 			rep(v, I::bruiser_shard_of_health, 5);
+@@ -227,7 +227,7 @@
+ 		const int om = official_map();
+ 		const bool str_maps = om == OM_PACKS || om == OM_ROWS || om == OM_RUSHBAIT || om == OM_SWIRL || om == OM_INTERLOCK
+ 			|| om == OM_COLLISION || om == OM_FRAGMENT || om == OM_EXPANSE;
+-		bool focus = t == CT::heart_of_ruin || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
++		bool focus = t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
+ 		if (t == CT::ren || t == CT::ryth)
+ 			focus = !str_maps;
+ 		const I ju = focus ? I::jungle_shard_of_focus : I::jungle_shard_of_strength;
+@@ -255,7 +255,7 @@
+ 		switch (t)
+ 		{
+ 		case CT::ren:
+-		case CT::heart_of_ruin: // patch 3.0: melee, focus-scaled dash stun and shield like Ren's spells (+15 focus, +100 health per shard)
++		case CT_HOR: // patch 3.0: melee, focus-scaled dash stun and shield like Ren's spells (+15 focus, +100 health per shard)
+ 			if (P.rich_treasure_first)
+ 				rep(v, I::treasure_shard_of_focus, 5);
+ 			else
+@@ -364,7 +364,7 @@
+ 			rep(v, I::power_shard_of_strength, 50);
+ 			break;
+ 		case CT::ren:
+-		case CT::heart_of_ruin: // patch 3.0: melee, focus-scaled dash stun and shield like Ren's spells (+15 focus, +100 health per shard)
++		case CT_HOR: // patch 3.0: melee, focus-scaled dash stun and shield like Ren's spells (+15 focus, +100 health per shard)
+ 			// Retaliation scales with focus (0.2 x focus per hit taken): a health and focus tank.
+ 			rep(v, I::jungle_shard_of_health, 5);
+ 			rep(v, I::power_shard_of_focus, 5);
+@@ -416,7 +416,7 @@
+ 	case CT::vendetta:
+ 	case CT::varg:
+ 	case CT::ren:
+-	case CT::heart_of_ruin: // patch 3.0: melee, focus-scaled dash stun and shield like Ren's spells (+15 focus, +100 health per shard)
++	case CT_HOR: // patch 3.0: melee, focus-scaled dash stun and shield like Ren's spells (+15 focus, +100 health per shard)
+ 	case CT::issac:
+ 		rep(v, I::jungle_shard_of_strength, 5);
+ 		rep(v, I::monster_shard_of_strength, 5);
+diff -ruN god_v5/src/common.h god_v5_1/src/common.h
+--- god_v5/src/common.h	2026-10-20 12:52:10.088355983 +0000
++++ god_v5_1/src/common.h	2026-10-20 12:50:06.613572957 +0000
+@@ -15,6 +15,32 @@
+ constexpr std::uint16_t UNREACH = bc::distance_field::unreachable;
+ constexpr int BIG = 1 << 20;
+ 
++// SDK compatibility: the sprint handbook (docs/sprint/BotAPICpp.md) and the 2.2.x SDK have no Heart of Ruin, no Golem and a dash
++// with only a range; the patch-3.0 SDK (3.0.x) adds them. These name the new values when the SDK has them and fall back to a value
++// no enumerator uses otherwise, so one source compiles on both (a failed compile removes the team from matchmaking).
++namespace sdk_compat
++{
++template <class E> constexpr bool has_hor() { return requires { E::heart_of_ruin; }; }
++template <class E> constexpr E hor()
++{
++	if constexpr (requires { E::heart_of_ruin; })
++		return E::heart_of_ruin;
++	else
++		return static_cast<E>(127);
++}
++template <class E> constexpr E golem()
++{
++	if constexpr (requires { E::golem; })
++		return E::golem;
++	else
++		return static_cast<E>(127);
++}
++} // namespace sdk_compat
++inline constexpr bool SDK_HAS_HOR = sdk_compat::has_hor<bc::champion_draft>();
++inline constexpr bc::champion_type CT_HOR = sdk_compat::hor<bc::champion_type>();
++inline constexpr bc::champion_draft D_HOR = sdk_compat::hor<bc::champion_draft>();
++inline constexpr bc::camp_type CAMP_GOLEM = sdk_compat::golem<bc::camp_type>();
++
+ inline int cheb(vec2 a, vec2 b)
+ {
+ 	const int dx = a.x > b.x ? a.x - b.x : b.x - a.x;
+@@ -81,8 +107,11 @@
+ 				{
+ 					k.dash = slot;
+ 					k.dash_range = v.range;
+-					k.dash_mod = v.modifier;
+-					k.dash_radius = v.radius;
++					if constexpr (requires { v.modifier; v.radius; }) // patch 3.0: Heart of Ruin's damaging dash
++					{
++						k.dash_mod = v.modifier;
++						k.dash_radius = v.radius;
++					}
+ 				}
+ 				else if constexpr (std::is_same_v<T, bc::ability_damage>)
+ 				{
+diff -ruN god_v5/src/draft.cpp god_v5_1/src/draft.cpp
+--- god_v5/src/draft.cpp	2026-10-20 12:52:10.088726181 +0000
++++ god_v5_1/src/draft.cpp	2026-10-20 12:50:06.614654899 +0000
+@@ -8,6 +8,7 @@
+ #include "draft.h"
+ 
+ #include <cstdio>
++#include <span>
+ 
+ #include "common.h"
+ #include "params.h"
+@@ -90,7 +91,7 @@
+ 			case bc::camp_type::monolith: has_mono = true, ++attackers; break;
+ 			case bc::camp_type::gem_cluster: has_gem = true; break;
+ 			case bc::camp_type::gold_cluster: has_gold = true; break;
+-			case bc::camp_type::golem: has_elk = true, ++attackers; break; // patch 3.0: a heavy single camp (5000 hp, range 4)
++			case CAMP_GOLEM: has_elk = true, ++attackers; break; // patch 3.0: a heavy single camp (5000 hp, range 4)
+ 			default: break;
+ 			}
+ 		}
+@@ -319,7 +320,7 @@
+ }
+ 
+ bool is_caster(D c) { return c == D::stellar || c == D::prism || c == D::tavi || c == D::vesper_vale || c == D::willow; }
+-bool is_front(D c) { return c == D::ren || c == D::varg || c == D::ryth || c == D::vendetta || c == D::marcella || c == D::heart_of_ruin; }
++bool is_front(D c) { return c == D::ren || c == D::varg || c == D::ryth || c == D::vendetta || c == D::marcella || c == D_HOR; }
+ 
+ double prior(D c)
+ {
+@@ -335,7 +336,7 @@
+ 	case D::vendetta: return 0.3;
+ 	case D::marcella: return 0.2;
+ 	case D::vesper_vale: return 0.12;
+-	case D::heart_of_ruin: return 0.5; // patch 3.0's new champion: see pd_hor3
++	case D_HOR: return 0.5; // patch 3.0's new champion: see pd_hor3
+ 	default: return 0.1;
+ 	}
+ }
+@@ -384,9 +385,9 @@
+ 	// pd_hor3 (patch 3.0): at team size 3, outside the objective / open farming types, Heart of Ruin (1000 health, a stunning dash, a
+ 	// self shield) instead of the nerfed pair: Ren, Heart of Ruin, Stellar won 20-23 of 24 vs legend_m15 / Mite / ifish proxies on the
+ 	// four 3-champion official maps, Ren, Stellar, C&I 19 (fragment 6 vs 4, packs 5-6 vs 4); at sizes 4-5 the pair stays (45-47 vs 40 of 54).
+-	if (P.pd_hor3 && MP.team == 3 && !MP.objective && !MP.open_small)
++	if (SDK_HAS_HOR && P.pd_hor3 && MP.team == 3 && !MP.objective && !MP.open_small) // no penalty on the pair when the SDK has no HoR
+ 	{
+-		if (c == D::heart_of_ruin)
++		if (c == D_HOR)
+ 			v += 1.2;
+ 		if (c == D::cassi_and_issac)
+ 			v -= 0.5;
+@@ -411,8 +412,9 @@
+ 	if (!mp_ready)
+ 		derive_params();
+ 	const std::vector<D> enemy = bc::draft::current_draft(team::enemy);
+-	static const D order[] = { D::ren, D::stellar, D::cassi_and_issac, D::varg, D::ryth, D::tavi, D::prism, D::vendetta, D::marcella,
+-		D::vesper_vale, D::willow, D::heart_of_ruin };
++	static const D order_all[] = { D::ren, D::stellar, D::cassi_and_issac, D::varg, D::ryth, D::tavi, D::prism, D::vendetta, D::marcella,
++		D::vesper_vale, D::willow, D_HOR };
++	const std::span<const D> order(order_all, std::size(order_all) - (SDK_HAS_HOR ? 0 : 1)); // Heart of Ruin only when the SDK has it
+ 	auto has = [](const std::vector<D>& v, D c) { return std::find(v.begin(), v.end(), c) != v.end(); };
+ 	if (mine.empty())
+ 	{
+diff -ruN god_v5/src/params.h god_v5_1/src/params.h
+--- god_v5/src/params.h	2026-10-20 12:52:10.090995474 +0000
++++ god_v5_1/src/params.h	2026-10-20 12:50:06.617884483 +0000
+@@ -1,10 +1,15 @@
+ // Every tunable weight and threshold lives here so variants can be generated for self-play tuning.
+ #pragma once
++#include "common.h"
++// Two rulesets (docs/sprint/RULES_DIFF.md): the engine we are compiled with tells which one runs. SDK_HAS_HOR (Heart of Ruin in the SDK)
++// = patch 3.0: GOD v5's values. Without it (the sprint handbook's rules: old camp values, no Golem, no Heart of Ruin) the seven values
++// marked SDK_HAS_HOR take legend_m15's: on cambc 2.2.5 they won 148 of 170 vs the five proxies on the official maps (legend_m15 149,
++// GOD v5's values 127; gold_value 0.33 and altar_no_camp 2 cost most: corners, lanes, pilgrimage), 18/34 head-to-head vs legend_m15.
+ 
+ struct Params
+ {
+ 	// Task valuation
+-	float gold_value = 0.33f;		 // gem-equivalent value of one gold (patch 3.0: a wolf pays 4 gems + 40 gold, an elk 15 + 90: 0.22 -> 0.33 won 158/170 vs
++	float gold_value = SDK_HAS_HOR ? 0.33f : 0.22f;		 // gem-equivalent value of one gold (patch 3.0: a wolf pays 4 gems + 40 gold, an elk 15 + 90: 0.22 -> 0.33 won 158/170 vs
+ 									 // the 5 proxies (0.22: 145), h2h 20/34 and on the patch-style maps 21/34 vs 0.22; 0.44-0.66 level vs the proxies, worse vs legend_m15)
+ 	float deny_bonus = 0.043f;		 // extra value for camps on the enemy half (they lose what we take) (ES: 0.55 -> 0.043)
+ 	float enemy_half_penalty = 10.f; // rounds-equivalent risk cost for enemy-half camps
+@@ -202,7 +207,7 @@
+ 							   // enemy is within 7 and a healthy ally within 6 of us has an enemy within 5 (the user: fight while still able;
+ 							   // ladder contest r26-31: our full-health Ren completed a recall as the team fight started, the other 5 lost it)
+ 	float recall_join_hp = 0.7f;
+-	float burst_retreat = 1.2f;  // > 0: safety() also retreats when our health is below this x the burst (best ready spell + one hit) of the
++	float burst_retreat = SDK_HAS_HOR ? 1.2f : 0.f;  // > 0: safety() also retreats when our health is below this x the burst (best ready spell + one hit) of the
+ 							   // visible enemies that can step into reach (spell reach + 2): 41% of our ladder deaths (Oct 19) came from >= 60%
+ 							   // health within 3 rounds, Cassi 31% health (220/700) stayed out next to casters and died to one area cast
+ 	int ci_first = 0;		   // 1: the parameter draft picks Cassi & Issac first when the planned team has them (same team, lower body
+@@ -212,17 +217,17 @@
+ 	float rally_hp = 0.6f;	   // ... with at least this health fraction
+ 	int pd_hor3 = 1;			   // patch 3.0: Heart of Ruin instead of Cassi & Issac at team size 3 (draft.cpp pd_score)
+ 	// Session 14 (GOD v3, the Nyx games of Oct 20). All 0 = GOD v2's games.
+-	int altar_no_camp = 2;	   // 1: altar approach tiles never include a camp's spawn tile (nx50x41: the only neighbour of the one altar is a monolith
++	int altar_no_camp = SDK_HAS_HOR ? 2 : 0;	   // 1: altar approach tiles never include a camp's spawn tile (nx50x41: the only neighbour of the one altar is a monolith
+ 							   // 2: a camp tile is an approach tile only while that camp is dead (a dead camp's tile is standable and a body on it delays the
+ 							   //    respawn): the altar opens when the camp dies, the group that blocks it is the team's unlock target (its gems count even
+ 							   //    in the no-altar gold mode and the team plan may take it; nx50x41: 2 monoliths, 40,000 health, 400 gems)
+ 							   // tile; six bodies stood next to the sleeping monolith for 1,000+ rounds trying to step onto it); an altar with no
+ 							   // approach tile left is unusable, and with no usable altar reachable from spawn the map has no banking (World::no_altar)
+-	int no_altar_gold = 1;	   // 1: on a map with no usable altar the gems are worth nothing: groups score by gold only (full gold_value, no
++	int no_altar_gold = SDK_HAS_HOR ? 1 : 0;	   // 1: on a map with no usable altar the gems are worth nothing: groups score by gold only (full gold_value, no
+ 							   // end-of-game decay), no tribute trips, the bag never makes a body cautious (the tiebreak at r2000: gold earned, then kills)
+-	int dash_gain1 = 1;		   // 1: at a hole crossing where every improving walking step is a hole, a ready dash that gains one field step is taken
++	int dash_gain1 = SDK_HAS_HOR ? 1 : 0;		   // 1: at a hole crossing where every improving walking step is a hole, a ready dash that gains one field step is taken
+ 							   // (nx61x71: two crossing holes chained diagonally; the field's path went hole -> hole and the body waited forever)
+-	int stall_guard = 10;	   // > 0: a walking task (farm, capture, tribute, home, flee) that stays inside a 3x3 box this many rounds without acting
++	int stall_guard = SDK_HAS_HOR ? 10 : 0;	   // > 0: a walking task (farm, capture, tribute, home, flee) that stays inside a 3x3 box this many rounds without acting
+ 							   // drops its target; a dash kit also routes without hole crossings for stall_dash_off rounds (fields rebuilt)
+ 	int stall_dash_off = 150;
+ 	int mono_team = 0;		   // 1: a lone monolith group (one camp: 20,000 health, 200 strength, range 5 since patch 3.0; 200 gems + 300 gold a kill) is a
+@@ -233,7 +238,7 @@
+ 	int elk_exposure = 0;	   // 1: the farm model's ranged exposure (share of the time a lone ranged body is in reach of the camps it is not hitting)
+ 							   // is 1 for groups with a camp whose range reaches past our attack range (patch 3.0: elk / golem 4, monolith 5; a
+ 							   // body at range 3 stands inside their reach the whole time), ranged_exposure for the others
+-	int pd_obj_heavy = 1;	   // 1: the draft's objective map (Prism first, the caster ring) also needs the lone gem group to be heavy: total camp health
++	int pd_obj_heavy = SDK_HAS_HOR ? 1 : 0;	   // 1: the draft's objective map (Prism first, the caster ring) also needs the lone gem group to be heavy: total camp health
+ 							   // >= obj_min_hp with >= obj_min_attackers camps that fight back (nx50x50: one elk + gem cluster group and 27 gold
+ 							   // clusters per side took the caster draft: 72-1008). Same test as World::detect_objective
+ 

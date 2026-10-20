@@ -24,6 +24,18 @@ int main()
 				std::printf("FUEL low r=%u left=%llu\n", bc::round_number(), static_cast<unsigned long long>(left));
 		});
 #endif
+#ifdef SM_TRACE
+		// tools/actiondiff.py: the 8 shared bytes after every game turn (debug_block pauses fuel: the trace changes nothing).
+		debug_block({
+			if (!bc::is_draft())
+			{
+				std::printf("SM r=%u", bc::round_number());
+				for (std::size_t i = 0; i < 8; ++i)
+					std::printf(" %02x", static_cast<unsigned>(bc::shared_memory[i]));
+				std::printf("\n");
+			}
+		});
+#endif
 		bc::end_turn();
 	}
 }

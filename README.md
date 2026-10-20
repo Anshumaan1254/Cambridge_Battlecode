@@ -13,7 +13,21 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Current build: **GOD v4** (`submissions/god.zip`, session 14, Oct 20): GOD v3 + the camp-blocked altar unlock
+## Current build: **GOD v5** (`submissions/god.zip`, session 14, Oct 20): GOD v4 + the burst retreat
+
+Against Nyx (20 ladder games after patch 3.0) 51% of our deaths were bursts from 60%+ health, 49% by ranged champions stacking Power
+emblems in their damage stat: one Stellar cast plus a hit took half a body's health. GOD v5 retreats one cast earlier: `safety()` leaves when
+our health is below 1.2 x the burst an enemy in reach can land this turn (its best ready spell plus one hit), the damage read from the enemy's
+visible stats each turn (nothing is hardcoded per opponent). Everything else as GOD v4.
+
+| Measure (cambc 3.0.1, the 20 maps Nyx played, both sides) | GOD v5 | GOD v4 | GOD v3 | GOD v2 |
+|---|---|---|---|---|
+| head-to-head vs GOD v2 | **27/40** (deaths 654-727) | 25/40 | 25/40 | - |
+| vs `legend_m15` | 29/40 | 30/40 | 27/40 | 29/40 |
+| vs the proxies `_mite` / `_ifish` / `_px9` | **38 / 33 / 32** | 35 / 31 / 30 | 35 / 31 / 30 | 34 / 31 / 30 |
+| unopposed pace (rounds to 1,000) | 1039.6 | 1034.4 | 1108.9 | 1115.8 |
+
+## Previous build: **GOD v4** (session 14, Oct 20): GOD v3 + the camp-blocked altar unlock
 
 On the new 50x41 map the only altar's only approach tile is a monolith's spawn tile. GOD v3 plays that map for gold (no banking); GOD v4
 knows the altar opens when that camp is dead: the two-monolith group (40,000 health, 400 gems) becomes a team target once the living team

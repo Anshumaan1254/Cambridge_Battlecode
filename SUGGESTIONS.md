@@ -22,6 +22,9 @@ Pool: the 20 maps Nyx played (`maps/nyx_new` + `maps/comp30`), both sides = 40 g
 | Our survival emblems, then Power dmg for ever instead of Bruiser cycles (`build_style` 14) | late game our bodies carried 7,000 health and 500 damage; Nyx converts late gold into damage | `_g5b14` | 18 | level / worse |
 | Recall earlier (`home_hp` 0.6, `cap_recall_hp` 0.7) | Nyx starts its recalls at 0.70 health (median), we at 0.42; fewer deaths at low health, more shopping | `_g5r` | **15** | worse: more trips, fewer camps |
 | Cassi & Issac instead of Heart of Ruin at team size 3 (`pd_hor3` 0) | Nyx's Ren, Stellar, C&I beat our Ren, Stellar, HoR 3 of 4 on the ladder | `_g5d1` | see AGENTS §S14.8 | non-transitive so far: the local proxies and `_g4` prefer HoR |
+| A lone monolith as a team target on any map (`mono_team` 1: gathered outside range 5, cleared with the whole team, 200 gems + 300 gold a kill) | 7 of the 20 Nyx maps have one; Nyx took contest_v3's twice while we never touched it | `_g5mo` | 24/40 vs `_g4`, 28/40 vs `_m15` | level: the team walk costs more farming than the monolith pays on the maps that have one; off |
+| A round cost on midline groups in the opening (`mid_risk` 15 / 30 until r200, fading over 50 rounds: groups as far from us as from them are where Nyx's four bodies met our three at r26 on fragment_v3) | fewer early fights on contested groups | `_g5mr`, `_g5mr30` (on top of `burst_retreat` 1.2) | 22 / 24 of 40 vs `_g4` (`_g5br` alone 27) | worse: the midline groups are also the richest, giving them up costs more than the fights; off |
+| Farming commitment variants on v4 (`commit_hit` 3, `max_trips` 8, `join_reach` 2.0) | Nyx's first hit to kill on elk groups 84-116 rounds vs our 167-211 | `_g5ch3`, `_g5mt8`, `_g5jr2` | 22, 25 (pace 1074), 22 of 40 | no gain; the commitment gap is damage (Power), not persistence |
 
 ## Session 13 (19 Oct, evening): the user's list, measured against `legend_m14_commit` (`_ch2`)
 

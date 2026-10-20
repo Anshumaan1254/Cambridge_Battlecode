@@ -1,6 +1,6 @@
 diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
 --- bots/_g4/src/brain.cpp	2026-10-20 10:13:52.705410239 +0000
-+++ bots/_x_g5/src/brain.cpp	2026-10-20 10:56:11.371780305 +0000
++++ bots/_x_g5/src/brain.cpp	2026-10-20 11:02:10.717363117 +0000
 @@ -96,6 +96,97 @@
  		rep(v, power, 300);
  		return v;
@@ -148,15 +148,18 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	blacklist[static_cast<std::size_t>(task_group)] = round + P.unstick_blacklist;
  	task_group = -1;
  	tp_hop = -1;
-@@ -1062,6 +1172,8 @@
+@@ -1062,8 +1172,10 @@
  	{
  		nav().ensure_altar(static_cast<int>(i));
  		int d = nav().altar_dist(static_cast<int>(i), pos);
 +		if (P.altar_no_camp >= 2 && !W.altar_open(static_cast<int>(i)))
 +			continue; // its approach tile is a living camp's spawn tile
  		if (W.altar_locked_by_enemy(static_cast<int>(i)))
- 			d += 6; // three hits to clear it
+-			d += 6; // three hits to clear it
++			d += P.lock_hits_sdk ? 2 * static_cast<int>(bc::constants::altar_lock_hits) : 6; // hits to clear it (patch 3.0: 5)
  		if (altar_unsafe(static_cast<int>(i)))
+ 			d += P.unsafe_altar_penalty; // contested and enemies seen there: our carriers die on the way
+ 		if (d < dist)
 @@ -2052,7 +2164,7 @@
  	// P.pair_low_hp: Cassi & Issac leave a fight they can walk away from earlier (ladder: 64% of our 59 pair deaths were
  	// triggered by the partner below 25% health, the other partner healthy (73% above 75%) and 7+ tiles away).
@@ -224,7 +227,21 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	if (!g.ours)
  	{
  		const float risk = sc_risk;
-@@ -4923,7 +5041,9 @@
+@@ -4082,6 +4200,13 @@
+ 	}
+ 	if (round - g.enemy_round < 12)
+ 		time += 12.f;
++	if (P.mid_risk > 0.f && round < P.mid_risk_until && g.d_ally < BIG && g.d_enemy < BIG && g.d_ally + g.d_enemy > 0)
++	{
++		// Opening: the groups both teams reach at the same time (the midline) are where the first team fight happens.
++		const float mid = 1.f - static_cast<float>(std::abs(g.d_ally - g.d_enemy)) / static_cast<float>(g.d_ally + g.d_enemy);
++		const float fade = std::min(1.f, static_cast<float>(P.mid_risk_until - round) / static_cast<float>(std::max(1, P.mid_risk_fade)));
++		time += P.mid_risk * mid * mid * fade;
++	}
+ 	if (sc_alert && alert_zone.is_set(g.center))
+ 		time += 25.f;
+ 	// Learned pain: regions where we lost champions recently cost extra rounds.
+@@ -4923,7 +5048,9 @@
  bool Brain::farm_group(Group& g)
  {
  	auto& W = world();
@@ -235,7 +252,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	const bool obj_first = obj && P.obj_attackers_first;
  	if (contest_tiles(g))
  		return true;
-@@ -4960,7 +5080,7 @@
+@@ -4960,7 +5087,7 @@
  				debug_block({ std::printf("GW r=%d %d near=%d need=%d since=%d awake=%d\n", round, static_cast<int>(type), near, need, obj_gather_since, (int)g.awake); });
  #endif
  				task = T_WAIT;
@@ -363,7 +380,7 @@ diff -ruN bots/_g4/src/nav.h bots/_x_g5/src/nav.h
  	bool ensure_group(int id, long long fuel_floor = 45000);
 diff -ruN bots/_g4/src/params.h bots/_x_g5/src/params.h
 --- bots/_g4/src/params.h	2026-10-20 10:13:52.709297892 +0000
-+++ bots/_x_g5/src/params.h	2026-10-20 10:56:11.367801267 +0000
++++ bots/_x_g5/src/params.h	2026-10-20 11:02:10.716249627 +0000
 @@ -176,6 +176,8 @@
  							   //     9 = Mite (Jungle, Durability in the damage stat, Bruiser health, Power)
  							   // 2 = value-model builds (tools/analysis/item_value.py): Bruiser over Power, early Treasure
@@ -373,7 +390,7 @@ diff -ruN bots/_g4/src/params.h bots/_x_g5/src/params.h
  							   // 11 = Intercontinental Fish (ladder #1, 45 games of Oct 19): carries open with Power in the damage stat,
  							   //     tanks with Bruiser + Durability health, Home health second on the carries, then Power forever
  	// Home emblem (recall takes 3 turn ends instead of 5). IC buys it second on the bodies whose first emblem is a damage
-@@ -209,6 +211,32 @@
+@@ -209,6 +211,39 @@
  							   // centre triple 11-13 tiles from the team fight, 4 of ours lost to 5 of theirs; "help that does not come")
  	float rally_hp = 0.6f;	   // ... with at least this health fraction
  	int pd_hor3 = 1;			   // patch 3.0: Heart of Ruin instead of Cassi & Issac at team size 3 (draft.cpp pd_score)
@@ -391,6 +408,13 @@ diff -ruN bots/_g4/src/params.h bots/_x_g5/src/params.h
 +	int stall_guard = 0;	   // > 0: a walking task (farm, capture, tribute, home, flee) that stays inside a 3x3 box this many rounds without acting
 +							   // drops its target; a dash kit also routes without hole crossings for stall_dash_off rounds (fields rebuilt)
 +	int stall_dash_off = 150;
++	float mid_risk = 0.f;	   // > 0: before mid_risk_until, a group near the midline costs this many rounds x (1 - |d_ally - d_enemy| / (d_ally + d_enemy))^2:
++							   // both teams reach the centre groups at the same time with full teams (fragment_v3 vs Nyx: our three bodies opened on the centre
++							   // elk + wolf group at r10, met their four bodies there at r26 and were all below 30% health by r58 with no capture; Nyx took a
++							   // side wolf first). The term fades out linearly over the last mid_risk_fade rounds before mid_risk_until
++	int mid_risk_until = 200;
++	int mid_risk_fade = 50;
++	int lock_hits_sdk = 0;	   // 1: an enemy-locked altar costs 2 x constants::altar_lock_hits extra steps (patch 3.0: 5 hits, was 3; the literal said 6)
 +	int mono_team = 0;		   // 1: a lone monolith group (one camp: 20,000 health, 200 strength, range 5 since patch 3.0; 200 gems + 300 gold a kill) is a
 +							   // team target on any map, like an objective group: scored with the whole living team's damage when obj_team_ready says the
 +							   // team clears it within obj_clear_max absorbing at most obj_absorb of its health pool, gathered outside its reach first,

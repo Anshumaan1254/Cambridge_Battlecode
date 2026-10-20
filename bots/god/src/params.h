@@ -202,7 +202,7 @@ struct Params
 							   // enemy is within 7 and a healthy ally within 6 of us has an enemy within 5 (the user: fight while still able;
 							   // ladder contest r26-31: our full-health Ren completed a recall as the team fight started, the other 5 lost it)
 	float recall_join_hp = 0.7f;
-	float burst_retreat = 0.f;  // > 0: safety() also retreats when our health is below this x the burst (best ready spell + one hit) of the
+	float burst_retreat = 1.2f;  // > 0: safety() also retreats when our health is below this x the burst (best ready spell + one hit) of the
 							   // visible enemies that can step into reach (spell reach + 2): 41% of our ladder deaths (Oct 19) came from >= 60%
 							   // health within 3 rounds, Cassi 31% health (220/700) stayed out next to casters and died to one area cast
 	int ci_first = 0;		   // 1: the parameter draft picks Cassi & Issac first when the planned team has them (same team, lower body
@@ -225,6 +225,11 @@ struct Params
 	int stall_guard = 10;	   // > 0: a walking task (farm, capture, tribute, home, flee) that stays inside a 3x3 box this many rounds without acting
 							   // drops its target; a dash kit also routes without hole crossings for stall_dash_off rounds (fields rebuilt)
 	int stall_dash_off = 150;
+	int mono_team = 0;		   // 1: a lone monolith group (one camp: 20,000 health, 200 strength, range 5 since patch 3.0; 200 gems + 300 gold a kill) is a
+							   // team target on any map, like an objective group: scored with the whole living team's damage when obj_team_ready says the
+							   // team clears it within obj_clear_max absorbing at most obj_absorb of its health pool, gathered outside its reach first,
+							   // the nearest body alone counts its hits (obj_shield). The solo plan never clears it; 7 of the 20 Nyx maps have one and Nyx
+							   // took contest_v3's twice (400 gems) while we never touched it
 	int elk_exposure = 0;	   // 1: the farm model's ranged exposure (share of the time a lone ranged body is in reach of the camps it is not hitting)
 							   // is 1 for groups with a camp whose range reaches past our attack range (patch 3.0: elk / golem 4, monolith 5; a
 							   // body at range 3 stands inside their reach the whole time), ranged_exposure for the others

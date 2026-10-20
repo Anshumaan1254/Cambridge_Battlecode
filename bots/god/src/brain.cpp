@@ -2978,7 +2978,8 @@ bool Brain::safety()
 		{
 			// Only while no enemy is near: with enemies around the old line stays (gold_mono_48 vs _k1: the two
 			// monoliths are 9 tiles apart; 20 of our 33 deaths were next to ours and they took 2 of our 3 kills).
-			const bool obj = P.obj_shield && g.objective && W.obj_mode && enemy_near_d > P.obj_shield_enemy_d;
+			const bool team_g = (W.obj_mode && g.objective) || (task_team && g.id == task_group && ((P.altar_no_camp >= 2 && g.unlock) || (P.mono_team && g.monolith && g.camps.size() == 1)));
+			const bool obj = P.obj_shield && team_g && enemy_near_d > P.obj_shield_enemy_d;
 			for (std::size_t i = 0; i < g.camps.size(); ++i)
 			{
 				const int d = cheb(g.camps[i].pos, pos);
@@ -4121,7 +4122,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			share = P.o2_ring_share;
 		}
 		else if (!solo_ok && ((W.obj_mode && g.objective && P.obj_team && g.attackers >= P.obj_team_attackers && (sc_obj_focus < 0 || sc_obj_focus == g.id)) ||
-							  (P.altar_no_camp >= 2 && g.unlock)) &&
+							  (P.altar_no_camp >= 2 && g.unlock) || (P.mono_team && g.monolith && g.camps.size() == 1 && (!W.obj_mode || g.objective))) &&
 			obj_team_ready(g, hp_left, team_kill))
 		{
 			// Objective map: too heavy for us and the bodies already on it, but not for the whole team.
@@ -5040,7 +5041,9 @@ bool Brain::contest_tiles(Group& g)
 bool Brain::farm_group(Group& g)
 {
 	auto& W = world();
-	const bool obj = W.obj_mode && g.objective;
+	// Team targets outside objective mode (session 14): the camp group that unlocks an altar and lone monoliths (mono_team) use the same
+	// gather / attackers-first / shield rules while the team plan is on.
+	const bool obj = (W.obj_mode && g.objective) || (task_team && ((P.altar_no_camp >= 2 && g.unlock) || (P.mono_team && g.monolith && g.camps.size() == 1)));
 	const bool obj_first = obj && P.obj_attackers_first;
 	if (contest_tiles(g))
 		return true;
@@ -5077,7 +5080,7 @@ bool Brain::farm_group(Group& g)
 				debug_block({ std::printf("GW r=%d %d near=%d need=%d since=%d awake=%d\n", round, static_cast<int>(type), near, need, obj_gather_since, (int)g.awake); });
 #endif
 				task = T_WAIT;
-				go_group(g, 4, true);
+				go_group(g, std::max(4, g.max_range + 1), true); // outside the group's real reach (patch 3.0: elk 4, monolith 5)
 				return true;
 			}
 		}

@@ -211,6 +211,15 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   Also measured before the handoff: `_g4fm` (GOD v2 + `fight_margin` 1.15) h2h vs GOD v2 10/34 on the old official files: rejected.
   Untested queue from session 13 (cheap to resume, all on `bots/god`): `ml2_leave`/`ml2_flee` 0.5 and 0.3, `tribute_min` 30 (games are
   longer and bags smaller after the patch), draft without `pd_hor3` (`pd_hor3=0`).
+- **SHIPPED GOD v5 (container clock 11:10 UTC; the S14.8 labels above ran ahead of the container clock, from here on they are its UTC)** =
+  `_g5br` = v4 + `burst_retreat` 1.2 (`submissions/god.zip` sha256 f6d456bf…, history `god_v5_20261020.zip`, source hash 8cb539b26681, `bots/god/src` = it,
+  wasm byte-identical; BUILDS row, README): h2h vs `_g4` **27/40** (deaths 654-727), vs `_m15` 29/40, `_mite` 38, `_ifish` 33, `_px9` 32, pace 1039.6, 0 faults.
+  Thresholds: `burst_retreat` 1.0 (`_g5br10`) 26/40; 1.5 and + `lock_hits_sdk` running (q6). `mid_risk` 15 / 30 (`_g5mr`, `_g5mr30`: a round cost on
+  midline groups before r200 on top of `_g5br`) 22 / 24: rejected (SUGGESTIONS). The q6 / ES queue scripts had waited on PID 1 (a wrong PID
+  substitution): restarted; ES (`tune_out/es_nyx`, 8 gens) is chained after q6. **New input (11:08 UTC)**: the user's `our_losses.zip` = 5 match groups,
+  25 games of GOD v3 vs top teams, lost badly, some to teams the earlier bot beat; the user: analyse, fix, make the draft dynamic (map, resources,
+  strategy, enemy picks), nothing hardcoded. Replays `experiments/losses_oct20/raw/` (we are side A), decode `experiments/losses_oct20/an/`.
+
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first
 

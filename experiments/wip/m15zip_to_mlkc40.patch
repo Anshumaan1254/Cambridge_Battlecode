@@ -1,0 +1,14 @@
+diff -ruN a/src/params.h b/src/params.h
+--- a/src/params.h	2026-10-20 10:00:18.644991335 +0000
++++ b/src/params.h	2026-10-19 23:48:38.945511935 +0000
+@@ -530,10 +530,4 @@
+ 	int ml2_gb = 0;				// 1: P(die8) from the boosted trees (held-out AUC on our bodies 0.829 vs the logistic's 0.806)
+ };
+ 
+-#ifdef LEGEND_RUNTIME_PARAMS
+-// Training builds only (tools/rl/a100/es_a100.py): the values are defined in a generated params_rt.cpp, so a new
+-// candidate recompiles one file instead of the whole bot. Submitted builds use the constexpr defaults above.
+-extern const Params P;
+-#else
+ inline constexpr Params P{};
+-#endif

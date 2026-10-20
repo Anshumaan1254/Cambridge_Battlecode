@@ -6,7 +6,7 @@
 set -e
 cd "$(dirname "$0")/.."
 if [ "$1" != "--bots" ]; then
-	pip install -q cambc==2.2.5
+	pip install -q cambc==3.0.1   # patch 3.0 (Oct 20); the 2.2.5 ledger rows stay in experiments/results/ledger/
 	cambc init --yes . > /dev/null 2>&1 || true   # map refresh fails in the cloud (platform blocked): fine
 	C="curl -sSL --cacert /root/.ccr/ca-bundle.crt"
 	mkdir -p /root/.cache/cambc && pushd /root/.cache/cambc > /dev/null
@@ -98,10 +98,15 @@ mkdir -p bots/_ch2 && rm -rf bots/_ch2/src && (cd bots/_ch2 && python3 -c "impor
 SRC=bots/_pg3 tools/variant.sh _x_ic > /dev/null && (cd bots/_x_ic && patch -s -p1 --no-backup-if-mismatch < ../../experiments/wip/x_ic.patch)
 SRC=bots/_m10 tools/variant.sh _x_sn > /dev/null && (cd bots/_x_sn && patch -s -p1 --no-backup-if-mismatch < ../../experiments/wip/x_sn.patch)
 SRC=bots/_x_sn tools/variant.sh _snk mapdraft=4 build_style=9 > /dev/null
+# Session 13 (patch 3.0): _mlkc40 = legend_m15 exactly (the zip minus the inert LEGEND_RUNTIME_PARAMS block, hash 8eb9563d0d5b);
+# god / _g4 = GOD v2 (submissions/god.zip = history/god_v2_20261020.zip, hash 19a1785457d3). god is the working copy.
+mkdir -p bots/_mlkc40 && rm -rf bots/_mlkc40/src && (cd bots/_mlkc40 && python3 -c "import zipfile;zipfile.ZipFile('../../submissions/history/legend_m15_20261020.zip').extractall('.')" && patch -s -p1 --no-backup-if-mismatch < ../../experiments/wip/m15zip_to_mlkc40.patch) && cp bots/legend/.gitignore bots/_mlkc40/
+for g in _g4 god; do [ "$g" = god ] && [ -d bots/god/src ] && continue; mkdir -p bots/$g && rm -rf bots/$g/src && (cd bots/$g && python3 -c "import zipfile;zipfile.ZipFile('../../submissions/history/god_v2_20261020.zip').extractall('.')") && cp bots/legend/.gitignore bots/$g/; done
+for b in _mlkc40 _g4 god; do cambc build $b > /dev/null && echo "built $b"; done
 for b in _pg3 _ch2 _snk _pd2 _pd _fc _fw _m11 _rm _ST _m2 _m3 _x_gp _m4 _m4x _m5a _px9 _xp4 _m7 _fA _fB _fC _mite _ifish _m8 _cS3 _m9 _m10 legend idle; do cambc build $b > /dev/null && echo "built $b"; done
 python3 - <<'EOF'
 import sys; sys.path.insert(0, 'tools'); import ledger
-want = {'_rm': '339a961d3427', '_ST': 'ca21cbfe785b', '_eA': '0ee193334b60', '_eB': '654605b27deb', '_eC': '116ccc8b53b1',
+want = {'_mlkc40': '8eb9563d0d5b', '_g4': '19a1785457d3', '_rm': '339a961d3427', '_ST': 'ca21cbfe785b', '_eA': '0ee193334b60', '_eB': '654605b27deb', '_eC': '116ccc8b53b1',
 		'_m2': '1684aa2a482c', '_m3': '86c9e8f3de35', '_x_gp': '92e199947185', '_m4': '0dc2a2aac28a',
 		'_m5a': '5620bb02867a', '_xp4': '6a1a52e4ddb8', '_m7': '61dd9019869d', '_mite': '688b37be81e3', '_ifish': '6fde429be694', '_m8': '540e17bfe5a4', '_cS3': '540e17bfe5a4', '_m9': '0df32fa5ee2d', '_m10': 'a0e6030bf0f4', '_m11': '0dd8010eaf12', '_fw': '104743e4f1d5', '_fc': '531e7331a283', '_pd': '8ede6d7d3aa1', '_pd2': 'c8272a7e1846', '_pg3': 'cdc6dc9027f3', '_ch2': '5f24a1979ddc', '_snk': '70c95c1095f6', '_fA': '25fe5950b034', '_fB': 'f8e472c342f3', '_fC': 'ef5391dcc92b'}
 for b, h in want.items():

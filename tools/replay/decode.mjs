@@ -114,14 +114,17 @@ export function unwrapReplay(buf, member = 'replay.repl26a') {
 }
 
 export async function decode(buf, opts = {}) {
+  // An empty file (a stray zip entry, session 13) used to surface as the oldest engine's "engine code 10".
+  if (!buf.length) throw new Error('empty replay file');
   buf = unwrapReplay(buf);
   const wasms = findEngineWasms();
   if (!wasms.length) throw new Error('engine wasm not found (run `cambc view` once, or set CAMBC_ENGINE_WASM)');
-  let lastErr;
+  // Newest engine first; report the newest engine's error, since the older engines' errors only say the format is unknown.
+  let firstErr;
   for (const w of wasms) {
-    try { return await decodeWith(w, buf, opts); } catch (err) { lastErr = err; }
+    try { return await decodeWith(w, buf, opts); } catch (err) { firstErr ??= new Error(`${path.basename(w)}: ${err.message}`); }
   }
-  throw lastErr;
+  throw firstErr;
 }
 
 async function decodeWith(wasmPath, buf, opts) {

@@ -139,7 +139,41 @@ A Nyx-like sparring partner is the first thing to build (S14.7 step 2).
 6. Ship GOD v3 when it beats GOD v2 head-to-head on `maps/nyx_new` + `maps/comp30` and the proxies (and the new Nyx proxy), pace not worse;
    zip to `submissions/god.zip`, history, BUILDS row; push first, then continue.
 
+### S14.9 Session 14 findings (10:10-11:30 UTC, this container): what Nyx does better, measured on the 20 games
+
+Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has the patch-3.0 champion stats + Heart of Ruin), output in
+`experiments/nyx_oct20/analysis/` (report.md, CSVs); `tools/strategy_v2/stuck_eps.py DMG_DIR [team]` (stall episodes), `killers.py DMG_DIR`
+(bodies and rounds per camp-group kill, both teams); the top-level `experiments/nyx_oct20/index.json` maps every game to its map file name.
+- **Economy x2.3**: camp gems 10,740 vs 24,203; gold earned 86,615 vs 237,299; captures 492 vs 1,160; camp time 15.5% vs 20.5% of alive
+  rounds; camp damage per camp round 89 vs 144; idle 8.3% vs 3.3% of body-rounds. Camp-group kills (first hit to kill, `killers.py`): 2 gold
+  clusters 149 of ours (13.9 rounds) vs 538 (8.1); 4 gold 25 vs 101; 1gold+1wolf 61 (211 rounds) vs 163 (84); 1elk+1gem 23 (167) vs 66 (116);
+  2elk+2gold 8 vs 42 (72). Same bodies per kill (1.2-3.5): the gap is damage and commitment, not team size.
+- **Builds**: Nyx buys **Treasure first on every body** (Stellar / Cassi TfE at r46-180, Ren ThE, Issac TsE, Varg ThE), then Jungle in the
+  damage stat (casters) or Bruiser health (melee), then Durability, then **Power in the damage stat for the rest of the game** (1,097 Power-dmg
+  emblems in 20 games; their Stellar ends with 20-27 Power emblems = 1,500+ focus, 3,000-damage casts). Damage points per 1,000 gold 33.6 vs
+  21.6; their first emblems come 100-300 rounds before ours (Cassi r140 vs r641, Stellar r138 vs r435).
+- **Recalls**: 1,752 vs 1,136, started at 0.70 health (ours 0.42), 788 overlapping a capture (ours 341).
+- **Deaths**: 333 vs 271; 51% of ours are bursts from >= 60% health; their Stellar killed 79 of our bodies, Cassi 49 (ranged 49% of our deaths).
+- **Three hard stalls decided three games** (`stalls_us.txt`; both reproduce locally with `_g4`):
+  1. `nx50x41` (one altar inside a wall box; its only non-hole neighbour is a monolith's spawn tile): `altar_approach` includes camp tiles, so all
+     six bodies stood next to the sleeping monolith for 1,000+ rounds in a sticky tribute trip (the step onto the camp tile is blocked every
+     turn): 0-0 at r2000, lost on gold 9,262 vs 56,770. `_m15` and `_g4` stall the same way locally (both sides 0-0).
+  2. `nx61x71`: Ren stood at (41,25)/(42,24) for 1,197 rounds with a bag in a tribute trip. Traced locally (LEGEND_TRACE build): the altar field
+     is built with `dash_walls` (1-wide hole crossings count as ground); here two crossing holes are chained diagonally, so the field's path
+     goes hole -> hole, the dash can only land one field step closer (`try_dash` needs 2) and every walking step that improves is a hole:
+     `step_field` waits for a dash that never comes (`dash_wait_max`), forever. Issac stalled on the same tile later.
+  3. `nx60x60` (878 holes): Ren and Issac oscillated between three tiles for ~400 rounds (same mechanism, in a maze).
+- Unopposed `_g4` pace on the 20 maps: mean 1,116 rounds; Nyx's contested finishes 757-1,534: our farming alone is not slower on most maps;
+  the losses are contact (bursts from range), the damage snowball (Power stacks) and the stalls.
+- Draft: `pd_hor3` loses (3 of 4 Heart-of-Ruin games lost; `_g4` also loses both nx31x31_c3 games to `_m15`'s C&I draft); the objective
+  draft fires on nx50x50 (one gem group + any multi-camp group) without a heavy group: Prism / Tavi there = 72-1008.
+
 ### S14.8 Checkpoints (newest last)
+- **11:30 UTC (session 14)**: container set up (3.0.1), the user's two Nyx zips decoded and analysed (S14.9), the handoff's data layout kept
+  (my duplicate map / replay names removed; `_g4` ledger rows renamed to `nx*` / `*_v3`), baselines: `_g4` vs `_m15` 29/40, vs the 5 proxies
+  164/200, vs idle 40/40 (`experiments/results/ledger_v3/_g4_vs_*`). Working copy `bots/_x_g5` = `bots/god`; next: switches for the altar /
+  no-altar mode, the dash-hole stall, `pd_hor3` 0, objective draft only for heavy groups, Nyx builds (`build_style` 12), gold value; A/B on the
+  20 maps (h2h vs `_g4`, then the proxies).
 - 10:40 UTC: handoff written. Nothing left running (the baseline of S14.6 finished; the checkpoint loop of session 13 stops with the container).
   Also measured before the handoff: `_g4fm` (GOD v2 + `fight_margin` 1.15) h2h vs GOD v2 10/34 on the old official files: rejected.
   Untested queue from session 13 (cheap to resume, all on `bots/god`): `ml2_leave`/`ml2_flee` 0.5 and 0.3, `tribute_min` 30 (games are

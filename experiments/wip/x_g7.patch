@@ -1,6 +1,6 @@
 diff -ruN bots/god/src/brain.cpp bots/_x_g7/src/brain.cpp
 --- bots/god/src/brain.cpp	2026-10-20 15:22:26.550137179 +0000
-+++ bots/_x_g7/src/brain.cpp	2026-10-20 15:42:22.247975444 +0000
++++ bots/_x_g7/src/brain.cpp	2026-10-20 15:49:45.309834843 +0000
 @@ -701,6 +701,8 @@
  				break;
  			}
@@ -289,6 +289,39 @@ diff -ruN bots/god/src/brain.cpp bots/_x_g7/src/brain.cpp
  	const int d_tile = d_override >= 0 ? d_override : nav().group_dist(g, pos);
  	if (d_tile >= BIG)
  		{ WHY(3); return -1; }
+@@ -5184,7 +5371,15 @@
+ 		return true;
+ 	if (P.mi_kite && task_kite && g.id == task_group && !obj && kite_group(g))
+ 		return true;
+-	if (obj && task_team && P.obj_gather > 1 && g.st == ST_ALIVE && !g.awake && g.hp_total / std::max(10.f, dps_on(g)) > P.obj_solo_rounds)
++	const auto& C = comms();
++	int g_claimers = 0; // gather_any: living allies (me included) that claim this group
++	if (P.gather_any > 0 && g.id == task_group)
++		for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 6; ++i)
++			if (W.allies[static_cast<std::size_t>(i)].alive && (i == W.my_index || C.claim[static_cast<std::size_t>(i)] == g.id))
++				++g_claimers;
++	const bool gather_obj = obj && task_team && P.obj_gather > 1;
++	const bool gather_grp = P.gather_any > 0 && !obj && g_claimers >= 2;
++	if ((gather_obj || gather_grp) && g.st == ST_ALIVE && !g.awake && g.hp_total / std::max(10.f, dps_on(g)) > P.obj_solo_rounds)
+ 	{
+ 		// Objective: bodies arriving one by one were worn down by the camps (6 elks hit for 360 a round) and
+ 		// left it half dead for the enemy (stampede vs _v6: 1,707 of 17,400 left for 130 rounds, then their
+@@ -5197,12 +5392,14 @@
+ 				continue;
+ 			++alive_n;
+ 			const vec2 ap = i == W.my_index ? pos : a.pos;
++			if (gather_grp && i != W.my_index && C.claim[static_cast<std::size_t>(i)] != g.id)
++				continue; // gather_any: only this group's claimers count (and are waited for)
+ 			if ((i == W.my_index || (a.visible && a.seen_round == round)) && nav().group_dist(g, ap) <= P.obj_gather_r)
+ 				++near;
+ 		}
+ 		if (obj_gather_group != g.id)
+ 			obj_gather_group = g.id, obj_gather_since = -1;
+-		const int need = std::min(P.obj_gather, alive_n);
++		const int need = gather_obj ? std::min(P.obj_gather, alive_n) : std::min(P.gather_any, g_claimers);
+ 		if (near < need)
+ 		{
+ 			if (nav().group_dist(g, pos) <= P.obj_gather_r && obj_gather_since < 0)
 diff -ruN bots/god/src/brain.h bots/_x_g7/src/brain.h
 --- bots/god/src/brain.h	2026-10-20 15:22:26.552410031 +0000
 +++ bots/_x_g7/src/brain.h	2026-10-20 15:42:22.217062399 +0000
@@ -306,7 +339,7 @@ diff -ruN bots/god/src/brain.h bots/_x_g7/src/brain.h
  	void note_dmg(int gid, float amount);
 diff -ruN bots/god/src/params.h bots/_x_g7/src/params.h
 --- bots/god/src/params.h	2026-10-20 15:22:26.554238084 +0000
-+++ bots/_x_g7/src/params.h	2026-10-20 15:43:13.160862766 +0000
++++ bots/_x_g7/src/params.h	2026-10-20 15:49:14.637127761 +0000
 @@ -210,6 +210,27 @@
  	float burst_retreat = SDK_HAS_HOR ? 1.2f : 0.f;  // > 0: safety() also retreats when our health is below this x the burst (best ready spell + one hit) of the
  							   // visible enemies that can step into reach (spell reach + 2): 41% of our ladder deaths (Oct 19) came from >= 60%
@@ -335,7 +368,7 @@ diff -ruN bots/god/src/params.h bots/_x_g7/src/params.h
  	int ci_first = 0;		   // 1: the parameter draft picks Cassi & Issac first when the planned team has them (same team, lower body
  							   // indices: they capture shared rewards and win claim ties; see draft.cpp param_pick)
  	int rally_r = 9;		   // respond_to_alert: answer an ally's rally from at most this far (ladder contest r25-40: our Ren farmed the
-@@ -280,6 +301,16 @@
+@@ -280,6 +301,19 @@
  	int build_tail = SDK_HAS_HOR ? 1 : 0;	   // build_style 2 lists end after 24-30 emblems; 1: then Power in the damage stat for ever (the five top teams of
  							   // Oct 20: 950 Power-dmg emblems in 25 games; our Ren sat on 612 gold unspent on average, 13,410 on the no-altar map),
  							   // 2: the Bruiser cycle for ever
@@ -347,6 +380,9 @@ diff -ruN bots/god/src/params.h bots/_x_g7/src/params.h
 +								   // group, a wolf pack); the first pick (Ren: dash kit, the spawn gold clusters) farms alone, as Nyx's does
 +	int open_follow_from = 1;
 +	float open_follow_hp = 2000.f;
++	int gather_any = 0;			   // > 0: the objective gather rule on every map: the first claimer at a heavy, sleeping group (alone it needs more than
++								   // obj_solo_rounds) holds one tile outside the group's engine range until min(gather_any, living claimers) claimers are within
++								   // obj_gather_r, at most obj_gather_max rounds (Nyx: 4 bodies hit an elk within 3 rounds of each other, 9 rounds per elk)
 +	int dash_box = 0;			   // > 0: on a hole map a dash kit's unstick box is this wide (Chebyshev) instead of 1: a mobility dash moves 2 tiles and
 +								   // reset the box every time (nx60x60: Ren dashed into a hole pocket and back out for 32 rounds, 20 of them standing)
  	int strike_dash_hold = 9;   // patch 3.0: a damaging dash (Heart of Ruin) is not used to walk while an enemy was seen within this many tiles

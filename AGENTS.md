@@ -344,6 +344,13 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   until the other claimers are within ~2 rounds, max ~8 rounds), and no one-by-one retreats while the stack holds (Nyx: 9 rounds per elk, nobody
   leaves, capture-recall after the group).
 
+- **17:10 UTC**: `gather_any` 2 (the objective gather rule on every heavy claimed group, `bots/_x_g7`, `experiments/wip/x_g7.patch`): **22/42 vs `_g4`**:
+  rejected. Trace: the stack forms but hits 52 per hit where Nyx's hits 83 (Cassi in our stack, Issac in theirs; our Issac farms a lone wolf for 24
+  rounds), so the elk still takes 14 rounds and the second elk 40. What would copy Nyx: a round-1 team assignment (the four strongest hitters on
+  the nearest elk group, the dash body on the spawn gold clusters) and no one-by-one retreats while the stack holds (SUGGESTIONS). Every switch
+  measured on top of v6 today lost head-to-head (camp range 23, follow 23, dash box 27, hidden camps 24, gather 22; control 30): **GOD v6 stays
+  shipped**; its weak cell is legend_m15 (25/42). `_g7ga3` still running (`$S/q21.sh`).
+
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first
 

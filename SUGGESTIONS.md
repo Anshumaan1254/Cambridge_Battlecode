@@ -162,6 +162,7 @@ camp deaths; it is carried into the GOD v7 candidate only if it holds on top of 
 | `_g7f150` | `open_follow_until` 150: every body from index 1 farms the lowest-index claimant's group when it holds >= 2000 camp health (Nyx's 4-stack on elk groups) | **23** | - | - | 7 deaths unopposed on nx60x60 alone, first capture r88, 30 banked by r200 (v6 38) |
 | `_g7db3` | `dash_box` 3: a dash kit's unstick box 7x7 on hole maps (the Ren hole-pocket stall) | 27 (13 games flipped either way) | running | - | 84 / 1050.7 (nx60x60 B 930 -> 866, nx61x71 A 1256 -> 1150, but ambush_v3 A 1195 -> 1312, nx51x40, nx100x100 B slower) |
 | `_g7h3` | `cd_hidden` 3 alone (camps hidden behind a wall / bush that hit us count as awake for 3 rounds) | 24 | running | - | - |
+| `_g7ga2` | `gather_any` 2: the objective gather rule on every map (the first claimer at a heavy sleeping group holds outside its range until 2 claimers are within 6, max 30 rounds) | **22** | - | - | 6 deaths unopposed on nx60x60, first capture r92, 45 banked by r200 |
 
 Why the blob opening did not reproduce Nyx's (trace `opening.py`, nx60x60 unopposed): the followers do pick the same elk group, but they still start
 hitting it 10-22 rounds apart (Issac r35, Ryth r39, Cassi r44, Stellar r45, Varg r57: different first targets before the leader's claim settles, the
@@ -169,3 +170,9 @@ claims seen a round late) and still leave one by one at their retreat lines (rec
 and the second elk is finished by two bodies. Nyx's four bodies leave spawn together, hit the elk within 3 rounds of each other and nobody retreats
 until the group is dead (then every body capture-recalls). The missing parts are the synchronized start (gather outside the elk's range until the
 stack is complete) and a shared "finish the group" commitment while the stack holds; the follow rule alone costs 7 of 42 games.
+
+Why gathering did not help either (trace, nx60x60 unopposed): the stack does form (Ryth r31, Stellar r32, Varg r34, Cassi r39 on elk50) but the elk still
+takes 14 rounds: 46 hits for 2,400 health = 52 per hit, while Nyx's four (Issac, Stellar, Ryth, Varg) needed 29 hits = 83 per hit at the same stage of
+the game. Our stack has Cassi (the weakest hitter) where theirs has Issac; our Issac farms gold clusters and a lone wolf (24 rounds) instead. The
+opening that copies Nyx is a team assignment at round 1 (the four strongest hitters on the nearest elk group, the dash body on the spawn gold
+clusters, the casters' spells on the elk), not a waiting rule; and the one-by-one retreats at the retreat line stretch the second elk to 40 rounds.

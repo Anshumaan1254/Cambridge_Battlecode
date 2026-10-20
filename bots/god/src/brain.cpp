@@ -65,7 +65,7 @@ std::vector<I> build_for(CT t, int bs)
 		// its no-contact farming maps (rows, expanse: 0 deaths either side) Monster in the damage stat, then Power (style 4).
 		const int om = official_map();
 		const int style = bs == 10 ? (om == OM_ROWS || om == OM_EXPANSE ? 4 : 3) : bs;
-		const bool focus = t == CT::ren || t == CT::heart_of_ruin || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
+		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
 		const I power = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
 		if (style == 4)
 			rep(v, focus ? I::monster_shard_of_focus : I::monster_shard_of_strength, 5);
@@ -73,7 +73,7 @@ std::vector<I> build_for(CT t, int bs)
 			switch (t)
 			{
 			case CT::ren:
-			case CT::heart_of_ruin: // patch 3.0: melee, focus-scaled dash stun and shield like Ren's spells (+15 focus, +100 health per shard)
+			case CT_HOR: // patch 3.0: melee, focus-scaled dash stun and shield like Ren's spells (+15 focus, +100 health per shard)
 			case CT::ryth:
 			case CT::marcella:
 				rep(v, I::bruiser_shard_of_health, 5);
@@ -102,7 +102,7 @@ std::vector<I> build_for(CT t, int bs)
 		// ThE, Issac TsE, Varg ThE), then Jungle in the damage stat (casters) or Bruiser health (melee), Durability, then Power in the damage
 		// stat for the rest of the game (1,097 Power-dmg emblems in 20 games: their Stellar ends with 20-27 of them). The patch made gold
 		// plentiful (gold clusters 120 HP for 20 gold, kills 100): damage snowballs into more gold.
-		const bool focus = t == CT::ren || t == CT::heart_of_ruin || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
+		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
 		const I pw = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
 		switch (t)
 		{
@@ -117,7 +117,7 @@ std::vector<I> build_for(CT t, int bs)
 			rep(v, I::bruiser_shard_of_health, 5);
 			break;
 		case CT::ren:
-		case CT::heart_of_ruin:
+		case CT_HOR:
 			rep(v, I::treasure_shard_of_health, 5);
 			rep(v, I::bruiser_shard_of_health, 5);
 			rep(v, I::durability_shard_of_health, 5);
@@ -147,14 +147,14 @@ std::vector<I> build_for(CT t, int bs)
 		// Session 14 hybrids. 13: Treasure first (gold snowball), then our survival emblems (Jungle health on Ren / Ryth, Monster dmg then
 		// Durability health on the carries, as build_style 2), then Power in the damage stat for ever (instead of Bruiser cycles: late
 		// game our bodies reached 7,000 health and 500 damage while Nyx's Stellar one-shot them). 14: the same without Treasure first.
-		const bool focus = t == CT::ren || t == CT::heart_of_ruin || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
+		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
 		const I pw = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
 		const I tr = focus ? I::treasure_shard_of_focus : I::treasure_shard_of_strength;
 		const I mo = focus ? I::monster_shard_of_focus : I::monster_shard_of_strength;
 		switch (t)
 		{
 		case CT::ren:
-		case CT::heart_of_ruin:
+		case CT_HOR:
 			if (bs == 13) rep(v, I::treasure_shard_of_health, 5);
 			rep(v, I::jungle_shard_of_health, 5);
 			if (bs == 14) rep(v, I::treasure_shard_of_focus, 5);
@@ -192,12 +192,12 @@ std::vector<I> build_for(CT t, int bs)
 		// Intercontinental Fish (ladder #1; emblem order of its bodies in 36 games of Oct 19, experiments/interwin_oct19):
 		// Stellar PfE > HhE > DhE (17 of 36), Ren BhE > DhE > PfE, Cassi PfE > DfE > BhE, Issac PsE > HhE > DhE, Ryth BhE > DhE > PsE,
 		// Varg PsE > HhE; first emblem near r83 (Stellar), r74 (Ren). Power in the damage stat for the rest of the game.
-		const bool focus = t == CT::ren || t == CT::heart_of_ruin || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
+		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
 		const I pw = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
 		switch (t)
 		{
 		case CT::ren:
-		case CT::heart_of_ruin: // patch 3.0: melee, focus-scaled dash stun and shield like Ren's spells (+15 focus, +100 health per shard)
+		case CT_HOR: // patch 3.0: melee, focus-scaled dash stun and shield like Ren's spells (+15 focus, +100 health per shard)
 		case CT::ryth:
 		case CT::marcella:
 			rep(v, I::bruiser_shard_of_health, 5);
@@ -227,7 +227,7 @@ std::vector<I> build_for(CT t, int bs)
 		const int om = official_map();
 		const bool str_maps = om == OM_PACKS || om == OM_ROWS || om == OM_RUSHBAIT || om == OM_SWIRL || om == OM_INTERLOCK
 			|| om == OM_COLLISION || om == OM_FRAGMENT || om == OM_EXPANSE;
-		bool focus = t == CT::heart_of_ruin || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
+		bool focus = t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
 		if (t == CT::ren || t == CT::ryth)
 			focus = !str_maps;
 		const I ju = focus ? I::jungle_shard_of_focus : I::jungle_shard_of_strength;
@@ -255,7 +255,7 @@ std::vector<I> build_for(CT t, int bs)
 		switch (t)
 		{
 		case CT::ren:
-		case CT::heart_of_ruin: // patch 3.0: melee, focus-scaled dash stun and shield like Ren's spells (+15 focus, +100 health per shard)
+		case CT_HOR: // patch 3.0: melee, focus-scaled dash stun and shield like Ren's spells (+15 focus, +100 health per shard)
 			if (P.rich_treasure_first)
 				rep(v, I::treasure_shard_of_focus, 5);
 			else
@@ -364,7 +364,7 @@ std::vector<I> build_for(CT t, int bs)
 			rep(v, I::power_shard_of_strength, 50);
 			break;
 		case CT::ren:
-		case CT::heart_of_ruin: // patch 3.0: melee, focus-scaled dash stun and shield like Ren's spells (+15 focus, +100 health per shard)
+		case CT_HOR: // patch 3.0: melee, focus-scaled dash stun and shield like Ren's spells (+15 focus, +100 health per shard)
 			// Retaliation scales with focus (0.2 x focus per hit taken): a health and focus tank.
 			rep(v, I::jungle_shard_of_health, 5);
 			rep(v, I::power_shard_of_focus, 5);
@@ -416,7 +416,7 @@ std::vector<I> build_for(CT t, int bs)
 	case CT::vendetta:
 	case CT::varg:
 	case CT::ren:
-	case CT::heart_of_ruin: // patch 3.0: melee, focus-scaled dash stun and shield like Ren's spells (+15 focus, +100 health per shard)
+	case CT_HOR: // patch 3.0: melee, focus-scaled dash stun and shield like Ren's spells (+15 focus, +100 health per shard)
 	case CT::issac:
 		rep(v, I::jungle_shard_of_strength, 5);
 		rep(v, I::monster_shard_of_strength, 5);

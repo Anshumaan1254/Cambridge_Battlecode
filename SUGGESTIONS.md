@@ -116,3 +116,11 @@ Official 34 vs the 5 proxies, head-to-head of 34 vs `_mlkc40`. Code: `experiment
    turns rarely matter. Re-test if a future build recalls more from far away (big maps).
 4. **IC's draft / builds**: they lose inside our brain every time (sessions 6-12). They would need IC's execution (spells from distance 4-5,
    fewer bodies at distance 1) first; see `docs/strategy_v2/12_IC_OCT19.md` section 2.
+
+## Session 15 (sprint documents, `docs/sprint/RULES_DIFF.md`)
+
+| Idea | Why it should work | Measured | Verdict / what would make it work |
+|---|---|---|---|
+| GOD's patch-3.0 settings under the handbook's (old) rules (`_god_c`, `_gc_old`, `_go_*` on cambc 2.2.5, official 34 vs 5 proxies) | the stall and altar fixes are generic; one tuning everywhere | GOD v5 values 127/170, + `gold_value` 0.22 133, + `altar_no_camp` 0 142, all GOD-only switches off 148 (legend_m15 149) | under the old rules only legend_m15's values hold: shipped as the `!SDK_HAS_HOR` branch of GOD v5.1 |
+| Narrower altar rule: change an altar's approach tiles only when **all** of them are camp tiles (keep camp tiles next to an altar that also has free tiles) | the nx50x41 stall needs only that case; dropping camp tiles everywhere stops bodies tributing from a reward tile beside an altar (corners, lanes, pilgrimage lost 4-6 of 10 under the old rules) | not built | measure under both engines (patch 3.0: nx50x41 must stay 6/6; old rules: corners / lanes back to legend_m15's level) |
+| A map-derived `gold_value` (from the map's gold rate / gem rate) instead of the `SDK_HAS_HOR` switch | 0.22 was best when a wolf paid 22 gems / 90 gold, 0.33 when it pays 4 / 40: the right value follows the economy, which the map's camps show at runtime | not built | fit on the two calibration points, then check both engines and the new map pools |

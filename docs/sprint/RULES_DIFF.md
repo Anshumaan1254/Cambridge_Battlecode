@@ -92,3 +92,28 @@ Original 17 official maps (`maps/comp`), both sides, 34 games per cell; ledger r
 - `bots/_god_d` = `_god_c` with `gold_value = SDK_HAS_HOR ? 0.33 : 0.22` and `burst_retreat = SDK_HAS_HOR ? 1.2 : 0`: **wasm identical to GOD v5
   on SDK 3.0.1, identical to `_gc_old` on SDK 2.2.5** (checked by sha256), so one source plays GOD v5 under patch 3.0 and the row above under the
   documents' rules.
+
+Which GOD-only switch costs wins under the documents' rules (all on `_gc_old`, wins of 34 per proxy, then per map summed over the 5 proxies):
+
+| Variant | `_mite` | `_ifish` | `_px9` | `_snk` | `_fA` | of 170 |
+|---|---|---|---|---|---|---|
+| `_gc_old` (GOD, legend's gold_value / burst_retreat) | 25 | 26 | 23 | 29 | 30 | 133 |
+| `_go_ac0` (+ `altar_no_camp` 0) | 26 | 28 | 28 | 30 | 30 | 142 |
+| `_go_sg0` (+ `stall_guard` 0) | 27 | 27 | 23 | 29 | 30 | 136 |
+| `_go_dg0` (+ `dash_gain1` 0) | 25 | 26 | 24 | 29 | 30 | 134 |
+| `_go_oh0` (+ `pd_obj_heavy` 0) | 25 | 26 | 23 | 29 | 30 | 133 |
+| **`_go_all0`** (all five off) | 28 | 27 | 29 | 31 | 33 | **148** (h2h vs legend_m15 18/34) |
+
+Per map (of 10), `_gc_old` / `_go_ac0` / `_go_all0` / legend_m15: corners 6 / 10 / 10 / 10, lanes 4 / 8 / 8 / 9, pilgrimage 4 / 6 / 6 / 6, monolith 7 / 8 / 9 / 9:
+`altar_no_camp` drops every camp tile from every altar's approach tiles (also when the altar has free tiles and the camp is dead), so a body that
+captures a reward next to an altar can no longer tribute from that tile. Under patch 3.0 the same switch costs nothing measurable and wins the
+walled-in altar map (ledger_v3: nx50x41 0/6 -> 6/6, corners_v3 / lanes_v3 level), so it stays on there. A narrower rule (change an altar only when
+**all** its approach tiles are camp tiles) should keep that fix without the cost: SUGGESTIONS.md, not built.
+
+## 5. What was shipped
+
+**GOD v5.1** (`submissions/god.zip`, sha256 46fbf787…, history `god_v5_1_20261020.zip`, `bots/god/src` = `_god_e`) = GOD v5 + the SDK
+compatibility patch + seven settings tied to `SDK_HAS_HOR` (`gold_value`, `burst_retreat`, `altar_no_camp`, `no_altar_gold`, `dash_gain1`,
+`stall_guard`, `pd_obj_heavy`). Checked by building the zip itself: on SDK 3.0.1 its wasm is byte-identical to GOD v5's (47cd9ae8…), on SDK 2.2.5
+byte-identical to `_go_all0`'s (5e877e30…). So under patch 3.0 nothing changes, and under the handbook's rules it compiles and plays at
+legend_m15's level (148 vs 149 of 170, 18/34 head-to-head). `submissions/legend.zip` (legend_m15) also compiles on both SDKs.

@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-20 12:50 UTC (session 15, parallel: the sprint documents; read §S15 and §S14 first, then §S13-GOD, §S13)**.
+- Last updated: **2026-10-20 13:30 UTC (session 15, parallel: the sprint documents, SHIPPED GOD v5.1 for both rulesets; read §S15 and §S14 first, then §S13-GOD, §S13)**.
   Rule from the user: update this file and push at every step. Start with **§S14**, then **§S13-GOD**, **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
@@ -34,6 +34,16 @@ running or unfinished, and what to do next, so a new agent can continue without 
   SDK_HAS_HOR ? 1.2f : 0.f`: **wasm identical to GOD v5 on 3.0.1 and to `_gc_old` on 2.2.5.** Running (`$S/q_sprint3.sh`): which other GOD switch
   costs the 16 proxy wins under the old rules (`_go_all0` all GOD-only switches off, `_go_ac0` altar_no_camp 0, `_go_dg0` dash_gain1 0, `_go_sg0`
   stall_guard 0, `_go_oh0` pd_obj_heavy 0; all on `_gc_old`).
+- **Result**: `altar_no_camp` 2 costs most under the old rules (corners 6 vs 10, lanes 4 vs 8, pilgrimage 4 vs 6 of 10: approach tiles never on camp
+  tiles, also next to a dead camp / an altar with free tiles); all five GOD-only switches off (`_go_all0`) 148/170, h2h vs legend_m15 18/34. Under
+  patch 3.0 the switches stay (ledger_v3: nx50x41 0/6 -> 6/6, corners_v3 / lanes_v3 level).
+- **SHIPPED GOD v5.1** (`submissions/god.zip` sha256 46fbf787…, history `god_v5_1_20261020.zip`, BUILDS row, README; `bots/god/src` = `_god_e`) = GOD v5 +
+  `x_sdkcompat.patch` + `gold_value`, `burst_retreat`, `altar_no_camp`, `no_altar_gold`, `dash_gain1`, `stall_guard`, `pd_obj_heavy` written as
+  `SDK_HAS_HOR ? <GOD v5 value> : <legend_m15 value>`. **The zip itself builds to GOD v5's wasm on 3.0.1 (47cd9ae8…) and to `_go_all0`'s on 2.2.5
+  (5e877e30…)**: no change under patch 3.0. **For session 14 / GOD v6**: `bots/god/src` changed (draft.cpp pick order, `pd_hor3` gate, common.h,
+  params.h): rebase `x_g5.patch` work on it or apply `experiments/wip/x_sdkcompat.patch`; new patch-3.0-only switches should follow the same
+  `SDK_HAS_HOR ? new : old` form, and every zip must build on both SDKs (scratch projects as above). Next: the narrower altar rule (SUGGESTIONS),
+  ISSUES #24 (`altar_lock_hits` from the engine), ask the user which engine the sprint platform runs (`cambc --version` on their machine).
 
 ## S14. HANDOFF (2026-10-20 10:40 UTC, end of session 13): the next agent starts here
 

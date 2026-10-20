@@ -17,6 +17,9 @@ Reproduce the model: `python3 tools/ml/ml2_decode.py DEC set=dir ...` (sets belo
 without --export-gb), then `ml2_model.h` = header + `ML2_NF = 58` + the three files.
 
 ## State (update at every step; container clock)
+- 04:50: phase 2 done (table below): `ml2_enter` 0.3 ties `_mlkc40` (149, 17/34); every other "fight more" rule is worse vs the proxies
+  (two-action enter 142-143, skipping the early flee 129-130). Nothing running. Next ideas (not built): a policy-aware value model
+  (fit on what happened after each choice over 20+ rounds, not 8), or more ladder replays of legend_m15 to re-fit the model on its own policy.
 - 04:10 (after a container restart; session limit reset): **`_mlkc40` SHIPPED as legend_m15** (coordinator). New baseline `_mlkc40`;
   phase 2 = `ml2_enter` (fight more when the model says we win) + `ml2_recall_kill` (cancel a heal / shop recall for such a fight).
   Copy `bots/_x_ml3` = `_mlkc40` src + `experiments/wip/x_ml3.patch` (rebuild: `SRC=bots/_mlkc40 tools/variant.sh _x_ml3 && (cd bots/_x_ml3 &&
@@ -163,7 +166,15 @@ without --export-gb), then `ml2_model.h` = header + `ML2_NF = 58` + the three fi
 | `_ml3e50` | ml2_enter 0.5 | 148/170 87.1 | | 17/34 (344-334) | 146/170 |
 | `_ml3e30` | ml2_enter 0.3, ml2_enter_die 0.1 | **149/170 87.6** | 29 27 29 32 32 | **17/34 (334-344)** | 114/170 (our deaths 1,135, theirs 2,000) |
 | `_ml3t25` | two-action enter, margin 0.25 | 142/170 83.5 | 26 27 28 29 32 | 19/34 (270-343) | 71/170 |
+| `_ml3t40` | two-action enter, margin 0.4 | 143/170 84.1 | 29 27 25 30 32 | 18/34 (308-343) | 103/170 |
+| `_ml3s10` | ml2_stay 0.10 (no early flee when P(die8) < 0.10) | 130/170 76.5 | 27 26 25 22 30 | 19/34 (337-416) | 23/170 (our deaths 1,545) |
+| `_ml3s15` | ml2_stay 0.15 | 129/170 75.9 | 27 24 25 22 31 | 21/34 (350-451) | 23/170 (our deaths 1,763) |
 - `_ml3e30` meets the ship rule (>= 149, >= 17/34) exactly: a tie, not a gain. `_ml3t25` beats `_mlkc40` head-to-head but loses to the proxies.
+- Lesson from `ml2_stay`: a low P(die8) with enemies 5-8 tiles away does not mean staying is safe: the early flee keeps bodies out of
+  the states the model later calls deadly (our deaths +31% / +49% without it). P is a snapshot risk under the current policy, not the
+  value of an alternative policy; the two-action model (T-learner) has the same flaw for entering (better h2h, worse vs the proxies:
+  the classic non-transitive pattern). Only the exit rule (leave / cornered) is robust.
+- **Phase 2 verdict: nothing beats `_mlkc40`; `_ml3e30` ties it (candidate only if the wide pools favour it).**
 - The recall cancel never changes a game: a heal/shop recall starts only with no enemy within 7 (`safe_to_recall`), and one that
   comes near cancels the recall anyway (`threat_close`), so the model is rarely evaluated while recalling with a fight next to us.
 - New switch `ml2_stay` T: skip combat()'s early flee (isolated / outmatched, not in reach) when P(die8) < T (variants `_ml3s10`, `_ml3s15`).

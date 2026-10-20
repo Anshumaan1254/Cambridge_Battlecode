@@ -124,6 +124,12 @@ running or unfinished, and what to do next, so a new agent can continue without 
   picks better. On `_ch2`: `_mlcf40` 141 / 20 (deaths -19%). **Wide validation running** (agent: `_mlkc40` on 28 generated + pad17 + gen2 vs
   `_cand2`, `_ch2` + 5 proxies; coordinator: `_ch2` and `_cand2` vs the 5 proxies on the same pools). Coordinator's rally 13 / recall_join 2 /
   flee_exit / grouped: level or worse (SUGGESTIONS.md). ES exploiter stopped after 2 generations (history `experiments/wip/x_es13_history.json`).
+- **Checkpoint 00:15 UTC**: wide pool (28 generated + pad17 + gen2 = 134 games) h2h `_mlkc40` vs `_cand2` **77/134**, vs `_ch2` **71/134**; its
+  proxy cells still running (agent `wide2`), `_ch2` / `_cand2` proxy cells on the same pool by the coordinator (`$S/q14.sh`). Stack build
+  `bots/_x_fin` = `_mlkc40` sources + `bush_ghost` and `open_first` bit 4 (melee hold) ported from `_x_s13` (all off = `_mlkc40` play; rebuild:
+  `SRC=bots/_mlkc40 tools/variant.sh _x_fin`, then `cd bots && diff -ruN _cand2/src _x_s13/src` applied with `patch -p1` inside `_x_fin`, then
+  restore `recall_join` 1, `o2_ring_size` 0, `aoe_reach5` 2, `open_first` 2 in params.h). Variants `_xf0` (control), `_xf_bg20`, `_xf_of6`,
+  `_xf_sf1`, `_xf_oh3`, `_xf_ea` queued (`$S/q19.sh` -> `screen_ml.sh`: official 34 vs `_mlkc40` + 5 proxies; `BASE=_mlkc40 tools/screensum.py`).
 
 ## S12. SESSION 12 (2026-10-19, same container as S10/S11): read this first
 

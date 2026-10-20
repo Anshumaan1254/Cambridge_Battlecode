@@ -131,3 +131,25 @@ Official 34 vs the 5 proxies, head-to-head of 34 vs `_mlkc40`. Code: `experiment
 | GOD's patch-3.0 settings under the handbook's (old) rules (`_god_c`, `_gc_old`, `_go_*` on cambc 2.2.5, official 34 vs 5 proxies) | the stall and altar fixes are generic; one tuning everywhere | GOD v5 values 127/170, + `gold_value` 0.22 133, + `altar_no_camp` 0 142, all GOD-only switches off 148 (legend_m15 149) | under the old rules only legend_m15's values hold: shipped as the `!SDK_HAS_HOR` branch of GOD v5.1 |
 | Narrower altar rule: change an altar's approach tiles only when **all** of them are camp tiles (keep camp tiles next to an altar that also has free tiles) | the nx50x41 stall needs only that case; dropping camp tiles everywhere stops bodies tributing from a reward tile beside an altar (corners, lanes, pilgrimage lost 4-6 of 10 under the old rules) | not built | measure under both engines (patch 3.0: nx50x41 must stay 6/6; old rules: corners / lanes back to legend_m15's level) |
 | A map-derived `gold_value` (from the map's gold rate / gem rate) instead of the `SDK_HAS_HOR` switch | 0.22 was best when a wolf paid 22 gems / 90 gold, 0.33 when it pays 4 / 40: the right value follows the economy, which the map's camps show at runtime | not built | fit on the two calibration points, then check both engines and the new map pools |
+
+### Session 14, camp deaths (agent `cd`, on GOD v5 = `_g5br`; `experiments/wip/x_cd.patch`, `x_cd_NOTES.md`; 21 maps, 42 games per cell)
+
+The ladder losses had 93 camp deaths of 455 (20%). Cause found: `safety()` scanned camps within distance 3 only (the pre-patch range), so a body
+at distance 4 of an elk (4-5 of a monolith) saw no camp damage and oscillated 3 <-> 4, hit every round; camps hidden behind a bush row or a wall
+kept their last seen state (asleep) while hitting us, so recalls were started into their hits and cancelled. Unopposed GOD v5 dies 90 times in
+42 games to camps; the fix removes almost all of them, but the full fix retreats too early from half-dead elks and costs tempo and fights:
+
+| Variant | `cd_range` bits (1 engine range, 2 retreat latch, 4 only when no ally nearer, 8 hold at equality, 16 true path out) + `cd_enemy_d` / `cd_hidden` | vs `_g4` (v5 28) | unopposed deaths (v5 90) / pace (v5 1039.6) | other cells (v5: `_pw` 30, `_pc` 34, `_ph` 31, `_m15` 30, `_mite` 40, `_ifish` 35, `_px9` 34) |
+|---|---|---|---|---|
+| `_cd1` | 1 | 24 | - | - |
+| `_cd3` | 1+2 | 23 | - | - |
+| `_cd3h` | 1+2, hidden 3 | 27 | **3** / 1090.1 | `_pw` 23, `_pc` 35, `_ph` 30, `_m15` 26, `_mite` 36, `_ifish` 30, `_px9` 34 |
+| `_cd3he` | 1+2, enemy 8, hidden 3 | 24 | - | `_pw` 28, `_pc` 34, `_ph` 34, `_m15` 29, `_mite` 36, `_ifish` 33 |
+| `_cdh` | hidden 3 only | 29 | 71 / 1058.0 | `_pw` 28, `_pc` 33, `_ph` 31, `_m15` 26, `_mite` 37, `_ifish` 34, `_px9` 34 |
+| **`_cd13he`** | 1+4+8, enemy 8, hidden 3 | **28** (deaths 632-772) | **19** / 1065.5 | being measured on top of GOD v6 as `_g7cd` |
+| `_cd15he` | 1+2+4+8, enemy 8, hidden 3 | 20 | 8 / 1068.9 | - |
+| `_cdf31` | all five bits, enemy 8, hidden 3 | 20 | 11 / 1078.2 | - |
+
+Verdict: the retreat latch (bit 2) and the true-path escape (16) cost 8 wins of 42 head-to-head: a body that leaves an elk at the engine-range
+line and keeps going home gives up the camp (and the fight next to it). The light form (`_cd13he`) is level head-to-head with 79% fewer unopposed
+camp deaths; it is carried into the GOD v7 candidate only if it holds on top of v6 against `_g4`, `_pw` and `_m15`.

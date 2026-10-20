@@ -4,7 +4,8 @@
 struct Params
 {
 	// Task valuation
-	float gold_value = 0.22f;		 // gem-equivalent value of one gold
+	float gold_value = 0.33f;		 // gem-equivalent value of one gold (patch 3.0: a wolf pays 4 gems + 40 gold, an elk 15 + 90: 0.22 -> 0.33 won 158/170 vs
+									 // the 5 proxies (0.22: 145), h2h 20/34 and on the patch-style maps 21/34 vs 0.22; 0.44-0.66 level vs the proxies, worse vs legend_m15)
 	float deny_bonus = 0.043f;		 // extra value for camps on the enemy half (they lose what we take) (ES: 0.55 -> 0.043)
 	float enemy_half_penalty = 10.f; // rounds-equivalent risk cost for enemy-half camps
 	float unknown_discount = 0.75f;	 // value multiplier for groups whose state we have not seen recently

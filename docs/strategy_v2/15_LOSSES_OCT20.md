@@ -74,10 +74,22 @@ The two teams without C&I (b6bdb9e4, f8a4f886) beat us 9-1 with 66 deaths agains
   40 (+ `reward_pre`, `big_reward_dive`), `obj_min_attackers` 1 with `pd_obj_side` (no caster draft on a central objective).
 - contest_v3: 0-1000 with 57 deaths (c47c8c26), 200-1000 with 33 (f8a4f886), 200-0 at r2000 (38998622). eight_v3: 0-1028 (31 deaths), 48-1002 (32).
 
-## 6. What is being measured (ledger, 21 maps, 42 games; vs GOD v2 `_g4` and the Power / HoR proxy `_pw`)
+## 6. What was measured (ledger, the 21 maps, 42 games per cell; v5 = `_g5br`: 28 vs GOD v2 `_g4`, 30 vs the Power / HoR proxy `_pw`,
+31 vs the roaming Power proxy `_ph`, 34 vs the caster + Marcella + HoR proxy `_pc`, 30 vs `legend_m15`)
 
-Shipped meanwhile: **GOD v5** = v4 + `burst_retreat` 1.2 (27/40 vs v2; proxies 38 / 33 / 32; vs `_pw` 30/42). Variants: `build_tail` 1 / 2
-(28 / 26 of 42, control 28: level, kept as a component), `pd_obj_side` 27, the forced-draft screen (`_d0f` our fixed team 24, `_dh1` HoR, Ren,
-Stellar, Ryth, Varg 23, others running; measurement only: the result becomes priors of the parameter draft), `burst_far` 0.5 / 0.8 (the burst
-retreat also counts enemies two or three steps from reach), `gold_rank` (a landed reward goes to the best gold user within 5 tiles, not to the
-lowest index), `big_reward` 40 variants, `obj_min_attackers` 1. Results in AGENTS.md §S14.8 and SUGGESTIONS.md as they land.
+| Change (switch) | vs `_g4` | vs `_pw` | Verdict |
+|---|---|---|---|
+| `build_tail` 1 / 2 (the list never ends) | 28 / 26 | - | level; in v6 (26% of our ladder gold was unspent) |
+| `build_react` 2.5 / 3.5 (+ tail; a health emblem whenever max health < x the biggest burst an enemy has shown) | 27 / 28 | 31 / 29 | level; in v6 (the build follows the enemy's Power) |
+| `pd_obj_side` (no caster draft on an objective midway between the spawns) | 27 | running | in v6 (nx50x50: 72-1008 twice on the ladder, 0/2 vs `_pw` with the casters) |
+| `obj_min_attackers` 1 + `pd_obj_side` (lone-elk objectives) | 25 | 30 | level, off |
+| `burst_far` 0.5 / 0.8 / 0.5 within 4 (the burst retreat also counts enemies 2-3 steps from reach) | 27 / 25 / 28 | 29 | level or worse, off |
+| `big_reward` 40 / + `reward_pre` 3 / + `big_reward_dive` 60 (fight for the 70-gem centres) | 23 / 23 / 23 | 33 / 33 / 34 | mixed: a ladder A/B option, off |
+| `gold_rank` 1 within 5 / 8 / 2 tiles, `gold_rank` 2 (the poorest body collects) within 5 / 3 | 24 / 17 / 16, 18 / 17 | 22, 23 | worse: hand-offs cost walks; off |
+| `kill_captures` 0.5 / 0.6 (the killer collects) | 19 / 17 | 27 | worse; off |
+| `mid_risk` 15 / 30 (a round cost on midline groups before r200) | 22 / 24 (of 40) | - | worse; off |
+| the danger model refit on the 45 patch-3.0 games at 0.4 / 0.3 / 0.2 | 18 / 22 / 27 | - | worse at the shipped threshold (exits half as often: policy feedback in the labels); 0.2 level, in `_g6m` only |
+| forced drafts (measurement only; forced control 24 vs `_g4`, 29 vs `_pw`): HoR for the pair | 25 | 31 | the one draft change that is at least level: v6 picks it only against a bruiser pick (HoR, Marcella, Vendetta) seen before ours |
+| forced: HoR for Varg / for Ryth / HoR first / HoR + Marcella / Vesper + Vendetta / Prism + Marcella + HoR | 19 / 14 / 23 / 18 / 14 / 11 | 23 / 21 / 27 / 28 / 29 / 15 | our brain plays those champions worse than the ones they replace |
+
+GOD v6 candidate = v5 + `build_tail` 1 + `build_react` 2.5 + `pd_obj_side` 1 + `pd_hor_prior` 0.4 / `pd_counter_hor` 0.8 / `pd_front_free` 0; results in AGENTS.md §S14.8.

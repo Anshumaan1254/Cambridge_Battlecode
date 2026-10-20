@@ -203,3 +203,17 @@ three outside cells but loses 4 games head-to-head: worth a re-test on top of v7
 None ships. The camp rule halves unopposed camp deaths (96 -> 48) and is level head-to-head, but loses 3 games over five outside cells. A higher Heart of
 Ruin prior wins 8-9 more games against legend_m15 (pre-patch tuning: contest, corners, the large new maps) but loses big five-champion maps to GOD v2 and
 16 of 42 against v7 itself: Heart of Ruin is a better third pick (pd_hor3 stays), not a better fourth or fifth.
+
+### Session 14, GOD v8 screens (cambc 3.0.2; `bots/_x_v8`, `experiments/wip/x_v8.patch`; one switch on v7, 42 games per cell vs `_g4` / `_pws` / `_pw` / `_m15`; v7 31 / 25 / 31 / 28 = 115)
+
+| Switch | Idea | Cells | Sum | Verdict |
+|---|---|---|---|---|
+| `hor_threat` 3 | enemy Heart of Ruin's ready dash within range + radius + 1 is a stunner for channels, and its landing damage in the burst retreat | 30 / 24 / 30 / 28 | 112 | rejected (over-caution, like `burst_dash`) |
+| `gv_map` 1 (exp 0.5) | gold value from the map's gold / gem rate ratio, 0.33 x (rho / 6.3)^0.5 | 24 / 21 / 36 / 28 | 109 | rejected; exp 1.0 measured 29 / 25 / 37 / 34 = 125 (re-screened on v8) |
+| `fm_mode` 7 | HoR passive, our Ren's retaliation, camp engine range in `combat()` | 31 / 24 / 32 / 31 | 118 | level (re-screened on v8) |
+| `lock_hits_sdk` 1 | an enemy-locked altar costs the engine's lock hits (5) x 2 steps, not 6 | `_g4` 29, `_pw` 32 | -1 on 2 cells | rejected (ISSUES #24 stays) |
+| `learn_stance` 0 | team stance bandit off | `_g4` 27, `_pw` 32 | -3 on 2 cells | keep the stance learner |
+| `sup_mode` 13 / 15 | support by arrival + step toward help (+ backup from helpers) | 26 / 23 / 35 / 29, 27 / 26 / 35 / 30 | 113, 118 | bit 4 (toward help) rejected; bit 1 alone 125 shipped |
+| `hor_strike` 2 + `strike_dash_hold` 12 | keep the dash for fights from 12 tiles | 31 / 24 / 32 / 28 | 115 | level, not used |
+| `hor_camp` 2 | camp dash only with 2+ camps in the landing radius | 29 / 28 / 37 / 28 | 122 | `hor_camp` 1 (131) shipped |
+| plan P1-6 formula | gold value 0.22 + 0.11 ln(rho / 4) / ln(2.5) | not built | | the 21 maps have rho 4.4-9.6 (median 6.3): it would give 0.23-0.31, the measured-worse 0.22 direction |

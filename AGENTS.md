@@ -184,6 +184,14 @@ running or unfinished, and what to do next, so a new agent can continue without 
   New switches `ml2_stayk` (no ML exit while P(kill8) >= X) and `ml2_trade` (no ML exit while an enemy in reach + 1 has health <= N x our local
   damage per round): `bots/_x_tr` = `_mlkc40` + `experiments/wip/x_tr.patch`; `q30.sh`: control `_tr0`, `_trk4`, `_trt15`, `_trk6`, `_trt3`.
 
+- **Checkpoint 05:35 UTC**: trade exceptions rejected (`_trk4` 145, `_trk6` 148, `_trt15` 143, `_trt3` 141; h2h 13-16). Ladder A/B option zipped:
+  `submissions/candidates/legend_m15_cautious_20261020.zip` (= `_mlkc30`, cut-offs 0.3; reasoning in `submissions/candidates/README.md`).
+  **Running: ES on `legend_m15`'s own parameters** (`$S/es15.sh`: `ES_SRC=bots/_mlkc40 ES_OUT=tune_out/es15 ES_PREFIX=_e15`, space
+  `experiments/wip/x_es15_space.json` = 29 fight / economy params + `ml2_leave`, `ml2_flee`; opponents the 5 proxies; maps official 17 +
+  gen2 24, 8 per generation; 30 generations x ~720 games, ~7 min each). Judge the result like the A100 run: apply only parameters that moved
+  consistently, then validate on pad17 + generated + held-out (not used in training) and the official screen. `tune_out/` is git-ignored:
+  copy `history.json`, `best_params.json` to `experiments/wip/x_es15_*` when done.
+
 ## S12. SESSION 12 (2026-10-19, same container as S10/S11): read this first
 
 - Shipped bot at the start: **`legend_m14`** (`submissions/legend.zip` sha256 50ca7600…, frozen `bots/_pg3`, S7R). Baseline for every A/B: `_pg3`.

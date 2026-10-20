@@ -219,6 +219,27 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   substitution): restarted; ES (`tune_out/es_nyx`, 8 gens) is chained after q6. **New input (11:08 UTC)**: the user's `our_losses.zip` = 5 match groups,
   25 games of GOD v3 vs top teams, lost badly, some to teams the earlier bot beat; the user: analyse, fix, make the draft dynamic (map, resources,
   strategy, enemy picks), nothing hardcoded. Replays `experiments/losses_oct20/raw/` (we are side A), decode `experiments/losses_oct20/an/`.
+- **11:40 UTC: the 25 losses decoded** (`experiments/losses_oct20/index.json`, `an/report.md`, `an/out/*.csv`; tool `tools/strategy_v2/game_index.py`;
+  16 distinct maps, one new: `maps/loss_oct20/ls50x50_R_c5_56fe6f.map26a`; the pool for every A/B is now the 21 maps = `maps/nyx_new` + `maps/comp30` +
+  `maps/loss_oct20`, 42 games). Five opponents: 38998622 (Ren, Stellar, C&I, Ryth, Varg; 1 real win + 2 tiebreak wins of 5), b6bdb9e4 (HoR, Ren, Varg,
+  Ryth, Marcella / Stellar; 0/5), c47c8c26 (Prism, Stellar, C&I, Marcella, HoR; 2/5), e6475502 (Vesper, C&I, Varg, Vendetta, Stellar / Stellar, Ren, C&I,
+  HoR, Varg; 0/5), f8a4f886 (HoR, Ren, Stellar, Ryth, Varg; 1/5). Totals: deaths 455-222, camp gems 19.5k-28.7k, gold 168k-250k, captures 784-1,246.
+  **All five stack Power in the damage stat** (950 Power-dmg + 178 Power-off emblems; damage points 6,542 vs our 2,739; c47c8c26 buys Power first:
+  PfE DhE PfE PfE; f8a4f886 Treasure, Jungle, Bruiser-hp, Durability, then Power; b6bdb9e4 Jungle-dmg, Bruiser-hp, Durability, Power). Their gold is
+  spread (top-1 share 0.29-0.33, ours 0.35-0.55: Ren), their Stellar's first emblem r130-268 (ours r208-661), their Stellar earns 1,080-2,718 gold a game
+  (ours 442-544). **Fights on our own half when they open: 221 fights, our deaths 121 to their 7** (when we open, 49-73 in our favour): the opener
+  wins, and their Power makes the opener lethal. 93 of our deaths (20%) are by camps, 66 with no enemy within 6, median health 7% four rounds
+  before (Cassi 22, Issac 22, Stellar 20; eight_v3 13, ambush_v3 11): agent `cd` (Opus) traces and fixes them (`bots/_x_cd`, notes
+  `experiments/wip/x_cd_NOTES.md`, patch `x_cd.patch`). Unspent gold 44.6k of 168k (26%; theirs 7%): Ren 612 a game on average (13,410 on the
+  no-altar map: the style-2 build lists end after 24-30 emblems). The objective draft (Prism, Stellar, C&I, Ryth, Tavi) fired on nx50x50 (the only gem
+  group, 2 elks + 6 gems = 72 gems, midway between the spawns, 27 gold clusters per side) and lost 72-1008 twice (37 and 32 deaths): `pd_obj_heavy`
+  did not stop it (the group is heavy enough); new switch `pd_obj_side` (the objective must be nearer to us than to them). New switch `build_tail`
+  (1: Power in the damage stat for ever after the list, 2: the Bruiser mix for ever). Proxy `_pw` = `_x_g5` + v5 switches + `build_style` 12 +
+  f8a4f886's draft (HoR, Ren, Stellar, Ryth, Varg; forced with `LEGEND_DRAFT`, `mapdraft` 0: a sparring partner, never shipped). Queue `$S/q8.sh`:
+  `_g5br` vs `_pw`; `_g5x0` (control), `_g5pt1`, `_g5pt2`, `_g5os` vs `_g4`; the draft screen `_d0f` (8,4,3,9,0), `_dh1` (11,8,4,0,9), `_dh2`
+  (8,4,11,9,0), `_dh3` (8,4,3,11,0), `_dh4` (8,4,3,9,11), `_dm1` (11,8,9,0,6), `_dv1` (1,3,9,2,4), `_dc1` (5,4,3,6,11) vs `_g4` (forced drafts are
+  measurement only: the result becomes priors and enemy-pick terms of the parameter draft; the user: nothing forced or hardcoded ships, everything
+  from the map and the enemy's moves). ML agent told to add the 25 games to its training set.
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

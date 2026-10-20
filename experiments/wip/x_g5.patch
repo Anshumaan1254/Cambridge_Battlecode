@@ -1,6 +1,6 @@
 diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
 --- bots/_g4/src/brain.cpp	2026-10-20 10:13:52.705410239 +0000
-+++ bots/_x_g5/src/brain.cpp	2026-10-20 11:02:10.717363117 +0000
++++ bots/_x_g5/src/brain.cpp	2026-10-20 11:21:35.278709988 +0000
 @@ -96,6 +96,97 @@
  		rep(v, power, 300);
  		return v;
@@ -99,7 +99,23 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	if (bs == 11)
  	{
  		// Intercontinental Fish (ladder #1; emblem order of its bodies in 36 games of Oct 19, experiments/interwin_oct19):
-@@ -705,6 +796,8 @@
+@@ -255,6 +346,15 @@
+ 			cycle(v, { I::bruiser_shard_of_strength, I::bruiser_shard_of_strength, I::bruiser_shard_of_health }, 8);
+ 			break;
+ 		}
++		if (P.build_tail)
++		{
++			// The list must never run out (session 14): Power in the damage stat (1) or the Bruiser mix (2) for the rest of the game.
++			const bool focus = t == CT::ren || t == CT::heart_of_ruin || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
++			if (P.build_tail == 1)
++				rep(v, focus ? I::power_shard_of_focus : I::power_shard_of_strength, 300);
++			else
++				cycle(v, { focus ? I::bruiser_shard_of_focus : I::bruiser_shard_of_strength, focus ? I::bruiser_shard_of_focus : I::bruiser_shard_of_strength, I::bruiser_shard_of_health }, 40);
++		}
+ 		return v;
+ 	}
+ 	if (bs == 1)
+@@ -705,6 +805,8 @@
  	update_priority();
  	if (P.unstick_rounds > 0)
  		unstick();
@@ -108,7 +124,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	prebuild_fields();
  	XM(xm_post());
  #ifdef LEGEND_TRACE
-@@ -781,19 +874,36 @@
+@@ -781,19 +883,36 @@
  	// gives the target up for a while. Every path to it may be held by allies or camps that do not move, or the
  	// target sits where its own tiles block it; re-planning elsewhere beats standing there.
  	auto& W = world();
@@ -148,7 +164,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	blacklist[static_cast<std::size_t>(task_group)] = round + P.unstick_blacklist;
  	task_group = -1;
  	tp_hop = -1;
-@@ -1062,8 +1172,10 @@
+@@ -1062,8 +1181,10 @@
  	{
  		nav().ensure_altar(static_cast<int>(i));
  		int d = nav().altar_dist(static_cast<int>(i), pos);
@@ -160,7 +176,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  		if (altar_unsafe(static_cast<int>(i)))
  			d += P.unsafe_altar_penalty; // contested and enemies seen there: our carriers die on the way
  		if (d < dist)
-@@ -2052,7 +2164,7 @@
+@@ -2052,7 +2173,7 @@
  	// P.pair_low_hp: Cassi & Issac leave a fight they can walk away from earlier (ladder: 64% of our 59 pair deaths were
  	// triggered by the partner below 25% health, the other partner healthy (73% above 75%) and 7+ tiles away).
  	const float low_hp = (type == CT::cassi || type == CT::issac) ? P.pair_low_hp : 0.25f;
@@ -169,7 +185,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  		fight = false;
  	// mi_lethal (default branch): it has shown it can kill us from here; leave unless the kill is ours first.
  	if (P.mi_lethal && fight && !killable && !(in_reach && !can_escape) && lethal >= hp)
-@@ -2866,7 +2978,8 @@
+@@ -2866,7 +2987,8 @@
  		{
  			// Only while no enemy is near: with enemies around the old line stays (gold_mono_48 vs _k1: the two
  			// monoliths are 9 tiles apart; 20 of our 33 deaths were next to ours and they took 2 of our 3 kills).
@@ -179,7 +195,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  			for (std::size_t i = 0; i < g.camps.size(); ++i)
  			{
  				const int d = cheb(g.camps[i].pos, pos);
-@@ -3020,7 +3133,7 @@
+@@ -3020,7 +3142,7 @@
  	const int ours = static_cast<int>(bc::global_submitted_gems(team::ally));
  	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
  	gold_v = P.gold_value;
@@ -188,7 +204,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	{
  		// Gold only turns into gems through the shards it buys, and a shard pays off over the rounds left: +5
  		// strength on 40-50 is about +5% farming rate, which earns back 30 gold x gold_value = 6.6 gems in
-@@ -3150,6 +3263,8 @@
+@@ -3150,6 +3272,8 @@
  	if (gems == 0)
  		return false;
  	auto& W = world();
@@ -197,7 +213,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	if (P.mi_island_bank > 0 && inside_island())
  	{
  		// No altar inside an island (default branch): recall out (the bag is kept) once it is worth banking.
-@@ -3920,7 +4035,9 @@
+@@ -3920,7 +4044,9 @@
  				// part of the time (ranged_exposure). taken = sum_k str_k x (q t_{k-1} + t_k - t_{k-1} - 1).
  				// A melee champion on a pack of n equal camps takes (n+1)/(2n) of the old constant-incoming
  				// product, which overstated a pack by up to 2x.
@@ -208,7 +224,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  				std::array<float, 8> hs{}, ss{};
  				int n = 0;
  				float raw = 0;
-@@ -4004,7 +4121,8 @@
+@@ -4004,7 +4130,8 @@
  			time = static_cast<float>(d_adj + wait) + ring_kill + 6.f;
  			share = P.o2_ring_share;
  		}
@@ -218,7 +234,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  			obj_team_ready(g, hp_left, team_kill))
  		{
  			// Objective map: too heavy for us and the bodies already on it, but not for the whole team.
-@@ -4036,7 +4154,7 @@
+@@ -4036,7 +4163,7 @@
  		}
  	}
  
@@ -227,7 +243,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	if (!g.ours)
  	{
  		const float risk = sc_risk;
-@@ -4082,6 +4200,13 @@
+@@ -4082,6 +4209,13 @@
  	}
  	if (round - g.enemy_round < 12)
  		time += 12.f;
@@ -241,7 +257,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	if (sc_alert && alert_zone.is_set(g.center))
  		time += 25.f;
  	// Learned pain: regions where we lost champions recently cost extra rounds.
-@@ -4923,7 +5048,9 @@
+@@ -4923,7 +5057,9 @@
  bool Brain::farm_group(Group& g)
  {
  	auto& W = world();
@@ -252,7 +268,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	const bool obj_first = obj && P.obj_attackers_first;
  	if (contest_tiles(g))
  		return true;
-@@ -4960,7 +5087,7 @@
+@@ -4960,7 +5096,7 @@
  				debug_block({ std::printf("GW r=%d %d near=%d need=%d since=%d awake=%d\n", round, static_cast<int>(type), near, need, obj_gather_since, (int)g.awake); });
  #endif
  				task = T_WAIT;
@@ -263,17 +279,18 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  		}
 diff -ruN bots/_g4/src/draft.cpp bots/_x_g5/src/draft.cpp
 --- bots/_g4/src/draft.cpp	2026-10-20 10:13:52.707005123 +0000
-+++ bots/_x_g5/src/draft.cpp	2026-10-20 10:35:38.400954266 +0000
-@@ -27,6 +27,8 @@
++++ bots/_x_g5/src/draft.cpp	2026-10-20 11:21:35.277639015 +0000
+@@ -27,6 +27,9 @@
  	int team = 3;
  	int groups = 0, gem = 0, gold = 0, wolf = 0, elk = 0, mono = 0, multi = 0, harmless = 0;
  	int gem_groups = 0;		   // groups that give gems (excluding monolith-only)
 +	float gem_group_hp = 0;	   // pd_obj_heavy: total camp health of the heaviest gem group, and its camps that fight back
 +	int gem_group_att = 0;
++	int gem_group_da = 0, gem_group_de = 0; // pd_obj_side: walking distance of the heaviest gem group from our spawn and from theirs
  	double mean_dist = 0;
  	int area = 0, holes = 0, altars = 0;
  	bool ready = false;
-@@ -73,12 +75,14 @@
+@@ -73,12 +76,14 @@
  	for (const auto& g : bc::map::camp_groups())
  	{
  		int da = BIG, de = BIG, attackers = 0;
@@ -288,22 +305,23 @@ diff -ruN bots/_g4/src/draft.cpp bots/_x_g5/src/draft.cpp
  			switch (c.kind())
  			{
  			case bc::camp_type::wolf: has_wolf = true, ++attackers; break;
-@@ -101,6 +105,8 @@
+@@ -101,6 +106,8 @@
  		F.multi += attackers >= 2;
  		F.harmless += attackers == 0;
  		F.gem_groups += (has_gem || has_wolf || has_elk) && !has_mono;
 +		if ((has_gem || has_wolf || has_elk) && !has_mono && ghp > F.gem_group_hp)
-+			F.gem_group_hp = ghp, F.gem_group_att = attackers;
++			F.gem_group_hp = ghp, F.gem_group_att = attackers, F.gem_group_da = da, F.gem_group_de = de;
  		dsum += da;
  	}
  	F.mean_dist = F.groups ? dsum / F.groups : 0;
-@@ -304,7 +310,8 @@
+@@ -304,7 +311,9 @@
  	MP.elk_share = F.elk / g;
  	// pd_obj_multi: the lone gem group must also be a multi-camp group (stampede and maps/obj: an elk + gem objective). On the gold_elk
  	// maps the only gem group is one elk camp: no objective plan fires there, so the caster draft would farm without its ring.
 -	MP.objective = F.gem_groups == 1 && F.mono == 0 && (!P.pd_obj_multi || F.multi >= 1);
 +	MP.objective = F.gem_groups == 1 && F.mono == 0 && (!P.pd_obj_multi || F.multi >= 1) &&
-+		(!P.pd_obj_heavy || (F.gem_group_hp >= P.obj_min_hp && F.gem_group_att >= P.obj_min_attackers)); // pd_obj_heavy: the same test as the brain's objective mode
++		(!P.pd_obj_heavy || (F.gem_group_hp >= P.obj_min_hp && F.gem_group_att >= P.obj_min_attackers)) && // pd_obj_heavy: the same test as the brain's objective mode
++		(!P.pd_obj_side || F.gem_group_de - F.gem_group_da > P.pd_obj_mid); // pd_obj_side: the objective must be on our side, not midway between the spawns
  	MP.monolith_only = F.gem_groups == 0 && F.mono > 0;
  	MP.open_small = MP.team <= 3 && F.area >= P.pd_open_area && F.mean_dist >= P.pd_open_dist;
  	pd_type = MP.objective ? 2 : MP.open_small ? 1 : 0;
@@ -380,7 +398,7 @@ diff -ruN bots/_g4/src/nav.h bots/_x_g5/src/nav.h
  	bool ensure_group(int id, long long fuel_floor = 45000);
 diff -ruN bots/_g4/src/params.h bots/_x_g5/src/params.h
 --- bots/_g4/src/params.h	2026-10-20 10:13:52.709297892 +0000
-+++ bots/_x_g5/src/params.h	2026-10-20 11:02:10.716249627 +0000
++++ bots/_x_g5/src/params.h	2026-10-20 11:21:35.275845343 +0000
 @@ -176,6 +176,8 @@
  							   //     9 = Mite (Jungle, Durability in the damage stat, Bruiser health, Power)
  							   // 2 = value-model builds (tools/analysis/item_value.py): Bruiser over Power, early Treasure
@@ -390,7 +408,7 @@ diff -ruN bots/_g4/src/params.h bots/_x_g5/src/params.h
  							   // 11 = Intercontinental Fish (ladder #1, 45 games of Oct 19): carries open with Power in the damage stat,
  							   //     tanks with Bruiser + Durability health, Home health second on the carries, then Power forever
  	// Home emblem (recall takes 3 turn ends instead of 5). IC buys it second on the bodies whose first emblem is a damage
-@@ -209,6 +211,39 @@
+@@ -209,6 +211,47 @@
  							   // centre triple 11-13 tiles from the team fight, 4 of ours lost to 5 of theirs; "help that does not come")
  	float rally_hp = 0.6f;	   // ... with at least this health fraction
  	int pd_hor3 = 1;			   // patch 3.0: Heart of Ruin instead of Cassi & Issac at team size 3 (draft.cpp pd_score)
@@ -427,6 +445,14 @@ diff -ruN bots/_g4/src/params.h bots/_x_g5/src/params.h
 +							   // >= obj_min_hp with >= obj_min_attackers camps that fight back (nx50x50: one elk + gem cluster group and 27 gold
 +							   // clusters per side took the caster draft: 72-1008). Same test as World::detect_objective
 +
++	int pd_obj_side = 0;	   // 1: the draft's objective map also needs the lone gem group nearer to our spawn than to theirs by more than pd_obj_mid steps
++							   // (session 14: nx50x50's only gem group, 2 elks + 6 gems = 72 gems, sits midway between the spawns with two altars next to it;
++							   // the caster ring (Prism, Stellar, C&I, Ryth, Tavi) lost it 72-1008 twice on the ladder with 37 deaths: both teams
++							   // meet there every respawn, and the casters die to Power-stacked melee)
++	int pd_obj_mid = 2;
++	int build_tail = 0;	   // build_style 2 lists end after 24-30 emblems; 1: then Power in the damage stat for ever (the five top teams of
++							   // Oct 20: 950 Power-dmg emblems in 25 games; our Ren sat on 612 gold unspent on average, 13,410 on the no-altar map),
++							   // 2: the Bruiser cycle for ever
  	int strike_dash_hold = 9;   // patch 3.0: a damaging dash (Heart of Ruin) is not used to walk while an enemy was seen within this many tiles
  	int flee_exit = 0;		   // 1: a body walking home from inside enemy reach / an awake camp's range takes a sideways step out of it when
  							   // every step toward home stays inside (nav.cpp step_field)

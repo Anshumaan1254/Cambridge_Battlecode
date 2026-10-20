@@ -1,5 +1,6 @@
 #include "brain.h"
 #include "opponent.h"
+#include "dmplan.h"
 #include "learn.h"
 #include "draft.h"
 #include "ml2_model.h"
@@ -591,6 +592,43 @@ void Brain::init()
 	learner().init(W.W, W.H);
 	comms().bodies = static_cast<int>(W.allies.size());
 	comms().bag_on = P.team_bank && W.groups.size() <= 62;
+	if (P.dm_plan)
+	{
+		// The draft's plan (dmplan.h): accepted only for this map (size and group count), else every user falls back.
+		auto& dp = draft_plan();
+		try
+		{
+			if (!bc::draft_memory.is_empty())
+			{
+				std::vector<std::uint8_t> b;
+				b.reserve(bc::draft_memory.size());
+				for (const auto x : bc::draft_memory)
+					b.push_back(std::to_integer<std::uint8_t>(x));
+				if (dm_decode(b, dp) && (dp.width != W.W || dp.height != W.H || dp.groups != static_cast<int>(W.groups.size())))
+					dp.ok = false;
+			}
+		}
+		catch (...)
+		{
+			dp.ok = false;
+		}
+		// Our pick slot (the draft's order): the slot whose champion is ours (Cassi and Issac share one).
+		my_slot = -1;
+		if (dp.ok)
+			for (int k = 0; k < static_cast<int>(dp.ours.size()); ++k)
+			{
+				const auto d = static_cast<bc::champion_draft>(dp.ours[static_cast<std::size_t>(k)]);
+				const bool pair = d == bc::champion_draft::cassi_and_issac && (type == CT::cassi || type == CT::issac);
+				if (pair || (d != bc::champion_draft::cassi_and_issac && static_cast<int>(dm_type_of(d)) == static_cast<int>(type)))
+					my_slot = k;
+			}
+#ifdef DM_TRACE
+		debug_block({
+			std::printf("DM body=%d ok=%d slot=%d groups=%d flags=%d obj=%d anchors=%d wards=%d\n", W.my_index, static_cast<int>(dp.ok), my_slot, dp.groups, dp.flags,
+				static_cast<int>(dp.obj_groups.size()), static_cast<int>(dp.anchor_slots.size()), static_cast<int>(dp.wards.size()));
+		});
+#endif
+	}
 	inited = true;
 #ifdef LEGEND_TRACE
 	// Route analysis (tools/analysis): the static camp-group table, printed once per team (fuel-free in debug).
@@ -677,7 +715,7 @@ void Brain::turn()
 		if (W.my_index == 0)
 		{
 			if (P.opp_model)
-				C.write_plan(opp_model().plan_id(learner().stance));
+				C.write_plan(P.om_act ? opp_model().plan_id(learner().stance) : learner().stance);
 			else
 				C.write_stance(learner().stance);
 		}
@@ -725,7 +763,7 @@ void Brain::turn()
 		if (W.my_index == 0)
 		{
 			if (P.opp_model)
-				C.write_plan(opp_model().plan_id(L.stance));
+				C.write_plan(P.om_act ? opp_model().plan_id(L.stance) : L.stance);
 			else
 				C.write_stance(L.stance);
 		}
@@ -748,6 +786,8 @@ void Brain::turn()
 			}
 	}
 	build_danger();
+	if (P.ward_enemy && round % 2 == 0)
+		enemy_wards_update();
 	if (P.death_learn)
 		dl_record();
 	if (P.kill_captures > 0.f)
@@ -822,7 +862,7 @@ void Brain::turn()
 		dbg_path = 5;
 	if (!acted && (acted = shop_trip()))
 		dbg_path = 6;
-	if (!acted && P.pxs_style && style_now() == 6 && W.my_index == 0 && (acted = pxs_deny_altar()))
+	if (!acted && P.pxs_style && style_now() == 6 && W.my_index < P.pxs_deny_bodies && (acted = pxs_deny_altar()))
 		dbg_path = 9;
 	if (!acted && (acted = respond_to_alert()))
 		dbg_path = 7;
@@ -936,6 +976,16 @@ bool Brain::is_altar_tile(vec2 p) const
 	return false;
 }
 
+bool Brain::altar_ours(std::size_t i) const
+{
+	const auto& W = world();
+	int dh = BIG, da = BIG;
+	if (i < W.altar_approach.size())
+		for (const auto t : W.altar_approach[i])
+			dh = std::min(dh, W.dist_home(t)), da = std::min(da, W.dist_away(t));
+	return dh < BIG && dh <= da;
+}
+
 bool Brain::escort_alert() const
 {
 	// The escort reuses the DANGER code at an altar tile (no enemy can stand there); with om_sight on, DANGER elsewhere is a sighting.
@@ -971,9 +1021,10 @@ void Brain::om_tick()
 #ifdef OPP_TRACE
 			debug_block({
 				const auto& w = M.cur;
-				std::printf("OM r=%d inv=%d ad=%d ed=%d multi=%d home=%d pack=%d banks=%d gems=%d lump=%d ward=%d/%d/%d locks=%d cancels=%d altar=%d bush=%d unseen=%d heavy=%d alive=%d contact=%.2f mu=%.2f cus=%.2f/%.2f fired=%d ev=",
+				std::printf("OM r=%d inv=%d ad=%d ed=%d multi=%d home=%d pack=%d banks=%d gems=%d lump=%d ward=%d/%d/%d locks=%d cancels=%d altar=%d bush=%d unseen=%d heavy=%d alive=%d vis=%d invs=%d bodies=%d ours=%d theirs=%d contact=%.2f mu=%.2f cus=%.2f/%.2f fired=%d ev=",
 					round, w.inv, w.ally_deaths, w.enemy_deaths, w.multi_deaths, w.ally_deaths_home, w.pack, w.bank_events, w.bank_gems, w.bank_lump, w.ward_home, w.ward_altar, w.ward_bush,
-					w.locks, w.cancels, w.altar_presence, w.bush_hits, w.unseen_hits, w.heavy_lost, w.alive_rounds, M.contact, M.cus_mu, M.cus_pos, M.cus_neg, static_cast<int>(M.fired));
+					w.locks, w.cancels, w.altar_presence, w.bush_hits, w.unseen_hits, w.heavy_lost, w.alive_rounds, w.vis_max, w.inv_self, static_cast<int>(W.allies.size()),
+					static_cast<int>(bc::global_submitted_gems(team::ally)), static_cast<int>(bc::global_submitted_gems(team::enemy)), M.contact, M.cus_mu, M.cus_pos, M.cus_neg, static_cast<int>(M.fired));
 				for (int a = 1; a < ARC_COUNT; ++a)
 					std::printf("%.2f,", M.ev[static_cast<std::size_t>(a)]);
 				std::printf(" s=");
@@ -1059,7 +1110,7 @@ void Brain::om_observe()
 	for (std::size_t i = 0; i < W.altars.size(); ++i)
 	{
 		const vec2 a = W.altars[i];
-		if (W.dist_home(a) > W.dist_away(a))
+		if (!altar_ours(i))
 			continue;
 		for (const auto& e : W.enemies)
 			w.altar_presence += e.alive && e.visible && cheb(e.pos, a) <= 3;
@@ -1074,8 +1125,19 @@ void Brain::om_observe()
 	// Our own tribute cancelled under threat (handle_channel) this turn or last.
 	if (tribute_cancel_round >= round - 1 && tribute_cancel_round != om_cancel_seen)
 		om_cancel_seen = tribute_cancel_round, ++w.cancels;
-	// Health lost with no visible attacker in reach and no awake camp on us: hit from a bush or from out of sight.
-	if (hp < last_hp - 1.f && !in_awake_camp_range())
+	{
+		int nv = 0;
+		bool home = false;
+		for (const auto& e : W.enemies)
+			if (e.alive && e.visible)
+				++nv, home |= !W.enemy_spawn.is_set(e.pos) && W.dist_home(e.pos) < W.dist_away(e.pos);
+		w.vis_max = std::max(w.vis_max, nv);
+		w.inv_self += home;
+	}
+	// Health lost with no visible attacker in reach and no live camp near us (a camp hits from up to 5): a hit from a bush / out of sight.
+	bc::bitboard near5;
+	near5.draw_chebyshev(pos, 5.f);
+	if (hp < last_hp - 1.f && !in_awake_camp_range() && (near5 & W.camp_occ).is_empty())
 	{
 		bool seen = false;
 		for (const auto& e : W.enemies)
@@ -1122,8 +1184,8 @@ void Brain::om_observe()
 					if (bc::map::bushes().is_set(p))
 						++w.ward_bush;
 				}
-				for (const auto& a : W.altars)
-					if (cheb(a, p) <= 6 && W.dist_home(a) <= W.dist_away(a))
+				for (std::size_t ai = 0; ai < W.altars.size(); ++ai)
+					if (cheb(W.altars[ai], p) <= 6 && altar_ours(ai))
 					{
 						++w.ward_altar;
 						break;
@@ -1546,6 +1608,8 @@ int Brain::nearest_altar(int& dist) const
 			d += P.lock_hits_sdk ? 2 * static_cast<int>(bc::constants::altar_lock_hits) : 6; // hits to clear it (patch 3.0: 5)
 		if (altar_unsafe(static_cast<int>(i)))
 			d += P.unsafe_altar_penalty; // contested and enemies seen there: our carriers die on the way
+		if (P.ward_enemy && static_cast<int>(gems) >= P.ward_avoid_bag && near_enemy_ward(W.altars[i], 6))
+			d += static_cast<int>(P.ward_avoid_cost); // a watched altar: a long channel in their sight
 		if (P.escort_alt_w > 0.f && P.escort_bag > 0 && static_cast<int>(gems) >= (P.opp_model ? escort_bag_now : P.escort_bag) && round - W.altar_enemy_round[i] <= P.escort_quiet)
 			d += static_cast<int>(P.escort_alt_w * static_cast<float>((gems + 9) / 10));
 		if (d < dist)
@@ -2034,6 +2098,8 @@ void Brain::place_ward(bool force)
 	if (!force && round - ward_round < (wb >= 2 ? std::min(10, P.ward_bush_gap) : 10))
 		return;
 	auto& W = world();
+	if (P.ward_plan && (round - ward_round >= 10 || force) && plan_ward(force))
+		return;
 	vec2 bush{ -1, -1 };
 	if (wb)
 	{
@@ -2097,6 +2163,126 @@ void Brain::place_ward(bool force)
 		}
 	}
 	ward_round = round; // do not retry every turn
+}
+
+bool Brain::plan_ward(bool force)
+{
+	// F3: a planned spot (draft memory) within placement reach (2) that watches what this body works on, not covered by an ally ward.
+	(void)force;
+	auto& W = world();
+	const auto& dp = draft_plan();
+	if (!dp.ok || dp.wards.empty())
+		return false;
+	std::array<vec2, 3> anchors{};
+	int na = 0;
+	if (task_group >= 0 && task_group < static_cast<int>(W.groups.size()))
+		anchors[static_cast<std::size_t>(na++)] = W.groups[static_cast<std::size_t>(task_group)].center;
+	if (task == T_CAPTURE)
+		anchors[static_cast<std::size_t>(na++)] = pos;
+	const bool tributing = flag(state, bc::champion_state::submitting_gems);
+	if (tributing || task == T_TRIBUTE)
+		for (const auto& a : W.altars)
+			if (cheb(a, pos) <= 3 && na < 3)
+			{
+				anchors[static_cast<std::size_t>(na++)] = a;
+				break;
+			}
+	if (na == 0)
+		return false;
+	// Two of us on one group: the lower index wards the enemy-facing approach, the higher the bush.
+	const auto& C = comms();
+	int partner = -1;
+	for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 6; ++i)
+	{
+		const auto& a = W.allies[static_cast<std::size_t>(i)];
+		if (i != W.my_index && a.alive && a.visible && task_group >= 0 && C.claim[static_cast<std::size_t>(i)] == task_group && cheb(a.pos, pos) <= 6)
+			partner = i;
+	}
+	const bool still = task == T_CAPTURE || tributing || (task == T_FARM && task_group >= 0 && W.groups[static_cast<std::size_t>(task_group)].near.is_set(pos));
+	bool bush_first = (P.opp_model && plan_now == PLAN_AMBUSH) || still || W.mono_mode || W.obj_mode;
+	if (partner >= 0)
+		bush_first = W.my_index > partner;
+	const bc::bitboard ally_w = bc::vision::ward_tiles(team::ally);
+	int best = -1;
+	float bs = -1e9f;
+	for (int k = 0; k < static_cast<int>(dp.wards.size()); ++k)
+	{
+		const auto& s = dp.wards[static_cast<std::size_t>(k)];
+		if (cheb(s.p, pos) > 2 || s.p == ward_pos || W.walls.is_set(s.p) || W.camp_occ.is_set(s.p))
+			continue;
+		int ad = BIG;
+		for (int j = 0; j < na; ++j)
+			ad = std::min(ad, cheb(s.p, anchors[static_cast<std::size_t>(j)]));
+		if (ad > 4)
+			continue;
+		bc::bitboard around;
+		around.draw_chebyshev(s.p, 3.f);
+		if (!(around & ally_w).is_empty())
+			continue; // already watched by one of ours
+		const bool bush = s.kind == DMW_BUSH_GROUP || s.kind == DMW_BUSH_ALTAR;
+		const float sc = (bush == bush_first ? 2.f : 0.f) + (s.slot == my_slot ? 1.f : 0.f) - 0.25f * static_cast<float>(ad) - 0.05f * static_cast<float>(k);
+		if (sc > bs)
+			bs = sc, best = k;
+	}
+	if (best < 0)
+		return false;
+	const vec2 t = dp.wards[static_cast<std::size_t>(best)].p;
+	try
+	{
+		if (bc::self().place_ward(t))
+		{
+			ward_round = round;
+			ward_pos = t;
+			return true;
+		}
+	}
+	catch (...)
+	{
+	}
+	return false;
+}
+
+void Brain::enemy_wards_update()
+{
+	// F3: one active ward per enemy champion, so a ward seen at a new tile replaces its owner's old one.
+	try
+	{
+		auto& W = world();
+		for (const auto& wd : bc::vision::wards(team::enemy))
+		{
+			const std::uint32_t h = ward_owner(wd);
+			const vec2 p = wd.position();
+			int idx = -1;
+			for (int i = 0; i < static_cast<int>(W.enemies.size()) && i < 8; ++i)
+				if (h != 0 && W.enemies[static_cast<std::size_t>(i)].handle == h)
+					idx = i;
+			if (idx >= 0)
+				ew_pos[static_cast<std::size_t>(idx)] = p, ew_round[static_cast<std::size_t>(idx)] = round;
+			else
+			{
+				bool found = false;
+				for (auto& t : ew_tiles)
+					if (t.first == p)
+						t.second = round, found = true;
+				if (!found && ew_tiles.size() < 12)
+					ew_tiles.push_back({ p, round });
+			}
+		}
+	}
+	catch (...)
+	{
+	}
+}
+
+bool Brain::near_enemy_ward(vec2 p, int r) const
+{
+	for (std::size_t i = 0; i < ew_pos.size(); ++i)
+		if (ew_round[i] > 0 && cheb(ew_pos[i], p) <= r)
+			return true;
+	for (const auto& t : ew_tiles)
+		if (round - t.second <= 200 && cheb(t.first, p) <= r)
+			return true;
+	return false;
 }
 
 // ---------------------------------------------------------------------------------------------- champion combat
@@ -3891,14 +4077,17 @@ bool Brain::pxs_deny_altar()
 	// Proxy style 6: body 0 stands next to the other team's best altar (their half, nearest their spawn); use_locks() locks it, combat()
 	// hits tributers. Hurt, it goes home like anyone else (safety() runs first).
 	auto& W = world();
-	int best = -1, bd = BIG;
+	std::vector<std::pair<int, int>> alt; // the other team's altars, nearest their spawn first; body k takes the k-th (wrapping)
 	for (std::size_t i = 0; i < W.altars.size(); ++i)
 	{
-		const vec2 a = W.altars[i];
-		if (W.dist_away(a) >= W.dist_home(a) || W.dist_away(a) >= bd)
-			continue;
-		best = static_cast<int>(i), bd = W.dist_away(a);
+		int dh = BIG, da = BIG; // the altar tile is a wall: measure through its approach tiles
+		for (const auto t : W.altar_approach[i])
+			dh = std::min(dh, W.dist_home(t)), da = std::min(da, W.dist_away(t));
+		if (da < BIG && da < dh)
+			alt.push_back({ da, static_cast<int>(i) });
 	}
+	std::sort(alt.begin(), alt.end());
+	const int best = alt.empty() ? -1 : alt[static_cast<std::size_t>(W.my_index) % alt.size()].second;
 	if (best < 0 || hp < 0.5f * max_hp)
 		return false;
 	const vec2 a = W.altars[static_cast<std::size_t>(best)];
@@ -4941,6 +5130,8 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 		const int s = style_now();
 		if (s == 4 && (g.monolith || g.gems >= P.om_heavy))
 			value *= P.pxs_obj_mult; // proxy: objective rusher
+		else if ((s == 2 || s == 3) && !g.ours)
+			value *= P.pxs_raid_mult; // proxy: invader / deathball raid the other half
 		else if (s == 5)
 		{
 			bc::bitboard near;
@@ -5005,6 +5196,8 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 		time += 25.f;
 	if (P.om_sight && sc_sight.x >= 0 && cheb(g.center, sc_sight) <= P.om_sight_r)
 		time += P.om_sight_cost; // an ally saw an enemy here: a cost, not a wall (P.om_sight)
+	if (P.ward_enemy && static_cast<int>(gems) >= P.ward_avoid_bag && near_enemy_ward(g.center, 6))
+		time += P.ward_avoid_cost; // their ward sees our bag here (P.ward_enemy)
 	if (P.threat_map)
 	{
 		// Where the enemies seen recently can be now, against what we can bring there (us + visible allies within 8 of it).

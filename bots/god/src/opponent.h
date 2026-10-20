@@ -65,6 +65,7 @@ struct OmWindow
 	int locks = 0, cancels = 0, altar_presence = 0;	  // our altars locked, our tributes cancelled, enemy-rounds next to our altars
 	int bush_hits = 0, unseen_hits = 0;				  // health lost with no visible attacker in reach (a bush within 4: bush hit)
 	int heavy_lost = 0;								  // heavy groups we saw taken while none of us claimed them
+	int vis_max = 0, inv_self = 0;					  // most enemies the leader saw at once; leader rounds with an enemy on our half
 };
 
 struct OppModel

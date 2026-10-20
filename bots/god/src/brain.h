@@ -241,7 +241,15 @@ private:
 	bool pxs_deny_altar();
 	void om_observe();
 	bool is_altar_tile(vec2 p) const;
+	bool altar_ours(std::size_t i) const; // our half by its approach tiles (the altar tile itself is a wall: no distance)
 	bool escort_alert() const; // the alert slot holds a fresh ESCORT (DANGER posted at an altar tile)
+	int my_slot = -1;		   // P.dm_plan: our pick slot in the draft plan (-1 unknown)
+	bool plan_ward(bool force); // P.ward_plan
+	std::array<vec2, 8> ew_pos{};	 // P.ward_enemy: last seen enemy ward per enemy index (owner)
+	std::array<int, 8> ew_round{};
+	std::vector<std::pair<vec2, int>> ew_tiles; // ... owner unknown (2.2.x SDK): tile, last seen round
+	void enemy_wards_update();
+	bool near_enemy_ward(vec2 p, int r) const;
 	struct DLRow
 	{
 		int round = -1000;

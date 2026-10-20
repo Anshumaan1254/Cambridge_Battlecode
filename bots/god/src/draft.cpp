@@ -11,6 +11,7 @@
 #include <span>
 
 #include "common.h"
+#include "dmplan.h"
 #include "params.h"
 
 #include <cmath>
@@ -22,6 +23,13 @@
 namespace
 {
 using D = bc::champion_draft;
+
+int g_last_pick = -1; // P.dm_plan: our pick of this draft turn (the plan written after it includes it)
+void note_pick(D c)
+{
+	g_last_pick = static_cast<int>(c);
+	bc::draft::pick(c);
+}
 
 struct Features
 {
@@ -278,7 +286,7 @@ bool table_pick(const std::vector<D>& mine)
 		const auto c = static_cast<D>(row[k]);
 		if (std::find(mine.begin(), mine.end(), c) == mine.end())
 		{
-			bc::draft::pick(c);
+			note_pick(c);
 			return true;
 		}
 	}
@@ -455,11 +463,11 @@ bool param_pick(const std::vector<D>& mine)
 			}
 			if (has(team, D::cassi_and_issac))
 			{
-				bc::draft::pick(D::cassi_and_issac);
+				note_pick(D::cassi_and_issac);
 				return true;
 			}
 		}
-		bc::draft::pick(first);
+		note_pick(first);
 		return true;
 	}
 	// Re-plan the remaining slots greedily, then pick the planned champion that comes first in the fixed order.
@@ -487,14 +495,69 @@ bool param_pick(const std::vector<D>& mine)
 			std::printf("PD round=%d type=%d pack=%.2f elk=%.2f obj=%d mono=%d open=%d enemy=%d pick=%d\n", static_cast<int>(mine.size()) + 1, pd_type,
 				MP.pack_share, MP.elk_share, (int)MP.objective, (int)MP.monolith_only, (int)MP.open_small, static_cast<int>(enemy.size()), static_cast<int>(c));
 #endif
-			bc::draft::pick(c);
+			note_pick(c);
 			return true;
 		}
 	return false;
 }
 } // namespace
 
+namespace
+{
+void dm_write()
+{
+	// P.dm_plan: rebuild the plan's pick lists and anchor ranking each draft turn (the map part once) and submit it; the last write wins.
+	static DraftPlan plan;
+	static bool built = false;
+	if (!built)
+	{
+		dm_build(plan);
+		built = true;
+	}
+	plan.team = static_cast<int>(bc::draft::team_size());
+	plan.ours.clear(), plan.theirs.clear();
+	for (const auto c : bc::draft::current_draft(team::ally))
+		plan.ours.push_back(static_cast<int>(c));
+	if (g_last_pick >= 0 && std::find(plan.ours.begin(), plan.ours.end(), g_last_pick) == plan.ours.end())
+		plan.ours.push_back(g_last_pick);
+	for (const auto c : bc::draft::current_draft(team::enemy))
+		plan.theirs.push_back(static_cast<int>(c));
+	// Anchor ranking (F4): Vesper (gold +33%), Marcella (+2 gold per gem tributed), Prism (focus per carried gem), then the most fragile.
+	std::vector<std::pair<float, int>> rank;
+	for (int k = 0; k < static_cast<int>(plan.ours.size()); ++k)
+	{
+		const D d = static_cast<D>(plan.ours[static_cast<std::size_t>(k)]);
+		const auto ct = static_cast<std::size_t>(dm_type_of(d));
+		const float hp = ct < bc::champion_designs.size() ? static_cast<float>(bc::champion_designs[ct].base_stats().base_health) : 1000.f;
+		const float pri = d == D::vesper_vale ? 3.f : d == D::marcella ? 2.f : d == D::prism ? 1.f : 0.f;
+		rank.push_back({ -pri * 1e5f + hp, k });
+	}
+	std::sort(rank.begin(), rank.end());
+	plan.anchor_slots.clear();
+	for (const auto& r : rank)
+		plan.anchor_slots.push_back(r.second);
+	const auto bytes = dm_encode(plan);
+	bc::draft_memory = bytes;
+}
+} // namespace
+
+void play_draft_pick();
+
 void play_draft()
+{
+	g_last_pick = -1;
+	play_draft_pick();
+	if (P.dm_plan)
+		try
+		{
+			dm_write();
+		}
+		catch (...)
+		{
+		}
+}
+
+void play_draft_pick()
 {
 	const auto mine = bc::draft::current_draft(team::ally);
 #ifdef LEGEND_FEATURES
@@ -543,7 +606,7 @@ void play_draft()
 			const auto c = static_cast<D>(f);
 			if (std::find(mine.begin(), mine.end(), c) == mine.end())
 			{
-				bc::draft::pick(c);
+				note_pick(c);
 				return;
 			}
 		}
@@ -606,5 +669,5 @@ void play_draft()
 	catch (...)
 	{
 	}
-	bc::draft::pick(pick);
+	note_pick(pick);
 }

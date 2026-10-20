@@ -664,6 +664,7 @@ struct Params
 	int opp_model = 0;			// 1: the leader classifies the enemy every om_window rounds (farmer, invader, deathball, objective, altar,
 								// ambush) and broadcasts a plan id (bit 7 of bytes 0-2, replacing the stance bits; ids 0-2 = the stance);
 								// every body applies the plan's preset in update_mode() after the stance block (deficit / race on top)
+	int om_act = 1;				// 0: classify and trace only (the plan id carries the learner's stance): calibration runs against labelled proxies
 	int om_window = 20;			// rounds per classification window (also the invasion counter's window)
 	int om_start = 100;			// no plan change before this round (both teams farm their own half in the opening)
 	float om_lambda = 0.6f;		// exponential forgetting of the archetype scores per window (a fired change detector halves it)
@@ -690,6 +691,19 @@ struct Params
 	float om_sight_cost = 25.f;
 	int om_sight_age = 8;		// rounds a sighting stays fresh
 
+	// ---- Draft-memory plan (F2; dmplan.h, docs/COMMS.md). 0 = no draft memory written or read (v8).
+	int dm_plan = 0;			// 1: the draft writes the versioned plan on every draft turn; Brain::init() reads and checks it
+
+	// ---- Ward coordination (F3). 0 = v8 warding.
+	int ward_plan = 0;			// 1: a ready ward goes to a draft-plan spot within reach that watches our task group, capture tile or banking
+								// altar and no ally ward covers (two bodies on one group: the lower index takes the enemy-facing approach,
+								// the higher the bush); bush spots first only under the AMBUSH plan, while standing still (capture, tribute,
+								// farming in reach) or on lone-monolith / objective maps (unconditional bush warding lost: ward_bush_maps)
+	int ward_enemy = 0;			// 1: enemy wards seen are remembered by owner (one active ward per champion); a carrier with >= ward_avoid_bag
+								// gems pays ward_avoid_cost rounds for a group or altar within 6 of one (their vision reveals the bag)
+	int ward_avoid_bag = 30;
+	float ward_avoid_cost = 8.f;
+
 	// ---- Sparring proxies (testing only, docs/TESTING.md; never on in a submission): a fixed playing style, optionally switching at
 	// set rounds, built from existing GOD mechanisms. 1 farmer (stays home, avoids fights), 2 invader (PUSH: their half free, deny,
 	// lower fight bar), 3 deathball (2 + the whole team follows the lowest living body: P.style 1's blob), 4 objective rusher (heavy
@@ -701,6 +715,8 @@ struct Params
 	int pxs_style3 = 0;			// style from round pxs_switch2
 	int pxs_switch2 = 0;
 	float pxs_obj_mult = 3.f;
+	float pxs_raid_mult = 3.f;	// styles 2 / 3: groups on the other team's half are worth this much more (a raid, not just a lower penalty)
+	int pxs_deny_bodies = 2;	// style 6: bodies 0 .. n-1 camp the other team's altars
 };
 
 #ifdef LEGEND_RUNTIME_PARAMS

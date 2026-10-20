@@ -160,6 +160,8 @@ camp deaths; it is carried into the GOD v7 candidate only if it holds on top of 
 |---|---|---|---|---|---|
 | `_g7cd` | `cd_range` 13, `cd_enemy_d` 8, `cd_hidden` 3 (the light camp-range fix that was level on v5) | **23** (deaths 688-785) | 30 | **31** | 26 / 1066.6 |
 | `_g7f150` | `open_follow_until` 150: every body from index 1 farms the lowest-index claimant's group when it holds >= 2000 camp health (Nyx's 4-stack on elk groups) | **23** | - | - | 7 deaths unopposed on nx60x60 alone, first capture r88, 30 banked by r200 (v6 38) |
+| `_g7db3` | `dash_box` 3: a dash kit's unstick box 7x7 on hole maps (the Ren hole-pocket stall) | 27 (13 games flipped either way) | running | - | 84 / 1050.7 (nx60x60 B 930 -> 866, nx61x71 A 1256 -> 1150, but ambush_v3 A 1195 -> 1312, nx51x40, nx100x100 B slower) |
+| `_g7h3` | `cd_hidden` 3 alone (camps hidden behind a wall / bush that hit us count as awake for 3 rounds) | 24 | running | - | - |
 
 Why the blob opening did not reproduce Nyx's (trace `opening.py`, nx60x60 unopposed): the followers do pick the same elk group, but they still start
 hitting it 10-22 rounds apart (Issac r35, Ryth r39, Cassi r44, Stellar r45, Varg r57: different first targets before the leader's claim settles, the

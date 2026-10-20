@@ -337,6 +337,13 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   unstick box 7x7 on hole maps: the Ren pocket stall) and `cd_hidden` 3 alone (`_g7h3`) running in `$S/q20.sh` with the control `_g7x0` vs `_g4`, then
   idle / `_pw`. 2.2.5 scratch project `$S/p225` still set up for the old-ruleset build check (`tools/ship_god.sh` does the 3.0.1 side).
 
+- **16:50 UTC**: q20 on top of v6 (42 games vs `_g4`; v6 30): control `_g7x0` **30 (= v6: the new code is inert when off)**, `dash_box` 3 **27** (13 games
+  flipped either way; unopposed deaths 84 vs 96, pace 1050.7 vs 1044.1: the nx60x60 / nx61x71 stalls shorten, ambush_v3 / nx51x40 / nx100x100 get
+  slower), `cd_hidden` 3 alone **24**: both parked (SUGGESTIONS). Every switch tried on top of v6 so far loses or ties head-to-head; v6 stays shipped.
+  Next lever from the traces (not built): the synchronized elk start (the first body at a heavy group holds one tile outside the camp's engine range
+  until the other claimers are within ~2 rounds, max ~8 rounds), and no one-by-one retreats while the stack holds (Nyx: 9 rounds per elk, nobody
+  leaves, capture-recall after the group).
+
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first
 

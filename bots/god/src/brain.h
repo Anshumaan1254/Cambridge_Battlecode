@@ -236,8 +236,14 @@ private:
 	int om_ward_tiles_win = -1;
 	std::vector<int> om_gst;			// per group: state the leader last saw (heavy groups taken unclaimed)
 	int om_lock_win = -1, om_lock_mask = 0;
+	std::vector<int> om_heavy_ids;		// heavy groups and monoliths (fixed for the match: the leader's per-turn loop visits only these)
+	int om_half_round = -1;				// om_enemy_ours(): per-turn memo of "visible enemy k stands on our half"
+	std::array<signed char, 8> om_half{};
+	mutable std::vector<signed char> altar_side; // altar_ours(): side per altar, computed once (-1 = not yet)
+	bool om_enemy_ours(std::size_t k);
 	vec2 sc_sight{ -1, -1 };			// P.om_sight: fresh DANGER sighting this turn (scoring cost)
 	void om_tick();
+	void om_tick_traced(); // om_tick, plus its fuel cost printed in FUEL_TRACE builds
 	int style_now() const; // P.pxs_style: the proxy style this round
 	bool pxs_deny_altar();
 	void om_observe();

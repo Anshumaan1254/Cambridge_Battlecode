@@ -711,7 +711,7 @@ void Brain::turn()
 			learner().frozen = C.plan >= PLAN_INVADER;
 		learner().tick(round, W.my_index == 0, false);
 		if (P.opp_model || P.om_sight)
-			om_tick();
+			om_tick_traced();
 		if (W.my_index == 0)
 		{
 			if (P.opp_model)
@@ -759,7 +759,7 @@ void Brain::turn()
 			L.frozen = C.plan >= PLAN_INVADER;
 		L.tick(round, W.my_index == 0, true);
 		if (P.opp_model || P.om_sight)
-			om_tick();
+			om_tick_traced();
 		if (W.my_index == 0)
 		{
 			if (P.opp_model)
@@ -982,12 +982,41 @@ bool Brain::is_altar_tile(vec2 p) const
 
 bool Brain::altar_ours(std::size_t i) const
 {
+	// Walls, spawns and approach tiles never change, so neither does an altar's side: computed once per altar. Recomputing it (two
+	// distance reads per approach tile, every altar) cost the opponent model's leader ~5k fuel a turn (FUEL_TRACE, nx60x60 ~10k).
 	const auto& W = world();
-	int dh = BIG, da = BIG;
-	if (i < W.altar_approach.size())
-		for (const auto t : W.altar_approach[i])
-			dh = std::min(dh, W.dist_home(t)), da = std::min(da, W.dist_away(t));
-	return dh < BIG && dh <= da;
+	if (altar_side.size() != W.altars.size())
+		altar_side.assign(W.altars.size(), -1);
+	if (i >= altar_side.size())
+		return false;
+	auto& s = altar_side[i];
+	if (s < 0)
+	{
+		int dh = BIG, da = BIG;
+		if (i < W.altar_approach.size())
+			for (const auto t : W.altar_approach[i])
+				dh = std::min(dh, W.dist_home(t)), da = std::min(da, W.dist_away(t));
+		s = dh < BIG && dh <= da ? 1 : 0;
+	}
+	return s > 0;
+}
+
+bool Brain::om_enemy_ours(std::size_t k)
+{
+	// Visible enemy k nearer our spawn than theirs and not on its own spawn; one evaluation per enemy per turn (three host reads), the
+	// spawn test only when the distances already say "ours" (an enemy on its spawn is nearer its own).
+	if (om_half_round != round)
+		om_half_round = round, om_half.fill(-1);
+	if (k >= om_half.size())
+		return false;
+	auto& v = om_half[k];
+	if (v < 0)
+	{
+		const auto& W = world();
+		const vec2 p = W.enemies[k].pos;
+		v = W.dist_home(p) < W.dist_away(p) && !W.enemy_spawn.is_set(p) ? 1 : 0;
+	}
+	return v > 0;
 }
 
 bool Brain::escort_alert() const
@@ -995,6 +1024,19 @@ bool Brain::escort_alert() const
 	// The escort reuses the DANGER code at an altar tile (no enemy can stand there); with om_sight on, DANGER elsewhere is a sighting.
 	const auto& C = comms();
 	return C.alert_kind == AL_DANGER && (!P.om_sight || is_altar_tile(C.alert_pos));
+}
+
+void Brain::om_tick_traced()
+{
+#ifdef FUEL_TRACE
+	// tools/fueltrace.py: fuel spent by the opponent model's per-turn code (the two fuel reads only exist in FUEL_TRACE builds).
+	const auto f0 = bc::fuel_remaining();
+	om_tick();
+	const auto f1 = bc::fuel_remaining();
+	debug_block({ std::printf("OMF r=%d i=%d %lld\n", round, world().my_index, static_cast<long long>(f0) - static_cast<long long>(f1)); });
+#else
+	om_tick();
+#endif
 }
 
 void Brain::om_tick()
@@ -1017,6 +1059,10 @@ void Brain::om_tick()
 			om_theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
 			om_ad = W.ally_deaths, om_ed = W.enemy_deaths, om_ad_home = learner().ally_deaths_our_half;
 			om_gst.assign(W.groups.size(), -1);
+			om_heavy_ids.clear();
+			for (const auto& g : W.groups)
+				if (g.monolith || g.gems >= P.om_heavy)
+					om_heavy_ids.push_back(g.id);
 		}
 		if (wid != M.win_id)
 		{
@@ -1070,10 +1116,9 @@ void Brain::om_tick()
 	}
 	if (!alive)
 		return;
-	auto ours_half = [&](vec2 p) { return !W.enemy_spawn.is_set(p) && W.dist_home(p) < W.dist_away(p); };
 	if (P.opp_model && om_inv_win != wid)
-		for (const auto& e : W.enemies)
-			if (e.alive && e.visible && ours_half(e.pos))
+		for (std::size_t k = 0; k < W.enemies.size(); ++k)
+			if (W.enemies[k].alive && W.enemies[k].visible && om_enemy_ours(k))
 			{
 				C.bump_invasion();
 				om_inv_win = wid;
@@ -1085,9 +1130,12 @@ void Brain::om_tick()
 		if (!busy)
 		{
 			const Enemy* best = nullptr;
-			for (const auto& e : W.enemies)
-				if (e.alive && e.visible && ours_half(e.pos) && (!best || W.dist_home(e.pos) < W.dist_home(best->pos)))
+			for (std::size_t k = 0; k < W.enemies.size(); ++k)
+			{
+				const auto& e = W.enemies[k];
+				if (e.alive && e.visible && om_enemy_ours(k) && (!best || W.dist_home(e.pos) < W.dist_home(best->pos)))
 					best = &e;
+			}
 			if (best && !(C.alert_kind == AL_DANGER && C.fresh(round, 2) && cheb(C.alert_pos, best->pos) <= 3))
 				C.post(AL_DANGER, best->pos, round);
 		}
@@ -1100,53 +1148,65 @@ void Brain::om_observe()
 	auto& W = world();
 	auto& w = opp_model().cur;
 	const int wid = round / std::max(1, P.om_window);
-	// Largest pack: enemies within 4 of one visible enemy, itself included.
+	// Most turns see no enemy: the enemy loops below then add nothing, so they are skipped (same signals, less fuel).
+	int nv = 0;
 	for (const auto& e : W.enemies)
+		nv += e.alive && e.visible;
+	if (nv > 0)
 	{
-		if (!e.alive || !e.visible)
-			continue;
-		int n = 0;
-		for (const auto& o : W.enemies)
-			n += o.alive && o.visible && cheb(o.pos, e.pos) <= 4;
-		w.pack = std::max(w.pack, n);
-	}
-	// Enemies, locks next to our altars (altars on our half).
-	for (std::size_t i = 0; i < W.altars.size(); ++i)
-	{
-		const vec2 a = W.altars[i];
-		if (!altar_ours(i))
-			continue;
+		// Largest pack: enemies within 4 of one visible enemy, itself included.
 		for (const auto& e : W.enemies)
-			w.altar_presence += e.alive && e.visible && cheb(e.pos, a) <= 3;
-		if (W.enemy_locks.is_set(a))
 		{
-			if (om_lock_win != wid)
-				om_lock_win = wid, om_lock_mask = 0;
-			if (i < 30 && !(om_lock_mask & (1 << i)))
-				om_lock_mask |= 1 << i, ++w.locks;
+			if (!e.alive || !e.visible)
+				continue;
+			int n = 0;
+			for (const auto& o : W.enemies)
+				n += o.alive && o.visible && cheb(o.pos, e.pos) <= 4;
+			w.pack = std::max(w.pack, n);
 		}
-	}
-	// Our own tribute cancelled under threat (handle_channel) this turn or last.
-	if (tribute_cancel_round >= round - 1 && tribute_cancel_round != om_cancel_seen)
-		om_cancel_seen = tribute_cancel_round, ++w.cancels;
-	{
-		int nv = 0;
 		bool home = false;
-		for (const auto& e : W.enemies)
-			if (e.alive && e.visible)
-				++nv, home |= !W.enemy_spawn.is_set(e.pos) && W.dist_home(e.pos) < W.dist_away(e.pos);
+		for (std::size_t k = 0; k < W.enemies.size(); ++k)
+			if (W.enemies[k].alive && W.enemies[k].visible)
+				home = home || om_enemy_ours(k);
 		w.vis_max = std::max(w.vis_max, nv);
 		w.inv_self += home;
 	}
+	// Enemies, locks next to our altars (altars on our half).
+	const bool any_lock = !W.enemy_locks.is_empty(); // one host read instead of one per altar
+	if (nv > 0 || any_lock)
+		for (std::size_t i = 0; i < W.altars.size(); ++i)
+		{
+			const vec2 a = W.altars[i];
+			if (!altar_ours(i))
+				continue;
+			for (const auto& e : W.enemies)
+				w.altar_presence += e.alive && e.visible && cheb(e.pos, a) <= 3;
+			if (any_lock && W.enemy_locks.is_set(a))
+			{
+				if (om_lock_win != wid)
+					om_lock_win = wid, om_lock_mask = 0;
+				if (i < 30 && !(om_lock_mask & (1 << i)))
+					om_lock_mask |= 1 << i, ++w.locks;
+			}
+		}
+	// Our own tribute cancelled under threat (handle_channel) this turn or last.
+	if (tribute_cancel_round >= round - 1 && tribute_cancel_round != om_cancel_seen)
+		om_cancel_seen = tribute_cancel_round, ++w.cancels;
 	// Health lost with no visible attacker in reach and no live camp near us (a camp hits from up to 5): a hit from a bush / out of sight.
-	bc::bitboard near5;
-	near5.draw_chebyshev(pos, 5.f);
-	if (hp < last_hp - 1.f && !in_awake_camp_range() && (near5 & W.camp_occ).is_empty())
+	// The cheap tests first: the bitboard ones cost host calls and an allocation.
+	if (hp < last_hp - 1.f)
 	{
 		bool seen = false;
 		for (const auto& e : W.enemies)
 			seen |= e.alive && e.visible && cheb(e.pos, pos) <= std::max(e.kit.attack_range + (e.kit.ranged ? 0 : 1), 5);
-		if (!seen)
+		bool quiet = !seen && !in_awake_camp_range();
+		if (quiet)
+		{
+			bc::bitboard near5;
+			near5.draw_chebyshev(pos, 5.f);
+			quiet = (near5 & W.camp_occ).is_empty();
+		}
+		if (quiet)
 		{
 			++w.unseen_hits;
 			bc::bitboard near;
@@ -1203,9 +1263,10 @@ void Brain::om_observe()
 	if (om_gst.size() == W.groups.size())
 	{
 		const auto& C = comms();
-		for (const auto& g : W.groups)
+		for (const int id : om_heavy_ids)
 		{
-			if (!(g.monolith || g.gems >= P.om_heavy) || g.seen_round != round)
+			const auto& g = W.groups[static_cast<std::size_t>(id)];
+			if (g.seen_round != round)
 				continue;
 			int& prev = om_gst[static_cast<std::size_t>(g.id)];
 			if (prev == ST_ALIVE && g.st != ST_ALIVE)

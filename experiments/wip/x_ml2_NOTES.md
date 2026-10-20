@@ -161,6 +161,9 @@ without --export-gb), then `ml2_model.h` = header + `ML2_NF = 58` + the three fi
 | `_ml3e40` | ml2_enter 0.4 (P(die8) < 0.15) | 147/170 86.5 | 27 27 29 32 32 | 16/34 (340-329) | 127/170 |
 | `_ml3er40` | + ml2_recall_kill 0.4 (cancel a heal/shop recall) | 147/170 | same games as `_ml3e40` | 16/34 (340-329) | 127/170 |
 | `_ml3e50` | ml2_enter 0.5 | 148/170 87.1 | | 17/34 (344-334) | 146/170 |
+| `_ml3e30` | ml2_enter 0.3, ml2_enter_die 0.1 | **149/170 87.6** | 29 27 29 32 32 | **17/34 (334-344)** | 114/170 (our deaths 1,135, theirs 2,000) |
+| `_ml3t25` | two-action enter, margin 0.25 | 142/170 83.5 | 26 27 28 29 32 | 19/34 (270-343) | 71/170 |
+- `_ml3e30` meets the ship rule (>= 149, >= 17/34) exactly: a tie, not a gain. `_ml3t25` beats `_mlkc40` head-to-head but loses to the proxies.
 - The recall cancel never changes a game: a heal/shop recall starts only with no enemy within 7 (`safe_to_recall`), and one that
   comes near cancels the recall anyway (`threat_close`), so the model is rarely evaluated while recalling with a fight next to us.
 - New switch `ml2_stay` T: skip combat()'s early flee (isolated / outmatched, not in reach) when P(die8) < T (variants `_ml3s10`, `_ml3s15`).

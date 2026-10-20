@@ -159,6 +159,14 @@ running or unfinished, and what to do next, so a new agent can continue without 
   o2_ring_size 1, `_pz_rj0` recall_join 0); `q24.sh` official screen of `_pz_ar0` (vs `_mlkc40` + 5 proxies) after `q20`. ML agent: `_ml3e40`
   (enter fights at P(kill8) >= 0.4, P(die8) < 0.15) 147/170, h2h 16/34: no; more enter variants queued.
 
+- **Checkpoint (after q20-q26)**: held-out totals (gold, gold2, gold3, obj; vs `_mite` / `_ifish` / `_px9`, 156 each): `_mlkc40` 126 / 131 / 98 =
+  **355/468**, `_ch2` 138 / 121 / 99 = 358, **`_pz_ar0` (= `_mlkc40` without `aoe_reach5`) 141 / 131 / 115 = 387**. But on the official 34
+  `_pz_ar0` 137/170 vs 149 (h2h 14/34): `aoe_reach5` gains elkring +3, monolith +3, rushbait-v2 +3, packs +2 there (so no simple scarcity gate)
+  and was selected on those maps (biased). Running `q27.sh`: `_pz_ar0` on the 67-map wide pool vs the 5 proxies + h2h vs `_mlkc40`
+  (`_mlkc40` there: 475/670). `big_reward` 100 on `_mlkc40` (`_m15br`): objective pool 85/130 vs 79 (stealing proxies +5) but official
+  145/170 (h2h 17): off. `_m16a` (no reach5 + big_reward) 135. ML agent phase 2 (`x_ml3.patch`, `bots/_x_ml3`): `ml2_enter` 0.3 / 0.4 / 0.5
+  149 / 147 / 148 (h2h 17 / 16 / 17), recall cancel never fires, two-action model 142 (h2h 19): ties at best, nothing shipped.
+
 ## S12. SESSION 12 (2026-10-19, same container as S10/S11): read this first
 
 - Shipped bot at the start: **`legend_m14`** (`submissions/legend.zip` sha256 50ca7600…, frozen `bots/_pg3`, S7R). Baseline for every A/B: `_pg3`.

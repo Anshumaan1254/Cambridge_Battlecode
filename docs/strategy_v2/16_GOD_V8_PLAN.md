@@ -51,3 +51,9 @@ obsolete (pain map), so it waits for its results.
   (v7 as A 66-1012, legend_m15 as A 22-1012; captures 4 vs 46, banks 3 vs 46): the first centre fight (r26-40) goes 5 deaths to 4 against A,
   then A dies 53 times of 72 on its own half; unopposed A finishes at r1091 (B r965). A mirror turn-order artifact plus a snowball, not a
   draft problem. contest_v3 and nx61x61: legend_m15 wins both sides (v7 lost the 200-gem monolith bag as A; nx61x61 bags lost 262 vs 125).
+- Phase 3/4/6 cells (vs `_g4` / `_pws` / `_pw` / `_m15`; v7 31 / 25 / 31 / 28 = 115; all on v7's HoR):
+  - learners (P0-3): `learn_stance` 0: `_g4` 27, `_pw` 32 (-3: keep it); **`learn_pain` 0: `_g4` 32, `_pw` 33 (+3: the pain map goes)**.
+  - support (P0-4): `sup_mode` 1 28 / 28 / 36 / 33 = **125 (+10)**; 9 (1|8) 122; 15 118; 13 (1|4|8) 113: bit 4 (step toward help) costs, bit 8 adds nothing.
+  - **escort (P0-6, + `alert_prio`): `escort_bag` 60 34 / 28 / 34 / 31 = 127 (+12)**; 100: 121 (+6). `alert_prio` alone `_g4` 32, `_pw` 33.
+  - `lock_hits_sdk` 1 (engine lock hits): `_g4` 29, `_pw` 32 (-1): not changed.
+- Combined candidates queued (`q41.sh`): `_v8k2` = HoR strike + camp dash + escort 60 + alert priority + no pain map; `_v8k1` = `_v8k2` + `sup_mode` 1.

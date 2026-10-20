@@ -261,6 +261,17 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   every 200-round bucket (59-75 vs ~30); contest_v3 (57 deaths vs c47c8c26): the opening 5v5 brawl at r38-55 lost (their Stellar cast first
   from 5), then bodies walking alone into their roaming 3 (Prism, Marcella, Stellar) at 64-98% health, dead in 1-9 rounds. ISSUES #21 (objective
   draft on a central group), #22 (`gold_rank_of` order).
+- **14:55 UTC (after the account limit, 12:15-14:50)**: every queued cell landed (42 games each; v5 `_g5br` = 28 vs `_g4`, 30 vs `_pw`, 31 vs `_ph`
+  (roaming Power proxy), 34 vs `_pc` (Prism, Stellar, C&I, Marcella, HoR + Power), 30 vs `_m15`). Level: `build_tail` 1 28, `build_react` 2.5 / 3.5 27 / 28
+  (vs `_pw` 31 / 29), `pd_obj_side` 27, `obj_min_attackers` 1 25 / 30, `burst_far` 27-28 / 29. Worse: `big_reward` 40 (+pre / +dive) 23 / 23 / 23 but vs
+  `_pw` 33 / 33 / 34; `kill_captures` 19 / 17 (vs `_pw` 27); `gold_rank` 2 18 (vs `_pw` 23), 1 within 2 tiles 16, 2 within 3 17; the ML refit 18 / 22 / 27
+  (agent ml4 report: not shipped, `_g5ml20` level, a ladder A/B option). Forced drafts vs `_pw` (control 29): HoR for the pair 31, the rest 15-29.
+  The camp-death agent hit the account limit before tracing anything (resumed 14:55). **Candidate GOD v6 `_g6`** = v5 + `build_tail` 1 +
+  `build_react` 2.5 + `pd_obj_side` 1 + draft priors `pd_hor_prior` 0.4, `pd_counter_hor` 0.8 (per enemy HoR / Marcella / Vendetta pick seen before
+  our pick: HoR takes the pair's slot, never a frontliner's; cancelled once we hold the pair), `pd_front_free` 0. Checked drafts: vs a HoR-first
+  team Ren, Stellar, Varg, Ryth, HoR (4: Ren, Stellar, Ryth, HoR), vs Ren-first the usual five, vs Prism / Marcella / HoR (bruisers picked last) the
+  usual five; nx50x50 no caster draft. `_g6m` = `_g6` + the refit danger model at 0.2. Queue q16: both vs `_g4`, `_pw`, `_pc`, `_ph`, `_m15`, idle;
+  `_g5os` vs `_pw`. Ship rule: `_g6` >= v5 head-to-head (28) and better on the Power proxies; then `_mite`, `_ifish`, `_px9`.
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

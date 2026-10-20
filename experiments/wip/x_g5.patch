@@ -529,7 +529,7 @@ diff -ruN bots/_g4/src/brain.h bots/_x_g5/src/brain.h
  	vec2 ust_anchor{ -1, -1 };
 diff -ruN bots/_g4/src/draft.cpp bots/_x_g5/src/draft.cpp
 --- bots/_g4/src/draft.cpp	2026-10-20 10:13:52.707005123 +0000
-+++ bots/_x_g5/src/draft.cpp	2026-10-20 11:46:10.982621901 +0000
++++ bots/_x_g5/src/draft.cpp	2026-10-20 14:55:42.379313450 +0000
 @@ -27,6 +27,9 @@
  	int team = 3;
  	int groups = 0, gem = 0, gold = 0, wolf = 0, elk = 0, mono = 0, multi = 0, harmless = 0;
@@ -623,8 +623,8 @@ diff -ruN bots/_g4/src/draft.cpp bots/_x_g5/src/draft.cpp
 +	int e_bruise = 0;
 +	for (auto e : enemy)
 +		e_bruise += e == D::heart_of_ruin || e == D::marcella || e == D::vendetta;
-+	if (c == D::heart_of_ruin)
-+		v += P.pd_counter_hor * e_bruise;
++	if (c == D::heart_of_ruin && !pair)
++		v += P.pd_counter_hor * e_bruise; // Heart of Ruin takes the pair's slot, never a frontliner's (HoR for Varg / Ryth: 19 / 14 of 42)
 +	if (c == D::cassi_and_issac)
 +		v -= P.pd_counter_hor * e_bruise;
 +	if (c == D::vesper_vale || c == D::marcella)

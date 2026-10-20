@@ -108,6 +108,14 @@ def cmd_run(a):
 		if r.returncode != 0:
 			sys.exit(f'build {b} failed:\n{r.stdout[-2000:]}{r.stderr[-2000:]}')
 	maps = maps_of(a.maps)
+	# Rows are keyed by the map's file name only: a copy with the same name in another folder would reuse the other
+	# map's games (session 13: maps/comp30/ambush reused maps/comp/ambush rows). Refuse such pools.
+	stems = {os.path.splitext(os.path.basename(m))[0] for m in maps}
+	def copies(s):
+		return {open(f, 'rb').read() for f in glob.glob(os.path.join(ROOT, 'maps', '**', s + '.map26a'), recursive=True)}
+	clash = sorted(s for s in stems if len(copies(s)) > 1)  # identical copies (maps/var17 vs maps/ct) are harmless
+	if clash:
+		sys.exit(f'map names used by more than one file under maps/ (rows would mix): {", ".join(clash)}; rename the copies')
 	done = done_keys(a.bot, a.opp, a.release)
 	todo = [(m, s) for m in maps for s in 'AB' if (os.path.splitext(os.path.basename(m))[0], s) not in done]
 	print(f'{a.bot} vs {a.opp}: {len(maps) * 2 - len(todo)} of {len(maps) * 2} games already in the ledger, {len(todo)} to play', flush=True)

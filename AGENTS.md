@@ -3,8 +3,8 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-20 10:55 UTC (session 14: GOD v3 vs Nyx; read §S14 first, then §S13-GOD)**.
-  Rule from the user: update this file and push at every step. Start with **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
+- Last updated: **2026-10-20 10:40 UTC (end of session 13: HANDOFF to the next agent; read §S14 first, then §S13-GOD, §S13)**.
+  Rule from the user: update this file and push at every step. Start with **§S14**, then **§S13-GOD**, **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
   never force) before every push. No PR unless the user asks.
@@ -14,56 +14,136 @@ running or unfinished, and what to do next, so a new agent can continue without 
 
 ---
 
-## S14. SESSION 14 (2026-10-20 10:10 UTC, new container): GOD v3 against Nyx: read this first
+## S14. HANDOFF (2026-10-20 10:40 UTC, end of session 13): the next agent starts here
 
-- **The user's request**: we lose almost every game to the team **Nyx** after patch 3.0 (17 of 20; the two zips `new_maps_us_vs_nyx.zip`,
-  `old_maps_us_vs_nyx.zip` = 4 match groups, 20 games, we are side A in all). Study them, find what Nyx does better, build a GOD that beats
-  it (loopholes allowed), better than GOD v2 (`submissions/god.zip`) and `legend_m15`; no hardcoded map strategy; every change a switch in
-  `params.h` + a ledger A/B on `maps/nyx_new` + `maps/comp30`; ship a zip only when measured better (h2h vs GOD v2 and vs the proxies);
-  push to `main` at every step; checkpoints here (§S14.8); few subagents; never `pkill -f`.
-- **Setup**: `tools/setup_session.sh` now installs **cambc 3.0.1** (all 30 old bots + proxies build and hash-check ok). `cambc maps pull` is
-  **blocked** (proxy 403 on 2026a.battlecode.co.uk): the maps come from the replays. Baselines rebuilt from the zips: `bots/_g4` = GOD v2
-  (`submissions/god.zip`, source hash 19a1785457d3 = `bots/god`), `bots/_m15` = `legend_m15` (hash 7f1fbbaa8fa8 = `bots/legend`).
-- **Inputs now in the repo**: `experiments/nyx_oct20/<group>_<nn>_<map>.repl26a` (20 replays) + `index.json` (map, side A, drafts, score)
-  + `analysis/` (run_all.py report and CSVs, `stalls_us.txt`, `group_kills_by_team.txt`); maps: `maps/comp30/` = the 10 changed official
-  maps seen in the replays (ambush30 ... lanes30; gem / gold clusters added), `maps/nyx_new/` = the 10 new maps (`nyx_<size>_<sym>_c<n>_<hash>`).
-  Tools: `tools/strategy_v2/analyze.py` (patch-3.0 champion stats, Heart of Ruin), `stuck_eps.py` (stall episodes), `killers.py` (bodies and
-  rounds per camp-group kill, both teams). Scratchpad scripts (lost with the container): `screen_nyx.sh BOT OPP...` = ledger cells on the 20
-  Nyx maps (`--maps 'maps/nyx_new/*.map26a,maps/comp30/*.map26a' --jobs 3`).
+### S14.1 The task you inherit (the user's words, in priority order; the prompt the user was given for you: `docs/HANDOFF_PROMPT_S14.md`)
+1. **"We are losing every time on the new maps."** The user uploaded two match zips of the best opponent right now, **Nyx**, vs our GOD
+   bot: `new_maps_us_vs_nyx.zip` (patch-3.0 maps nobody had seen) and `old_maps_us_vs_nyx.zip` (the official maps as changed by the patch).
+   Request: study the new maps, develop the strategy and drafting, **reverse-engineer Nyx's good strategies**, analyse the old maps too, and
+   **make a new GOD that is better. Do it first.** Also: "check new maps from the SDK or cambc and download them" (blocked here, S14.4).
+2. Patch 3.0 (Oct 20 patch notes, text in `docs/patch_notes/week2_20261020.txt`, summary in §S13-GOD): the bot must use every change
+   (re-balanced champions, re-valued camps, Golem, Heart of Ruin, changed maps) and be "the best of its kind". **The bot's name and level is GOD.**
+3. Still open from earlier: "legend m15 is still losing to Mite and Nyx: fix it" (§S13, last checkpoint). GOD is the answer now; Mite has
+   not been seen since the patch.
 
-### S14.1 What Nyx does (20 games, `experiments/nyx_oct20/analysis/report.md`)
+### S14.2 The user's working rules (all still in force)
+- **Agents (new rule, end of session 13): few subagents, few parallel background tasks. Fable subagents for the main / heavy tasks,
+  Opus for the tasks below that, then Sonnet, then Haiku for the smallest (documentation, file moves).** Do the core reasoning yourself.
+- Single branch `main`: commit and push at every step (`git pull --no-rebase` before each push, never force); no PR unless asked.
+  Keep this file updated at every step (a checkpoint bullet in §S14.7 with the time, what ran, what it showed, what runs now).
+- **No hardcoded map strategy**: every plan and draft choice must come from map features computed at runtime (the final sprint changes the
+  map pool again). Report anything hardcoded in `ISSUES.md`; strategies that should work but did not measure better go in `SUGGESTIONS.md`.
+- Loopholes, exploits and reverse engineering are allowed. Ship a new zip only when it is measured better; push the zip first, then continue.
+- The four PDFs in the session-13 upload are personal documents: never use or commit them. Never `pkill -f` / `killall` (kill by PID).
+- The user answers slowly and is often away: do not stop to ask; decide, record the decision here, continue.
 
-- **Draft**: Ren, Stellar, C&I, Ryth, Varg (= the old ifish table; our `mapdraft` 2 defaults by team size reproduce it); 3-champion maps Ren,
-  Stellar, C&I; three games Varg, Vendetta, C&I, Willow, Ryth. We drafted Heart of Ruin instead of C&I on the four 3-champion maps and lost
-  3 of them (`_g4` also loses both nyx_31x31_c3 games to `_m15`'s C&I draft): **`pd_hor3` is wrong**. On the new 50x50 ($27, E1, g3 per side)
-  the parameter draft called it an objective map (one gem group + any multi-camp group) and took Prism / Tavi: 72-1008, 39 deaths.
-- **Economy is the gap (x2.3)**: camp gems 10,740 vs 24,203; gold earned 86,615 vs **237,299**; captures 492 vs 1,160; camp time 15.5% vs
-  20.5% of alive rounds; camp damage per camp round 89 vs 144; idle 8.3% vs 3.3% of body-rounds. Camp-group kills (first hit to kill):
-  **2 gold clusters 149 of ours (13.9 rounds) vs 538 (8.1)**, 4 gold 25 vs 101, 1gold+1wolf 61 (211 rounds!) vs 163 (84), 1elk+1gem 23 (167)
-  vs 66 (116), 2elk+2gold 8 vs 42 (72). Same bodies per kill (1.2-3.5): the difference is damage and commitment, not team size.
-- **Builds**: Nyx buys **Treasure first on every body** (Stellar / Cassi TfE at r46-180, Ren ThE, Issac TsE), then Jungle (dmg stat) or Bruiser
-  health, Durability, then **Power in the damage stat forever** (1,097 Power-dmg emblems in 20 games; their Stellar ends with PfE20-27 = 1,500+
-  focus, 3,000-damage casts). Damage points per 1,000 gold 33.6 vs our 21.6; our first emblems come 100-300 rounds later (Cassi r641 vs r140).
-- **Recalls**: 1,752 vs 1,136, at 0.70 health (ours 0.42), 788 overlapping a capture (ours 341): recall as transport after every capture.
-- **Deaths**: 333 vs 271; 51% of ours are bursts from >= 60% health; their Stellar killed 79 of our bodies, Cassi 49.
-- **Hard stalls (the three worst losses)**: (1) `nyx_50x41` (one altar inside a wall box whose only neighbour tile is a monolith's spawn tile):
-  all six of our bodies stood next to the sleeping monolith for 1,000+ rounds trying to walk onto its tile (sticky tribute to an altar whose
-  approach tile is a camp tile), 0-0 at r2000, lost on gold 9,262 vs 56,770 (`_m15` and `_g4` both stall there locally too); (2) `nyx_61x71`:
-  our Ren stood at (42,24) for 1,197 rounds with a 44-gem bag (reproduces locally: `_g4` Ren r271-732, Issac r1022-1216 on the same tile);
-  (3) `nyx_60x60` (878 holes): Ren and Issac oscillated between three tiles ~400 rounds each (dash-hole routing).
-- Unopposed `_g4` pace on the 20 maps: mean 1,116 rounds (Nyx contested: 757-1,534): our farming alone is not slower; contact, stalls and
-  the damage snowball are.
+### S14.3 What is shipped and which bot played Nyx
+- **`submissions/god.zip` = GOD v2** (sha256 f1a13eef…; source `bots/god` = frozen `bots/_g4`, hash 19a1785457d3; history
+  `submissions/history/god_v2_20261020.zip`). This is the patch-3.0 build to upload. `submissions/legend.zip` = `legend_m15` (pre-patch tuning;
+  it still compiles on 3.0.1). GOD v2 = m15 + Heart of Ruin in builds, golem in the map analysis, engine camp ranges (elk 4, golem 4,
+  monolith 5) in danger / ring / kite plans, damaging-dash handling, `pd_hor3` (Heart of Ruin instead of C&I at team size 3), `gold_value` 0.33.
+- The Nyx games were played by a GOD build (our 3-champion drafts are Ren, Stellar, Heart of Ruin = `pd_hor3`).
+- Camp rewards are read from the engine at runtime (`world.cpp`: `g.gem_value()`, camp stats), so the new values are already used.
 
-### S14.2 Baselines on the 20 Nyx maps (ledger_v3, 40 games per cell)
+### S14.4 Environment (new container) and data
+- Setup: `tools/setup_session.sh` (now installs **cambc 3.0.1**, the toolchain, and rebuilds every sparring bot plus `_mlkc40` = legend_m15
+  exactly (hash 8eb9563d0d5b, via `experiments/wip/m15zip_to_mlkc40.patch`) and `_g4` / `god` = GOD v2 (19a1785457d3)). The proxies `_mite`,
+  `_ifish`, `_px9`, `_snk`, `_fA` compile on 3.0.1 unchanged. Ledger rows for cambc >= 3 go to `experiments/results/ledger_v3/` (per engine).
+- **`cambc maps pull` is blocked** (proxy 403 on 2026a.battlecode.co.uk), so the official patch-3.0 map pool cannot be downloaded here. Tell the
+  user once: allow that domain in the environment's network settings, or upload the maps (`cambc maps pull` on their machine, zip `maps/`).
+  Until then the maps come from replays (`tools/replay/extract_map.mjs --dir REPLAY_DIR OUT_DIR PREFIX`).
+- Replays decode with the newest engine in the cambc asset cache (`v1_0_0` for patch 3.0); in a fresh container run `cambc view <replay>` once
+  if `~/.cache/cambc/assets/*/visualiser/assets/v1_0_0-*.wasm` is missing. `CAMBC_ENGINE_WASM` forces one engine. (A zero-byte stray file in
+  the upload looked like an engine error; `decode.mjs` now says "empty replay file".)
+- **Data from this upload** (committed):
+  - `experiments/nyx_oct20/new/` and `old/`: 20 replays `<group>_<nn>_A.repl26a` (we are side A in all), `index.json` per folder.
+    Groups: new maps 0308edc9, b6be1477; old maps 7162f242, 0e08cb72.
+  - `maps/nyx_new/`: the 10 new maps (names `nx<W>x<H>_<sym>_c<champions>_<hash>`).
+  - `maps/comp30/`: the patch-3.0 versions of 10 official maps, named `<map>_v3` (ambush, collision, contest, corners, eight, elkring,
+    expanse, fragment, interlock, lanes). **The official maps changed**: more gold and gem clusters (contest 16 gold clusters per side instead
+    of 10, lanes 18 + 6 gem clusters, elkring 5 gem clusters added), expanse now has **5** champions per team (was 3). The other 7 official
+    maps (monolith, packs, pilgrimage, rows, rushbait-v2, stampede, swirl) are not available in their 3.0 form; `maps/comp/` holds the old files.
+  - `maps/p30/`, `maps/p30g/`: my synthetic patch-style copies (gem clusters added, golems): useful, but not the real pool.
+- **Ledger gotcha fixed**: rows are keyed by map file name only. The first `comp30` run reused `maps/comp` rows of the same names; the maps are
+  now `*_v3` and `tools/ledger.py run` refuses a pool whose names belong to two different files under `maps/`. Keep every map name unique.
+- Session-13 scratch tools are now in `tools/strategy_v2/s13/` (README there): `idx.mjs` (index a replay folder), `nyxsum.py` (per-game
+  side summary of decoded games), `window.mjs` / `track.mjs` / `pos.mjs` (fight and movement traces), `farmstat.mjs`, `respawn_ctx.mjs`,
+  `caps.mjs`, `deaths.mjs`, `poolcell.py`, queue examples.
 
-`_g4` (GOD v2): vs `_m15` **29/40**; vs `_mite` 34, `_ifish` 31, `_px9` 30, `_snk` 34, `_fA` 35 = 164/200 (the 2.2.5-era proxies are weak on
-the new engine); vs idle 40/40 (pace above). `_g4` loses both nyx_50x41 (0-0, gold) and both nyx_31x31_c3 games to `_m15`.
+### S14.5 What the Nyx games show (decoded with `nyxsum.py`; "us" first)
+New maps (Nyx won 9 of 10):
 
-### S14.8 Checkpoints
+| Map (`maps/nyx_new`) | Ch | Result (round) | Our draft / Nyx draft | Deaths | First capture | Captures (us / them) |
+|---|---|---|---|---|---|---|
+| nx60x60_R_c5_0cdefa | 5 | 115-1000 (r757) | ours meta / Ren, Stellar, C&I, Ryth, Varg | 6-0 | r136 / r46 | wolf 5, elk 2 / elk 8, gem 13, gold 8 |
+| nx31x31_R_c4_9e9a40 | 4 | **0-1012** (r1466) | Ren, Stellar, C&I, Ryth (both) | **45-22** | none / r177 | nothing / elk 36, gem 13 |
+| nx31x31_R_c3_142ce0 | 3 | **WIN 1174-286** | Ren, Stellar, HoR / Varg, Stellar, C&I | 9-40 | r56 / r27 | similar |
+| nx61x71_R_c5_d26c0c | 5 | 893-1016 (r1423) | meta / meta | 9-15 | r47 / r30 | 43 / 76 groups |
+| nx50x50_R_c5_3a3eb5 | 5 | **72-1008** | **Prism, Stellar, C&I, Ryth, Tavi** (objective draft) / meta | **39-5** | r353 / r170 | gem 1 / gem 13, elk 2 |
+| nx100x100_R_c5_bbb066 | 5 | 582-1032 (r1084) | meta / Varg, Vendetta, C&I, Willow, Ryth | 9-2 | r26 / r50 | 30 / 52 |
+| nx50x41_V_c5_86f1cb | 5 | **0-0 at r2000** (lost on gold earned) | meta / Varg, Vendetta, C&I, Willow, Ryth | 10-24 | r39 / r44 | gold 17 / gold 84, elk 62, wolf 43 (1 altar) |
+| nx40x40_R_c3_b9da0c | 3 | 951-1012 (r1172) | Ren, Stellar, HoR / Ren, Stellar, C&I | 9-15 | r138 / r32 | 31 / 62 |
+| nx61x61_R_c5_15b37f | 5 | 274-1034 | meta / meta | **21-4** | r52 / r42 | 22 / 62 |
+| nx51x40_V_c5_ec2893 | 5 | 136-1049 | meta / meta | 15-11 | r58 / r64 | 9 / 42 |
 
-- **10:55 UTC**: replays decoded, maps extracted and committed, baselines measured, stalls reproduced. Next: `bots/_x_g5` (= `bots/god` +
-  switches, all off = GOD v2): altar approach tiles never on camp tiles + no-altar gold mode, `pd_hor3` 0, objective draft only for heavy
-  groups, Nyx-style builds (`build_style` 12: Treasure, then Power dmg), the 61x71 stall, dash-hole oscillation; A/B each on the 20 maps.
+Old maps (patch-3.0 versions, `maps/comp30`; Nyx won 8 of 10): elkring 638-1012 (deaths 13-10), **expanse WIN 1010-883**, **fragment 74-1012**
+(Ren, Stellar, HoR vs Ren, Stellar, C&I; first capture r171 vs r18; we took 10 wolves, they 85 groups), interlock 297-1026 (16-9), lanes
+593-1012, ambush 738-1011, **collision 373-1019** (HoR draft again), **contest 0-400 at r2000** (deaths 54-28; Nyx took the monolith twice
+from r1707; we never captured anything), corners 571-1012, **eight WIN 1016-311** (vs Varg, Vendetta, C&I, Willow, Ryth; deaths 22-42).
+
+What this says:
+- **Nyx drafts the old meta**: Ren, Stellar, C&I, Ryth, Varg (5), Ren, Stellar, C&I, Ryth (4), Ren, Stellar, C&I (3) on 16 of 20 maps; on
+  nx100x100, nx50x41 and eight it drafted Varg, Vendetta, C&I, Willow, Ryth (a map-dependent table, or a second team in the same group).
+  **On 5-champion maps our draft is the same five champions, and we still lose by 300-1000 gems: the gap is execution and economy, not the draft.**
+- **Economy**: they capture 1.5-5x more groups, mostly **elks and gem clusters** (gem cluster = 7 gems for 120 HP: the cheapest gems after the
+  patch; a wolf is 4 gems), and start earlier (fragment_v3 r18 vs our r171, nx40x40 r32 vs r138, nx60x60 r46 vs r136, interlock_v3 r23 vs r80). We take wolves (worst gems per HP now).
+- **Activity**: their attack steps are 1.2-2.9x ours, shop actions 1.2-6x (nx31x31_c4 156 vs 25, nx50x50 199 vs 35, nx50x41 473 vs 80),
+  recalls usually 1.3-2.6x (nx50x50 105 vs 6). We place 3-10x more wards (one per 10-round cooldown on every body: check what it costs us).
+- **Death cascades** on four maps (45, 39, 54, 21 deaths); on small maps (31x31 c4) we never captured anything in 1,466 rounds.
+- **Two games went to r2000 and were decided on gold earned** (contest_v3 0-400 was gems; nx50x41 0-0 on gold): the tiebreak matters more now.
+- **Our objective plan misfired** on nx50x50 (27 gold clusters, 3 gem clusters, 1 elk per side): it drafted the stampede casters and lost 72-1008.
+- **`pd_hor3` (Heart of Ruin at team size 3) is not proven**: 1 win (nx31x31_c3), 1 close loss, 2 blowouts (fragment_v3, collision_v3) against
+  Nyx's Ren, Stellar, C&I. Locally it scored 20-23/24 vs 19 on the old fragment / packs files only.
+
+### S14.6 Local baseline on these 20 maps (ledger_v3; both sides; GOD v2 = `god`)
+| Bot (wins of 20 per pool) | vs `_mite` new / v3 | vs `_ifish` | vs `_px9` | vs `_mlkc40` | unopposed pace new / v3 |
+|---|---|---|---|---|---|
+| GOD v2 (`god`) | 18 / 16 | 15 / 16 | 13 / 17 | 15 / 14 | 1234 / 998 rounds |
+| legend_m15 (`_mlkc40`) | 14 / 19 | 15 / 17 | 12 / 12 | - | - |
+
+(`python3 tools/strategy_v2/s13/poolcell.py god _mite _ifish _px9 _mlkc40 idle --pool maps/nyx_new --pool maps/comp30 [--maps]`.)
+Deaths are 20-30 per game per side in these local games (pre-patch ~7): after the patch our code family brawls.
+**Nyx's contested finish beats GOD's unopposed pace** on nx60x60 (Nyx r757 with us on the map; GOD alone r943 / r1026), nx100x100 (r1084 vs
+1182 / 1237) and roughly ties on nx51x40 and nx61x61: on those maps our farming route itself is slower than theirs. On the old maps (elkring,
+corners, interlock, lanes, collision, fragment) GOD alone is faster than Nyx's finish, so the losses there come from contact (fights, deaths,
+lost bags, denied camps). **nx50x41: GOD alone banks nothing in 2,000 rounds** (both sides 0-0, like the Nyx game): its only altar (25,20)
+sits in a wall line behind two monolith tiles and holes (`node tools/replay/mapinfo.mjs maps/nyx_new/nx50x41_V_c5_86f1cb.map26a`), so the
+game is decided on gold earned, then kills. Open questions for that map: the tribute range, whether a dead monolith tile can be stood on
+(then killing the monolith opens the altar), whether a teleport crystal reaches a tile next to it. Either way the bot must detect "no
+reachable altar" from the map and switch to the gold / kill tiebreak.
+Locally GOD beats every proxy on these maps while Nyx beats it 17 of 20: **our proxies are our own code family and do not play like Nyx.**
+A Nyx-like sparring partner is the first thing to build (S14.7 step 2).
+
+### S14.7 Plan for the next agent (my recommendation, in order)
+1. **Trace the blowouts** (no games needed): `node tools/strategy_v2/s13/window.mjs REPLAY FROM TO` and `track.mjs` on
+   new/0308edc9_02 (31x31 c4, 0-1012), new/0308edc9_01 (60x60, first capture r136 vs r46), new/b6be1477_04 (61x61, deaths 21-4),
+   old/0e08cb72_03 (fragment_v3, HoR); r0-250: where each Nyx body goes, which groups it takes in which order, who fights where, when they shop
+   and recall; then the same for us. Write the findings to `docs/strategy_v2/14_NYX_PATCH3.md`.
+2. **A Nyx proxy** built from what step 1 finds (draft table by team size, opening route to elks / gem clusters, shop and recall cadence), or an
+   ES exploiter trained against GOD on `maps/nyx_new` + `maps/comp30` (`ES_SRC=bots/god`, `tools/rl/es_train.py`), so local screens mean something.
+3. **Economy for patch 3.0**: re-check `group_score` against the new values (gem clusters cheap, wolves poor, elk range 4); first capture by
+   r30-50; take neutral elks / gem clusters like Nyx; re-take respawns faster; gold-earned tiebreak awareness near r2000 (kills now pay 100).
+4. **Map-derived special cases**: no reachable altar (nx50x41: play for gold earned and kills); fix the objective-plan misfire (nx50x50): the detector must not fire when the "objective" is small after the patch; check
+   `derive_params` / `pd_score` on every new map (print our draft per map locally).
+5. **Draft**: drop or gate `pd_hor3` (HoR lost twice to Ren, Stellar, C&I); consider Nyx's choices; screen on the 20 maps vs the new proxy.
+6. Ship GOD v3 when it beats GOD v2 head-to-head on `maps/nyx_new` + `maps/comp30` and the proxies (and the new Nyx proxy), pace not worse;
+   zip to `submissions/god.zip`, history, BUILDS row; push first, then continue.
+
+### S14.8 Checkpoints (newest last)
+- 10:40 UTC: handoff written. Nothing left running (the baseline of S14.6 finished; the checkpoint loop of session 13 stops with the container).
+  Also measured before the handoff: `_g4fm` (GOD v2 + `fight_margin` 1.15) h2h vs GOD v2 10/34 on the old official files: rejected.
+  Untested queue from session 13 (cheap to resume, all on `bots/god`): `ml2_leave`/`ml2_flee` 0.5 and 0.3, `tribute_min` 30 (games are
+  longer and bags smaller after the patch), draft without `pd_hor3` (`pd_hor3=0`).
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first
 
@@ -111,7 +191,7 @@ the new engine); vs idle 40/40 (pace above). `_g4` loses both nyx_50x41 (0-0, go
   official files `legend_m15` 1396.6, GOD v1 1295.6. **Patch-style maps** `maps/p30/` (official maps + gem clusters next to wolves / elks /
   gem clusters; `tools/mapgen/patch30.mjs`; `maps/p30g/` 6 copies with a golem per side): vs Mite / ifish / `_px9` (102): `legend_m15` 64,
   `_g3` 73, `_g3v33` **81**; h2h `_g3v33` vs `_g3` 21/34, vs m15 23/34; pace 834 / 828 / 877. Golems are farmed (interlock copy: 3 kills).
-  Running `$S/q35.sh` on `_g4` (= GOD v2): `_g4fm` (fight_margin 1.15), `_g4ml5` / `_g4ml3` (ML cut-offs 0.5 / 0.3), `_g4tm30` (tribute_min 30),
+  Stopped at 10:00 when the Nyx zips arrived (only `_g4fm` finished: pooled 142/186, **h2h vs `_g4` 10/34: worse**; the rest never ran). Was: `$S/q35.sh` on `_g4` (= GOD v2): `_g4fm` (fight_margin 1.15), `_g4ml5` / `_g4ml3` (ML cut-offs 0.5 / 0.3), `_g4tm30` (tribute_min 30),
   official vs `_g4` + m15 + 5 proxies, and p30 vs `_g4`.
 
 ## S13. SESSION 13 (2026-10-19 21:00 UTC, new container): read this first

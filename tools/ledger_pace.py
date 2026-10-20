@@ -4,11 +4,13 @@
 Fill a cell first: python3 tools/ledger.py run BOT idle --maps 'maps/comp/*.map26a' --jobs 2"""
 import glob, json, os, sys
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from ledger import LEDGER as LEDGER_DIR  # per-engine ledger directory
 COMP = {os.path.basename(p)[:-7] for p in glob.glob(os.path.join(ROOT, 'maps/comp/*.map26a'))}
 bots = [a for a in sys.argv[1:] if not a.startswith('--')]
 per = {}
 for b in bots:
-	f = os.path.join(ROOT, 'experiments/results/ledger', f'{b}_vs_idle.jsonl')
+	f = os.path.join(LEDGER_DIR, f'{b}_vs_idle.jsonl')
 	rows = [json.loads(l) for l in open(f) if l.strip()]
 	h = rows[-1]['bot_hash']
 	lat = {(r['map'], r['side']): r for r in rows if r['bot_hash'] == h}

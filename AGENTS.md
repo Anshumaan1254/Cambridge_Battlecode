@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-20 04:20 UTC (session 13: SHIPPED `legend_m15` = `_mlkc40`, the ladder-trained danger model; see §S13, last checkpoints)**.
+- Last updated: **2026-10-20 09:05 UTC (session 13: BALANCE PATCH 3.0 (cambc 3.0.1): building the GOD bot `bots/god`; read §S13-GOD first)**.
   Rule from the user: update this file and push at every step. Start with **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
@@ -13,6 +13,42 @@ running or unfinished, and what to do next, so a new agent can continue without 
   is either offline (training parameters before submission) or in-match (adapting inside one game).
 
 ---
+
+## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first
+
+- **The user (08:51 UTC)**: patch notes "Week 2" (uploaded PDF, text in the scratchpad `patchdoc/new.txt`; summary below): every champion
+  re-balanced, camps re-valued, new camp Golem, new champion **Heart of Ruin**, maps changed / added; update cambc and maps, make a bot
+  better than m15 after the patch, named and levelled **GOD**.
+- **Patch 3.0 facts** (SDK `sdk/cpp/cambc.h` 3.0.1 confirms the constants): Cassi HP 700 -> 600, per shard health 71.25 -> 65, str 3.5 -> 3,
+  focus 15 -> 13; Issac health/shard 95 -> 80, str/shard 4.75 -> 3; Stellar focus 100 -> 85, str 35 -> 30, focus/shard 10 -> 9; Varg str 50 -> 40;
+  Ren str 40 -> 35, focus/shard 10 -> 9; Ryth str 50 -> 45; Marcella focus 50 -> 60 (+15/shard), passive 2 gold per gem tributed + stun immunity;
+  Willow str 45 -> 55, focus 105 -> 120; Vesper gold 20% -> 33%, str 45 -> 50; Vendetta str/shard 5 -> 6; Prism focus per carried gem 0.2 -> 1,
+  health/shard 75 -> 60, str/shard 3.5 -> 2.5, focus/shard 10 -> 8; Tavi stun 2.2 -> 1.4 x focus, str 35 -> 45. **Heart of Ruin** (draft id 11):
+  melee, 1000 HP (+100/shard), str 40 (+5), focus 100 (+15), passive up to +50% damage at 0% health, S1 self shield 1.5 x focus for 5 turns,
+  S2 dash 2 that lands for 1.75 x focus and stuns 1 turn within radius 1. Camps: wolf 22 -> 4 gems, 90 -> 40 gold; elk 36 -> 15 gems, 160 -> 90
+  gold, **range 3 -> 4**; gem cluster 500 -> 120 HP, 24 -> 7 gems; gold cluster 500 -> 120 HP, 35 -> 20 gold; **monolith range 3 -> 5**; **Golem**
+  (new): 5000 HP, 120 str, range 4, 160 gold, 36 gems, respawn 80. Kill gold 50 -> 100. Ward cooldown 1 -> 10. Altar lock HP 3 -> 5.
+  Breaking SDK: new enum values (camp `golem`, champion `heart_of_ruin`, passive `missing_health_damage`), `ability_dash` gained `radius`,
+  `modifier`, `duration`.
+- **Done**: `pip install cambc==3.0.1`, `cambc init --yes .` (SDK refreshed; `cambc.toml` sdk 3.0.1). **`cambc maps pull` is blocked**
+  (proxy 403 on 2026a.battlecode.co.uk): the new official maps are not here; the user must allow the domain (environment network settings)
+  or upload the maps. The old 2.2.5 SDK copy: scratchpad `sdk225/`. `legend_m15` still compiles on 3.0.1 (warnings only), so the ladder
+  submission is not broken. **Ledger is now per engine**: `tools/ledger.py` writes `experiments/results/ledger_v3/` when cambc >= 3
+  (`LEDGER_DIR` overrides); `ledger_pace.py`, `ledger_sum.py` follow it; old rows (engine 2.2.5) stay in `experiments/results/ledger/`.
+- **New-engine baseline** (old official map files, cambc 3.0.1): `legend_m15` (`_mlkc40`) unopposed pace **1396.6** rounds (was 508; monolith
+  hits r2000): games will often reach r2000 (tiebreak: gems, then gold earned, then kills; kills now pay 100). vs the proxies `_mite` 30,
+  `_ifish` 24, `_px9` 18, `_snk` 31, `_fA` 27 = **130/170**.
+- **GOD code (`bots/god`, = `legend_m15` + changes, all derived from the SDK)**: (1) Heart of Ruin in every build switch (with Ren: melee,
+  focus-scaled spells) and in the focus-stat lists; (2) golem handled in the draft map analysis (heavy camp); (3) **camp attack range from
+  the engine** (`CampRef::range`, `Group::max_range`): `near` / camp danger, the objective ring and the kite plan stand one tile outside the
+  real range and count only spells that reach it (elk 4, golem 4, monolith 5); (4) `Kit::dash_mod` / `dash_radius` (dash landing damage) in
+  `best_mod` / `burst_vs`; a damaging dash is not spent on walking while an enemy was seen within `strike_dash_hold` 9 (`mob_dash()`),
+  `engage()` uses it as the strike (`strike_dash`). Frozen copies: `_g1` (1-3), `_g2` (1-4).
+- **First result**: `_g1` vs `legend_m15` **26/34** on the official maps (new engine). Running: `$S/q31.sh` draft screen on `_g2`
+  (`mapdraft` 0 + `LEGEND_DRAFT`): `_gd0` 8,4,3,9,0 (Ren, Stellar, C&I, Varg, Ryth), `_gdh1` 11,8,4,3,0 (HoR, Ren, Stellar, C&I, Ryth), `_gdh2`
+  8,11,4,9,0 (no C&I), `_gdh3` 11,4,3,8,9, `_gdw` 11,8,3,4,7 (+ Willow), `_gdh4` 11,8,4,9,0, vs `_mlkc40`, `_mite`, `_ifish`; `$S/g1b.sh`: `_g1`, `_g2`
+  vs `_mlkc40` + 5 proxies. Next: draft priors from the screen, gold value (a wolf is now 4 gems + 40 gold), fight margin (kills 100 gold),
+  then ship `submissions/god.zip`.
 
 ## S13. SESSION 13 (2026-10-19 21:00 UTC, new container): read this first
 

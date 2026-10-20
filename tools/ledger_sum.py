@@ -6,6 +6,8 @@
 Uses the latest row per (map, side) for the given bot hash (default: the most recent hash in the file)."""
 import glob, json, os, sys
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from ledger import LEDGER as LEDGER_DIR  # per-engine ledger directory
 COMP = {os.path.basename(p)[:-7] for p in glob.glob(os.path.join(ROOT, 'maps/comp/*.map26a'))}
 args = sys.argv[1:]
 per_map = '--maps' in args
@@ -19,8 +21,8 @@ if '--hash' in args:
 	i = args.index('--hash'); want_hash = args[i + 1]; del args[i:i + 2]
 files = []
 for a in args:
-	f = os.path.join(ROOT, 'experiments/results/ledger', a + '.jsonl')
-	files += [f] if os.path.exists(f) else sorted(glob.glob(os.path.join(ROOT, 'experiments/results/ledger', a + '_vs_*.jsonl')))
+	f = os.path.join(LEDGER_DIR, a + '.jsonl')
+	files += [f] if os.path.exists(f) else sorted(glob.glob(os.path.join(LEDGER_DIR, a + '_vs_*.jsonl')))
 def wr(rs):
 	return 100 * sum(r['win'] + 0.5 * (not r['win'] and not r['loss']) for r in rs) / max(1, len(rs))
 for f in files:

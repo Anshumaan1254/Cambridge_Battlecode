@@ -22,7 +22,20 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from bench import load_stats  # noqa: E402  (the same parser the panels use)
 
-LEDGER = os.path.join(ROOT, 'experiments', 'results', 'ledger')
+def _engine_ledger():
+	"""Results depend on the engine as much as on the bots: cambc 3.x (the Oct 20 balance patch) gets its own ledger directory,
+	so no game played on an older engine is reused (the rows are keyed by bot sources only). LEDGER_DIR overrides."""
+	if os.environ.get('LEDGER_DIR'):
+		return os.environ['LEDGER_DIR']
+	try:
+		v = subprocess.run(['cambc', '--version'], capture_output=True, text=True).stdout.split()[-1]
+		major = int(v.split('.')[0])
+	except (OSError, ValueError, IndexError):
+		major = 2
+	return os.path.join(ROOT, 'experiments', 'results', 'ledger' if major < 3 else f'ledger_v{major}')
+
+
+LEDGER = _engine_ledger()
 RUNS = os.path.join('/tmp', 'ledger_runs')
 
 

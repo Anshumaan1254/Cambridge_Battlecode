@@ -331,6 +331,18 @@ bool Nav::step_field(vec2& pos, const Field& field, int stop_at, const bc::bitbo
 		const int key = v * 4 + (avoid && avoid->is_set(p) ? 2 : 0) + (g_soft_avoid && g_soft_avoid->is_set(p) ? 1 : 0);
 		cand[static_cast<std::size_t>(n++)] = { key, d };
 	}
+	// flee_exit: we stand inside the avoided area (enemy reach, an awake camp) and every improving step stays in it: a sideways
+	// step (same field value) that leaves it comes first (ladder fragment: our Ren fled home past an awake elk for 8 rounds, 740 -> 0).
+	if (g_exit_first && avoid && avoid->is_set(pos) && (n == 0 || (cand[0].first & 2) == 2))
+		for (auto d : DIRS)
+		{
+			const vec2 p = pos + d;
+			if (!bc::map::is_in_bounds(p) || blocked.is_set(p) || avoid->is_set(p))
+				continue;
+			const int v = field.get(p);
+			if (v <= here && v < BIG && n < 8)
+				cand[static_cast<std::size_t>(n++)] = { -1, d };
+		}
 	std::sort(cand.begin(), cand.begin() + n, [](const auto& a, const auto& b) { return a.first < b.first; });
 	// Every improving step enters danger (enemy reach, awake camps, a posted alert) while we stand outside it:
 	// the static field only breaks ties on danger, so bodies walked into enemies just to shorten the route

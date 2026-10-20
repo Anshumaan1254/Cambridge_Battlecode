@@ -1,0 +1,41 @@
+diff -ruN _mlkc40/src/brain.cpp _x_tr/src/brain.cpp
+--- _mlkc40/src/brain.cpp	2026-10-19 23:48:38.862340349 +0000
++++ _x_tr/src/brain.cpp	2026-10-20 05:10:51.676800429 +0000
+@@ -2208,7 +2208,7 @@
+ 				}
+ 			}
+ 			ml2_p_die = ml2_sig(z + ml2_off);
+-			if (P.ml2_enter > 0.f)
++			if (P.ml2_enter > 0.f || P.ml2_stayk > 0.f)
+ 				ml2_p_kill = ml2_sig(ml2_logit(ML2_W_KILL8, ML2_B_KILL8, mf));
+ #ifdef ML2_DEBUG
+ 			debug_block({
+@@ -2219,6 +2219,16 @@
+ 			});
+ #endif
+ 		}
++		// ml2_stayk / ml2_trade: the exit rules below do not fire while the trade is about to pay. Traced (fragment, legend_m15 vs
++		// legend_m8, r122): the model pulled Cassi, Issac and Ren out together with their Stellar at 175 HP and their Issac at 720;
++		// our slow pair died anyway at r127 without the kills (legend_m14_commit stayed, traded 2 for 2 and won the game).
++		if ((P.ml2_stayk > 0.f && ml2_p_kill >= P.ml2_stayk) || (P.ml2_trade > 0.f && [&] {
++				for (auto* e : E)
++					if (cheb(pos, e->pos) <= my_reach + 1 && e->hp <= P.ml2_trade * our_dps)
++						return true;
++				return false;
++			}()))
++			ml2_kill = true;
+ 		// ml2_cornered: also when combat() thinks a chaser cannot be outrun. Ladder rows in reach, no kill, P(die8) 0.3-0.5 with
+ 		// can_escape = 0: our bodies that hit died 51% (kill8 20%), those that stepped away 29% (P >= 0.5: 74% vs 38%).
+ 		if (P.ml2_leave > 0.f && fight && !ml2_kill && (can_escape || P.ml2_cornered) && ml2_p_die >= P.ml2_leave)
+diff -ruN _mlkc40/src/params.h _x_tr/src/params.h
+--- _mlkc40/src/params.h	2026-10-19 23:48:38.945511935 +0000
++++ _x_tr/src/params.h	2026-10-20 05:10:51.677478658 +0000
+@@ -526,6 +526,8 @@
+ 	int ml2_hold = 0;			// after a model exit, keep out (no proactive fight) for this many rounds
+ 	float ml2_adapt = 0.f;		// > 0: learning rate of an in-match logit offset (labels: died within 8 rounds of an evaluation or not)
+ 	float ml2_adapt_min = -2.f, ml2_adapt_max = 1.f; // ... bounds of the offset
++	float ml2_stayk = 0.f;		// > 0: no ml2 exit (leave / flee) while the kill model gives P(an enemy within 6 dies within 8 rounds) >= this
++	float ml2_trade = 0.f;		// > 0: no ml2 exit while an enemy within our reach + 1 has health <= this x our local team damage per round
+ 	int ml2_cornered = 1;		// 1: ml2_leave also when combat() thinks we cannot outrun a chaser (the cornered rule would trade)
+ 	int ml2_gb = 0;				// 1: P(die8) from the boosted trees (held-out AUC on our bodies 0.829 vs the logistic's 0.806)
+ };

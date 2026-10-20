@@ -13,7 +13,30 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Current build: `legend_m14` (session 7R, Oct 18, 23:50 UTC): no map-size rules
+## Current build: `legend_m15` (session 13, Oct 20): a danger model learned from the ladder
+
+`submissions/legend.zip` = `legend_m15` (`submissions/history/legend_m15_20261020.zip`). It is `legend_m14_commit` (the bot the user made
+the main one on Oct 19) plus:
+
+- **a fight / danger model trained on 160 decoded ladder games** (logistic regression, P(die within 8 rounds) from 58 features of the
+  visible state; weights in `bots/legend/src/ml2_model.h`, trainer `tools/ml/ml2_train.py`). On our ladder bodies it ranks deaths with
+  AUC 0.81, against 0.60 for the bot's own fight estimate. Used three ways: an escapable fight is dropped when P >= 0.4, a body walks
+  away before contact when P >= 0.4, and a deadly state counts as cornered (the body trades instead of giving free hits);
+- enemy area spells counted at reach 5 (radius 1 at range 4), a hold at the edge of enemy reach while our opener is ready, a shop / heal
+  recall cancelled to join a fight next to us, and no 60x50 size term in the objective ring (ISSUES.md #1).
+
+| Measure (local; the proxies are our own code with the ladder teams' drafts / builds) | `legend_m15` | `legend_m14_commit` |
+|---|---|---|
+| official 34 games vs the 5 proxies (`_mite _ifish _px9 _snk _fA`), pooled | **149/170** | 129/170 |
+| 67 more maps (generated, resized official, fresh generated) vs the 5 proxies | **475/670** | 452/670 |
+| our deaths on those 670 games | **3,725** | 4,297 |
+| head-to-head vs `legend_m14_commit` (official / 67 maps) | 22/34, 71/134 | - |
+| unopposed pace, 17 official maps (rounds to 1000) | 508.1 | 502.7 |
+
+Rejected this session (SUGGESTIONS.md): Willow + two tanks and five other draft changes, finish-the-race endgame scoring, fight-for-big-rewards,
+grouped stance, bigger rally radius, bush ghosts, melee hold, strike-first, engage angle, draft-time farming zones.
+
+## Previous build: `legend_m14` (session 7R, Oct 18, 23:50 UTC): no map-size rules
 
 `legend_m13` with its two remaining map-size rules replaced by map features, for the final sprint's new map pool: the stampede caster
 ring now runs on any objective map when we drafted Prism or Tavi with 5 champions (was: only 60x50 maps), and the contest plan runs on

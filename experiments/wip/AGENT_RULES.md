@@ -1,3 +1,21 @@
+# Session 13 (2026-10-19 evening, new container): read this block first; it overrides everything below
+
+- Branch: **`main`** only (the only branch). Baseline: **`bots/_ch2`** (= shipped `legend_m14_commit`, source hash 5f24a1979ddc). Read-only.
+  Copy: `SRC=bots/_ch2 tools/variant.sh _x_NAME`; patch: `cd bots && diff -ruN _ch2/src _x_NAME/src > ../experiments/wip/x_NAME.patch`.
+  Variants: `SRC=bots/_x_NAME tools/variant.sh _<prefix>N key=val ...` (your own prefix only). Every new behaviour behind a switch in `params.h`, default off.
+- Opponents (built, read-only): `_ch2` (baseline), proxies `_mite` (Mite / 2nd), `_ifish` (old ifish), `_px9` (ladder-calibrated), `_snk`
+  (sneaky-bush), `_fA` (pressure); older builds `_pg3` (legend_m14), `_m8`, `_m10`; `idle` (unopposed pace).
+- Pools: official `'maps/comp/*.map26a'` (17 maps, 34 games); distinct 88 `'maps/*.map26a,maps/comp/*.map26a'`; new-map stand-ins (no hardcoding:
+  the final sprint changes the map pool) `'maps/pad17/*.map26a'` (official maps framed: new sizes), `'maps/gen2/*.map26a'` (fresh generated),
+  `'maps/var17/*.map26a'` (transposed / swapped official), held-out `'maps/gold3/*.map26a,maps/obj/*.map26a'`. Never `maps/ladder`.
+- Every game through `tools/ledger.py run BOT OPP --maps POOL --jobs 2`; summaries `python3 tools/ledger_sum.py --pool POOL BOT`, pace
+  `python3 tools/ledger.py run BOT idle --maps POOL --jobs 2` then `python3 tools/ledger_pace.py BOT _ch2 --maps` (`_ch2` 502.7 on the official 17).
+  Pooled proxy screen: `python3 tools/screensum.py` (see its header). `--jobs 2` at most (4 cores shared).
+- Ladder evidence of THIS build: `experiments/ladder_oct19b/` (50 games, 11 wins; `index.json`, `analysis/*.csv`, `analysis/pergame.txt`), AGENTS.md §S13.
+- Never commit/push/checkout/stash/reset (the coordinator's checkpoint loop commits `experiments/wip/x_NAME*` and the ledger every 15 min),
+  never `pkill -f`/`pgrep -f`/`killall`, never edit `bots/legend`, `bots/_ch2` or others' bots, never run `tools/setup_session.sh`.
+  Keep `experiments/wip/x_NAME.patch` and `x_NAME_NOTES.md` current after every step (they are the handoff if the session dies).
+
 # Session 9 (2026-10-18 afternoon, new container): read this block first; it overrides everything below
 
 - Work only on branch `ccr-a858cd03-q87cpi`. Baseline: **`bots/_xp4`** (= shipped `legend_m6`, source hash 6a1a52e4ddb8). Read-only.

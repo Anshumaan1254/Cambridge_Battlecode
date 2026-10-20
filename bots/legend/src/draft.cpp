@@ -247,12 +247,20 @@ constexpr int OURS[][5] = {
 	{ -1 }, { -1 }, { -1 }, { -1 }, { -1 }, { -1 }, { 3, 4, 9, -1, -1 }, { -1 }, { 8, 4, 3, 0, -1 }, { -1 }, { -1 }, { -1 },
 	{ -1 }, { -1 }, { 8, 4, 3, 0, -1 }, { 5, 4, 3, 0, 10 }, { -1 } };
 
+// mapdraft 7 (sparring proxy only): Intercontinental Fish's per-map draft, Stellar first (44 of the 45 Oct 19 INTERWIN games,
+// experiments/interwin_oct19; the same table in all of them).
+constexpr int ICT[][5] = {
+	{ 4, 8, 3, 0, 9 }, { 4, 8, 3, -1, -1 }, { 4, 10, 5, 3, 8 }, { 4, 8, 3, 0, 9 }, { 4, 8, 3, 0, 9 }, { 4, 8, 3, 0, 9 },
+	{ 3, 4, 9, -1, -1 }, { 4, 8, 3, -1, -1 }, { 4, 8, 3, 0, -1 }, { 4, 8, 3, 0, 9 }, { 4, 8, 3, 0, 9 }, { 4, 8, 3, -1, -1 },
+	{ 4, 8, 3, 0, 9 }, { 4, 5, 3, 9, -1 }, { 4, 8, 3, 0, -1 }, { 4, 10, 5, 3, 8 }, { 4, 8, 3, 0, -1 },
+	{ 4, 8, 3, -1, -1 }, { 4, 8, 3, 0, -1 }, { 4, 8, 3, 0, 9 } };
+
 bool table_pick(const std::vector<D>& mine)
 {
 	const int om = official_map();
 	if (P.mapdraft == 3 && (om < 0 || OURS[om][0] < 0 || (om == OM_STAMPEDE && !P.md_stampede)))
 		return false;
-	const int (*T)[5] = P.mapdraft == 3 ? OURS : P.mapdraft == 1 ? MITE : IFISH;
+	const int (*T)[5] = P.mapdraft == 7 ? ICT : P.mapdraft == 3 ? OURS : P.mapdraft == 1 ? MITE : IFISH;
 	const int ts = std::clamp(static_cast<int>(bc::draft::team_size()), 3, 5);
 	const int* row = T[om >= 0 ? om : 17 + ts - 3];
 	for (int k = 0; k < 5 && row[k] >= 0; ++k)
@@ -390,6 +398,32 @@ bool param_pick(const std::vector<D>& mine)
 	{
 		// First pick: the map type alone.
 		const D first = pd_type == 2 ? D::prism : pd_type == 1 ? D::cassi_and_issac : D::ren;
+		if (P.ci_first && first != D::cassi_and_issac)
+		{
+			// ci_first: same team, Cassi & Issac picked first (picks are not exclusive: the order only sets body indices). The lower
+			// index captures shared rewards and wins claim ties: four of the ten ladder teams of Oct 19 pick C&I first; our C&I
+			// earned 70 / 111 gold per 100 rounds to their 118 / 174 (first emblem r499 / r375 vs r400 / r227).
+			std::vector<D> team{ first };
+			for (int k = 1; k < MP.team; ++k)
+			{
+				D best = D::stellar;
+				double bv = -1e9;
+				for (auto c : order)
+				{
+					if (has(team, c))
+						continue;
+					const double v = pd_score(c, team, enemy);
+					if (v > bv)
+						bv = v, best = c;
+				}
+				team.push_back(best);
+			}
+			if (has(team, D::cassi_and_issac))
+			{
+				bc::draft::pick(D::cassi_and_issac);
+				return true;
+			}
+		}
 		bc::draft::pick(first);
 		return true;
 	}
@@ -454,7 +488,7 @@ void play_draft()
 		{
 		}
 	}
-	if (P.mapdraft >= 1 && P.mapdraft <= 3)
+	if ((P.mapdraft >= 1 && P.mapdraft <= 3) || P.mapdraft == 7)
 	{
 		try
 		{

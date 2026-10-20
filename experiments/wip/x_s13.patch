@@ -1,0 +1,379 @@
+diff -ruN _ch2/src/brain.cpp _x_s13/src/brain.cpp
+--- _ch2/src/brain.cpp	2026-10-19 20:56:14.462361469 +0000
++++ _x_s13/src/brain.cpp	2026-10-19 23:49:18.867438323 +0000
+@@ -823,6 +823,24 @@
+ 	bool cancel = false;
+ 	if (recalling && threat_close && !world().ally_spawn.is_set(pos))
+ 		cancel = true; // they will hit us before it completes: act instead of standing still
++	if (P.recall_join && recalling && !cancel && task != T_CAPTURE && hp >= P.recall_join_hp * max_hp && !world().ally_spawn.is_set(pos) &&
++		!(gems > 0 && wins_with(static_cast<int>(gems))))
++	{
++		// recall_join: a teammate is fighting next to us and we are healthy: stay for the fight instead of teleporting out of it
++		const auto& W = world();
++		bool enemy7 = P.recall_join >= 2; // 2: the ally's fight alone is enough (contest: our Ren was 10 tiles from the enemies)
++		for (const auto& e : W.enemies)
++			enemy7 |= e.visible && e.alive && cheb(e.pos, pos) <= 7 && !W.enemy_spawn.is_set(e.pos);
++		if (enemy7)
++			for (const auto& a : W.allies)
++			{
++				if (a.handle == self || !a.alive || !a.visible || cheb(a.pos, pos) > (P.recall_join >= 2 ? 8 : 6) || a.hp < 0.5f * a.max_hp)
++					continue;
++				for (const auto& e : W.enemies)
++					if (e.visible && e.alive && cheb(e.pos, a.pos) <= 5)
++						cancel = true;
++			}
++	}
+ 	if (tributing && !(P.win_bank && wins_with(static_cast<int>(gems))))
+ 	{
+ 		// Turns still stuck in the channel: the bag stays carried until it lands, so counting from the bag gave
+@@ -938,9 +956,24 @@
+ 	{
+ 		if (!e.alive || e.seen_round < 0)
+ 			continue;
+-		const int age = round - e.seen_round;
+-		if (age > P.threat_memory)
++		int age = round - e.seen_round;
++		bool ghost = false;
++		if (P.bush_ghost > 0 && !e.visible && age > 1 && age <= P.bush_ghost)
++		{
++			// bush_ghost: an enemy that vanished in or next to a bush is probably waiting there (the ladder teams spend 2.4x our bush
++			// time and open from it): keep it in the danger map, its reach not growing past +2 (it is not walking toward us).
++			const auto& B = bc::map::bushes();
++			for (int dy = -1; dy <= 1 && !ghost; ++dy)
++				for (int dx = -1; dx <= 1 && !ghost; ++dx)
++				{
++					const vec2 q{ e.pos.x + dx, e.pos.y + dy };
++					ghost = bc::map::is_in_bounds(q) && B.is_set(q);
++				}
++		}
++		if (age > P.threat_memory && !ghost)
+ 			continue;
++		if (ghost)
++			age = std::min(age, 2);
+ 		// Cooldowns are known while visible; an unseen enemy is assumed to have everything ready.
+ 		const bool fresh = age == 0;
+ 		// mi_cd_slack (default branch): a spell coming off cooldown next turn is as good as up (we move once before it acts).
+@@ -1134,7 +1167,10 @@
+ {
+ 	auto& W = world();
+ 	const bc::bitboard av = danger | camp_danger | alert_zone;
+-	return after_move(Nav::step_field(pos, W.home, 0, avoid ? &av : nullptr, kit.dash, can_move, W.ally_spawn));
++	g_exit_first = P.flee_exit && avoid;
++	const bool moved = after_move(Nav::step_field(pos, W.home, 0, avoid ? &av : nullptr, kit.dash, can_move, W.ally_spawn));
++	g_exit_first = false;
++	return moved;
+ }
+ 
+ void Brain::prebuild_fields()
+@@ -2260,6 +2296,30 @@
+ 			// uncastable this turn, and next turn it competes with the attack reset (one cast per turn); stunning
+ 			// now lands it a turn earlier and next turn is step + attack + reset + attack. The old check below only
+ 			// knew single-target stuns: Ryth walked in with the stun ready in 279 fight turns of 3 traced games.
++			bool mhold = false;
++			if ((P.open_first & 4) && d > 4 && !danger.is_set(pos) && (ready(kit.cc) || ready(kit.dmg) || ready(kit.aoe)) && !e.channeling && !e.tributing)
++			{
++				// open_first 4: a melee body with a range-4 cast ready (Ren's stun, Ryth's area stun) holds where the next step would enter an
++				// enemy's next-turn reach: the side that steps in takes the first volley (ladder: openers win the first 3 rounds ~4:1).
++				bool step_in = false;
++				for (const auto& o : world().enemies)
++				{
++					if (!o.alive || !o.visible)
++						continue;
++					int r = o.kit.attack_range + (o.kit.ranged ? 0 : 1) + (o.ready(o.kit.dash) ? 2 : 0);
++					r = std::max(r, P.aoe_reach5 ? enemy_spell_reach(o, false) : ((o.ready(o.kit.dmg) || o.ready(o.kit.cc) || o.ready(o.kit.aoe)) ? 4 : 0));
++					step_in |= cheb(pos, o.pos) - 1 <= r;
++				}
++				if (round - of_round > 1)
++					of_since = round;
++				of_round = round;
++				mhold = step_in && round - of_since < P.open_hold;
++			}
++			if (mhold)
++			{
++				dbg_eng = 9;
++				return true;
++			}
+ 			if (P.melee_aoe_stun && kit.aoe_stuns && d >= 2 && ready(kit.aoe) && e.type != CT::marcella && cast_area_stun_at(e))
+ 				dbg_eng = 7;
+ 			else if (d == 2 || !(d <= 4 && (ready(kit.cc) || ready(kit.dmg))))
+@@ -2559,6 +2619,15 @@
+ 		threshold = std::max(threshold, eff * static_cast<float>(obj_escape + 1));
+ 		camp_in += obj_in;
+ 	}
++	if (P.burst_retreat > 0.f && !W.ally_spawn.is_set(pos))
++	{
++		float eb = 0;
++		for (const auto& e : W.enemies)
++			if (e.alive && e.visible && !W.enemy_spawn.is_set(e.pos) &&
++				cheb(e.pos, pos) <= std::max(e.kit.attack_range + (e.kit.ranged ? 0 : 1), enemy_spell_reach(e, false)) + 2)
++				eb += e.str + e.burst();
++		threshold = std::max(threshold, P.burst_retreat * eb);
++	}
+ 	if (hp < threshold && P.finish_camp && camp_in > 0 && enemy_near_d > P.finish_enemy_d && task_group >= 0 &&
+ 		task_group < static_cast<int>(W.groups.size()))
+ 	{
+@@ -2914,8 +2983,8 @@
+ 	const bool opp = C.alert_kind == AL_OPPORTUNITY;
+ 	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
+ 	const bool their_endgame = theirs >= P.endgame_alarm;
+-	const float hp_gate = opp ? (their_endgame ? 0.25f : 0.4f) : 0.6f;
+-	const int max_d = opp ? (their_endgame ? 16 : 12) : 9;
++	const float hp_gate = opp ? (their_endgame ? 0.25f : 0.4f) : P.rally_hp;
++	const int max_d = opp ? (their_endgame ? 16 : 12) : P.rally_r;
+ 	if (hp < hp_gate * max_hp || ((task == T_CAPTURE || reward_here()) && !their_endgame))
+ 		return false;
+ 	const int d = cheb(C.alert_pos, pos);
+@@ -3194,6 +3263,31 @@
+ #endif
+ 	if (!any)
+ 		return false;
++	if (P.reward_pre > 0.f && P.big_reward > 0 && g.gems >= P.big_reward && !respawning && hp >= P.big_reward_hp * max_hp)
++	{
++		// reward_pre: the group dies within reward_pre rounds of the ring's damage: stand on a dead tile now so the reward lands
++		// under us (ladder stampede: an enemy waiting on a dead gem tile took 3 of our 4 kills while our ring stood at 4).
++		float k = 0;
++		if (ring_ready(g, g.hp_total, k) && k <= P.reward_pre)
++		{
++			const bc::bitboard dead = g.mask & ~W.camp_occ & ~W.walls;
++			if (!dead.is_empty() && (dead.is_set(pos) || step(dead, false, true)))
++			{
++				task = T_FARM;
++				std::size_t t = g.camps.size();
++				float bk = 1e30f;
++				for (std::size_t i = 0; i < g.camps.size(); ++i)
++					if (g.hp[i] > 0 && W.camp_occ.is_set(g.camps[i].pos) && cheb(pos, g.camps[i].pos) <= kit.attack_range && g.hp[i] < bk)
++						bk = g.hp[i], t = i;
++				if (!cast_done && t < g.camps.size())
++					spells_on_camp(g, t, false);
++				if (t < g.camps.size())
++					attack_chain_camp(g, t);
++				task_progress = round;
++				return true;
++			}
++		}
++	}
+ 	bc::bitboard goal = hit4;
+ 	goal &= ~hit3;
+ 	goal &= ~W.walls;
+@@ -3429,7 +3523,7 @@
+ 		// (the joiner may still be walking in while we stand next to the reward).
+ 		if (claimers && first_claimer < W.my_index && closer_lower_claimer)
+ 			{ WHY(4); return -1; }
+-		if (P.no_split)
++		if (P.no_split && !(P.big_reward > 0 && g.gems >= P.big_reward && g.enemy_on_tile))
+ 		{
+ 			// One collector per reward: allies standing on the tiles when it lands split it with no speed-up, and the
+ 			// second body sat out the 6 capture rounds (and often recalled home with half a bag) instead of walking on.
+@@ -3682,14 +3776,18 @@
+ 				ehp += sc_recent[static_cast<std::size_t>(k)].hp;
+ 				edps += sc_recent[static_cast<std::size_t>(k)].dps;
+ 			}
+-		if (edps > 0)
++		const bool dive = P.big_reward_dive > 0 && g.st == ST_REWARD && g.enemy_on_tile && g.gems >= P.big_reward_dive && hp >= 0.25f * max_hp;
++		if (edps > 0 && !dive)
+ 		{
++			// big_reward: a group worth a death or two is fought for with the whole team close by
++			const bool big = P.big_reward > 0 && g.gems >= P.big_reward;
++			const int ar = big ? P.big_reward_r : 8;
+ 			float ohp = hp, odps = str + focus * best_mod(kit) / 8.f;
+ 			for (const auto& a : W.allies)
+-				if (a.handle != self && a.alive && a.visible && cheb(a.pos, g.center) <= 8)
++				if (a.handle != self && a.alive && a.visible && cheb(a.pos, g.center) <= ar)
+ 					ohp += a.hp, odps += a.str + a.focus * best_mod(a.kit) / 8.f;
+ 			const float tadv = (ohp / edps) / std::max(0.1f, ehp / std::max(1.f, odps));
+-			if (tadv < P.target_threat_adv)
++			if (tadv < P.target_threat_adv * (big ? 0.5f : 1.f))
+ 				{ WHY(10); return -1; }
+ 		}
+ 	}
+@@ -3719,7 +3817,7 @@
+ 	{
+ 		// An enemy capturing a reward: any of our bodies on any tile of the group resets their capture (it
+ 		// completes 6 rounds after they leave, and they get nothing). Healthy, it is a steal; hurt, avoid.
+-		if (g.st == ST_REWARD && hp >= P.deny_hp_frac * max_hp)
++		if (g.st == ST_REWARD && hp >= (P.big_reward > 0 && g.gems >= P.big_reward ? P.big_reward_hp : P.deny_hp_frac) * max_hp)
+ 			value *= P.deny_capture_mult;
+ 		else
+ 			value *= 0.5f;
+@@ -3728,6 +3826,27 @@
+ 	if (xm_sp)
+ 		xm_sp->time = time, xm_sp->value = value, xm_sp->score = value / std::max(1.f, time);
+ #endif
++	if (P.finish_race > 0)
++	{
++		// finish_race: the game ends at 1000 banked gems. With few gems still needed, the group that wins is the one whose
++		// gems reach an altar first: rank finishing groups by walk + kill + capture + bank (far above any rate score), and
++		// leave the others to the rate model. A reward next to us counts too (unopposed collision: two bodies left a 44-gem
++		// capture for a far 66-gem group when 62 were needed: +44 rounds).
++		const int need = static_cast<int>(bc::constants::winning_gems) - static_cast<int>(bc::global_submitted_gems(team::ally)) -
++			static_cast<int>(gems) - (P.team_bank ? C.others_carried() : 0);
++		if (need > 0 && need <= P.finish_race && (static_cast<int>(g.gems) >= need || (g.st == ST_REWARD && d_tile <= 2)))
++		{
++			const int bag = static_cast<int>(gems + g.gems);
++			int bank = recall_turns() + W.spawn_altar_d;
++			for (int a = 0; a < static_cast<int>(W.altars.size()); ++a)
++				bank = std::min(bank, nav().altar_dist(a, g.center, true));
++			const float finish = time + static_cast<float>(bank + (bag + 9) / 10);
++#ifdef FR_TRACE
++			debug_block({ std::printf("FR r=%d %d g=%d st=%d gems=%d need=%d time=%.1f bank=%d finish=%.1f d=%d\n", round, static_cast<int>(type), g.id, static_cast<int>(g.st), g.gems, need, time, bank, finish, d_tile); });
++#endif
++			return 1e4f / std::max(1.f, finish);
++		}
++	}
+ 	return value / std::max(1.f, time);
+ }
+ 
+@@ -4487,11 +4606,38 @@
+ 	return true;
+ }
+ 
++// big_reward: an enemy waits on a dead tile of a big group we are killing (ladder stampede: it captures the reward the round the
++// last camp dies, 3 of our 4 kills stolen). One of our bodies on any tile of the group resets their capture: step onto a dead
++// tile too and keep hitting from there.
++bool Brain::contest_tiles(Group& g)
++{
++	auto& W = world();
++	if (P.big_reward <= 0 || g.gems < P.big_reward || g.st != ST_ALIVE || !g.enemy_on_tile || hp < P.big_reward_hp * max_hp)
++		return false;
++	bc::bitboard dead = g.mask & ~W.camp_occ & ~W.walls;
++	if (dead.is_empty())
++		return false;
++	task = T_FARM;
++	if (!dead.is_set(pos) && !step(dead, false, true))
++		return false;
++	std::size_t t = g.camps.size();
++	float bk = 1e30f;
++	for (std::size_t i = 0; i < g.camps.size(); ++i)
++		if (g.hp[i] > 0 && W.camp_occ.is_set(g.camps[i].pos) && cheb(pos, g.camps[i].pos) <= kit.attack_range && g.hp[i] < bk)
++			bk = g.hp[i], t = i;
++	if (t < g.camps.size())
++		attack_chain_camp(g, t);
++	task_progress = round;
++	return true;
++}
++
+ bool Brain::farm_group(Group& g)
+ {
+ 	auto& W = world();
+ 	const bool obj = W.obj_mode && g.objective;
+ 	const bool obj_first = obj && P.obj_attackers_first;
++	if (contest_tiles(g))
++		return true;
+ 	if (obj && P.o2_ring && task_ring && g.id == task_group && ring_farm(g))
+ 		return true;
+ 	if (P.mi_kite && task_kite && g.id == task_group && !obj && kite_group(g))
+diff -ruN _ch2/src/brain.h _x_s13/src/brain.h
+--- _ch2/src/brain.h	2026-10-19 20:56:14.462472645 +0000
++++ _x_s13/src/brain.h	2026-10-19 21:10:53.575398009 +0000
+@@ -91,6 +91,7 @@
+ 	bool respond_to_alert();
+ 	void farm();
+ 	bool farm_group(Group& g);
++	bool contest_tiles(Group& g); // big_reward: stand on a dead tile of a big group an enemy waits on
+ 	bool capture_group(Group& g);
+ 	bool wait_group(Group& g);
+ 	float group_score(const Group& g, int& eta, bool* need_pair = nullptr, int d_override = -1) const;
+diff -ruN _ch2/src/draft.cpp _x_s13/src/draft.cpp
+--- _ch2/src/draft.cpp	2026-10-19 20:56:14.462536427 +0000
++++ _x_s13/src/draft.cpp	2026-10-19 21:37:56.369701632 +0000
+@@ -398,6 +398,32 @@
+ 	{
+ 		// First pick: the map type alone.
+ 		const D first = pd_type == 2 ? D::prism : pd_type == 1 ? D::cassi_and_issac : D::ren;
++		if (P.ci_first && first != D::cassi_and_issac)
++		{
++			// ci_first: same team, Cassi & Issac picked first (picks are not exclusive: the order only sets body indices). The lower
++			// index captures shared rewards and wins claim ties: four of the ten ladder teams of Oct 19 pick C&I first; our C&I
++			// earned 70 / 111 gold per 100 rounds to their 118 / 174 (first emblem r499 / r375 vs r400 / r227).
++			std::vector<D> team{ first };
++			for (int k = 1; k < MP.team; ++k)
++			{
++				D best = D::stellar;
++				double bv = -1e9;
++				for (auto c : order)
++				{
++					if (has(team, c))
++						continue;
++					const double v = pd_score(c, team, enemy);
++					if (v > bv)
++						bv = v, best = c;
++				}
++				team.push_back(best);
++			}
++			if (has(team, D::cassi_and_issac))
++			{
++				bc::draft::pick(D::cassi_and_issac);
++				return true;
++			}
++		}
+ 		bc::draft::pick(first);
+ 		return true;
+ 	}
+diff -ruN _ch2/src/nav.cpp _x_s13/src/nav.cpp
+--- _ch2/src/nav.cpp	2026-10-19 20:56:14.462697027 +0000
++++ _x_s13/src/nav.cpp	2026-10-19 23:18:13.873464706 +0000
+@@ -331,6 +331,18 @@
+ 		const int key = v * 4 + (avoid && avoid->is_set(p) ? 2 : 0) + (g_soft_avoid && g_soft_avoid->is_set(p) ? 1 : 0);
+ 		cand[static_cast<std::size_t>(n++)] = { key, d };
+ 	}
++	// flee_exit: we stand inside the avoided area (enemy reach, an awake camp) and every improving step stays in it: a sideways
++	// step (same field value) that leaves it comes first (ladder fragment: our Ren fled home past an awake elk for 8 rounds, 740 -> 0).
++	if (g_exit_first && avoid && avoid->is_set(pos) && (n == 0 || (cand[0].first & 2) == 2))
++		for (auto d : DIRS)
++		{
++			const vec2 p = pos + d;
++			if (!bc::map::is_in_bounds(p) || blocked.is_set(p) || avoid->is_set(p))
++				continue;
++			const int v = field.get(p);
++			if (v <= here && v < BIG && n < 8)
++				cand[static_cast<std::size_t>(n++)] = { -1, d };
++		}
+ 	std::sort(cand.begin(), cand.begin() + n, [](const auto& a, const auto& b) { return a.first < b.first; });
+ 	// Every improving step enters danger (enemy reach, awake camps, a posted alert) while we stand outside it:
+ 	// the static field only breaks ties on danger, so bodies walked into enemies just to shorten the route
+diff -ruN _ch2/src/nav.h _x_s13/src/nav.h
+--- _ch2/src/nav.h	2026-10-19 20:56:14.462718153 +0000
++++ _x_s13/src/nav.h	2026-10-19 23:18:13.877486437 +0000
+@@ -49,3 +49,4 @@
+ Nav& nav();
+ // P.spread_vs_splash: tiles to avoid below enemy reach (next to an ally under a splash threat); null when off.
+ inline const bc::bitboard* g_soft_avoid = nullptr;
++inline bool g_exit_first = false; // P.flee_exit: go_home_step while fleeing (step_field may take a sideways exit step)
+diff -ruN _ch2/src/params.h _x_s13/src/params.h
+--- _ch2/src/params.h	2026-10-19 20:56:14.462734580 +0000
++++ _x_s13/src/params.h	2026-10-19 23:49:18.873476181 +0000
+@@ -182,6 +182,34 @@
+ 	int ic_home = 0;		   // 1: Home health emblem right after the first emblem when that one is in the damage stat (derived
+ 							   //    from the build, not the champion); 2: on every body; 3: once this body has recalled ic_home_recalls times
+ 	int ic_home_recalls = 6;   // ic_home 3
++	// Session 13 switches (all 0 = legend_m14_commit's games)
++	int finish_race = 0;	   // > 0: when the team needs at most this many gems (1000 - banked - every bag we carry), a group that finishes the
++							   // game alone scores by when its gems land on an altar (walk + kill + capture + bank), not by gem rate (ladder rows,
++							   // Oct 19: we banked 990 at r345 and lost at r358 to a 22-gem bag while every body walked to a 66-gem group)
++	int big_reward = 0;		   // > 0: groups worth at least this many gems are fought for (ladder stampede, Oct 19: we killed the 360-gem
++							   // objective 4 times, the enemy captured 3 of the rewards from dead camp tiles it stood on while our bodies stayed
++							   // 8+ tiles away): the threat check counts our bodies within big_reward_r of the group and needs only half the
++							   // advantage, an enemy on its tiles is contested by every healthy body (no_split off), from big_reward_hp health
++	int big_reward_r = 12;
++	float big_reward_hp = 0.4f;
++	float reward_pre = 0.f;		// > 0 (with big_reward): a ring body steps onto a dead tile of the big group once the ring kills it within this many rounds
++	int big_reward_dive = 0;   // > 0: an enemy capturing a reward worth at least this many gems is denied whatever the threat (any of our
++							   // bodies on any tile resets their capture: a death costs ~100 gems of farming, a monolith reward is 200-448)
++	int recall_join = 0;	   // 1: a healthy body recalling to shop / heal (not a capture-recall, not a winning bag) cancels the recall when an
++							   // enemy is within 7 and a healthy ally within 6 of us has an enemy within 5 (the user: fight while still able;
++							   // ladder contest r26-31: our full-health Ren completed a recall as the team fight started, the other 5 lost it)
++	float recall_join_hp = 0.7f;
++	float burst_retreat = 0.f;  // > 0: safety() also retreats when our health is below this x the burst (best ready spell + one hit) of the
++							   // visible enemies that can step into reach (spell reach + 2): 41% of our ladder deaths (Oct 19) came from >= 60%
++							   // health within 3 rounds, Cassi 31% health (220/700) stayed out next to casters and died to one area cast
++	int ci_first = 0;		   // 1: the parameter draft picks Cassi & Issac first when the planned team has them (same team, lower body
++							   // indices: they capture shared rewards and win claim ties; see draft.cpp param_pick)
++	int rally_r = 9;		   // respond_to_alert: answer an ally's rally from at most this far (ladder contest r25-40: our Ren farmed the
++							   // centre triple 11-13 tiles from the team fight, 4 of ours lost to 5 of theirs; "help that does not come")
++	float rally_hp = 0.6f;	   // ... with at least this health fraction
++	int flee_exit = 0;		   // 1: a body walking home from inside enemy reach / an awake camp's range takes a sideways step out of it when
++							   // every step toward home stays inside (nav.cpp step_field)
++	int bush_ghost = 0;		   // > 0: an enemy last seen in or next to a bush stays in the danger map this many rounds (reach + at most 2)
+ 	float commit_hit = 2.0f;	   // > 0: the current target's score x this while we hit it in the last 2 rounds (finish what we started)
+ 	int commit_keep = 0;	   // 1: a camp we hit in the last 2 rounds is not dropped by the join limits
+ 	float half_grade = 0.f;	   // > 0: enemy-half risk cost x min(1, (d_ally - d_enemy) / (half_grade x (d_ally + d_enemy))) (0 = flat cost)

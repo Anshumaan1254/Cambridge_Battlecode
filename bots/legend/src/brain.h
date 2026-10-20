@@ -91,6 +91,7 @@ private:
 	bool respond_to_alert();
 	void farm();
 	bool farm_group(Group& g);
+	bool contest_tiles(Group& g); // big_reward: stand on a dead tile of a big group an enemy waits on
 	bool capture_group(Group& g);
 	bool wait_group(Group& g);
 	float group_score(const Group& g, int& eta, bool* need_pair = nullptr, int d_override = -1) const;
@@ -138,7 +139,13 @@ private:
 	bool monster_done() const;
 	void refresh_item_flags() const;
 	mutable std::size_t item_flags_idx = static_cast<std::size_t>(-1);
-	mutable bool jungle_ok = false, durability_ok = false, monster_ok = false;
+	mutable bool jungle_ok = false, durability_ok = false, monster_ok = false, home_ok = false;
+	void insert_home(std::size_t at);
+	int recall_turns() const;
+	int recalls_started = 0; // ic_home 3
+	std::array<int, 6> prev_claim{ -1, -1, -1, -1, -1, -1 }; // reward_claim_gone: last round's claims
+	std::array<int, 6> prev_claim_since{}; // ... and the round each ally's claim took its value
+	bool was_recalling = false;
 	bool has_home = false; // Home emblem (faster recall); we never buy it, kept for the capture-recall timing
 #ifdef XM_TRACE
 	// Prediction audit state (all updated inside debug_block, so it costs no fuel and changes no decision).
@@ -165,6 +172,16 @@ private:
 	void xm_fight(float adv, float tku, float tkt, float ohp, float thp, float odps, float tdps, int na, int ne, int fight, int killable, int in_reach,
 				  int can_escape, int isolated, int reserve, int tgt_type, int tgt_d, float incoming, float t_die, float tgt_hp, int backup, float my_dps);
 #endif
+
+	// ml2: fight / danger model (features in tools/ml/ml2_dataset.py order)
+	void ml2_features(float* f) const;
+	float ml2_p_die = 0, ml2_p_kill = 0;
+	int ml2_exit_round = -1000;
+	void ml2_learn(bool died);
+	float ml2_off = 0;				  // ml2_adapt: learned logit offset (this opponent vs the ladder)
+	std::array<int, 24> ml2_buf_r{};  // evaluations waiting for their label (round, logit)
+	std::array<float, 24> ml2_buf_z{};
+	int ml2_buf_n = 0;
 
 	// combat helpers
 	float camp_dps() const;
@@ -238,6 +255,7 @@ private:
 
 	// memory
 	int task = T_NONE, task_group = -1, task_since = 0;
+	int target_hit_round = -100; // commit_hit / commit_keep: last round we hit a camp of task_group
 	int task_progress = -1; // giveup_progress: last round we hit, captured or waited at task_group
 	int ward_round = -100;
 	vec2 ward_pos{ -1, -1 }; // where our ward was last placed (ward_bush)

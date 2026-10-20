@@ -1,0 +1,20 @@
+diff -ruN _mlkc40/src/draft.cpp _x_mt2/src/draft.cpp
+--- _mlkc40/src/draft.cpp	2026-10-19 23:48:38.861259655 +0000
++++ _x_mt2/src/draft.cpp	2026-10-20 05:38:29.077290685 +0000
+@@ -226,11 +226,12 @@
+ // (experiments/interwin_oct18: the 13 games between them; experiments/ladder_m5, experiments/ladder_top3). Both draft the
+ // same way every time on a map, whoever the opponent is. Order: OfficialMap; then the defaults by team size 3, 4, 5.
+ // Draft ids: Ryth 0, Vesper 1, Vendetta 2, C&I 3, Stellar 4, Prism 5, Marcella 6, Willow 7, Ren 8, Varg 9, Tavi 10.
++// session 13: Mite as of Oct 19 (group 2306b82f): Ren replaced Tavi as the 5th pick (seen on stampede and contest; assumed on every 5-map)
+ constexpr int MITE[][5] = {
+-	{ 9, 4, 3, 10, 8 }, { 9, 0, 3, -1, -1 }, { 5, 4, 3, 0, 10 }, { 9, 4, 3, 0, 10 }, { 9, 4, 3, 0, 10 }, { 9, 4, 3, 0, 10 },
+-	{ 8, 4, 3, -1, -1 }, { 9, 4, 3, -1, -1 }, { 9, 0, 3, 4, -1 }, { 9, 4, 3, 10, 8 }, { 9, 4, 3, 0, 10 }, { 8, 4, 3, -1, -1 },
+-	{ 9, 4, 3, 10, 8 }, { 9, 0, 3, 8, -1 }, { 9, 0, 3, 4, -1 }, { 5, 4, 3, 0, 10 }, { 9, 0, 3, 4, -1 },
+-	{ 9, 4, 3, -1, -1 }, { 9, 0, 3, 4, -1 }, { 9, 4, 3, 0, 10 } };
++	{ 9, 4, 3, 0, 8 }, { 9, 0, 3, -1, -1 }, { 5, 4, 3, 0, 8 }, { 9, 4, 3, 0, 8 }, { 9, 4, 3, 0, 8 }, { 9, 4, 3, 0, 8 },
++	{ 8, 4, 3, -1, -1 }, { 9, 4, 3, -1, -1 }, { 9, 0, 3, 4, -1 }, { 9, 4, 3, 0, 8 }, { 9, 4, 3, 0, 8 }, { 8, 4, 3, -1, -1 },
++	{ 9, 4, 3, 0, 8 }, { 9, 0, 3, 8, -1 }, { 9, 0, 3, 4, -1 }, { 5, 4, 3, 0, 8 }, { 9, 0, 3, 4, -1 },
++	{ 9, 4, 3, -1, -1 }, { 9, 0, 3, 4, -1 }, { 9, 4, 3, 0, 8 } };
+ constexpr int IFISH[][5] = {
+ 	{ 8, 4, 3, 0, 9 }, { 8, 4, 3, -1, -1 }, { 4, 10, 5, 3, 8 }, { 8, 4, 3, 0, 9 }, { 8, 4, 3, 0, 9 }, { 8, 4, 3, 0, 9 },
+ 	{ 3, 4, 9, -1, -1 }, { 8, 4, 3, -1, -1 }, { 8, 4, 3, 0, -1 }, { 8, 4, 3, 0, 9 }, { 8, 4, 3, 0, 9 }, { 8, 4, 3, -1, -1 },

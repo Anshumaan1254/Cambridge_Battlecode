@@ -3,8 +3,8 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-19 (session 12: `main` is now the only branch; IC analysis of 45 Oct 19 games, SUGGESTIONS.md / ISSUES.md; see §S12)**.
-  Rule from the user: update this file and push at every step. Start with **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
+- Last updated: **2026-10-20 04:20 UTC (session 13: SHIPPED `legend_m15` = `_mlkc40`, the ladder-trained danger model; see §S13, last checkpoints)**.
+  Rule from the user: update this file and push at every step. Start with **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
   never force) before every push. No PR unless the user asks.
@@ -13,6 +13,196 @@ running or unfinished, and what to do next, so a new agent can continue without 
   is either offline (training parameters before submission) or in-match (adapting inside one game).
 
 ---
+
+## S13. SESSION 13 (2026-10-19 21:00 UTC, new container): read this first
+
+- **The user's request**: the main bot is now **`legend_m14_commit`** (= `_ch2`, zip sha256 e49afea0…, source hash 5f24a1979ddc; now
+  `submissions/legend.zip`, `bots/legend/src` = it + the inert `LEGEND_RUNTIME_PARAMS` block, wasm byte-identical). New input: `new_matches.zip`
+  = 10 match groups, **50 games, 11 wins** (`experiments/ladder_oct19b/`, `index.json` has map / our side / drafts / score; we are side B in
+  group cd6785ff). The new bot must beat these opponents by a wide margin; loopholes / exploits / reverse engineering allowed; **no hardcoded
+  map strategy** (everything derived from the map); ideas to test: a mobile body as a distraction, fight instead of recalling when still able,
+  team synergies (Willow + two tanks; other champions), and the user's list: (1) drop the 60x50 ring term (ISSUES #1), (2) draft-time farming
+  zones and routes (port `tools/strategy_v2/map_plan.py`, spec in doc 03), (3) `aoe_reach5`, `spread_vs_splash`, `pair_space`, `burst_exit`
+  one at a time, (4) validate commitment. Opus subagents only for heavy work, few parallel tasks, checkpoints here. The four PDFs in the upload
+  are personal documents (invoices, a boarding pass, a paper): not used, not committed.
+- Setup in a new container: `tools/setup_session.sh` (now also builds `_ch2` from `submissions/history/legend_m14_commit_20261019.zip`, `_x_ic`, `_snk`).
+- **Ladder findings (doc 13 in progress; tables `experiments/ladder_oct19b/analysis/`, `pergame.txt`; tools `tools/strategy_v2/ladder_pergame.py`,
+  `ladder_deaths.py` take the side of each game from `index.json`)**:
+  - Opponents (one per group, by draft): 2306b82f Varg/Ryth-first (0/5), 25464f3d C&I-first + Tavi/Willow/Vendetta (0/5), 43bd73e8 C&I-first (1/5),
+    44b9a95f Varg-first (2/5), 5f7de946 Tavi/Willow casters (1/5), 6713bf97 Ren-first = old ifish table (2/5), 78da97d8 C&I-first + Vendetta/Tavi (1/5),
+    c3f76526 Stellar-first = IC (1/5), c6ed5477 Stellar-first + Tavi (1/5), cd6785ff C&I + Tavi (2/5, we are side B).
+  - Per game (47 non-contest): deaths 7.2 vs 5.5, camp gems 733 vs 993, captures home / neutral / enemy 15.9 / 2.6 / 0.4 vs 19.3 / 6.1 / 1.3,
+    camp damage per round 81 vs 108 (per camp round: their Stellar 170 vs 144, Ryth 114 vs 86, Issac 78 vs 60).
+  - **contest 0/3 with 87, 66, 51 deaths** (they earn 10-24k gold to our 1.5-2.8k); swirl 20 and 24 deaths, fragment 21 / 17 (mirror drafts),
+    eight 20 / 17 / 20, collision up to 12: the blowouts are death cascades.
+  - **Close races lost by timing**: rows 990-1012 (we reached 990 at r345, they 990 at r355 and won with a 22-gem bag at r358), 990-1023, 990-1056;
+    lanes 918-1016 etc.: needs an endgame finisher (fastest bag >= the gems still needed), not the best gem rate.
+  - Traced (fragment mirror, r28-44): the enemy woke an elk and stepped back; our Ren walked into its range and stood / walked next to it for 8
+    rounds without attacking (740 -> 0, killed by the camp); our C&I at 220/700 stayed in the field and died to Stellar / Cassi area casts.
+
+- **More ladder findings (21:15 UTC)**: burst deaths (>= 60% health 3 rounds before) are 41% of ours (them 34%), 99 of 147 are Cassi & Issac,
+  the killer usually at distance 4-5, 68% of the damage from spells (`tools/strategy_v2/death_ctx.py`, `burst_ctx.py`). Opponents' contested
+  finish beats our UNOPPOSED pace on rows / lanes / monolith / pilgrimage / ambush; same-draft monolith game: they re-take each near group at
+  its respawn (every 55-70 rounds), we leave near groups 100-120 rounds. Stampede: the objective reward is stolen by bodies standing on its dead
+  gem tiles (we killed it 4 times vs the Varg-first team and captured once; vs IC we captured all 3 of its kills: 1080-0).
+- **Work in this container (checkpoint 21:20 UTC)**:
+  - Agent `zone` (Opus, background): draft-time farming zones / circuits on `bots/_x_zone` (variants `_z*`), notes `experiments/wip/x_zone_NOTES.md`,
+    patch `x_zone.patch` (committed by the checkpoint loop every 15 min). If it is gone: read its notes, rebuild from the patch, continue.
+  - Coordinator code `bots/_x_s13` = `_ch2` + `experiments/wip/x_s13.patch` (switches off = `_ch2` play): `finish_race` (endgame: groups that
+    finish the game alone score by landing time), `big_reward` / `big_reward_r` / `big_reward_hp` (fight for 100+ gem groups: whole team in the
+    threat check, contest an enemy waiting on a dead tile via `contest_tiles()`, every body contests their capture), `big_reward_dive` (deny an
+    enemy capture of a 200+ gem reward whatever the threat), `recall_join` (cancel a shop/heal recall to join a fight next to us).
+  - Screens (official 34 vs `_ch2` + the 5 proxies; `_ch2` pooled 129/170): `o2_ring_size` 0 130 (h2h 17, same games: SHIP, ISSUES #1);
+    **`aoe_reach5` 2: 136/170, h2h 19/34, deaths 328-409 (lead)**; `aoe_reach5` 1: 132, h2h 16; `spread_vs_splash` 1: 117, 2: 127 (both h2h 19): no.
+    Queued: `pair_space` 1/2, `burst_exit` 2/1; then `_s_c0` (control), `finish_race` 70/150, `big_reward` 100, `recall_join` (+ pace vs idle);
+    draft synergy `_d_wt` (Ryth, Varg, Willow, Ren, Stellar), `_d_w5` (Willow for C&I), `_d_ci` (C&I-first), `_d_vt` (Varg-first), `_d_mar`
+    (Marcella), `_d_ven` (Vendetta); then `_s_brd` (big_reward + dive 200), fight-more `_f_fm115`, `_f_fb75`, `_f_crh45`, `_f_of65`.
+    Scripts in the scratchpad (lost with the container): `screen.sh VARIANT...` = `tools/ledger.py run V OPP --maps 'maps/comp/*.map26a'` for
+    OPP in `_ch2 _mite _ifish _px9 _snk _fA`; results: `BASE=_ch2 python3 tools/screensum.py VARIANTS`.
+
+- **Checkpoint 22:05 UTC: results so far** (official 34 vs `_ch2` + 5 proxies; `_ch2` 129/170):
+  - **Economy is not routing, it is contact**: unopposed `_ch2` captures 151 gems by r100 and 564 by r300 (15 maps; better than the ladder
+    teams do contested: 136 / 480); on the ladder we get 111 / 401. By r150 (equal items) they deal 21% more camp damage, more champion damage
+    (1.66k vs 1.27k) and die less (0.9 vs 1.3). Fight openers decide 3-round trades ~4:1 and they open 55% of fights. The zone agent finds the
+    same (unopposed revisit gaps are already short; best `_z5` official pace 497.1 vs 502.7, gen2 +7 worse).
+  - Unopposed pace understates our race pace: ahead by >= `lead` (150) the bot banks smaller bags (tribute_min x 3/4); unopposed it always is.
+  - Builds (unopposed pace, official / var17 51 maps): our builds 502.7 / 501.6; IC (`build_style` 11) 526.4 / 535.9; ladder style 3: 538.8 / 531.1;
+    ifish 10: 534.8 / 532.6 (damage builds win only monolith 398 vs 437 and ambush): **no build change**.
+  - `recall_join` 132 (h2h 17): small plus; `finish_race` 70 / 150: 126 / 123 and slower unopposed (the rows races were decided by
+    split captures: three 22-gem bags bank in 3 turns, a 66 bag in 7): rejected; `big_reward` 100: 126 official; objective pool (stampede +
+    `maps/obj`, vs `_mite _ifish _px9`, 78 games): `_ch2` 53, `_s_br100` 55, `_s_brd` (+ dive 200) 54, `_s_brp` (+ reward_pre 3) 54, but h2h vs
+    `_ch2` there 9 / 11 / 12 of 26 (slugfests at the objective): parked. `aoe_reach5` 2 on the 28 generated maps 169/270 vs `_ch2` 181 (official +7,
+    generated -12; 88 distinct 305 vs 310, h2h 45/88): mixed. `pair_space` 1 / 2: 122 / 129; `burst_exit` 1 / 2: 130 (same games mostly).
+  - Draft synergy screen had a bug (LEGEND_DRAFT is ignored while `mapdraft` 6): rebuilt with `mapdraft=0`: `_d_ours` (fixed Ren, Stellar, C&I,
+    Varg, Ryth: the control), `_d_wt` (Ryth, Varg, Willow, Ren, Stellar), `_d_w5`, `_d_ci`, `_d_vt`, `_d_mar`, `_d_ven`; compare per team size with
+    `tools/pickscreen.py`. Combos queued: `_c_ar2rj`, `_c_ar2of` (open_first 3), `_c_ar2of2`, `_c_ar2rjof`. `ci_first` (`_s_cif`), `burst_retreat`
+    (`_s_bt10`, `_s_bt15`), `ci_health_first` (`_f_cih`) and fight-more params (`_f_fm115 _f_fb75 _f_crh45 _f_of65`) queued.
+
+- **Checkpoint 23:15 UTC (after a container restart at 22:50; the user: "the final bot must crush every team in the zip and the current
+  legend; their strategies may change; best bot by this evening (IST); 3 more sessions; k-means / logistic regression allowed")**:
+  - All background jobs died with the restart; the filesystem survived (bots, scratchpad, ledger). Zone agent: stopped at the session limit,
+    nothing shippable (`x_zone_NOTES.md`: zones spread bodies and cost fights; pair zones 131 pooled but 13/34 h2h): **direction closed**.
+  - More screens (official, pooled of 170 / h2h of 34): `outmatch_flee_adv` 0.65 131 / 18, `fight_margin` 1.15 128 / 17, `cap_recall_hp` 0.45
+    128 / 19, `fight_back_margin` 0.75 126 / 16, `burst_retreat` 1.0 / 1.5 127 / 122, `ci_health_first` 116 / 14, `aoe_reach5` 2 + `recall_join`
+    136 / 19 (= `aoe_reach5` 2 alone), + `open_first` 3: 133 / 18. **Local contest is the mirror of the ladder**: `_ch2` beats every proxy there
+    9/10 with deaths 7-37 vs 47-66; the ladder teams draft the same casters and crush us: our proxies cannot reproduce their execution.
+  - Contest traces (r20-45): both teams reach the centre by r25; ours splits: Ren recalls home at r31 or keeps farming the centre gold 10-13
+    tiles from the fight (rallies are answered only within 9 and never while capturing), 4 of ours lose to 5. New switches in `x_s13.patch`:
+    `rally_r` / `rally_hp` (variants `_s_ra13`, `_s_ra13h`), `recall_join` 2 (an ally's fight within 8 is enough; `_s_rj2`).
+  - **Running**: (1) Opus agent **`mlfight`**: fight / danger model by logistic regression on ~190 decoded ladder games (ours and top-vs-top),
+    integrated as switches in `bots/_x_ml2`; notes `experiments/wip/x_ml2_NOTES.md`, patch `x_ml2.patch`, scripts `tools/ml/`. (2) **ES exploiter**:
+    `tools/rl/es_train.py` (now takes `ES_SRC`, `ES_OUT`, `ES_PREFIX`) trains `_x_s13`'s parameters and switches (39, space
+    `experiments/wip/x_es13_adv_space.json`) to beat `_ch2` on the official maps (`tune_out/es_adv/`, log in the scratchpad `es_adv.log`):
+    the result is a stronger sparring opponent (and maybe a candidate). (3) Queue: drafts `_d_*` (mapdraft 0 + forced picks), `_g_q05*`, `_s_cif`,
+    then `_s_ra13*`, then candidate **`_cand1`** (= `_x_s13` + `aoe_reach5` 2 + `o2_ring_size` 0 + `recall_join` 1; hash b35c20488598) on pad17 + gen2
+    and the 28 generated maps vs `_ch2` + the 5 proxies.
+
+- **Checkpoint 23:45 UTC**: ES exploiter run 1 failed (relative `ES_OUT`: `run-batch` resolves paths from the manifest folder; fixed in
+  `es_train.py`, restarted 23:25 with 12 generations). Draft / synergy results in SUGGESTIONS.md (Willow + two tanks 75/170, Willow for C&I 90,
+  C&I-first team 107, Varg-first 102, our fixed team 124 < parameter draft 129, `ci_first` 116): the draft stays. **New best combination
+  `_c_ar2of2` = `aoe_reach5` 2 + `open_first` 2 (hold at the edge of enemy reach with an opener ready): 138/170, h2h 19/34.** Candidate
+  **`_cand2`** = `_x_s13` + `aoe_reach5=2 open_first=2 o2_ring_size=0 recall_join=1`; queue (`$S/q14.sh`, `q15.sh`): `_cand2` official screen,
+  `_s_ra13`, `_s_rj2`, `_s_fx` (`flee_exit` 1: sideways step out of enemy / camp reach while fleeing), then `_ch2` and `_cand2` on generated +
+  pad17 + gen2 vs `_ch2` + 5 proxies, then `_c2_oh3` / `_c2_oh4` (`open_hold`), `_c2_sf1` / `_c2_sf2` (`strike_first`) on `_cand2`.
+
+- **Checkpoint 23:55 UTC: release candidate 1 sent to the user** = `submissions/candidates/legend_m15_rc1_20261020.zip` (sha256 4bb34776…) =
+  `_cand2` (source hash 33f088e5eb74): official 34 vs the 5 proxies **141/170** (`_ch2` 129), h2h vs `_ch2` 20/34; wider pools running. Also:
+  `_c2_of6` (+ melee edge hold, `open_first` bit 4, new code) 139 / 20; `_g_q05` (GROUPED stance prior 0.5) 128 / 20; `_d_mar` 102, `_d_ven` 114.
+  **ML agent results** (`x_ml2_NOTES.md`): logistic P(die within 8 rounds) on 160 ladder games, AUC 0.81 on our bodies vs 0.60 for the bot's
+  own fight estimate; our bodies die x1.7 more often than others' in the same visible state; first variants `_mll40`, `_mlf40` 130/170
+  (level locally, as expected for a model calibrated on stronger opponents). The agent was told to stack its switches on `_cand2`.
+  New coordinator switches (all in `x_s13.patch`): `open_first` bit 4 (melee hold), `bush_ghost` N (an enemy that vanished in / next to a
+  bush stays in the danger map N rounds; `_c2_bg20`), `flee_exit` (`_s_fx`). Queue: `_s_ra13`, `_s_rj2`, `_s_fx` (on the `_ch2` base), wide
+  pools for `_cand2`, then on `_cand2`: `_c2_oh3`, `_c2_oh4` (`open_hold`), `_c2_sf1`, `_c2_sf2` (`strike_first`), `_c2_ea` (`engage_angle`),
+  `_c2_bg20`. The ES exploiter runs at nice 15 (CPU goes to the screens first).
+
+- **Checkpoint 00:10 UTC (Oct 20): new lead `_mlkc40`** (ML agent) = `_cand2` + `experiments/wip/x_ml2.patch` (base copy `bots/_x_ml2c`) with
+  `ml2_leave` 0.4, `ml2_flee` 0.4, `ml2_cornered` 1: the ladder-trained logistic danger model (P(die within 8 rounds), 58 features, weights in
+  `src/ml2_model.h`); the part that works is `ml2_cornered` (deadly states count as cornered, so the body trades instead of giving free hits).
+  Official 34 vs the 5 proxies **149/170** (`_cand2` 141, `_ch2` 129); h2h vs `_cand2` 19/34 (deaths 309-340), vs `_ch2` 22/34 (313-432);
+  rollovers unchanged (gen16 8 per team r1-3; contest / eight 0). Health-only ablation (`_mlhp45`, same veto at health < 45%) 133: the model
+  picks better. On `_ch2`: `_mlcf40` 141 / 20 (deaths -19%). **Wide validation running** (agent: `_mlkc40` on 28 generated + pad17 + gen2 vs
+  `_cand2`, `_ch2` + 5 proxies; coordinator: `_ch2` and `_cand2` vs the 5 proxies on the same pools). Coordinator's rally 13 / recall_join 2 /
+  flee_exit / grouped: level or worse (SUGGESTIONS.md). ES exploiter stopped after 2 generations (history `experiments/wip/x_es13_history.json`).
+- **Checkpoint 00:15 UTC**: wide pool (28 generated + pad17 + gen2 = 134 games) h2h `_mlkc40` vs `_cand2` **77/134**, vs `_ch2` **71/134**; its
+  proxy cells still running (agent `wide2`), `_ch2` / `_cand2` proxy cells on the same pool by the coordinator (`$S/q14.sh`). Stack build
+  `bots/_x_fin` = `_mlkc40` sources + `bush_ghost` and `open_first` bit 4 (melee hold) ported from `_x_s13` (all off = `_mlkc40` play; rebuild:
+  `SRC=bots/_mlkc40 tools/variant.sh _x_fin`, then `cd bots && diff -ruN _cand2/src _x_s13/src` applied with `patch -p1` inside `_x_fin`, then
+  restore `recall_join` 1, `o2_ring_size` 0, `aoe_reach5` 2, `open_first` 2 in params.h). Variants `_xf0` (control), `_xf_bg20`, `_xf_of6`,
+  `_xf_sf1`, `_xf_oh3`, `_xf_ea` queued (`$S/q19.sh` -> `screen_ml.sh`: official 34 vs `_mlkc40` + 5 proxies; `BASE=_mlkc40 tools/screensum.py`).
+
+- **SHIPPED `legend_m15` (04:20 UTC, Oct 20)** = `_mlkc40` (source hash 8eb9563d0d5b; `submissions/legend.zip` sha256 4caf8438…, history
+  `submissions/history/legend_m15_20261020.zip`, BUILDS row; `bots/legend/src` = `_mlkc40` + the inert `LEGEND_RUNTIME_PARAMS` block, wasm
+  byte-identical). Rebuild `_mlkc40` in a new container: `_cand2` = `_x_s13` (= `_ch2` + `experiments/wip/x_s13.patch`) + `aoe_reach5=2 open_first=2
+  o2_ring_size=0 recall_join=1`; `_x_ml2c` = `_cand2` + `experiments/wip/x_ml2.patch`; `_mlkc40` = `_x_ml2c` + `ml2_leave=0.4f ml2_flee=0.4f ml2_cornered=1`
+  (or simply copy `bots/legend` and drop the runtime block). Evidence: official 34 vs the 5 proxies 149/170 (`_ch2` 129), h2h vs `_ch2` 22/34;
+  67 more maps 475/670 (`_ch2` 452; pad17 128 vs 118, gen2 165 vs 153, generated 182 vs 181), our deaths 3,725 vs 4,297, h2h vs `_ch2` 71/134,
+  vs `_cand2` 77/134; pace 508.1 vs 502.7 (only rushbait-v2: 699 vs 606, from `aoe_reach5` vs idle enemies at spawn; ISSUES #16); 0 faults;
+  rollovers unchanged. Stacked tweaks on it all worse (`_xf_*`: bush ghost 141, melee hold 144, hold 3 144, strike first 136, engage angle 141;
+  SUGGESTIONS.md). ML agent (session limit hit 03:50; notes `x_ml2_NOTES.md`): `_mlkc30` 142, `_mlka40` (in-match recalibration) 146.
+  ISSUES.md: #1 fixed, #15 (model fixed to the Oct 19 opponents), #16 added. **Next**: the user's ladder check of `legend_m15`; locally, a
+  decision model (P(die | step away) vs P(die | hit)), contest / stampede execution (the proxies cannot reproduce the ladder teams there).
+
+- **Checkpoint 04:45 UTC**: running (scratchpad scripts, lost with the container; results land in the ledger): `q20.sh` = held-out pools
+  (gold, gold2, gold3, obj; 78 maps) for `_mlkc40` and `_ch2` vs `_mite _px9 _ifish`; `q21.sh` = **objective-reward theft** test on
+  `maps/obj` + stampede (26 games per cell): stealing proxies `_stl` (= `_mlkc40` + `big_reward` 100 + `big_reward_dive` 200: stands on our
+  dead objective tiles like the ladder teams did) and `_stlm` (+ Mite draft / builds / ring); defences on `_mlkc40`: `_m15br` (big_reward 100),
+  `_m15brd` (+ dive 200), `_m15brp` (+ reward_pre 3), vs `_stl _stlm _mite _ifish _px9`. ML agent resumed (03:50 reset) on `ml2_enter`
+  (kill model: fight more when P(kill8) high and P(die8) low) and the action-conditioned decision model, baseline `_mlkc40`.
+  Rows traced (ladder 25464f3d_03): at 990 every body walked to far groups; Cassi's 66 capture landed 13 steps from our altar (7 tribute
+  turns) while they split the last group 3 x 22 (3 turns each): geometry + pace, not a last-rounds choice; `finish_race` changed no local rows game.
+
+- **Checkpoint 04:15 UTC: held-out regression found** (gold, gold2, gold3, obj = 78 maps, 156 games): vs `_mite` `_mlkc40` 126 / `_ch2` 138 /
+  `_cand2` 122 (so `_cand2`'s switches cost it and the ML model wins 4 back); vs `_px9` 98 / 99 (level; per-pool swings of +-9: these long
+  gem-scarce games are chaotic). Objective theft (26 games): vs `_stl` `_mlkc40` 12, `_m15br` / `_m15brd` / `_m15brp` 13; vs `_stlm` 12 vs 16 / 16.
+  Running: `q23.sh` one-switch ablations of `_mlkc40` on held-out vs `_mite` (`_pz_ar0` aoe_reach5 0, `_pz_of0` open_first 0, `_pz_rs1`
+  o2_ring_size 1, `_pz_rj0` recall_join 0); `q24.sh` official screen of `_pz_ar0` (vs `_mlkc40` + 5 proxies) after `q20`. ML agent: `_ml3e40`
+  (enter fights at P(kill8) >= 0.4, P(die8) < 0.15) 147/170, h2h 16/34: no; more enter variants queued.
+
+- **Checkpoint (after q20-q26)**: held-out totals (gold, gold2, gold3, obj; vs `_mite` / `_ifish` / `_px9`, 156 each): `_mlkc40` 126 / 131 / 98 =
+  **355/468**, `_ch2` 138 / 121 / 99 = 358, **`_pz_ar0` (= `_mlkc40` without `aoe_reach5`) 141 / 131 / 115 = 387**. But on the official 34
+  `_pz_ar0` 137/170 vs 149 (h2h 14/34): `aoe_reach5` gains elkring +3, monolith +3, rushbait-v2 +3, packs +2 there (so no simple scarcity gate)
+  and was selected on those maps (biased). Running `q27.sh`: `_pz_ar0` on the 67-map wide pool vs the 5 proxies + h2h vs `_mlkc40`
+  (`_mlkc40` there: 475/670). `big_reward` 100 on `_mlkc40` (`_m15br`): objective pool 85/130 vs 79 (stealing proxies +5) but official
+  145/170 (h2h 17): off. `_m16a` (no reach5 + big_reward) 135. ML agent phase 2 (`x_ml3.patch`, `bots/_x_ml3`): `ml2_enter` 0.3 / 0.4 / 0.5
+  149 / 147 / 148 (h2h 17 / 16 / 17), recall cancel never fires, two-action model 142 (h2h 19): ties at best, nothing shipped.
+
+- **Checkpoint 05:05 UTC**: ML agent finished (final report in `experiments/wip/x_ml2_NOTES.md`; phase 2 `x_ml3.patch` / `bots/_x_ml3`:
+  nothing beats `_mlkc40`; skipping the early flee raises deaths 31-49%; recall cancel never fires; only the exit rule holds). Wide pool, `_pz_ar0`
+  (no aoe_reach5) vs `_mite _ifish _px9 _snk` 98 / 87 / 93 / 93 (`_mlkc40` 100 / 88 / 90 / 95): level, so `aoe_reach5` stays (official +12,
+  ladder deaths from spells at 4-5; held-out cost recorded in ISSUES). Running: `q27` (rest of `_pz_ar0` wide), `q28` (`_ml3e30` wide: the
+  "fight more" tie), `q29` **decoy** (the user's distraction idea: `bots/_x_dc` = `_mlkc40` + `experiments/wip/x_dc.patch`; the free dash
+  body = Ren works the enemy half while healthy and carrying < 10: `enemy_half_penalty` x `decoy_half`, `deny_bonus` + `decoy_deny`;
+  `_dc0` control, `_dc1` (0.2 / +0.5, r0-600), `_dc2` (0 / +1.0), `_dc3` (r150-2000); official 34 vs `_mlkc40` + 5 proxies).
+
+- **Checkpoint 05:45 UTC**: decoy rejected (`_dc1` 137, `_dc2` 125, `_dc3` 141; h2h 17 / 18 / 15); `_ml3e30` wide 478/670 (`_mlkc40` 475,
+  h2h 65/134): a tie, not shipped; `_pz_ar0` wide 479/670 (h2h 65/134): level, `aoe_reach5` stays; fallback zip without it:
+  `submissions/candidates/legend_m15_noreach5_20261020.zip` (for a gem-scarce final pool). Robustness vs other styles (official 34, `_mlkc40` /
+  `_ch2`): `_pg3` (= m14) 16 / 21, `_m8` 17 / 21 (same flips: m14 = m8 there), `_ST` 30 / 30, `_eD` 32 / 33, ES exploiter `_esx` 18 / 13,
+  `_stlm` 22 / 21. Traced fragment A vs `_m8` (80-1056, deaths 23-6; `_ch2` wins it): r122 the ML exit pulled Cassi, Issac and Ren out together
+  with their Stellar at 175 HP and their Issac at 720; our slow pair died anyway at r127 with no kill; `_ch2` stayed, traded 2 for 2, won.
+  New switches `ml2_stayk` (no ML exit while P(kill8) >= X) and `ml2_trade` (no ML exit while an enemy in reach + 1 has health <= N x our local
+  damage per round): `bots/_x_tr` = `_mlkc40` + `experiments/wip/x_tr.patch`; `q30.sh`: control `_tr0`, `_trk4`, `_trt15`, `_trk6`, `_trt3`.
+
+- **Checkpoint 05:35 UTC**: trade exceptions rejected (`_trk4` 145, `_trk6` 148, `_trt15` 143, `_trt3` 141; h2h 13-16). Ladder A/B option zipped:
+  `submissions/candidates/legend_m15_cautious_20261020.zip` (= `_mlkc30`, cut-offs 0.3; reasoning in `submissions/candidates/README.md`).
+  **Running: ES on `legend_m15`'s own parameters** (`$S/es15.sh`: `ES_SRC=bots/_mlkc40 ES_OUT=tune_out/es15 ES_PREFIX=_e15`, space
+  `experiments/wip/x_es15_space.json` = 29 fight / economy params + `ml2_leave`, `ml2_flee`; opponents the 5 proxies; maps official 17 +
+  gen2 24, 8 per generation; 30 generations x ~720 games, ~7 min each). Judge the result like the A100 run: apply only parameters that moved
+  consistently, then validate on pad17 + generated + held-out (not used in training) and the official screen. `tune_out/` is git-ignored:
+  copy `history.json`, `best_params.json` to `experiments/wip/x_es15_*` when done.
+
+- **Checkpoint 05:40 UTC: the user: "legend m15 is still losing to Mite and Nyx; fix the issues after completing all other tasks"** (no replays
+  of m15 came with it; Nyx is a team name not seen in any file). From the Oct 19 replays: **Mite = group 2306b82f** (drafts match our MITE table
+  except Ren instead of Tavi as the 5th pick on stampede / contest); Nyx candidates 25464f3d (C&I-first + Tavi / Willow / Vendetta, 0/5) or
+  44b9a95f (Varg-first, 2/5). vs Mite (`$S/farmstat.mjs`, `caps.mjs`, `track.mjs`, `deaths.mjs`): interlock / collision are economy losses
+  while winning the kills (deaths 6-10, 12-16): they take the neutral elk pairs (interlock 576 neutral gems vs our 0; a 4-body group on the
+  corner elks from r40) and re-take their own respawned camps after 15-23 rounds (ours 20-39; our Issac solo-cleared a wolf in 25 rounds;
+  our Cassi hovered 70 rounds at the centre after banking); swirl 20-3 deaths at the centre camps between the spawns; stampede objective
+  stolen; contest. Across all 10 groups: they re-touch own-side respawned camps after 11-25 rounds, we 30-46, they capture 1.5-2x more.
+  Proxy `_mite2` (`bots/_x_mt2` = `_mlkc40` + `experiments/wip/x_mt2.patch`: MITE table with Ren 5th; + Mite builds, ring, big_reward + dive):
+  `_mlkc40` 26/34, `_ch2` 24/34 (our brain plays their draft worse: not a real stand-in). Plan: after the ES run, an **exploiter** ES that
+  trains a copy to beat `_mlkc40` (league training), then harden `_mlkc40` against it + the proxies. Ask the user for the m15-vs-Mite/Nyx zips.
 
 ## S12. SESSION 12 (2026-10-19, same container as S10/S11): read this first
 

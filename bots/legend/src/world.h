@@ -43,6 +43,7 @@ struct Group
 	// Dynamic memory
 	GroupState st = ST_ALIVE; // every group starts alive
 	int ready_round = 0;	  // first round it is alive again when respawning
+	int reward_round = -1000; // first round we saw it as a reward (reward_claim_gone 2)
 	int seen_round = -1;
 	std::vector<float> hp;	  // last seen health per camp
 	float hp_total = 0;

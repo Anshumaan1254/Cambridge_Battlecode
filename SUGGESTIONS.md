@@ -10,6 +10,58 @@ against the five sparring proxies (Mite `_mite`, ifish `_ifish`, ladder-calibrat
 about +-2 games). Head-to-head = 34 games against `legend_m14` itself. Ledger rows: `experiments/results/ledger/<variant>_vs_*.jsonl`;
 code: `experiments/wip/x_ic.patch` (switches in `params.h`, all off).
 
+## Session 13 (19 Oct, evening): the user's list, measured against `legend_m14_commit` (`_ch2`)
+
+Same method, baseline `_ch2` (pooled **129/170** vs the five proxies on the official maps; head-to-head 34 games vs `_ch2`). Code:
+`experiments/wip/x_s13.patch` (coordinator switches) on `_ch2`; parameter-only variants are `tools/variant.sh` copies of `_ch2`.
+Evidence for each idea: `docs/strategy_v2/13_LADDER_OCT19B.md` (50 ladder games of `legend_m14_commit`, 11 wins).
+
+| Strategy | Why it should help (evidence) | Variant | Pooled (of 170) | h2h vs `_ch2` | Verdict |
+|---|---|---|---|---|---|
+| **Enemy area spells reach 5** (`aoe_reach5` 2: range + radius, walk-compatible spells range + 1) | 41% of our ladder deaths are bursts from >= 60% health; the killer stands at 4-5 and 68% of the damage is spells; at distance 3-5 they out-trade us ~1.5:1 | `_s_ar2` | **136** | 19/34 | official +7, but the 28 generated maps 169/270 vs 181 (88 distinct 305 vs 310, h2h 45/88): not robust alone; tested in combinations |
+| `aoe_reach5` 1 (area spells only) | same | `_s_ar1` | 132 | 16/34 | level |
+| **Spacing vs splash** (`spread_vs_splash` 1 / 2) | Varg splash and area spells hit two bodies standing together | `_s_svs`, `_s_svs2` | 117, 127 | 19, 19 | worse / level against the proxies |
+| **Cassi apart from Issac** (`pair_space` 1 / 2) | 99 of our 147 ladder burst deaths are Cassi or Issac (they die together) | `_s_ps1`, `_s_ps2` | 122, 129 | 18, 18 | worse / level |
+| **Leave before the finisher** (`burst_exit` 1 / 2) | same | `_s_be1`, `_s_be2` | 130, 130 | 17, 17 | changes almost no game |
+| **Endgame finisher** (`finish_race` 70 / 150: with few gems still needed, the group whose gems land first) | ladder rows: we reached 990 at r345, they at r355, and they won at r358 with a 22-gem bag | `_s_fr70`, `_s_fr150` | 126, 123 | 16, 15 | worse, and slower unopposed (504.8 / 507.8 vs 502.7: bodies left a capture for a group that finishes alone). The rows races were decided by split captures (three 22-gem bags bank in 3 turns, one 66-gem bag in 7), not target choice |
+| **Fight for big rewards** (`big_reward` 100: whole team in the threat check, contest an enemy on the tiles; `big_reward_dive` 200: deny an enemy capture whatever the threat; `reward_pre` 3: a ring body stands on a dead tile before the kill) | ladder stampede: we killed the 360-gem objective 4 times vs the Varg-first team and captured once (they stood on its dead gem tiles); we stole all 3 of IC's kills (1080-0) | `_s_br100`, `_s_brd`, `_s_brp` | 126 (official) | 16 | objective pool (stampede + `maps/obj`, vs Mite / ifish / `_px9`, 78 games): 55 / 54 / 54 vs 53, but h2h vs `_ch2` there 9 / 11 / 12 of 26: the objective becomes a slugfest an equal team wins as often as we do |
+| **Damage-first builds** (IC `build_style` 11, ladder style 3, ifish 10, Mite 9) | the ladder teams deal ~20% more camp damage per round and kill faster | `_b11`, `_b3`, `_b10`, `_b9` | (pace) | - | unopposed pace official 526.4 / 538.8 / 534.8 / 556.0 vs 502.7; var17 (51 transposed maps) 535.9 / 531.1 / 532.6 vs 501.6. Faster only on monolith (398 vs 437) and ambush. Our farming is not the gap: unopposed we capture 151 gems by r100 and 564 by r300 (more than the ladder teams do contested, 136 / 480); contact costs us ~25% of it |
+| **Willow + two tanks** (the user's synergy idea: Ryth, Varg, Willow, Ren, Stellar in pick order; Willow heals 3.0x focus from range 4) | two durable melee bodies kept up by a healer should win long fights | `_d_wt` (`mapdraft` 0 + forced picks) | **75** | 12 | clearly worse inside our bot: 3-champion maps (Ryth, Varg, Willow) 12/48 vs our draft 31/48, 5-champion 55/108 vs 77/108 |
+| Willow instead of Cassi & Issac (Ren, Stellar, Willow, Varg, Ryth) | same, without the linked pair | `_d_w5` | 90 | 16 | worse (3-maps 20/48, 5-maps 61/108) |
+| C&I-first team (C&I, Stellar, Varg, Ryth, Ren: four ladder teams' order) / Varg-first (Varg, Ryth, C&I, Stellar, Ren) | the composition of the teams that beat us | `_d_ci`, `_d_vt` | 107, 102 | 13, 13 | worse; our fixed team `_d_ours` 124 (the map-derived parameter draft of `_ch2` 129 is better still) |
+| Marcella or Vendetta as the 5th pick (Ren, Stellar, C&I, Marcella, Varg / Ren, Stellar, C&I, Varg, Vendetta) | other teams use Vendetta (78da97d8, 25464f3d) | `_d_mar`, `_d_ven` | 102, 114 | 9, 13 | worse than our fixed team (124) |
+| Same team, Cassi & Issac picked first (`ci_first`: lower body indices win capture ties) | four ladder teams pick C&I first; our C&I earn 70 / 111 gold per 100 rounds vs their 118 / 174 | `_s_cif` | 116 | 11 | worse |
+| Fight more instead of leaving (`fight_margin` 1.15, `fight_back_margin` 0.75, `outmatch_flee_adv` 0.65, `cap_recall_hp` 0.45) | the user: use the time while still able to fight | `_f_fm115`, `_f_fb75`, `_f_of65`, `_f_crh45` | 128, 126, 131, 128 | 17, 16, 18, 19 | level |
+| Cancel a shop / heal recall to join a fight next to us (`recall_join` 1) | ladder contest r31: our full-health Ren teleported out as the team fight began | `_s_rj` | 132 | 17 | level (+3); kept in the candidates (same games as without it in combinations) |
+| Answer rallies from farther (`rally_r` 13, also `rally_hp` 0.5) | contest: our Ren farmed the centre gold 10-13 tiles from the team fight | `_s_ra13` | 125 | 14 | worse: bodies leave their camps for fights they arrive late to |
+| Cancel a recall when any ally within 8 fights (`recall_join` 2) | same contest trace (Ren 10 tiles from the enemies) | `_s_rj2` | 131 | 17 | level |
+| Sideways exit from enemy / camp reach while fleeing (`flee_exit`) | ladder fragment: Ren fled home past an awake elk for 8 rounds | `_s_fx` | 129 | 17 | level |
+| GROUPED stance prior (`q0_grouped` 0.5; + `group_radius` 8) | IC keeps bodies closer (median nearest ally 3.9 vs 4.6) | `_g_q05`, `_g_q05r8` | 128, 124 | 20, 19 | level / worse vs the proxies (better head-to-head) |
+| ES exploiter (evolution strategies on 39 parameters and switches of `_x_s13`, trained only against `_ch2`) | a stronger local sparring partner | `tune_out/es_adv` (2 generations: mean policy 62% vs `_ch2`; history `experiments/wip/x_es13_history.json`) | - | - | stopped after 2 generations to free CPU for validating the real candidates; resume with `ES_SRC=bots/_x_s13 ES_OUT=$PWD/tune_out/es_adv ... --resume` |
+| Retreat when the visible burst could kill us (`burst_retreat` 1.0 / 1.5) | burst deaths 41% | `_s_bt10`, `_s_bt15` | 127, 122 | 18, 18 | level / worse |
+| Cassi & Issac health first (`ci_health_first` 1) | C&I are 99 of 147 burst deaths | `_f_cih` | 116 | 14 | worse |
+| **Draft-time zones / circuits** (agent zone: sectors around spawn, k-medoids, zone bonus / penalty) | the ladder teams re-take near groups at each respawn | `_z3`-`_z12` | 112-131 | 11-18 | unopposed pace at best 497.1 vs 502.7; spreading bodies over zones costs fights (`_z3` deaths vs Mite 376 vs 246) (see `x_zone_NOTES.md`) |
+
+### Session 13, later (20 Oct): on top of the shipped `legend_m15` (`_mlkc40`, pooled 149/170)
+
+Official 34 vs the 5 proxies, head-to-head of 34 vs `_mlkc40`. Code: `experiments/wip/x_fin.patch` on `_mlkc40` (`bots/_x_fin`; control `_xf0`
+34/34 games identical vs Mite).
+
+| Strategy | Why it should help | Variant | Pooled (of 170) | h2h vs `_mlkc40` | Verdict |
+|---|---|---|---|---|---|
+| Bush ghosts (`bush_ghost` 20: an enemy that vanished in / next to a bush stays in the danger map 20 rounds) | the ladder teams spend 2.4x our bush time and open from it; 48% of our champion deaths had a bush hitter | `_xf_bg20` | 141 | 17 | worse: bodies avoid ground no enemy holds |
+| Melee hold at the edge of enemy reach with Ren / Ryth stun ready (`open_first` bit 4) | openers win the first 3 rounds ~4:1 | `_xf_of6` | 144 | 12 | worse |
+| Hold 3 rounds instead of 2 (`open_hold` 3) | same | `_xf_oh3` | 144 | 18 | worse vs the proxies |
+| Strike first with a spell ready (`strike_first` 1) | same | `_xf_sf1` | 136 | 16 | worse |
+| End the engage walk outside the target's allies' reach (`engage_angle` 1) | 68% of the burst damage on us is spells from 4-5 | `_xf_ea` | 141 | 17 | worse |
+| Danger model at P >= 0.3 instead of 0.4 (`_mlkc30`) | a stricter veto | `_mlkc30` | 142 | 17 (vs `_cand2`) | worse locally: drops fights the team wins (the proxies kill less than the ladder teams) |
+| In-match recalibration of the danger model (`ml2_adapt` 0.05: an offset learned from our own deaths in this game) | the opponents may change their play | `_mlka40` | 146 | 20 (vs `_cand2`) | level with the fixed model (149); insurance if the final pool / opponents differ; not shipped |
+| Fight for big rewards on the shipped bot (`big_reward` 100, + dive 200, + reward_pre 3) against **stealing proxies** (`_stl` = our bot + big_reward + dive: it stands on our dead objective tiles as the ladder teams did; `_stlm` = + Mite draft / ring) | ladder stampede: our killed objective captured under their bodies | `_m15br`, `_m15brd`, `_m15brp` | official 145 (br) | 17 | objective pool (maps/obj + stampede, 5 opponents, 130 games): 85 / 85 / 84 vs 79 (vs the stealers 29 vs 24), but official -4: level overall; not shipped |
+| Fight more with the kill model (`ml2_enter` 0.3 / 0.4 / 0.5: keep / enter fights at high P(kill8) and low P(die8); recall cancel; two-action model) | the user: fight instead of recalling while still capable | `_ml3e30`, `_ml3e40`, `_ml3e50`, `_ml3er40`, `_ml3t25` | 149 / 147 / 148 / 147 / 142 | 17 / 16 / 17 / 16 / 19 | ties at best (recall cancel never fires: a recall starts only with no enemy within 7) |
+| **Mobile distraction** (the user's idea: `decoy` 1, `bots/_x_dc` = `_mlkc40` + `experiments/wip/x_dc.patch`: the free dash body = Ren works the enemy half while healthy and empty-handed; `enemy_half_penalty` x 0.2 and `deny_bonus` + 0.5, rounds 0-600 / x 0 and + 1.0 / rounds 150-2000) | their bodies leave their camps to answer it; the ladder teams' contested finish beats our unopposed pace | `_dc1`, `_dc2`, `_dc3` | 137 / 125 / 141 | 17 / 18 / 15 | worse: Ren is our best collector (35-38% of capture gold) and the enemy farms on while he walks; control `_dc0` 34/34 games identical |
+| `_ml3e30` (fight more, the tie) on the 67 wide maps | same as above | `_ml3e30` | wide 478/670 (`_mlkc40` 475) | 65/134 | level everywhere: not shipped |
+| Stay for the trade (`ml2_stayk` 0.4 / 0.6: no ML exit while P(kill8) >= X; `ml2_trade` 1.5 / 3: no ML exit while an enemy in reach + 1 dies within N rounds of our local damage; `bots/_x_tr`, `experiments/wip/x_tr.patch`) | traced fragment A vs `legend_m8` (80-1056): the ML exit pulled three bodies out with their Stellar at 175 HP; our slow pair died anyway with no kill | `_trk4`, `_trk6`, `_trt15`, `_trt3` | 145 / 148 / 143 / 141 | 15 / 16 / 14 / 13 | worse: the exit as shipped is better on average than staying for these trades (control `_tr0` 34/34 identical) |
+
 ## Session 12 (19 Oct): copying Intercontinental Fish (ladder #1; analysis `docs/strategy_v2/12_IC_OCT19.md`)
 
 | Strategy | Why it should help (evidence) | Variant | Pooled vs proxies (of 170) | h2h vs m14 | Verdict |

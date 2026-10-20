@@ -27,6 +27,8 @@ struct Features
 	int team = 3;
 	int groups = 0, gem = 0, gold = 0, wolf = 0, elk = 0, mono = 0, multi = 0, harmless = 0;
 	int gem_groups = 0;		   // groups that give gems (excluding monolith-only)
+	float gem_group_hp = 0;	   // pd_obj_heavy: total camp health of the heaviest gem group, and its camps that fight back
+	int gem_group_att = 0;
 	double mean_dist = 0;
 	int area = 0, holes = 0, altars = 0;
 	bool ready = false;
@@ -73,12 +75,14 @@ void analyse()
 	for (const auto& g : bc::map::camp_groups())
 	{
 		int da = BIG, de = BIG, attackers = 0;
+		float ghp = 0;
 		bool has_elk = false, has_mono = false, has_wolf = false, has_gem = false, has_gold = false;
 		for (const auto& c : g.camps())
 		{
 			const auto a = home.get(c.spawn_position()), e = away.get(c.spawn_position());
 			da = std::min(da, a == UNREACH ? BIG : static_cast<int>(a));
 			de = std::min(de, e == UNREACH ? BIG : static_cast<int>(e));
+			ghp += c.base_stats().base_health;
 			switch (c.kind())
 			{
 			case bc::camp_type::wolf: has_wolf = true, ++attackers; break;
@@ -101,6 +105,8 @@ void analyse()
 		F.multi += attackers >= 2;
 		F.harmless += attackers == 0;
 		F.gem_groups += (has_gem || has_wolf || has_elk) && !has_mono;
+		if ((has_gem || has_wolf || has_elk) && !has_mono && ghp > F.gem_group_hp)
+			F.gem_group_hp = ghp, F.gem_group_att = attackers;
 		dsum += da;
 	}
 	F.mean_dist = F.groups ? dsum / F.groups : 0;
@@ -304,7 +310,8 @@ void derive_params()
 	MP.elk_share = F.elk / g;
 	// pd_obj_multi: the lone gem group must also be a multi-camp group (stampede and maps/obj: an elk + gem objective). On the gold_elk
 	// maps the only gem group is one elk camp: no objective plan fires there, so the caster draft would farm without its ring.
-	MP.objective = F.gem_groups == 1 && F.mono == 0 && (!P.pd_obj_multi || F.multi >= 1);
+	MP.objective = F.gem_groups == 1 && F.mono == 0 && (!P.pd_obj_multi || F.multi >= 1) &&
+		(!P.pd_obj_heavy || (F.gem_group_hp >= P.obj_min_hp && F.gem_group_att >= P.obj_min_attackers)); // pd_obj_heavy: the same test as the brain's objective mode
 	MP.monolith_only = F.gem_groups == 0 && F.mono > 0;
 	MP.open_small = MP.team <= 3 && F.area >= P.pd_open_area && F.mean_dist >= P.pd_open_dist;
 	pd_type = MP.objective ? 2 : MP.open_small ? 1 : 0;

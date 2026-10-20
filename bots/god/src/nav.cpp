@@ -37,6 +37,16 @@ void Nav::init()
 	altar_fields.assign(w.altars.size(), Field{});
 }
 
+void Nav::reset_fields()
+{
+	// The routing walls changed (P.stall_guard switched hole crossings off or on): every cached field is stale.
+	for (auto& f : group_fields)
+		f = Field{};
+	for (auto& f : altar_fields)
+		f = Field{};
+	detour.field = nullptr;
+}
+
 bool Nav::ensure_group(int id, long long fuel_floor)
 {
 	auto& fld = group_fields[static_cast<std::size_t>(id)];
@@ -385,6 +395,39 @@ bool Nav::step_field(vec2& pos, const Field& field, int stop_at, const bc::bitbo
 				}
 				catch (...)
 				{
+				}
+				// dash_gain1: the crossing's far side is only one field step closer (two crossing holes chained: the field's path goes
+				// hole -> hole, which no dash can follow): a ready dash that gains one step still beats waiting here for ever (nx61x71).
+				if (P.dash_gain1 && c <= 0)
+				{
+					vec2 best = pos;
+					int best_d = here;
+					for (int dy = -2; dy <= 2; ++dy)
+						for (int dx = -2; dx <= 2; ++dx)
+						{
+							const vec2 q{ pos.x + dx, pos.y + dy };
+							if ((dx == 0 && dy == 0) || !bc::map::is_in_bounds(q) || blocked.is_set(q) || (avoid && avoid->is_set(q)))
+								continue;
+							if ((std::abs(dx) == 2 || std::abs(dy) == 2) && bc::map::walls().is_set(vec2{ pos.x + dx / 2, pos.y + dy / 2 }))
+								continue;
+							const int v = field.get(q);
+							if (v < best_d)
+								best_d = v, best = q;
+						}
+					if (!(best == pos))
+					{
+						try
+						{
+							if (me.abilities()[static_cast<std::size_t>(dash_slot)].use(best))
+							{
+								pos = best;
+								return true;
+							}
+						}
+						catch (...)
+						{
+						}
+					}
 				}
 				if (c <= P.dash_wait_max)
 					return false;

@@ -39,6 +39,13 @@ void World::init_static()
 	// altars are computed later (find_islands from prebuild_fields, contested() on first use).
 	const auto walls_lin = walls.export_linear_buffer();
 	auto bit = [](const std::vector<std::uint8_t>& v, int i) { return ((v[static_cast<std::size_t>(i) >> 3] >> (i & 7)) & 1) != 0; };
+	// altar_no_camp: a camp's spawn tile is not standable while the camp lives (and the group never respawns while a body stands on it),
+	// so it is no approach tile (nx50x41: the one altar's only non-hole neighbour is a monolith's tile).
+	bc::bitboard camp_tiles;
+	if (P.altar_no_camp)
+		for (const auto& g : bc::map::camp_groups())
+			for (const auto& c : g.camps())
+				camp_tiles.set(c.spawn_position());
 	for (auto a : altars)
 	{
 		std::vector<vec2> app;
@@ -47,7 +54,7 @@ void World::init_static()
 			for (int dx = -1; dx <= 1; ++dx)
 			{
 				const vec2 p{ a.x + dx, a.y + dy };
-				if ((dx || dy) && p.x >= 0 && p.y >= 0 && p.x < W && p.y < H && !bit(walls_lin, p.y * W + p.x))
+				if ((dx || dy) && p.x >= 0 && p.y >= 0 && p.x < W && p.y < H && !bit(walls_lin, p.y * W + p.x) && !(P.altar_no_camp && camp_tiles.is_set(p)))
 					app.push_back(p);
 			}
 		altar_approach.push_back(std::move(app));
@@ -64,6 +71,7 @@ void World::init_static()
 	for (const auto& app : altar_approach)
 		for (auto t : app)
 			spawn_altar_d = std::min(spawn_altar_d, home.get(t));
+	no_altar = P.altar_no_camp && spawn_altar_d >= BIG; // no usable altar on foot from spawn: the game is decided on gold earned, then kills
 	// altar_contested is computed on first use (contested()): ~17k fuel on altar-rich maps, not needed in the opening.
 	altar_contested.clear();
 	altar_enemy_round.assign(altars.size(), -1000);
@@ -537,4 +545,4 @@ void World::update_alive(int round)
 	}
 }
 
-const bc::bitboard& World::route_walls() const { return P.dash_holes && dash_kit ? dash_walls : walls; }
+const bc::bitboard& World::route_walls() const { return P.dash_holes && dash_kit && round >= dash_off_until ? dash_walls : walls; }

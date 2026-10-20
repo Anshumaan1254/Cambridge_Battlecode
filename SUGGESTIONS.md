@@ -10,6 +10,19 @@ against the five sparring proxies (Mite `_mite`, ifish `_ifish`, ladder-calibrat
 about +-2 games). Head-to-head = 34 games against `legend_m14` itself. Ledger rows: `experiments/results/ledger/<variant>_vs_*.jsonl`;
 code: `experiments/wip/x_ic.patch` (switches in `params.h`, all off).
 
+## Session 14 (20 Oct, after patch 3.0): against Nyx's 17-3 (`experiments/nyx_oct20`), measured head-to-head vs GOD v2 (`_g4`)
+
+Pool: the 20 maps Nyx played (`maps/nyx_new` + `maps/comp30`), both sides = 40 games; `_g4` vs itself would be 20. Code:
+`experiments/wip/x_g5.patch` on `bots/god` (switches in `params.h`, all off = GOD v2).
+
+| Strategy | Why it should help (evidence) | Variant | h2h vs `_g4` (of 40) | Verdict |
+|---|---|---|---|---|
+| **Nyx's builds** (`build_style` 12: Treasure first on every body, Jungle dmg / Bruiser health, Durability, then Power in the damage stat for ever) | Nyx spends 237k gold vs our 87k in 20 games and buys 1,097 Power-dmg emblems; damage points per 1,000 gold 33.6 vs 21.6; their Stellar deals 238 camp damage per camp round vs our 118 and one-shots our bodies late | `_g5b` | **16** (deaths 733-809, gold 292k-272k) | worse: death cascades in the early brawls (corners_v3 120-1003: 4 deaths to 2 at r146-156, then kill gold snowballed); the builds need Nyx's execution (openers from range, recalls at 0.70 health) |
+| Treasure first, then our survival emblems, then Power dmg for ever (`build_style` 13) | the gold snowball with our early tankiness | `_g5b13` | 19 | level / worse |
+| Our survival emblems, then Power dmg for ever instead of Bruiser cycles (`build_style` 14) | late game our bodies carried 7,000 health and 500 damage; Nyx converts late gold into damage | `_g5b14` | 18 | level / worse |
+| Recall earlier (`home_hp` 0.6, `cap_recall_hp` 0.7) | Nyx starts its recalls at 0.70 health (median), we at 0.42; fewer deaths at low health, more shopping | `_g5r` | **15** | worse: more trips, fewer camps |
+| Cassi & Issac instead of Heart of Ruin at team size 3 (`pd_hor3` 0) | Nyx's Ren, Stellar, C&I beat our Ren, Stellar, HoR 3 of 4 on the ladder | `_g5d1` | see AGENTS §S14.8 | non-transitive so far: the local proxies and `_g4` prefer HoR |
+
 ## Session 13 (19 Oct, evening): the user's list, measured against `legend_m14_commit` (`_ch2`)
 
 Same method, baseline `_ch2` (pooled **129/170** vs the five proxies on the official maps; head-to-head 34 games vs `_ch2`). Code:

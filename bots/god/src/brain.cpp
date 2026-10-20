@@ -96,6 +96,97 @@ std::vector<I> build_for(CT t, int bs)
 		rep(v, power, 300);
 		return v;
 	}
+	if (bs == 12)
+	{
+		// Nyx (patch 3.0, 20 games of Oct 20, experiments/nyx_oct20/analysis): Treasure first on every body (Stellar / Cassi TfE at r46-180, Ren
+		// ThE, Issac TsE, Varg ThE), then Jungle in the damage stat (casters) or Bruiser health (melee), Durability, then Power in the damage
+		// stat for the rest of the game (1,097 Power-dmg emblems in 20 games: their Stellar ends with 20-27 of them). The patch made gold
+		// plentiful (gold clusters 120 HP for 20 gold, kills 100): damage snowballs into more gold.
+		const bool focus = t == CT::ren || t == CT::heart_of_ruin || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
+		const I pw = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
+		switch (t)
+		{
+		case CT::stellar:
+		case CT::cassi:
+		case CT::prism:
+		case CT::tavi:
+		case CT::willow:
+			rep(v, I::treasure_shard_of_focus, 5);
+			rep(v, I::jungle_shard_of_focus, 5);
+			rep(v, I::durability_shard_of_focus, 5);
+			rep(v, I::bruiser_shard_of_health, 5);
+			break;
+		case CT::ren:
+		case CT::heart_of_ruin:
+			rep(v, I::treasure_shard_of_health, 5);
+			rep(v, I::bruiser_shard_of_health, 5);
+			rep(v, I::durability_shard_of_health, 5);
+			break;
+		case CT::issac:
+			rep(v, I::treasure_shard_of_strength, 5);
+			rep(v, I::power_shard_of_strength, 5);
+			rep(v, I::durability_shard_of_health, 5);
+			break;
+		case CT::ryth:
+		case CT::marcella:
+			rep(v, I::treasure_shard_of_health, 5);
+			rep(v, I::bruiser_shard_of_health, 5);
+			rep(v, I::durability_shard_of_health, 5);
+			break;
+		default: // Varg, Vendetta, Vesper
+			rep(v, I::treasure_shard_of_health, 5);
+			rep(v, I::jungle_shard_of_health, 5);
+			rep(v, I::durability_shard_of_health, 5);
+			break;
+		}
+		rep(v, pw, 300);
+		return v;
+	}
+	if (bs == 13 || bs == 14)
+	{
+		// Session 14 hybrids. 13: Treasure first (gold snowball), then our survival emblems (Jungle health on Ren / Ryth, Monster dmg then
+		// Durability health on the carries, as build_style 2), then Power in the damage stat for ever (instead of Bruiser cycles: late
+		// game our bodies reached 7,000 health and 500 damage while Nyx's Stellar one-shot them). 14: the same without Treasure first.
+		const bool focus = t == CT::ren || t == CT::heart_of_ruin || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
+		const I pw = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
+		const I tr = focus ? I::treasure_shard_of_focus : I::treasure_shard_of_strength;
+		const I mo = focus ? I::monster_shard_of_focus : I::monster_shard_of_strength;
+		switch (t)
+		{
+		case CT::ren:
+		case CT::heart_of_ruin:
+			if (bs == 13) rep(v, I::treasure_shard_of_health, 5);
+			rep(v, I::jungle_shard_of_health, 5);
+			if (bs == 14) rep(v, I::treasure_shard_of_focus, 5);
+			rep(v, mo, 5);
+			rep(v, I::durability_shard_of_health, 5);
+			break;
+		case CT::ryth:
+		case CT::marcella:
+			if (bs == 13) rep(v, I::treasure_shard_of_health, 5);
+			rep(v, I::jungle_shard_of_health, 5);
+			rep(v, mo, 5);
+			rep(v, I::durability_shard_of_health, 5);
+			break;
+		case CT::cassi:
+		case CT::willow:
+		case CT::issac:
+			if (bs == 13) rep(v, tr, 5);
+			rep(v, mo, 5);
+			rep(v, I::durability_shard_of_health, 5);
+			if (t == CT::issac) rep(v, I::jungle_shard_of_health, 5);
+			break;
+		default: // Stellar, Prism, Tavi, Varg, Vendetta, Vesper
+			if (bs == 13) rep(v, tr, 5);
+			rep(v, mo, 5);
+			if (bs == 14) rep(v, tr, 5);
+			if (t == CT::varg || t == CT::vendetta || t == CT::vesper_vale) rep(v, I::jungle_shard_of_strength, 5);
+			rep(v, I::durability_shard_of_health, 5);
+			break;
+		}
+		rep(v, pw, 300);
+		return v;
+	}
 	if (bs == 11)
 	{
 		// Intercontinental Fish (ladder #1; emblem order of its bodies in 36 games of Oct 19, experiments/interwin_oct19):
@@ -705,6 +796,8 @@ void Brain::turn()
 	update_priority();
 	if (P.unstick_rounds > 0)
 		unstick();
+	if (P.stall_guard > 0 && W.dash_off_until == round) // hole crossings are back: the plain-walls fields are stale
+		nav().reset_fields();
 	prebuild_fields();
 	XM(xm_post());
 #ifdef LEGEND_TRACE
@@ -781,19 +874,36 @@ void Brain::unstick()
 	// gives the target up for a while. Every path to it may be held by allies or camps that do not move, or the
 	// target sits where its own tiles block it; re-planning elsewhere beats standing there.
 	auto& W = world();
-	const bool walking = task == T_FARM || task == T_CAPTURE;
+	// stall_guard (session 14): every walking task counts, not only farm / capture (nx61x71: Ren stood 1,197 rounds in a tribute trip at a
+	// hole crossing the dash could not take); a dash kit then routes without hole crossings for a while and rebuilds its fields.
+	const bool guard = P.stall_guard > 0 && (task == T_TRIBUTE || task == T_HOME || task == T_FLEE);
+	const bool walking = task == T_FARM || task == T_CAPTURE || guard;
 	const bool on_reward = task == T_CAPTURE && task_group >= 0 && W.groups[static_cast<std::size_t>(task_group)].mask.is_set(pos);
-	if (!walking || task_group < 0 || on_reward || last_act_round >= round - 1 || W.ally_spawn.is_set(pos) || cheb(pos, ust_anchor) > 1)
+	if (!walking || (task_group < 0 && !guard) || on_reward || last_act_round >= round - 1 || W.ally_spawn.is_set(pos) || cheb(pos, ust_anchor) > 1 ||
+		flag(state, bc::champion_state::recalling) || flag(state, bc::champion_state::submitting_gems) || flag(state, bc::champion_state::teleporting))
 	{
 		ust_anchor = pos;
 		ust_since = round;
 		return;
 	}
-	if (round - ust_since < P.unstick_rounds)
+	if (round - ust_since < (guard ? P.stall_guard : P.unstick_rounds))
 		return;
 #ifdef LEGEND_TRACE
 	debug_block({ std::printf("UNSTICK r=%d %d task=%d g=%d pos=(%d,%d) since=%d\n", round, static_cast<int>(type), task, task_group, pos.x, pos.y, ust_since); });
 #endif
+	if (P.stall_guard > 0 && kit.dash >= 0 && P.dash_holes)
+	{
+		W.dash_off_until = round + P.stall_dash_off;
+		nav().reset_fields();
+	}
+	if (guard)
+	{
+		task = T_NONE;
+		tribute_cancel_round = round; // no new tribute trip for two rounds: farm() re-plans from here first
+		ust_anchor = pos;
+		ust_since = round;
+		return;
+	}
 	blacklist[static_cast<std::size_t>(task_group)] = round + P.unstick_blacklist;
 	task_group = -1;
 	tp_hop = -1;
@@ -2052,7 +2162,7 @@ bool Brain::combat()
 	// P.pair_low_hp: Cassi & Issac leave a fight they can walk away from earlier (ladder: 64% of our 59 pair deaths were
 	// triggered by the partner below 25% health, the other partner healthy (73% above 75%) and 7+ tiles away).
 	const float low_hp = (type == CT::cassi || type == CT::issac) ? P.pair_low_hp : 0.25f;
-	if (fight && !killable && can_escape && (hp < low_hp * max_hp || (static_cast<int>(gems) >= P.bag_caution && adv < 1.5f)))
+	if (fight && !killable && can_escape && (hp < low_hp * max_hp || (static_cast<int>(gems) >= P.bag_caution && adv < 1.5f && !(P.no_altar_gold && W.no_altar))))
 		fight = false;
 	// mi_lethal (default branch): it has shown it can kill us from here; leave unless the kill is ours first.
 	if (P.mi_lethal && fight && !killable && !(in_reach && !can_escape) && lethal >= hp)
@@ -3020,7 +3130,7 @@ void Brain::update_mode()
 	const int ours = static_cast<int>(bc::global_submitted_gems(team::ally));
 	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
 	gold_v = P.gold_value;
-	if (P.math_gold)
+	if (P.math_gold && !(P.no_altar_gold && world().no_altar))
 	{
 		// Gold only turns into gems through the shards it buys, and a shard pays off over the rounds left: +5
 		// strength on 40-50 is about +5% farming rate, which earns back 30 gold x gold_value = 6.6 gems in
@@ -3150,6 +3260,8 @@ bool Brain::tribute(bool force)
 	if (gems == 0)
 		return false;
 	auto& W = world();
+	if (P.no_altar_gold && W.no_altar)
+		return false; // no usable altar on this map: the bag can never be banked (gold earned decides at r2000)
 	if (P.mi_island_bank > 0 && inside_island())
 	{
 		// No altar inside an island (default branch): recall out (the bag is kept) once it is worth banking.
@@ -4036,7 +4148,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 		}
 	}
 
-	float value = (static_cast<float>(g.gems) + gold_v * static_cast<float>(g.gold)) * share;
+	float value = ((P.no_altar_gold && W.no_altar ? 0.f : static_cast<float>(g.gems)) + gold_v * static_cast<float>(g.gold)) * share;
 	if (!g.ours)
 	{
 		const float risk = sc_risk;

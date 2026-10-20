@@ -156,6 +156,8 @@ struct World
 	void detect_objective();
 	Field home; // steps from our spawn
 	int spawn_altar_d = BIG; // walking steps from our spawn to the nearest altar's approach tile
+	bool no_altar = false;	 // no usable altar reachable from our spawn (P.altar_no_camp): banking is impossible on this map
+	int dash_off_until = -1; // P.stall_guard: until this round this body routes without hole crossings (route_walls)
 	bc::bitboard home_reach; // tiles reachable on foot from our spawn
 	Field away; // steps from enemy spawn
 

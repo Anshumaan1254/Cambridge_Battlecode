@@ -13,7 +13,24 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Current build: **GOD** (`submissions/god.zip`, session 13, Oct 20): `legend_m15` rebuilt for balance patch 3.0
+## Current build: **GOD v3** (`submissions/god.zip`, session 14, Oct 20): the stalls seen against Nyx fixed
+
+GOD v2 lost 17 of 20 games to the team Nyx after patch 3.0 (`experiments/nyx_oct20`). Three of those games were thrown by hard stalls:
+on a map whose only altar has a monolith's spawn tile as its only neighbour, all six bodies stood for 1,000+ rounds trying to step onto
+the camp (now: camp tiles are never altar approach tiles, and a map with no usable altar is played for gold earned and kills, the
+round-2000 tiebreaks); on a hole-maze map a body waited 1,197 rounds at a chained hole crossing for a dash the field could not use (now:
+a dash that gains one step is taken, and any walking task that stalls drops its target and its hole routing for a while); the objective
+draft (Prism, Tavi) fired on a map whose lone gem group is small (now: the draft needs a heavy group, like the brain's objective mode).
+
+| Measure (cambc 3.0.1, the 20 maps Nyx played, both sides) | GOD v3 | GOD v2 |
+|---|---|---|
+| head-to-head vs GOD v2 | **25/40** (deaths 678-748) | - |
+| vs `legend_m15` | 27/40 | 29/40 |
+| vs the proxies `_mite` / `_ifish` / `_px9` | 35 / 31 / 30 of 40 | 34 / 31 / 30 |
+
+What Nyx does better and what did not transfer (Nyx's Power-stacking builds, earlier recalls): AGENTS.md §S14.9, SUGGESTIONS.md.
+
+## Previous build: **GOD v2** (`submissions/god.zip`, session 13, Oct 20): `legend_m15` rebuilt for balance patch 3.0
 
 The Oct 20 patch (cambc 3.0.1) re-balanced every champion, cut camp rewards (wolf 4 gems, elk 15, gem cluster 7), added the Golem camp
 and the champion Heart of Ruin, doubled kill gold and made elks (4) and monoliths (5) hit from farther. GOD = `legend_m15` plus:

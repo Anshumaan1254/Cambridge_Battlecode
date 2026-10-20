@@ -176,6 +176,8 @@ struct Params
 							   //     9 = Mite (Jungle, Durability in the damage stat, Bruiser health, Power)
 							   // 2 = value-model builds (tools/analysis/item_value.py): Bruiser over Power, early Treasure
 							   //     on the rich farmers, survival first on Cassi & Issac, builds that never run out
+							   // 12 = Nyx (patch 3.0, Oct 20): Treasure first on every body, Jungle (dmg stat) / Bruiser health, Durability, then Power dmg forever
+							   // 13 = Treasure first, our survival emblems (style 2's first two), then Power dmg forever; 14 = 13 without Treasure first
 							   // 11 = Intercontinental Fish (ladder #1, 45 games of Oct 19): carries open with Power in the damage stat,
 							   //     tanks with Bruiser + Durability health, Home health second on the carries, then Power forever
 	// Home emblem (recall takes 3 turn ends instead of 5). IC buys it second on the bodies whose first emblem is a damage
@@ -209,6 +211,21 @@ struct Params
 							   // centre triple 11-13 tiles from the team fight, 4 of ours lost to 5 of theirs; "help that does not come")
 	float rally_hp = 0.6f;	   // ... with at least this health fraction
 	int pd_hor3 = 1;			   // patch 3.0: Heart of Ruin instead of Cassi & Issac at team size 3 (draft.cpp pd_score)
+	// Session 14 (GOD v3, the Nyx games of Oct 20). All 0 = GOD v2's games.
+	int altar_no_camp = 1;	   // 1: altar approach tiles never include a camp's spawn tile (nx50x41: the only neighbour of the one altar is a monolith
+							   // tile; six bodies stood next to the sleeping monolith for 1,000+ rounds trying to step onto it); an altar with no
+							   // approach tile left is unusable, and with no usable altar reachable from spawn the map has no banking (World::no_altar)
+	int no_altar_gold = 1;	   // 1: on a map with no usable altar the gems are worth nothing: groups score by gold only (full gold_value, no
+							   // end-of-game decay), no tribute trips, the bag never makes a body cautious (the tiebreak at r2000: gold earned, then kills)
+	int dash_gain1 = 1;		   // 1: at a hole crossing where every improving walking step is a hole, a ready dash that gains one field step is taken
+							   // (nx61x71: two crossing holes chained diagonally; the field's path went hole -> hole and the body waited forever)
+	int stall_guard = 10;	   // > 0: a walking task (farm, capture, tribute, home, flee) that stays inside a 3x3 box this many rounds without acting
+							   // drops its target; a dash kit also routes without hole crossings for stall_dash_off rounds (fields rebuilt)
+	int stall_dash_off = 150;
+	int pd_obj_heavy = 1;	   // 1: the draft's objective map (Prism first, the caster ring) also needs the lone gem group to be heavy: total camp health
+							   // >= obj_min_hp with >= obj_min_attackers camps that fight back (nx50x50: one elk + gem cluster group and 27 gold
+							   // clusters per side took the caster draft: 72-1008). Same test as World::detect_objective
+
 	int strike_dash_hold = 9;   // patch 3.0: a damaging dash (Heart of Ruin) is not used to walk while an enemy was seen within this many tiles
 	int flee_exit = 0;		   // 1: a body walking home from inside enemy reach / an awake camp's range takes a sideways step out of it when
 							   // every step toward home stays inside (nav.cpp step_field)

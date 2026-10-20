@@ -1,6 +1,6 @@
-diff -ruN bots/god/src/brain.cpp bots/_x_g5/src/brain.cpp
---- bots/god/src/brain.cpp	2026-10-20 09:54:49.204529383 +0000
-+++ bots/_x_g5/src/brain.cpp	2026-10-20 10:40:56.985176611 +0000
+diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
+--- bots/_g4/src/brain.cpp	2026-10-20 10:13:52.705410239 +0000
++++ bots/_x_g5/src/brain.cpp	2026-10-20 10:48:11.959797216 +0000
 @@ -96,6 +96,97 @@
  		rep(v, power, 300);
  		return v;
@@ -148,44 +148,74 @@ diff -ruN bots/god/src/brain.cpp bots/_x_g5/src/brain.cpp
  	blacklist[static_cast<std::size_t>(task_group)] = round + P.unstick_blacklist;
  	task_group = -1;
  	tp_hop = -1;
-@@ -2052,7 +2162,7 @@
+@@ -1062,6 +1172,8 @@
+ 	{
+ 		nav().ensure_altar(static_cast<int>(i));
+ 		int d = nav().altar_dist(static_cast<int>(i), pos);
++		if (P.altar_no_camp >= 2 && !W.altar_open(static_cast<int>(i)))
++			continue; // its approach tile is a living camp's spawn tile
+ 		if (W.altar_locked_by_enemy(static_cast<int>(i)))
+ 			d += 6; // three hits to clear it
+ 		if (altar_unsafe(static_cast<int>(i)))
+@@ -2052,7 +2164,7 @@
  	// P.pair_low_hp: Cassi & Issac leave a fight they can walk away from earlier (ladder: 64% of our 59 pair deaths were
  	// triggered by the partner below 25% health, the other partner healthy (73% above 75%) and 7+ tiles away).
  	const float low_hp = (type == CT::cassi || type == CT::issac) ? P.pair_low_hp : 0.25f;
 -	if (fight && !killable && can_escape && (hp < low_hp * max_hp || (static_cast<int>(gems) >= P.bag_caution && adv < 1.5f)))
-+	if (fight && !killable && can_escape && (hp < low_hp * max_hp || (static_cast<int>(gems) >= P.bag_caution && adv < 1.5f && !(P.no_altar_gold && W.no_altar))))
++	if (fight && !killable && can_escape && (hp < low_hp * max_hp || (static_cast<int>(gems) >= P.bag_caution && adv < 1.5f && !(P.no_altar_gold && W.no_altar_now()))))
  		fight = false;
  	// mi_lethal (default branch): it has shown it can kill us from here; leave unless the kill is ours first.
  	if (P.mi_lethal && fight && !killable && !(in_reach && !can_escape) && lethal >= hp)
-@@ -3020,7 +3130,7 @@
+@@ -3020,7 +3132,7 @@
  	const int ours = static_cast<int>(bc::global_submitted_gems(team::ally));
  	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
  	gold_v = P.gold_value;
 -	if (P.math_gold)
-+	if (P.math_gold && !(P.no_altar_gold && world().no_altar))
++	if (P.math_gold && !(P.no_altar_gold && world().no_altar_now()))
  	{
  		// Gold only turns into gems through the shards it buys, and a shard pays off over the rounds left: +5
  		// strength on 40-50 is about +5% farming rate, which earns back 30 gold x gold_value = 6.6 gems in
-@@ -3150,6 +3260,8 @@
+@@ -3150,6 +3262,8 @@
  	if (gems == 0)
  		return false;
  	auto& W = world();
-+	if (P.no_altar_gold && W.no_altar)
-+		return false; // no usable altar on this map: the bag can never be banked (gold earned decides at r2000)
++	if (P.no_altar_gold && W.no_altar_now())
++		return false; // no usable altar now: the bag cannot be banked (gold earned decides at r2000, or the unlock group opens an altar)
  	if (P.mi_island_bank > 0 && inside_island())
  	{
  		// No altar inside an island (default branch): recall out (the bag is kept) once it is worth banking.
-@@ -4036,7 +4148,7 @@
+@@ -3920,7 +4034,9 @@
+ 				// part of the time (ranged_exposure). taken = sum_k str_k x (q t_{k-1} + t_k - t_{k-1} - 1).
+ 				// A melee champion on a pack of n equal camps takes (n+1)/(2n) of the old constant-incoming
+ 				// product, which overstated a pack by up to 2x.
+-				const float q = kit.ranged && !tank_melee ? P.ranged_exposure : 1.f;
++				float q = kit.ranged && !tank_melee ? P.ranged_exposure : 1.f;
++				if (P.elk_exposure && q < 1.f && g.max_range > kit.attack_range)
++					q = 1.f; // elk / golem / monolith reach past our attack range: we stand inside it the whole time
+ 				std::array<float, 8> hs{}, ss{};
+ 				int n = 0;
+ 				float raw = 0;
+@@ -4004,7 +4120,8 @@
+ 			time = static_cast<float>(d_adj + wait) + ring_kill + 6.f;
+ 			share = P.o2_ring_share;
+ 		}
+-		else if (!solo_ok && W.obj_mode && g.objective && P.obj_team && g.attackers >= P.obj_team_attackers && (sc_obj_focus < 0 || sc_obj_focus == g.id) &&
++		else if (!solo_ok && ((W.obj_mode && g.objective && P.obj_team && g.attackers >= P.obj_team_attackers && (sc_obj_focus < 0 || sc_obj_focus == g.id)) ||
++							  (P.altar_no_camp >= 2 && g.unlock)) &&
+ 			obj_team_ready(g, hp_left, team_kill))
+ 		{
+ 			// Objective map: too heavy for us and the bodies already on it, but not for the whole team.
+@@ -4036,7 +4153,7 @@
  		}
  	}
  
 -	float value = (static_cast<float>(g.gems) + gold_v * static_cast<float>(g.gold)) * share;
-+	float value = ((P.no_altar_gold && W.no_altar ? 0.f : static_cast<float>(g.gems)) + gold_v * static_cast<float>(g.gold)) * share;
++	float value = ((P.no_altar_gold && W.no_altar_now() && !g.unlock ? 0.f : static_cast<float>(g.gems)) + gold_v * static_cast<float>(g.gold)) * share;
  	if (!g.ours)
  	{
  		const float risk = sc_risk;
-diff -ruN bots/god/src/draft.cpp bots/_x_g5/src/draft.cpp
---- bots/god/src/draft.cpp	2026-10-20 09:54:49.207581701 +0000
+diff -ruN bots/_g4/src/draft.cpp bots/_x_g5/src/draft.cpp
+--- bots/_g4/src/draft.cpp	2026-10-20 10:13:52.707005123 +0000
 +++ bots/_x_g5/src/draft.cpp	2026-10-20 10:35:38.400954266 +0000
 @@ -27,6 +27,8 @@
  	int team = 3;
@@ -230,8 +260,8 @@ diff -ruN bots/god/src/draft.cpp bots/_x_g5/src/draft.cpp
  	MP.monolith_only = F.gem_groups == 0 && F.mono > 0;
  	MP.open_small = MP.team <= 3 && F.area >= P.pd_open_area && F.mean_dist >= P.pd_open_dist;
  	pd_type = MP.objective ? 2 : MP.open_small ? 1 : 0;
-diff -ruN bots/god/src/nav.cpp bots/_x_g5/src/nav.cpp
---- bots/god/src/nav.cpp	2026-10-20 09:54:49.209002331 +0000
+diff -ruN bots/_g4/src/nav.cpp bots/_x_g5/src/nav.cpp
+--- bots/_g4/src/nav.cpp	2026-10-20 10:13:52.708746017 +0000
 +++ bots/_x_g5/src/nav.cpp	2026-10-20 10:34:54.743575453 +0000
 @@ -37,6 +37,16 @@
  	altar_fields.assign(w.altars.size(), Field{});
@@ -290,8 +320,8 @@ diff -ruN bots/god/src/nav.cpp bots/_x_g5/src/nav.cpp
  				if (c <= P.dash_wait_max)
  					return false;
  				break;
-diff -ruN bots/god/src/nav.h bots/_x_g5/src/nav.h
---- bots/god/src/nav.h	2026-10-20 09:54:49.209002331 +0000
+diff -ruN bots/_g4/src/nav.h bots/_x_g5/src/nav.h
+--- bots/_g4/src/nav.h	2026-10-20 10:13:52.708932193 +0000
 +++ bots/_x_g5/src/nav.h	2026-10-20 10:34:54.743898598 +0000
 @@ -11,6 +11,7 @@
  	int built_this_turn = 0;
@@ -301,9 +331,9 @@ diff -ruN bots/god/src/nav.h bots/_x_g5/src/nav.h
  	void new_turn() { built_this_turn = 0; }
  	// Build the field if it is missing and the turn budget allows; returns true when available.
  	bool ensure_group(int id, long long fuel_floor = 45000);
-diff -ruN bots/god/src/params.h bots/_x_g5/src/params.h
---- bots/god/src/params.h	2026-10-20 09:54:49.209002331 +0000
-+++ bots/_x_g5/src/params.h	2026-10-20 10:40:56.985896484 +0000
+diff -ruN bots/_g4/src/params.h bots/_x_g5/src/params.h
+--- bots/_g4/src/params.h	2026-10-20 10:13:52.709297892 +0000
++++ bots/_x_g5/src/params.h	2026-10-20 10:48:11.957903888 +0000
 @@ -176,6 +176,8 @@
  							   //     9 = Mite (Jungle, Durability in the damage stat, Bruiser health, Power)
  							   // 2 = value-model builds (tools/analysis/item_value.py): Bruiser over Power, early Treasure
@@ -313,12 +343,15 @@ diff -ruN bots/god/src/params.h bots/_x_g5/src/params.h
  							   // 11 = Intercontinental Fish (ladder #1, 45 games of Oct 19): carries open with Power in the damage stat,
  							   //     tanks with Bruiser + Durability health, Home health second on the carries, then Power forever
  	// Home emblem (recall takes 3 turn ends instead of 5). IC buys it second on the bodies whose first emblem is a damage
-@@ -209,6 +211,21 @@
+@@ -209,6 +211,27 @@
  							   // centre triple 11-13 tiles from the team fight, 4 of ours lost to 5 of theirs; "help that does not come")
  	float rally_hp = 0.6f;	   // ... with at least this health fraction
  	int pd_hor3 = 1;			   // patch 3.0: Heart of Ruin instead of Cassi & Issac at team size 3 (draft.cpp pd_score)
 +	// Session 14 (GOD v3, the Nyx games of Oct 20). All 0 = GOD v2's games.
 +	int altar_no_camp = 0;	   // 1: altar approach tiles never include a camp's spawn tile (nx50x41: the only neighbour of the one altar is a monolith
++							   // 2: a camp tile is an approach tile only while that camp is dead (a dead camp's tile is standable and a body on it delays the
++							   //    respawn): the altar opens when the camp dies, the group that blocks it is the team's unlock target (its gems count even
++							   //    in the no-altar gold mode and the team plan may take it; nx50x41: 2 monoliths, 40,000 health, 400 gems)
 +							   // tile; six bodies stood next to the sleeping monolith for 1,000+ rounds trying to step onto it); an altar with no
 +							   // approach tile left is unusable, and with no usable altar reachable from spawn the map has no banking (World::no_altar)
 +	int no_altar_gold = 0;	   // 1: on a map with no usable altar the gems are worth nothing: groups score by gold only (full gold_value, no
@@ -328,6 +361,9 @@ diff -ruN bots/god/src/params.h bots/_x_g5/src/params.h
 +	int stall_guard = 0;	   // > 0: a walking task (farm, capture, tribute, home, flee) that stays inside a 3x3 box this many rounds without acting
 +							   // drops its target; a dash kit also routes without hole crossings for stall_dash_off rounds (fields rebuilt)
 +	int stall_dash_off = 150;
++	int elk_exposure = 0;	   // 1: the farm model's ranged exposure (share of the time a lone ranged body is in reach of the camps it is not hitting)
++							   // is 1 for groups with a camp whose range reaches past our attack range (patch 3.0: elk / golem 4, monolith 5; a
++							   // body at range 3 stands inside their reach the whole time), ranged_exposure for the others
 +	int pd_obj_heavy = 0;	   // 1: the draft's objective map (Prism first, the caster ring) also needs the lone gem group to be heavy: total camp health
 +							   // >= obj_min_hp with >= obj_min_attackers camps that fight back (nx50x50: one elk + gem cluster group and 27 gold
 +							   // clusters per side took the caster draft: 72-1008). Same test as World::detect_objective
@@ -335,10 +371,10 @@ diff -ruN bots/god/src/params.h bots/_x_g5/src/params.h
  	int strike_dash_hold = 9;   // patch 3.0: a damaging dash (Heart of Ruin) is not used to walk while an enemy was seen within this many tiles
  	int flee_exit = 0;		   // 1: a body walking home from inside enemy reach / an awake camp's range takes a sideways step out of it when
  							   // every step toward home stays inside (nav.cpp step_field)
-diff -ruN bots/god/src/world.cpp bots/_x_g5/src/world.cpp
---- bots/god/src/world.cpp	2026-10-20 09:54:49.209002331 +0000
-+++ bots/_x_g5/src/world.cpp	2026-10-20 10:34:54.743247160 +0000
-@@ -39,6 +39,13 @@
+diff -ruN bots/_g4/src/world.cpp bots/_x_g5/src/world.cpp
+--- bots/_g4/src/world.cpp	2026-10-20 10:13:52.709495603 +0000
++++ bots/_x_g5/src/world.cpp	2026-10-20 10:48:11.958542278 +0000
+@@ -39,6 +39,16 @@
  	// altars are computed later (find_islands from prebuild_fields, contested() on first use).
  	const auto walls_lin = walls.export_linear_buffer();
  	auto bit = [](const std::vector<std::uint8_t>& v, int i) { return ((v[static_cast<std::size_t>(i) >> 3] >> (i & 7)) & 1) != 0; };
@@ -349,19 +385,40 @@ diff -ruN bots/god/src/world.cpp bots/_x_g5/src/world.cpp
 +		for (const auto& g : bc::map::camp_groups())
 +			for (const auto& c : g.camps())
 +				camp_tiles.set(c.spawn_position());
++	altar_block_g.assign(altars.size(), -1);
++	altar_block_c.assign(altars.size(), -1);
++	std::vector<vec2> blocked_tiles; // mode 2: camp tiles kept as approach tiles, resolved to their group below (groups are built after this)
  	for (auto a : altars)
  	{
  		std::vector<vec2> app;
-@@ -47,7 +54,7 @@
+@@ -47,9 +57,24 @@
  			for (int dx = -1; dx <= 1; ++dx)
  			{
  				const vec2 p{ a.x + dx, a.y + dy };
 -				if ((dx || dy) && p.x >= 0 && p.y >= 0 && p.x < W && p.y < H && !bit(walls_lin, p.y * W + p.x))
-+				if ((dx || dy) && p.x >= 0 && p.y >= 0 && p.x < W && p.y < H && !bit(walls_lin, p.y * W + p.x) && !(P.altar_no_camp && camp_tiles.is_set(p)))
- 					app.push_back(p);
+-					app.push_back(p);
++				if (!((dx || dy) && p.x >= 0 && p.y >= 0 && p.x < W && p.y < H && !bit(walls_lin, p.y * W + p.x)))
++					continue;
++				if (P.altar_no_camp && camp_tiles.is_set(p))
++				{
++					if (P.altar_no_camp >= 2 && app.empty())
++						blocked_tiles.push_back(p); // only used when no free tile exists (resolved after the free ones below)
++					continue;
++				}
++				app.push_back(p);
  			}
++		if (app.empty() && P.altar_no_camp >= 2)
++			for (auto p : blocked_tiles)
++				if (cheb(p, a) <= 1)
++				{
++					app.push_back(p); // the altar opens when this camp dies
++					break;
++				}
++		blocked_tiles.clear();
  		altar_approach.push_back(std::move(app));
-@@ -64,6 +71,7 @@
+ 	}
+ 
+@@ -64,6 +89,7 @@
  	for (const auto& app : altar_approach)
  		for (auto t : app)
  			spawn_altar_d = std::min(spawn_altar_d, home.get(t));
@@ -369,20 +426,78 @@ diff -ruN bots/god/src/world.cpp bots/_x_g5/src/world.cpp
  	// altar_contested is computed on first use (contested()): ~17k fuel on altar-rich maps, not needed in the opening.
  	altar_contested.clear();
  	altar_enemy_round.assign(altars.size(), -1000);
-@@ -537,4 +545,4 @@
+@@ -170,6 +196,16 @@
+ 		}
+ 		groups.push_back(std::move(G));
+ 	}
++	if (P.altar_no_camp >= 2)
++		for (std::size_t i = 0; i < altars.size(); ++i)
++			for (auto t : altar_approach[i])
++				for (auto& g : groups)
++					for (std::size_t c = 0; c < g.camps.size(); ++c)
++						if (g.camps[c].pos == t)
++						{
++							altar_block_g[i] = g.id, altar_block_c[i] = static_cast<int>(c);
++							g.unlock = true;
++						}
+ 	hops.assign(groups.size(), Hop{});
+ 	mono_share = mono_rate_total > 0 ? mono_rate_lone / mono_rate_total : 0;
+ 	// mono_size50: only on 50x50 maps (contest and its copies). On the 24 generated monolith-only test maps (maps/gold*/gold_mono*, 30-80
+@@ -537,4 +573,34 @@
  	}
  }
  
 -const bc::bitboard& World::route_walls() const { return P.dash_holes && dash_kit ? dash_walls : walls; }
++bool World::altar_open(int i) const
++{
++	const auto k = static_cast<std::size_t>(i);
++	if (altar_approach[k].empty())
++		return false;
++	if (P.altar_no_camp < 2 || altar_block_g[k] < 0)
++		return true;
++	const auto& g = groups[static_cast<std::size_t>(altar_block_g[k])];
++	// Open while the blocking camp is dead: the reward waits (ST_REWARD), or the group respawns later, or its camp is at 0 health.
++	return g.st == ST_REWARD || g.st == ST_RESPAWN || (g.st == ST_ALIVE && g.seen_round >= 0 && g.hp[static_cast<std::size_t>(altar_block_c[k])] <= 0);
++}
++
++bool World::no_altar_now() const
++{
++	if (no_altar)
++		return true;
++	if (P.altar_no_camp < 2)
++		return false;
++	for (std::size_t i = 0; i < altars.size(); ++i)
++		if (altar_open(static_cast<int>(i)) && !altar_approach[i].empty())
++		{
++			int d = BIG;
++			for (auto t : altar_approach[i])
++				d = std::min(d, home.get(t));
++			if (d < BIG)
++				return false;
++		}
++	return true;
++}
++
 +const bc::bitboard& World::route_walls() const { return P.dash_holes && dash_kit && round >= dash_off_until ? dash_walls : walls; }
-diff -ruN bots/god/src/world.h bots/_x_g5/src/world.h
---- bots/god/src/world.h	2026-10-20 09:54:49.209002331 +0000
-+++ bots/_x_g5/src/world.h	2026-10-20 10:34:54.742912298 +0000
-@@ -156,6 +156,8 @@
+diff -ruN bots/_g4/src/world.h bots/_x_g5/src/world.h
+--- bots/_g4/src/world.h	2026-10-20 10:13:52.709596381 +0000
++++ bots/_x_g5/src/world.h	2026-10-20 10:48:11.958265271 +0000
+@@ -41,6 +41,7 @@
+ 	int radius = 0;		// Chebyshev reach of the tiles from the centre
+ 	bool ours = true;
+ 	bool objective = false; // objective map (P.obj_plan): one of the few heavy groups that hold most of the gems
++	bool unlock = false;	// P.altar_no_camp 2: killing this group opens an altar whose approach tile it stands on
+ 
+ 	// Dynamic memory
+ 	GroupState st = ST_ALIVE; // every group starts alive
+@@ -156,6 +157,11 @@
  	void detect_objective();
  	Field home; // steps from our spawn
  	int spawn_altar_d = BIG; // walking steps from our spawn to the nearest altar's approach tile
 +	bool no_altar = false;	 // no usable altar reachable from our spawn (P.altar_no_camp): banking is impossible on this map
++	std::vector<int> altar_block_g, altar_block_c; // P.altar_no_camp 2: the group / camp index whose spawn tile is an altar's only approach (-1 none)
++	bool altar_open(int i) const;	// the altar's approach tiles are standable now (its blocking camp, if any, is dead)
++	bool no_altar_now() const;		// no altar is open now (static no_altar, or every altar blocked by a living camp)
 +	int dash_off_until = -1; // P.stall_guard: until this round this body routes without hole crossings (route_walls)
  	bc::bitboard home_reach; // tiles reachable on foot from our spawn
  	Field away; // steps from enemy spawn

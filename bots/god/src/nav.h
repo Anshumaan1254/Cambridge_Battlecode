@@ -11,6 +11,7 @@ struct Nav
 	int built_this_turn = 0;
 
 	void init();
+	void reset_fields(); // drop every cached field (the routing walls changed)
 	void new_turn() { built_this_turn = 0; }
 	// Build the field if it is missing and the turn budget allows; returns true when available.
 	bool ensure_group(int id, long long fuel_floor = 45000);

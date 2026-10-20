@@ -188,6 +188,12 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   did before): traced corners_v3 (120-1003): an even brawl at r146-156 on our half went 4 deaths to 2 before anyone had an emblem, then kill
   gold (100 each) snowballed. Running `q2.sh`: `_g5and` (a + n + obj heavy), `_g5b13`, `_g5b14`, `_g5r` (`home_hp` 0.6, `cap_recall_hp` 0.7:
   Nyx recalls at 0.70 health), `_g5d1` (`pd_hor3` 0), `_g5d2` h2h vs `_g4`, then `_g5and` vs `_m15` + 3 proxies.
+- **13:05 UTC: SHIPPED GOD v3** = `_g5and` (`submissions/god.zip` sha256 f71c8b74…, history `god_v3_20261020.zip`, `bots/god/src` = it, source
+  hash 287d8b286527; BUILDS row). H2h vs `_g4` **25/40** (deaths 678-748), vs `_m15` 27/40 (v2 29), `_mite` 35 (34), `_ifish` 31 (31), `_px9` 30
+  (30), 0 faults. Rejected (SUGGESTIONS.md): builds 12 / 13 / 14 (16 / 19 / 18 of 40), earlier recalls `_g5r` 15, `pd_hor3` 0 (`_g5d1`) 18,
+  `pd_obj_heavy` alone 19 (kept in v3 as the principled fix). Running `q3.sh`: `_g5u` (`altar_no_camp` 2: the camp-blocked altar opens when the
+  camp dies, the blocking group is a team unlock target), `_g5ex` (`elk_exposure`), `_g5gv5` / `_g5gv2` (`gold_value` 0.5 / 0.22) h2h vs
+  `_g4`; `_g5and` vs idle (pace). Next levers: the fights on our own half when Nyx opens (80 deaths to 10), the economy snowball.
 - 10:40 UTC: handoff written. Nothing left running (the baseline of S14.6 finished; the checkpoint loop of session 13 stops with the container).
   Also measured before the handoff: `_g4fm` (GOD v2 + `fight_margin` 1.15) h2h vs GOD v2 10/34 on the old official files: rejected.
   Untested queue from session 13 (cheap to resume, all on `bots/god`): `ml2_leave`/`ml2_flee` 0.5 and 0.3, `tribute_min` 30 (games are

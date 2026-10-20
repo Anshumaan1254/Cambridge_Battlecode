@@ -16,7 +16,7 @@ running or unfinished, and what to do next, so a new agent can continue without 
 
 ## S14. HANDOFF (2026-10-20 10:40 UTC, end of session 13): the next agent starts here
 
-### S14.1 The task you inherit (the user's words, in priority order)
+### S14.1 The task you inherit (the user's words, in priority order; the prompt the user was given for you: `docs/HANDOFF_PROMPT_S14.md`)
 1. **"We are losing every time on the new maps."** The user uploaded two match zips of the best opponent right now, **Nyx**, vs our GOD
    bot: `new_maps_us_vs_nyx.zip` (patch-3.0 maps nobody had seen) and `old_maps_us_vs_nyx.zip` (the official maps as changed by the patch).
    Request: study the new maps, develop the strategy and drafting, **reverse-engineer Nyx's good strategies**, analyse the old maps too, and

@@ -13,7 +13,31 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Current build: **GOD v7** (`submissions/god.zip`, session 14, Oct 20): GOD v6 + Heart of Ruin's strike dash
+## Current build: **GOD v8** (`submissions/god.zip`, session 14, Oct 20): the code review's plan, measured on cambc 3.0.2
+
+GOD v8 implements the review plan (`docs/strategy_v2/GOD_IMPROVEMENT_PLAN.md`; structured plan and every measurement in
+`docs/strategy_v2/16_GOD_V8_PLAN.md`). It runs on cambc 3.0.2, which carries the Heart of Ruin hotfix (focus per shard 15 -> 12, strength 5 -> 4).
+Each change has a switch in `params.h`, and each one was measured on its own before it was combined:
+- **Heart of Ruin**:
+  - its strike dash also lands in contact, not only on approach;
+  - the shield waits for the strike, because they share the turn's one cast;
+  - the dash lands on camp packs (175 damage and a stun at base focus, more than a cluster's 120 health).
+  On its own this was +16 games over v7 on five cells and 11 rounds faster unopposed.
+- **Fights count support by timing**: an ally counts as much as it can arrive before our body would die, and not at all if it would be focused down first or is walking away. The old rule counted every ally within 6 at full weight. Alone: +10.
+- **Bag escort**: a bag of 60+ gems is not tributed at an altar where an enemy was just seen until two healthy allies stand by. The carrier calls them with an ESCORT alert, and a fight's RALLY never overwrites a fresh OPPORTUNITY or ESCORT. Alone: +12. Traced loss on contest: a 200-gem bag is a 20-turn channel, and v7 lost it there.
+- **The pain map is off**: alone it measured +3 with it off.
+- **Only patch-3.0 values remain**: the old-ruleset branch is gone (wasm identical on 3.0.x), and the source still compiles on the 2.2.5 API.
+
+| Measure (cambc 3.0.2, the 21 official maps, both sides, 42 games per cell) | GOD v8 | GOD v7 |
+|---|---|---|
+| Head-to-head vs GOD v7 | **22** | - |
+| vs GOD v2 / legend_m15 | **35 / 33** | 31 / 28 |
+| vs the Heart of Ruin proxies `_pws` (striking HoR) / `_pw` / `_pc` | **33 / 39 / 37** | 25 / 31 / 36 |
+| vs `_mite` / `_ifish` / `_px9` | 42 / 37 / 36 | 40 / 39 / 36 |
+| Unopposed pace (rounds to 1000 gems) | **1040.0** | 1045.5 |
+| SDK 2.2.5 | builds | builds |
+
+## Previous build: **GOD v7** (session 14, Oct 20): GOD v6 + Heart of Ruin's strike dash
 
 Heart of Ruin's dash is its main fight spell (1.75 x focus damage and a stun around the landing tile), but GOD v6 never used it in a fight: only
 the ranged branch of the engage code allowed a strike dash, and Heart of Ruin is melee. GOD v7 dashes onto a tile within range that puts the

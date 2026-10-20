@@ -1,0 +1,50 @@
+diff -ruN god/src/params.h _x_v8/src/params.h
+--- god/src/params.h	2026-10-20 19:48:22.394435783 +0000
++++ _x_v8/src/params.h	2026-10-20 19:44:59.856627681 +0000
+@@ -279,7 +279,7 @@
+ 	int build_tail = 1;	   // build_style 2 lists end after 24-30 emblems; 1: then Power in the damage stat for ever (the five top teams of
+ 							   // Oct 20: 950 Power-dmg emblems in 25 games; our Ren sat on 612 gold unspent on average, 13,410 on the no-altar map),
+ 							   // 2: the Bruiser cycle for ever
+-	int hor_strike = 2;		   // 1: a melee champion with a damaging dash (Heart of Ruin) uses it as its fight spell in engage(): it dashes onto a tile
++	int hor_strike = 1;		   // 1: a melee champion with a damaging dash (Heart of Ruin) uses it as its fight spell in engage(): it dashes onto a tile
+ 							   // within dash range that has the target inside the landing radius (most enemies hit first). Before, only the ranged branch
+ 							   // set strike_dash, and mob_dash() blocks a damaging dash within strike_dash_hold of an enemy: on nx31x31_c3 vs legend_m15 our
+ 							   // Heart of Ruin spent 391 rounds within 3 of an enemy and landed the dash on one once (62 of its 70 dashes were walking)
+@@ -317,7 +317,7 @@
+ 	int hor_threat = 0;	   // v8 P1-4 enemy Heart of Ruin, narrow (bits): 1 in handle_channel() a ready dash within dash range + radius + 1 is a
+ 				   // stunner (its landing stun cancels a tribute / recall); 2 safety()'s burst retreat adds the ready dash's landing damage
+ 				   // within that reach (Enemy::burst() ignores it; the blunt burst_dash counted it everywhere and lost)
+-	int escort_bag = 60;	   // v8 P0-6: a bag of >= this many gems is not tributed at an altar where an enemy was seen within 6 in the last
++	int escort_bag = 0;	   // v8 P0-6: a bag of >= this many gems is not tributed at an altar where an enemy was seen within 6 in the last
+ 				   // escort_quiet rounds (or is visible within 10 now) until min(2, living allies) healthy allies stand within 5 of it;
+ 				   // meanwhile it posts an ESCORT alert there (the DANGER code, never posted in v7). Contest_v3: a 200-gem bag is a
+ 				   // 20-turn channel; three tries at the central altar with enemies around, then the carrier died with the bag. 0 = off.
+@@ -325,8 +325,8 @@
+ 	float escort_alt_w = 0.f;   // > 0: with a bag >= escort_bag, an altar where an enemy was seen within escort_quiet rounds costs this many extra
+ 				   // steps per tribute turn (a far but quiet altar wins for a long channel; plan P0-6.4)
+ 	int escort_r = 14;		   // allies answer an ESCORT alert from this far (healthy, not capturing)
+-	int alert_prio = 1;		   // v8 B9: a RALLY never replaces a fresh OPPORTUNITY / ESCORT (one shared alert slot)
+-	int sup_mode = 1;	   // v8 P0-4 support-aware fights (bits): 1 visible allies within sup_radius weighted by w = 1 - arrival / my time to live
++	int alert_prio = 0;		   // v8 B9: a RALLY never replaces a fresh OPPORTUNITY / ESCORT (one shared alert slot)
++	int sup_mode = 0;	   // v8 P0-4 support-aware fights (bits): 1 visible allies within sup_radius weighted by w = 1 - arrival / my time to live
+ 				   // (0 when it would die within a round, is walking away, hurt below retreat_hp or channeling) instead of every
+ 				   // supporting ally within 6 at full weight; 2 the backup head-count from those helpers only (no unseen claims, B10);
+ 				   // 4 a body leaving a fight steps toward a helper that arrives within 3 rounds when that enters no more enemy reach;
+@@ -334,7 +334,7 @@
+ 	int sup_radius = 10;
+ 	float sup_ml2_bonus = 0.2f;
+ 	float sup_low_hp = 0.25f;   // sup_mode 4: below this share of health the body goes home, not toward help
+-	int hor_camp = 1;	   // v8: a damaging dash (Heart of Ruin) farming a group dashes onto a tile in reach of the target camp with >= this many live
++	int hor_camp = 0;	   // v8: a damaging dash (Heart of Ruin) farming a group dashes onto a tile in reach of the target camp with >= this many live
+ 				   // camps in its landing radius (all hit and stunned); 0 = off. Only while no enemy is within strike_dash_hold.
+ 	float hor_shield_hp = 0.5f; // hor_strike 2: the shield waits for the strike while health >= this share and the dash is ready with an enemy in its reach
+ 	int strike_dash_hold = 9;   // patch 3.0: a damaging dash (Heart of Ruin) is not used to walk while an enemy was seen within this many tiles
+@@ -404,7 +404,7 @@
+ 	// In-match learning (learn.h): team stance bandit, pain map, fight calibration
+ 	int learn_enabled = 1;			 // 0 disables all three online learners (A/B testing)
+ 	int learn_stance = 1;			 // team stance bandit on/off
+-	int learn_pain = 0;				 // pain map on/off
++	int learn_pain = 1;				 // pain map on/off
+ 	int learn_fight = 1;			 // fight calibration on/off
+ 	int learn_window = 40;			 // rounds per stance evaluation window
+ 	float learn_rate = 0.5f;		 // step size of the stance value update

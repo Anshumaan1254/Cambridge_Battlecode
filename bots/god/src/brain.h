@@ -75,6 +75,7 @@ private:
 	bool dbg_hit_other = false;	   // SPELL_TRACE: the melee step-then-hit-another-enemy branch swung
 	bool safe_to_recall() const;
 	bool altar_unsafe(int i) const;
+	bool bag_needs_escort(int i) const; // P.escort_bag
 	void post_danger(vec2 at);
 	void prepare_scoring();
 	struct RecentEnemy
@@ -84,6 +85,14 @@ private:
 	};
 	std::array<RecentEnemy, 8> sc_recent{};
 	int sc_recent_n = 0;
+	struct ThreatEnemy
+	{
+		vec2 pos;
+		int age;
+		float hp, dps;
+	};
+	std::array<ThreatEnemy, 8> sc_threat{}; // P.threat_map
+	int sc_threat_n = 0;
 	float sc_risk = 0;
 	bool sc_alert = false;
 	int sc_obj_focus = -1; // objective group the team plan is limited to this turn (P.obj_focus)
@@ -199,6 +208,7 @@ private:
 	bool cast_unit_champ(int slot, const bc::champion& c);
 	bool cast_ground(int slot, vec2 p);
 	bool strike_dash_at(const Enemy& e); // P.hor_strike: damaging dash onto a tile with the target in the landing radius
+	bool hor_camp_dash(Group& g, std::size_t idx); // P.hor_camp: damaging dash onto a camp pack
 	bool cast_self(int slot);
 	bool ready(int slot) const { return slot >= 0 && cd[static_cast<std::size_t>(slot)] <= 0 && can_cast && !cast_done; }
 	void support_spells();
@@ -210,6 +220,21 @@ private:
 	bool step(const bc::bitboard& goals, bool avoid_danger, bool allow_dash);
 	int mob_dash() const;
 	bool strike_dash = false;
+	bool shield_deferred = false;
+	struct DLRow
+	{
+		int round = -1000;
+		float hpf = 1.f;
+		int enemies5 = 0, casters5 = 0, allies6 = 0;
+		bool channel = false;
+	};
+	std::array<DLRow, 5> dl_hist{}; // P.death_learn: last 5 rounds (ring)
+	float dl_burst = 0, dl_iso = 0, dl_chan = 0, dl_camp = 0;
+	int dl_burst_r = -1000, dl_iso_r = -1000, dl_chan_r = -1000, dl_camp_r = -1000;
+	float dl_val(float v, int r) const { return P.death_learn ? v * std::max(0.f, 1.f - static_cast<float>(round - r) / static_cast<float>(std::max(1, P.dl_decay))) : 0.f; }
+	void dl_record();
+	void dl_on_death();
+	float gv_base = -1.f; // P.gv_map: map-derived gold value (computed once) // hor_strike 2: the shield was held for the strike dash this turn (cast at the end of the turn if no cast happened)
 	bool go_group(Group& g, int stop_at, bool avoid);
 	bool go_altar(int id);
 	bool go_home_step(bool avoid);

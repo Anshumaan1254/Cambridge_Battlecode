@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-20 (session 14: GOD v8 in progress on cambc 3.0.2, plan docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
+- Last updated: **2026-10-20 (session 14: SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
   Rule from the user: update this file and push at every step. Start with **§S14**, then **§S13-GOD**, **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
@@ -389,6 +389,16 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   on the v7 zip (`setup_session.sh`). Summary tool: `python3 tools/v8sum.py --opps _g4,_pws,_pw,_pc,_m15,idle _g8s VARIANTS`. Queues q33-q39 run
   the rest (learners, escort, alert priority, lock hits, fm, hor_threat, gv, HoR builds, HoR draft priors, threat map, tail stat, aoe_reach5,
   death learning, chan_keep, then `_v8c1` vs `_g8s`, `_mite`, `_ifish`, `_px9`). `_x_v8` compiles on 2.2.5 (`$S/p225`).
+- **SHIPPED GOD v8** (`submissions/god.zip` sha256 de485e03…, history `god_v8_20261020.zip`, source hash d6c6fbbb7479, `bots/god/src` = `_v8k1c`; BUILDS
+  row, README) = v7 + `x_v8.patch` with `hor_strike` 2, `hor_camp` 1, `sup_mode` 1, `escort_bag` 60, `alert_prio` 1, `learn_pain` 0 and the 15
+  `SDK_HAS_HOR ? new : old` values reduced to the patch-3.0 ones (ML2OLD weights dropped; wasm identical to `_v8k1` up to the toolchain's 32-byte
+  directory variation, 42/42 games identical vs `_g4`). Cells (v7 in brackets): h2h vs v7 22/42; `_g4` 35 (31), `_pws` 33 (25), `_pw` 39 (31), `_pc` 37
+  (36), `_m15` 33 (28), `_mite` 42 (40), `_ifish` 37 (39), `_px9` 36 (36); pace 1040.0 (1045.5). Builds on SDK 2.2.5 (from the zip). Rejected on the way
+  (alone, sum over `_g4/_pws/_pw/_m15`, v7 115): `hor_threat` 3 111, `gv_map` exp 0.5 109 (exp 1.0 125: re-test on v8), `fm_mode` 7 118, `lock_hits_sdk` 1
+  (2 cells -1), `learn_stance` 0 (-3), `sup_mode` bit 4 (step toward help) -12. Queue `$S/q44.sh` continues: `_v8k3` (+ `escort_alt_w` 1), `_v8cp1/3`,
+  `_v8e40`, `_v8ck/ck6` (`chan_keep`), `_v8dl` (`death_learn`), HoR draft priors / builds on 3.0.2, `_v8tm` (threat map), `_v8tt1` (tail stat),
+  `aoe_reach5` 1/3, then `ml2_adapt`, `mi_learn_burst`, `mi_learn_fight`. Next: re-base the open switches on v8 (`bots/god` = v8; `_x_v8` keeps the
+  switches off) and screen them against `_v8k1` as the new reference.
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

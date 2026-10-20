@@ -1,15 +1,14 @@
 // Every tunable weight and threshold lives here so variants can be generated for self-play tuning.
 #pragma once
 #include "common.h"
-// Two rulesets (docs/sprint/RULES_DIFF.md): the engine we are compiled with tells which one runs. SDK_HAS_HOR (Heart of Ruin in the SDK)
-// = patch 3.0: GOD v6's values. Without it (the sprint handbook's rules: old camp values, no Golem, no Heart of Ruin) every value marked
-// SDK_HAS_HOR takes legend_m15's (session 15: on cambc 2.2.5 GOD's patch-3.0 values lost 16 of 170 proxy games; legend_m15's values 148/170),
-// and the ml2 danger model takes legend_m15's logistic weights (ml2_model.h).
+// GOD v8 (plan P0-2a): patch 3.0 values only. GOD v5.1-v7 chose 15 settings and the ml2 weights by SDK_HAS_HOR (patch 3.0 vs the sprint
+// handbook's pre-patch rules); the platform runs patch 3.0 (+ the 3.0.2 Heart of Ruin hotfix, same SDK headers), so the old branch is gone.
+// The compile guard (common.h) stays: the source still compiles on the 2.2.x API.
 
 struct Params
 {
 	// Task valuation
-	float gold_value = SDK_HAS_HOR ? 0.33f : 0.22f;		 // gem-equivalent value of one gold (patch 3.0: a wolf pays 4 gems + 40 gold, an elk 15 + 90: 0.22 -> 0.33 won 158/170 vs
+	float gold_value = 0.33f;		 // gem-equivalent value of one gold (patch 3.0: a wolf pays 4 gems + 40 gold, an elk 15 + 90: 0.22 -> 0.33 won 158/170 vs
 									 // the 5 proxies (0.22: 145), h2h 20/34 and on the patch-style maps 21/34 vs 0.22; 0.44-0.66 level vs the proxies, worse vs legend_m15)
 	float deny_bonus = 0.043f;		 // extra value for camps on the enemy half (they lose what we take) (ES: 0.55 -> 0.043)
 	float enemy_half_penalty = 10.f; // rounds-equivalent risk cost for enemy-half camps
@@ -207,7 +206,7 @@ struct Params
 							   // enemy is within 7 and a healthy ally within 6 of us has an enemy within 5 (the user: fight while still able;
 							   // ladder contest r26-31: our full-health Ren completed a recall as the team fight started, the other 5 lost it)
 	float recall_join_hp = 0.7f;
-	float burst_retreat = SDK_HAS_HOR ? 1.2f : 0.f;  // > 0: safety() also retreats when our health is below this x the burst (best ready spell + one hit) of the
+	float burst_retreat = 1.2f;  // > 0: safety() also retreats when our health is below this x the burst (best ready spell + one hit) of the
 							   // visible enemies that can step into reach (spell reach + 2): 41% of our ladder deaths (Oct 19) came from >= 60%
 							   // health within 3 rounds, Cassi 31% health (220/700) stayed out next to casters and died to one area cast
 	int ci_first = 0;		   // 1: the parameter draft picks Cassi & Issac first when the planned team has them (same team, lower body
@@ -217,17 +216,17 @@ struct Params
 	float rally_hp = 0.6f;	   // ... with at least this health fraction
 	int pd_hor3 = 1;			   // patch 3.0: Heart of Ruin instead of Cassi & Issac at team size 3 (draft.cpp pd_score)
 	// Session 14 (GOD v3, the Nyx games of Oct 20). All 0 = GOD v2's games.
-	int altar_no_camp = SDK_HAS_HOR ? 2 : 0;	   // 1: altar approach tiles never include a camp's spawn tile (nx50x41: the only neighbour of the one altar is a monolith
+	int altar_no_camp = 2;	   // 1: altar approach tiles never include a camp's spawn tile (nx50x41: the only neighbour of the one altar is a monolith
 							   // 2: a camp tile is an approach tile only while that camp is dead (a dead camp's tile is standable and a body on it delays the
 							   //    respawn): the altar opens when the camp dies, the group that blocks it is the team's unlock target (its gems count even
 							   //    in the no-altar gold mode and the team plan may take it; nx50x41: 2 monoliths, 40,000 health, 400 gems)
 							   // tile; six bodies stood next to the sleeping monolith for 1,000+ rounds trying to step onto it); an altar with no
 							   // approach tile left is unusable, and with no usable altar reachable from spawn the map has no banking (World::no_altar)
-	int no_altar_gold = SDK_HAS_HOR ? 1 : 0;	   // 1: on a map with no usable altar the gems are worth nothing: groups score by gold only (full gold_value, no
+	int no_altar_gold = 1;	   // 1: on a map with no usable altar the gems are worth nothing: groups score by gold only (full gold_value, no
 							   // end-of-game decay), no tribute trips, the bag never makes a body cautious (the tiebreak at r2000: gold earned, then kills)
-	int dash_gain1 = SDK_HAS_HOR ? 1 : 0;		   // 1: at a hole crossing where every improving walking step is a hole, a ready dash that gains one field step is taken
+	int dash_gain1 = 1;		   // 1: at a hole crossing where every improving walking step is a hole, a ready dash that gains one field step is taken
 							   // (nx61x71: two crossing holes chained diagonally; the field's path went hole -> hole and the body waited forever)
-	int stall_guard = SDK_HAS_HOR ? 10 : 0;	   // > 0: a walking task (farm, capture, tribute, home, flee) that stays inside a 3x3 box this many rounds without acting
+	int stall_guard = 10;	   // > 0: a walking task (farm, capture, tribute, home, flee) that stays inside a 3x3 box this many rounds without acting
 							   // drops its target; a dash kit also routes without hole crossings for stall_dash_off rounds (fields rebuilt)
 	int stall_dash_off = 150;
 	float mid_risk = 0.f;	   // > 0: before mid_risk_until, a group near the midline costs this many rounds x (1 - |d_ally - d_enemy| / (d_ally + d_enemy))^2:
@@ -245,23 +244,23 @@ struct Params
 	int elk_exposure = 0;	   // 1: the farm model's ranged exposure (share of the time a lone ranged body is in reach of the camps it is not hitting)
 							   // is 1 for groups with a camp whose range reaches past our attack range (patch 3.0: elk / golem 4, monolith 5; a
 							   // body at range 3 stands inside their reach the whole time), ranged_exposure for the others
-	int pd_obj_heavy = SDK_HAS_HOR ? 1 : 0;	   // 1: the draft's objective map (Prism first, the caster ring) also needs the lone gem group to be heavy: total camp health
+	int pd_obj_heavy = 1;	   // 1: the draft's objective map (Prism first, the caster ring) also needs the lone gem group to be heavy: total camp health
 							   // >= obj_min_hp with >= obj_min_attackers camps that fight back (nx50x50: one elk + gem cluster group and 27 gold
 							   // clusters per side took the caster draft: 72-1008). Same test as World::detect_objective
 
 	int pd_front_free = 0;	   // parameter draft: at most team - pd_front_free frontliners (the pair and a ranged carry take the rest), penalty pd_front_pen
-	float pd_front_pen = SDK_HAS_HOR ? 0.4f : 0.f;
+	float pd_front_pen = 0.4f;
 	float pd_hor_prior = 0.4f;  // parameter draft priors re-tunable for patch 3.0 (session 14): Heart of Ruin and Cassi & Issac at any team size
 	float pd_ci_prior = 0.9f;
-	float pd_counter_hor = SDK_HAS_HOR ? 0.8f : 0.f; // per enemy bruiser pick seen (Heart of Ruin, Marcella, Vendetta): + for Heart of Ruin, - for Cassi & Issac (the pair
+	float pd_counter_hor = 0.8f; // per enemy bruiser pick seen (Heart of Ruin, Marcella, Vendetta): + for Heart of Ruin, - for Cassi & Issac (the pair
 							   // died 148 of our 362 champion deaths in the 25 ladder games of Oct 20; the two teams without the pair beat us 9-1)
 	float pd_gold_vesper = 0.f; // x the share of our half's groups that hold gold: Vesper Vale (+33% gold since patch 3.0) and Marcella (2 gold per gem)
-	int pd_obj_side = SDK_HAS_HOR ? 1 : 0;	   // 1: the draft's objective map also needs the lone gem group nearer to our spawn than to theirs by more than pd_obj_mid steps
+	int pd_obj_side = 1;	   // 1: the draft's objective map also needs the lone gem group nearer to our spawn than to theirs by more than pd_obj_mid steps
 							   // (session 14: nx50x50's only gem group, 2 elks + 6 gems = 72 gems, sits midway between the spawns with two altars next to it;
 							   // the caster ring (Prism, Stellar, C&I, Ryth, Tavi) lost it 72-1008 twice on the ladder with 37 deaths: both teams
 							   // meet there every respawn, and the casters die to Power-stacked melee)
 	int pd_obj_mid = 2;
-	float build_react = SDK_HAS_HOR ? 2.5f : 0.f;   // > 0: a reactive health emblem (Durability health, then Bruiser health) is inserted at the shop whenever our max
+	float build_react = 2.5f;   // > 0: a reactive health emblem (Durability health, then Bruiser health) is inserted at the shop whenever our max
 							   // health is below this x the biggest one-round burst (strength + focus x best spell) any enemy has shown us this game:
 							   // the build answers the enemy's Power stacks (25 ladder games of Oct 20: first-round damage 33% of max health, median)
 	float kill_captures = 0.f; // > 0: the body that dealt at least this share of a group's health takes its reward even if a lower-index ally claims
@@ -277,15 +276,67 @@ struct Params
 							   // arrives from 2-3 tiles out and kills a hurt body in 2 rounds (25 ladder games of Oct 20: our health at the first hit
 							   // median 34%, death within 2 rounds in 57% of our champion deaths), so a hurt body leaves while it still can
 	int burst_far_d = 5;
-	int build_tail = SDK_HAS_HOR ? 1 : 0;	   // build_style 2 lists end after 24-30 emblems; 1: then Power in the damage stat for ever (the five top teams of
+	int build_tail = 1;	   // build_style 2 lists end after 24-30 emblems; 1: then Power in the damage stat for ever (the five top teams of
 							   // Oct 20: 950 Power-dmg emblems in 25 games; our Ren sat on 612 gold unspent on average, 13,410 on the no-altar map),
 							   // 2: the Bruiser cycle for ever
-	int hor_strike = SDK_HAS_HOR ? 1 : 0;		   // 1: a melee champion with a damaging dash (Heart of Ruin) uses it as its fight spell in engage(): it dashes onto a tile
+	int hor_strike = 2;		   // 1: a melee champion with a damaging dash (Heart of Ruin) uses it as its fight spell in engage(): it dashes onto a tile
 							   // within dash range that has the target inside the landing radius (most enemies hit first). Before, only the ranged branch
 							   // set strike_dash, and mob_dash() blocks a damaging dash within strike_dash_hold of an enemy: on nx31x31_c3 vs legend_m15 our
 							   // Heart of Ruin spent 391 rounds within 3 of an enemy and landed the dash on one once (62 of its 70 dashes were walking)
 	int burst_dash = 0;		   // 1: Enemy::burst() counts a ready damaging dash (Heart of Ruin: 1.75 x focus) like a spell; the fight estimate, burst
 							   // retreat, burst_exit, danger map and the ml2 burst_e5 input read it (before: no dash damage; build_react already had it)
+	int chan_keep = 0;	   // v8: a tribute with <= chan_keep turns left is not cancelled for a stunner nearby (only if their damage kills us first):
+				   // contest_v3, v7 vs legend_m15: Stellar (3,150 health, two allies next to it) cancelled a 200-gem tribute 1-2 turns
+				   // before it landed (an enemy stunner came within 4), restarted the 20-turn channel and died with the bag 6 rounds later
+	int death_learn = 0;	   // v8 P1-2: on its first dead turn a body classifies its death from its last 5 rounds and nudges one setting of its own
+				   // (decays linearly over dl_decay rounds): burst (>= 60% health 3 rounds before, a caster within 5) -> burst_retreat
+				   // x (1 + 0.2 per death, max +0.6); isolated (no ally within 6 for 3 rounds, 2+ enemies within 5) -> isolated_fight_adv
+				   // +0.1 (max +0.4); channel (recalling / banking) -> recall safety radius +2 (max +4); camp (no enemy within 6) ->
+				   // retreat line +0.05 (max +0.15)
+	int dl_decay = 200;
+	int threat_map = 0;	   // v8 P1-1: enemy threat at a group instead of the pain map: each living enemy seen t <= tm_memory rounds ago at P
+				   // can be within t + 2 tiles of P now (dead ones nowhere); weight 1 / (1 + (t / 8)^2) when the group centre is inside
+				   // that area + 4; net = max(0, 1 - (our hp x dps there) / (their weighted hp x dps)); cost tm_w x net rounds. The pain
+				   // map marked where we lost, faded on a timer whether the enemy left or not, and was per body (plan P1-1).
+	int tm_memory = 40;
+	float tm_w = 20.f;
+	int tail_stat = 0;	   // v8 P1-7: build_tail 1's endless Power stat from the engine, not a typed champion list: focus when focus_growth x
+				   // (sum of our spell modifiers) / 8 (cooldown) beats strength_growth x (1 + 1/8 with an attack reset), else strength
+	int hor_build = 0;	   // v8 P0-1f Heart of Ruin builds after the 3.0.2 hotfix (focus per shard 15 -> 12, health still +100): 1 health first
+				   // (Jungle, Durability, Bruiser health) then Ren's focus emblems; 2 = 1 + a Bruiser health / focus tail instead of
+				   // Power focus (its passive pays a body that stays alive at low health); 3 = Ren's list + that tail
+	int gv_map = 0;	   // v8 P1-6: gold_value from the map: rho = sum(gold / respawn) / sum(gems / respawn) over the camp groups (engine
+				   // rewards), value = gold_value x (rho / gv_rho_ref)^gv_exp, clamped 0.15-0.5. The review's formula (0.22 at rho 4,
+				   // 0.33 at 10) gave 0.23-0.31 on 19 of the 21 official maps (their rho is 4.4-9.6, median 6.3; elk-arena 20.5): the 0.22
+				   // direction measured worse (19/42), so the reference is the measured best 0.33 at the pool median.
+	float gv_rho_ref = 6.3f;
+	float gv_exp = 0.5f;
+	int fm_mode = 0;	   // v8 P1-3 fight-model effects (bits): 1 Heart of Ruin's passive (up to +50% damage at 0 health, linear; engine
+				   // constant heart_of_ruin_missing_health_damage_max_bonus) on both sides; 2 our Ren's retaliation (0.2 x focus per
+				   // enemy hitting it) on our side; 4 combat()'s camp term uses each camp's engine range (elk / golem 4, monolith 5), not 3
+	int hor_threat = 0;	   // v8 P1-4 enemy Heart of Ruin, narrow (bits): 1 in handle_channel() a ready dash within dash range + radius + 1 is a
+				   // stunner (its landing stun cancels a tribute / recall); 2 safety()'s burst retreat adds the ready dash's landing damage
+				   // within that reach (Enemy::burst() ignores it; the blunt burst_dash counted it everywhere and lost)
+	int escort_bag = 60;	   // v8 P0-6: a bag of >= this many gems is not tributed at an altar where an enemy was seen within 6 in the last
+				   // escort_quiet rounds (or is visible within 10 now) until min(2, living allies) healthy allies stand within 5 of it;
+				   // meanwhile it posts an ESCORT alert there (the DANGER code, never posted in v7). Contest_v3: a 200-gem bag is a
+				   // 20-turn channel; three tries at the central altar with enemies around, then the carrier died with the bag. 0 = off.
+	int escort_quiet = 12;
+	float escort_alt_w = 0.f;   // > 0: with a bag >= escort_bag, an altar where an enemy was seen within escort_quiet rounds costs this many extra
+				   // steps per tribute turn (a far but quiet altar wins for a long channel; plan P0-6.4)
+	int escort_r = 14;		   // allies answer an ESCORT alert from this far (healthy, not capturing)
+	int alert_prio = 1;		   // v8 B9: a RALLY never replaces a fresh OPPORTUNITY / ESCORT (one shared alert slot)
+	int sup_mode = 1;	   // v8 P0-4 support-aware fights (bits): 1 visible allies within sup_radius weighted by w = 1 - arrival / my time to live
+				   // (0 when it would die within a round, is walking away, hurt below retreat_hp or channeling) instead of every
+				   // supporting ally within 6 at full weight; 2 the backup head-count from those helpers only (no unseen claims, B10);
+				   // 4 a body leaving a fight steps toward a helper that arrives within 3 rounds when that enters no more enemy reach;
+				   // 8 the danger model's leave / flee threshold rises by sup_ml2_bonus x min(1, weighted helper health / max health)
+	int sup_radius = 10;
+	float sup_ml2_bonus = 0.2f;
+	float sup_low_hp = 0.25f;   // sup_mode 4: below this share of health the body goes home, not toward help
+	int hor_camp = 1;	   // v8: a damaging dash (Heart of Ruin) farming a group dashes onto a tile in reach of the target camp with >= this many live
+				   // camps in its landing radius (all hit and stunned); 0 = off. Only while no enemy is within strike_dash_hold.
+	float hor_shield_hp = 0.5f; // hor_strike 2: the shield waits for the strike while health >= this share and the dash is ready with an enemy in its reach
 	int strike_dash_hold = 9;   // patch 3.0: a damaging dash (Heart of Ruin) is not used to walk while an enemy was seen within this many tiles
 	int flee_exit = 0;		   // 1: a body walking home from inside enemy reach / an awake camp's range takes a sideways step out of it when
 							   // every step toward home stays inside (nav.cpp step_field)
@@ -353,7 +404,7 @@ struct Params
 	// In-match learning (learn.h): team stance bandit, pain map, fight calibration
 	int learn_enabled = 1;			 // 0 disables all three online learners (A/B testing)
 	int learn_stance = 1;			 // team stance bandit on/off
-	int learn_pain = 1;				 // pain map on/off
+	int learn_pain = 0;				 // pain map on/off
 	int learn_fight = 1;			 // fight calibration on/off
 	int learn_window = 40;			 // rounds per stance evaluation window
 	float learn_rate = 0.5f;		 // step size of the stance value update
@@ -599,8 +650,8 @@ struct Params
 	// Fight / danger model learned from real ladder games (agent ml2, session 13; experiments/wip/x_ml2_NOTES.md,
 	// tools/ml/ml2_*.py). P(this body dies within 8 rounds) from a logistic model on what the body sees (ml2_model.h),
 	// trained on 160 ladder games (ours vs ladder teams and top teams vs each other). All 0 = legend_m14_commit.
-	float ml2_leave = SDK_HAS_HOR ? 0.2f : 0.4f;		// a fight we can walk away from (no kill now) is dropped when P(die8) >= this
-	float ml2_flee = SDK_HAS_HOR ? 0.2f : 0.4f;		// not in reach, not fighting: walk away when P(die8) >= this and an enemy is within flee_dist
+	float ml2_leave = 0.2f;		// a fight we can walk away from (no kill now) is dropped when P(die8) >= this
+	float ml2_flee = 0.2f;		// not in reach, not fighting: walk away when P(die8) >= this and an enemy is within flee_dist
 	float ml2_enter = 0.f;		// not fighting: fight when P(kill8) >= this and P(die8) < ml2_enter_die (target within reach + 1)
 	float ml2_enter_die = 0.15f;
 	int ml2_hold = 0;			// after a model exit, keep out (no proactive fight) for this many rounds

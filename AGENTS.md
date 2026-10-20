@@ -192,6 +192,18 @@ running or unfinished, and what to do next, so a new agent can continue without 
   consistently, then validate on pad17 + generated + held-out (not used in training) and the official screen. `tune_out/` is git-ignored:
   copy `history.json`, `best_params.json` to `experiments/wip/x_es15_*` when done.
 
+- **Checkpoint 06:10 UTC: the user: "legend m15 is still losing to Mite and Nyx; fix the issues after completing all other tasks"** (no replays
+  of m15 came with it; Nyx is a team name not seen in any file). From the Oct 19 replays: **Mite = group 2306b82f** (drafts match our MITE table
+  except Ren instead of Tavi as the 5th pick on stampede / contest); Nyx candidates 25464f3d (C&I-first + Tavi / Willow / Vendetta, 0/5) or
+  44b9a95f (Varg-first, 2/5). vs Mite (`$S/farmstat.mjs`, `caps.mjs`, `track.mjs`, `deaths.mjs`): interlock / collision are economy losses
+  while winning the kills (deaths 6-10, 12-16): they take the neutral elk pairs (interlock 576 neutral gems vs our 0; a 4-body group on the
+  corner elks from r40) and re-take their own respawned camps after 15-23 rounds (ours 20-39; our Issac solo-cleared a wolf in 25 rounds;
+  our Cassi hovered 70 rounds at the centre after banking); swirl 20-3 deaths at the centre camps between the spawns; stampede objective
+  stolen; contest. Across all 10 groups: they re-touch own-side respawned camps after 11-25 rounds, we 30-46, they capture 1.5-2x more.
+  Proxy `_mite2` (`bots/_x_mt2` = `_mlkc40` + `experiments/wip/x_mt2.patch`: MITE table with Ren 5th; + Mite builds, ring, big_reward + dive):
+  `_mlkc40` 26/34, `_ch2` 24/34 (our brain plays their draft worse: not a real stand-in). Plan: after the ES run, an **exploiter** ES that
+  trains a copy to beat `_mlkc40` (league training), then harden `_mlkc40` against it + the proxies. Ask the user for the m15-vs-Mite/Nyx zips.
+
 ## S12. SESSION 12 (2026-10-19, same container as S10/S11): read this first
 
 - Shipped bot at the start: **`legend_m14`** (`submissions/legend.zip` sha256 50ca7600…, frozen `bots/_pg3`, S7R). Baseline for every A/B: `_pg3`.

@@ -1,3 +1,17 @@
+# Addendum (session 14, Oct 20): GOD v4 for patch 3.0
+
+`submissions/god.zip` = GOD v4 = `legend_m15` (below) + the patch-3.0 changes of session 13 (camp attack ranges from the engine, Heart of
+Ruin, golem, `gold_value` 0.33) + session 14's fixes from the Nyx games (`docs/strategy_v2/14_NYX_PATCH3.md`):
+
+- **Altars behind camps** (`altar_no_camp` 2): a camp's spawn tile is an altar approach tile only while that camp is dead; a map with no
+  usable altar is played for gold earned and kills (the round-2000 tiebreaks); the group that blocks an altar is a team target as soon as
+  the living team can clear it (the stampede team plan), and the team banks from the dead tile (a body standing there delays the respawn).
+- **Stall guard** (`stall_guard` 10): any walking task (farm, capture, tribute, home, flee) that stays in a 3x3 box for 10 rounds without
+  acting drops its target; a dash kit then routes without hole crossings for 150 rounds (`dash_gain1`: at a chained hole crossing a ready
+  dash that gains one step is taken instead of waiting).
+- **Draft**: the objective map (Prism first, caster ring) needs a heavy lone gem group (`pd_obj_heavy`), like the brain's objective mode;
+  Heart of Ruin instead of Cassi & Issac at 3 champions (`pd_hor3`, kept: see SUGGESTIONS.md).
+
 # The whole plan of our bot (`legend_m15`, shipped in `submissions/legend.zip` on Oct 20)
 
 `legend_m15` = `legend_m14` + "finish the camp you started" (`commit_hit` 2, session 12) + session 13's area-spell reach 5

@@ -57,3 +57,11 @@ obsolete (pain map), so it waits for its results.
   - **escort (P0-6, + `alert_prio`): `escort_bag` 60 34 / 28 / 34 / 31 = 127 (+12)**; 100: 121 (+6). `alert_prio` alone `_g4` 32, `_pw` 33.
   - `lock_hits_sdk` 1 (engine lock hits): `_g4` 29, `_pw` 32 (-1): not changed.
 - Combined candidates queued (`q41.sh`): `_v8k2` = HoR strike + camp dash + escort 60 + alert priority + no pain map; `_v8k1` = `_v8k2` + `sup_mode` 1.
+- **SHIPPED GOD v8 = `_v8k1`** (cells in AGENTS / BUILDS): h2h vs v7 22/42, +26 over eight opponents, pace 1040.0.
+- `_v8k3` (= v8 + `escort_alt_w` 1: big bags prefer a quiet altar) h2h vs v7 23, `_g4` 32, `_pws` 31, `_pw` 39, `_pc` 35, `_m15` 32: -8 vs v8, rejected.
+- P2-5 fuel (v8 vs v7): turn rollovers per team ambush 12 / 12, nx100x100 22 / 26, nx60x60 43 / 36, of which 18 in rounds 1-3 (the opening field
+  precompute); mid-game losses < 0.5% of turns: not a lever.
+- v8.1 screens (one switch on v8; h2h vs v8 + `_pws` / `_pw` / `_g4` / `_m15`, v8 33 / 39 / 35 / 33 = 140): `gv_map` exp 1 18 + 136; `comms_fight` +
+  `sup_mode` 17 (unseen FIGHT-marked allies at half weight) **25** + 131; `chan_keep` 3 21 + 138; `escort_bag` 40 22 + 140; `death_learn` 19 + 137;
+  `sup_mode` 3 22 + 130; `hor_build` 2 21 + 137; `pd_hor3` 0 19 + 136; **`pd_counter_hor` 0 21 + 124 (vs `_pws` 24): the counter pick matters on
+  3.0.2 too**; `pd_counter_hor` 1.2 queued.

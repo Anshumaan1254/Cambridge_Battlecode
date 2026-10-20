@@ -1,0 +1,121 @@
+diff -ruN bots/god/src/brain.cpp bots/_x_g8/src/brain.cpp
+--- bots/god/src/brain.cpp	2026-10-20 15:22:26.550137179 +0000
++++ bots/_x_g8/src/brain.cpp	2026-10-20 17:44:44.200028575 +0000
+@@ -1424,6 +1424,60 @@
+ 	return false;
+ }
+ 
++bool Brain::strike_dash_at(const Enemy& e)
++{
++	// P.hor_strike (session 14): Heart of Ruin's dash lands for focus x dash_mod and stuns every enemy within dash_radius of the landing tile.
++	if (kit.dash < 0 || kit.dash_mod <= 0.f || !ready(kit.dash) || !can_cast || !e.alive || !e.visible)
++		return false;
++	auto& W = world();
++	const int rng = std::max(1, static_cast<int>(kit.dash_range));
++	const int rad = std::max(0, static_cast<int>(kit.dash_radius));
++	if (cheb(pos, e.pos) > rng + rad || W.enemy_spawn.is_set(e.pos))
++		return false;
++	const bc::bitboard blocked = Nav::blocked_now(pos);
++	vec2 best = pos;
++	int best_n = 0, best_d = 99;
++	for (int dy = -rng; dy <= rng; ++dy)
++		for (int dx = -rng; dx <= rng; ++dx)
++		{
++			const vec2 p{ pos.x + dx, pos.y + dy };
++			if ((dx == 0 && dy == 0) || !bc::map::is_in_bounds(p) || blocked.is_set(p) || cheb(p, e.pos) > rad)
++				continue;
++			if (std::abs(dx) == 2 || std::abs(dy) == 2)
++			{
++				const vec2 mid{ pos.x + dx / 2, pos.y + dy / 2 };
++				if (bc::map::walls().is_set(mid))
++					continue;
++			}
++			int n = 0;
++			for (const auto& o : W.enemies)
++				if (o.alive && o.visible && cheb(p, o.pos) <= rad)
++					++n;
++			const int dd = cheb(p, e.pos);
++			if (n > best_n || (n == best_n && dd < best_d))
++				best_n = n, best_d = dd, best = p;
++		}
++	if (best == pos)
++		return false;
++	try
++	{
++		const auto ab = bc::self().abilities()[static_cast<std::size_t>(kit.dash)];
++		if (ab.use(best))
++		{
++#ifdef HOR_TRACE
++			debug_block({ std::printf("HORSTRIKE r=%d from=(%d,%d) to=(%d,%d) tgt=(%d,%d) hit=%d\n", round, pos.x, pos.y, best.x, best.y, e.pos.x, e.pos.y, best_n); });
++#endif
++			cast_done = true;
++			after_move(true);
++			return true;
++		}
++	}
++	catch (...)
++	{
++	}
++	return false;
++}
++
+ bool Brain::cast_ground(int slot, vec2 p)
+ {
+ 	if (!ready(slot))
+@@ -2748,7 +2802,9 @@
+ 			// uncastable this turn, and next turn it competes with the attack reset (one cast per turn); stunning
+ 			// now lands it a turn earlier and next turn is step + attack + reset + attack. The old check below only
+ 			// knew single-target stuns: Ryth walked in with the stun ready in 279 fight turns of 3 traced games.
+-			if (P.melee_aoe_stun && kit.aoe_stuns && d >= 2 && ready(kit.aoe) && e.type != CT::marcella && cast_area_stun_at(e))
++			if (P.hor_strike && kit.dash_mod > 0.f && strike_dash_at(e))
++				dbg_eng = 8;
++			else if (P.melee_aoe_stun && kit.aoe_stuns && d >= 2 && ready(kit.aoe) && e.type != CT::marcella && cast_area_stun_at(e))
+ 				dbg_eng = 7;
+ 			else if (d == 2 || !(d <= 4 && (ready(kit.cc) || ready(kit.dmg))))
+ 				step(goal, false, true), dbg_eng = 5;
+diff -ruN bots/god/src/brain.h bots/_x_g8/src/brain.h
+--- bots/god/src/brain.h	2026-10-20 15:22:26.552410031 +0000
++++ bots/_x_g8/src/brain.h	2026-10-20 17:42:36.179582505 +0000
+@@ -198,6 +198,7 @@
+ 	bool cast_unit_camp(int slot, const bc::camp& c);
+ 	bool cast_unit_champ(int slot, const bc::champion& c);
+ 	bool cast_ground(int slot, vec2 p);
++	bool strike_dash_at(const Enemy& e); // P.hor_strike: damaging dash onto a tile with the target in the landing radius
+ 	bool cast_self(int slot);
+ 	bool ready(int slot) const { return slot >= 0 && cd[static_cast<std::size_t>(slot)] <= 0 && can_cast && !cast_done; }
+ 	void support_spells();
+diff -ruN bots/god/src/params.h bots/_x_g8/src/params.h
+--- bots/god/src/params.h	2026-10-20 15:22:26.554238084 +0000
++++ bots/_x_g8/src/params.h	2026-10-20 17:42:36.177609807 +0000
+@@ -280,6 +280,12 @@
+ 	int build_tail = SDK_HAS_HOR ? 1 : 0;	   // build_style 2 lists end after 24-30 emblems; 1: then Power in the damage stat for ever (the five top teams of
+ 							   // Oct 20: 950 Power-dmg emblems in 25 games; our Ren sat on 612 gold unspent on average, 13,410 on the no-altar map),
+ 							   // 2: the Bruiser cycle for ever
++	int hor_strike = 0;		   // 1: a melee champion with a damaging dash (Heart of Ruin) uses it as its fight spell in engage(): it dashes onto a tile
++							   // within dash range that has the target inside the landing radius (most enemies hit first). Before, only the ranged branch
++							   // set strike_dash, and mob_dash() blocks a damaging dash within strike_dash_hold of an enemy: on nx31x31_c3 vs legend_m15 our
++							   // Heart of Ruin spent 391 rounds within 3 of an enemy and landed the dash on one once (62 of its 70 dashes were walking)
++	int burst_dash = 0;		   // 1: Enemy::burst() counts a ready damaging dash (Heart of Ruin: 1.75 x focus) like a spell; the fight estimate, burst
++							   // retreat, burst_exit, danger map and the ml2 burst_e5 input read it (before: no dash damage; build_react already had it)
+ 	int strike_dash_hold = 9;   // patch 3.0: a damaging dash (Heart of Ruin) is not used to walk while an enemy was seen within this many tiles
+ 	int flee_exit = 0;		   // 1: a body walking home from inside enemy reach / an awake camp's range takes a sideways step out of it when
+ 							   // every step toward home stays inside (nav.cpp step_field)
+diff -ruN bots/god/src/world.h bots/_x_g8/src/world.h
+--- bots/god/src/world.h	2026-10-20 15:22:26.554453564 +0000
++++ bots/_x_g8/src/world.h	2026-10-20 17:42:36.179435952 +0000
+@@ -1,6 +1,7 @@
+ // World model: static map facts computed once, plus per-turn perception and memory.
+ #pragma once
+ #include "common.h"
++#include "params.h"
+ 
+ enum GroupState : std::uint8_t
+ {
+@@ -101,6 +102,7 @@
+ 		if (ready(kit.cc)) b = std::max(b, focus * kit.cc_mod);
+ 		if (ready(kit.aoe)) b = std::max(b, focus * kit.aoe_mod);
+ 		if (ready(kit.reset)) b = std::max(b, str);
++		if (P.burst_dash && ready(kit.dash) && kit.dash_mod > 0.f) b = std::max(b, focus * kit.dash_mod); // Heart of Ruin
+ 		return b;
+ 	}
+ };

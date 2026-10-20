@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-20 (session 14: SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
+- Last updated: **2026-10-20 21:37 UTC (session 14: opponent-model upgrade built, all off; strength tests now on the user's ladder via branch pairs, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
   Rule from the user: update this file and push at every step. Start with **§S14**, then **§S13-GOD**, **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
@@ -399,6 +399,22 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   `_v8e40`, `_v8ck/ck6` (`chan_keep`), `_v8dl` (`death_learn`), HoR draft priors / builds on 3.0.2, `_v8tm` (threat map), `_v8tt1` (tail stat),
   `aoe_reach5` 1/3, then `ml2_adapt`, `mi_learn_burst`, `mi_learn_fight`. Next: re-base the open switches on v8 (`bots/god` = v8; `_x_v8` keeps the
   switches off) and screen them against `_v8k1` as the new reference.
+- **20:40-21:30 UTC: the user's upgrade prompt** (`opus_prompt_god_upgrade.md`: detect the opponent's strategy, switch counter-plans; F1-F6). Built on
+  `bots/god` (= v8), every switch off by default = v8 play (12/12 games identical event by event and in the 8 shared bytes, `tools/actiondiff.py` with
+  `SM_TRACE`; both SDKs build). Commits 527865d (F1 opponent model `opponent.h/.cpp`, plan id + invasion counter in bit 7 of bytes 0-5, `om_sight`),
+  eb5d5e0 (F2 draft-memory plan `dmplan.h/.cpp`, F3 ward coordination), 45b88f8 (F4 anchors / hand-off / Prism banker, F5 `chain_farm`, F6 `gank`,
+  `deny_altar`, `watchdog`), 4aee872 / 85cf08f (`om_force` oracle, `om_learned` fitted classifier `om_model.h`, `tools/omfit.py`, `tools/omreport.py`).
+  Protocol: `docs/COMMS.md`. The field manual PDF the prompt cites was never uploaded: presets and the draft-memory layout come from the code.
+  Calibration (140 + held-out traces vs the `pxs_*` proxy styles): leader-level signals separate only the raiding styles (invader, deathball); the 2-class
+  logistic (none vs raider) reaches held-out window accuracy 0.70; decision replay at `om_p_on` 0.6: raiders 65% of windows in the INVADER plan, others 31%.
+  Measured (42 games, 21-map pool; h2h vs v8 `_v8k1` / `_pws` / `_pw` / `_g4`; v8 21 / 33 / 39 / 35): `chain_farm` 20 / 28 / 36 / 26, `anchors` 3 + `handoff`
+  17 / 29 / 37 / 29, `dm_plan` + `ward_plan` 20 / 31 / 42 / 22, `gank` 22 / 27 / 39 / 31, `deny_altar` h2h 12/32 (stopped): none viable as built.
+- **21:37 UTC, new rule from the user**: "Whenever you think an idea is viable make two branches with their difference in feature as branch name and only
+  in this scenario make two branches and i will test them and say which to keep and i will inform you of the decision only a/b test whether both bot are
+  functioning or not and don't bleed fuel". Local strength queues stopped (q50-q52, killed by PID; the opponent-model oracle cells and the switching-proxy
+  traces never ran). From now on: a viable idea -> two branches from `main` named by the feature (on / off), each with its own `submissions/god.zip`; my
+  checks are functional only (both SDKs build, games run with 0 faults, no extra turn rollovers, the new per-turn code's fuel measured); the user picks on
+  the ladder. `main` keeps every new switch off (= v8) until the user decides.
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

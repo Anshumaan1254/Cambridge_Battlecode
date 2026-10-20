@@ -1424,6 +1424,60 @@ bool Brain::cast_unit_champ(int slot, const bc::champion& c)
 	return false;
 }
 
+bool Brain::strike_dash_at(const Enemy& e)
+{
+	// P.hor_strike (session 14): Heart of Ruin's dash lands for focus x dash_mod and stuns every enemy within dash_radius of the landing tile.
+	if (kit.dash < 0 || kit.dash_mod <= 0.f || !ready(kit.dash) || !can_cast || !e.alive || !e.visible)
+		return false;
+	auto& W = world();
+	const int rng = std::max(1, static_cast<int>(kit.dash_range));
+	const int rad = std::max(0, static_cast<int>(kit.dash_radius));
+	if (cheb(pos, e.pos) > rng + rad || W.enemy_spawn.is_set(e.pos))
+		return false;
+	const bc::bitboard blocked = Nav::blocked_now(pos);
+	vec2 best = pos;
+	int best_n = 0, best_d = 99;
+	for (int dy = -rng; dy <= rng; ++dy)
+		for (int dx = -rng; dx <= rng; ++dx)
+		{
+			const vec2 p{ pos.x + dx, pos.y + dy };
+			if ((dx == 0 && dy == 0) || !bc::map::is_in_bounds(p) || blocked.is_set(p) || cheb(p, e.pos) > rad)
+				continue;
+			if (std::abs(dx) == 2 || std::abs(dy) == 2)
+			{
+				const vec2 mid{ pos.x + dx / 2, pos.y + dy / 2 };
+				if (bc::map::walls().is_set(mid))
+					continue;
+			}
+			int n = 0;
+			for (const auto& o : W.enemies)
+				if (o.alive && o.visible && cheb(p, o.pos) <= rad)
+					++n;
+			const int dd = cheb(p, e.pos);
+			if (n > best_n || (n == best_n && dd < best_d))
+				best_n = n, best_d = dd, best = p;
+		}
+	if (best == pos)
+		return false;
+	try
+	{
+		const auto ab = bc::self().abilities()[static_cast<std::size_t>(kit.dash)];
+		if (ab.use(best))
+		{
+#ifdef HOR_TRACE
+			debug_block({ std::printf("HORSTRIKE r=%d from=(%d,%d) to=(%d,%d) tgt=(%d,%d) hit=%d\n", round, pos.x, pos.y, best.x, best.y, e.pos.x, e.pos.y, best_n); });
+#endif
+			cast_done = true;
+			after_move(true);
+			return true;
+		}
+	}
+	catch (...)
+	{
+	}
+	return false;
+}
+
 bool Brain::cast_ground(int slot, vec2 p)
 {
 	if (!ready(slot))
@@ -2748,7 +2802,9 @@ bool Brain::engage(Enemy& e)
 			// uncastable this turn, and next turn it competes with the attack reset (one cast per turn); stunning
 			// now lands it a turn earlier and next turn is step + attack + reset + attack. The old check below only
 			// knew single-target stuns: Ryth walked in with the stun ready in 279 fight turns of 3 traced games.
-			if (P.melee_aoe_stun && kit.aoe_stuns && d >= 2 && ready(kit.aoe) && e.type != CT::marcella && cast_area_stun_at(e))
+			if (P.hor_strike && kit.dash_mod > 0.f && strike_dash_at(e))
+				dbg_eng = 8;
+			else if (P.melee_aoe_stun && kit.aoe_stuns && d >= 2 && ready(kit.aoe) && e.type != CT::marcella && cast_area_stun_at(e))
 				dbg_eng = 7;
 			else if (d == 2 || !(d <= 4 && (ready(kit.cc) || ready(kit.dmg))))
 				step(goal, false, true), dbg_eng = 5;

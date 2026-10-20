@@ -198,6 +198,7 @@ private:
 	bool cast_unit_camp(int slot, const bc::camp& c);
 	bool cast_unit_champ(int slot, const bc::champion& c);
 	bool cast_ground(int slot, vec2 p);
+	bool strike_dash_at(const Enemy& e); // P.hor_strike: damaging dash onto a tile with the target in the landing radius
 	bool cast_self(int slot);
 	bool ready(int slot) const { return slot >= 0 && cd[static_cast<std::size_t>(slot)] <= 0 && can_cast && !cast_done; }
 	void support_spells();

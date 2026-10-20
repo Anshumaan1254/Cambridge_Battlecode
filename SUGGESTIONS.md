@@ -177,3 +177,15 @@ takes 14 rounds: 46 hits for 2,400 health = 52 per hit, while Nyx's four (Issac,
 the game. Our stack has Cassi (the weakest hitter) where theirs has Issac; our Issac farms gold clusters and a lone wolf (24 rounds) instead. The
 opening that copies Nyx is a team assignment at round 1 (the four strongest hitters on the nearest elk group, the dash body on the spawn gold
 clusters, the casters' spells on the elk), not a waiting rule; and the one-by-one retreats at the retreat line stretch the second elk to 40 rounds.
+
+### Session 14, Heart of Ruin and camp range on the official pool (21 maps, 42 games per cell; GOD v6 / v7 in brackets)
+
+| Variant | What | vs GOD v2 | vs `_pw` | vs `_pc` | vs legend_m15 | unopposed deaths / pace |
+|---|---|---|---|---|---|---|
+| `_g8b` | `burst_dash` 1 alone: an enemy's ready damaging dash counts in `Enemy::burst()` | 26 (v6 30) | 27 (32) | - | - | - |
+| `_g8sb` | strike dash + `burst_dash` | 31 (v7 31) | 35 (35) | 37 (39) | 29 (29) | - |
+| `_g7c32` | `cd_range` 32 alone on v6: a body already retreating inside an awake camp's engine range steps out of it before walking home (the retreat line is unchanged) | 26 (30) | 34 (32) | - | 27 (25) | **48 / 1035.0** (96 / 1044.1) |
+
+`burst_dash` makes us careful about a dash that our sparring opponents (our own code family, which had the same strike-dash bug) never use in a fight;
+the fair test against a proxy whose Heart of Ruin strikes (`_pws`) is running. `cd_range` 32 halves unopposed camp deaths and is faster, wins two of
+three outside cells but loses 4 games head-to-head: worth a re-test on top of v7 (42-game cells move +-3).

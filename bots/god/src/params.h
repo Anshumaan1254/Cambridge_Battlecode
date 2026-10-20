@@ -280,6 +280,12 @@ struct Params
 	int build_tail = SDK_HAS_HOR ? 1 : 0;	   // build_style 2 lists end after 24-30 emblems; 1: then Power in the damage stat for ever (the five top teams of
 							   // Oct 20: 950 Power-dmg emblems in 25 games; our Ren sat on 612 gold unspent on average, 13,410 on the no-altar map),
 							   // 2: the Bruiser cycle for ever
+	int hor_strike = SDK_HAS_HOR ? 1 : 0;		   // 1: a melee champion with a damaging dash (Heart of Ruin) uses it as its fight spell in engage(): it dashes onto a tile
+							   // within dash range that has the target inside the landing radius (most enemies hit first). Before, only the ranged branch
+							   // set strike_dash, and mob_dash() blocks a damaging dash within strike_dash_hold of an enemy: on nx31x31_c3 vs legend_m15 our
+							   // Heart of Ruin spent 391 rounds within 3 of an enemy and landed the dash on one once (62 of its 70 dashes were walking)
+	int burst_dash = 0;		   // 1: Enemy::burst() counts a ready damaging dash (Heart of Ruin: 1.75 x focus) like a spell; the fight estimate, burst
+							   // retreat, burst_exit, danger map and the ml2 burst_e5 input read it (before: no dash damage; build_react already had it)
 	int strike_dash_hold = 9;   // patch 3.0: a damaging dash (Heart of Ruin) is not used to walk while an enemy was seen within this many tiles
 	int flee_exit = 0;		   // 1: a body walking home from inside enemy reach / an awake camp's range takes a sideways step out of it when
 							   // every step toward home stays inside (nav.cpp step_field)

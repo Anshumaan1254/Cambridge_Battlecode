@@ -13,7 +13,22 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Current build: **GOD v6** (`submissions/god.zip`, session 14, Oct 20): GOD v5.1 + the lessons of 25 ladder losses
+## Current build: **GOD v7** (`submissions/god.zip`, session 14, Oct 20): GOD v6 + Heart of Ruin's strike dash
+
+Heart of Ruin's dash is its main fight spell (1.75 x focus damage and a stun around the landing tile), but GOD v6 never used it in a fight: only
+the ranged branch of the engage code allowed a strike dash, and Heart of Ruin is melee. GOD v7 dashes onto a tile within range that puts the
+target, and as many other enemies as possible, inside the landing radius. Only games with Heart of Ruin on a side change; everything else plays
+GOD v6's games. The official pool (21 maps, pulled by the user) is the test pool.
+
+| Measure (cambc 3.0.1, the 21 official maps, both sides, 42 games per cell) | GOD v7 | GOD v6 |
+|---|---|---|
+| Head-to-head vs GOD v2 | **31** | 30 |
+| vs the Heart of Ruin Power proxy / the Prism, Marcella, Heart of Ruin proxy | **35 / 39** | 32 / 38 |
+| vs legend_m15 | **29** | 25 |
+| Unopposed pace (rounds to 1000 gems) | 1044.1 (same 42 games) | 1044.1 |
+| SDK 2.2.5 (the handbook's rules) | builds, plays v6's games | |
+
+## Previous build: **GOD v6** (`submissions/god.zip`, session 14, Oct 20): GOD v5.1 + the lessons of 25 ladder losses
 
 GOD v3 lost 25 ladder games to five top teams (`docs/strategy_v2/15_LOSSES_OCT20.md`): every one of them stacks Power emblems in its damage
 stat (6,542 damage points to our 2,739), opens fights on our own half (our deaths 121 to their 7 when they open), spreads its gold over the

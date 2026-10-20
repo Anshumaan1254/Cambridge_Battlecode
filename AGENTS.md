@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-20 15:40 UTC (session 14: SHIPPED GOD v6 for both rulesets; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
+- Last updated: **2026-10-20 (session 14: SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
   Rule from the user: update this file and push at every step. Start with **§S14**, then **§S13-GOD**, **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
@@ -350,6 +350,23 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   the nearest elk group, the dash body on the spawn gold clusters) and no one-by-one retreats while the stack holds (SUGGESTIONS). Every switch
   measured on top of v6 today lost head-to-head (camp range 23, follow 23, dash box 27, hidden camps 24, gather 22; control 30): **GOD v6 stays
   shipped**; its weak cell is legend_m15 (25/42). `gather_any` 3 (`_g7ga3`) 25/42: rejected too. Nothing is running.
+
+- **SHIPPED GOD v7** = `_g8v7` (`submissions/god.zip` sha256 16c5907a…, history `god_v7_20261020.zip`, source hash 56e8589df120, `bots/god/src` = it; BUILDS
+  row, README) = GOD v6 + `experiments/wip/x_g8.patch` (on `bots/god` v6) with `hor_strike = SDK_HAS_HOR ? 1 : 0`. The user found the bug: Heart of Ruin
+  never strike-dashed in a fight (only engage()'s ranged branch set `strike_dash`; `mob_dash()` blocks a damaging dash within `strike_dash_hold` 9 of an
+  enemy). `strike_dash_at()` dashes onto a tile within dash range with the target in the landing radius (most enemies first); trace (`HOR_TRACE`
+  define): 10 strike dashes in the nx31x31_c3 game vs legend_m15, all hitting, two in the opening fight; that game 497-928 -> 1163-308. Cells (42 games,
+  v6 in brackets): GOD v2 31 (30), `_pw` 35 (32), `_pc` 39 (38), `_m15` 29 (25); only Heart-of-Ruin games change; vs idle 42/42 games identical (pace
+  1044.1); control `_g8x0` 42/42 games identical to v6; v7's own build replays 6/6 measured games (its wasm differs from `_g8s` only by the toolchain's
+  32-byte directory variation); SDK 2.2.5 builds and plays v6's games 8/8. **The official pool**: the user pulled it (21 maps: ambush, collision, contest,
+  corners, eight, elkring, expanse, fragment, interlock, lanes, monolith, big-world, boss-battle, broken-curve, concentrated-wealth, corridors,
+  elk-arena, fracture, gold-rush, hooks, islands) and every one is tile-identical to a map of our 21-map test pool (`maps/comp30` + `maps/nyx_new` +
+  `maps/loss_oct20`; monolith = ls50x50, boss-battle = nx50x41, elk-arena = nx50x50, ...); packs, pilgrimage, rows, rushbait-v2, stampede, swirl left the pool.
+  Rejected / open (SUGGESTIONS): `burst_dash` alone 26 / 27 (vs opponents whose Heart of Ruin never strikes: over-caution), strike + burst 31 / 35 / 37 /
+  29; `cd_range` 32 alone on v6 (`_g7c32`, the narrow camp rule) 26 vs GOD v2 but `_pw` 34, `_m15` 27, unopposed camp deaths 48 vs 96, pace 1035.0: re-test
+  on v7. Running `$S/q24.sh`: the fair `burst_dash` test against `_pws` (= `_x_g8` + `hor_strike` 1 + Power builds + HoR, Ren, Stellar, Ryth, Varg) for
+  v6, `_g8s`, `_g8sb`, and `_g8sb` vs `_g8s`. Next: re-screen the Heart of Ruin draft priors (`pd_hor3`, `pd_hor_prior`, `pd_counter_hor` were tuned
+  while Heart of Ruin could not dash), `cd_range` 32 on v7.
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

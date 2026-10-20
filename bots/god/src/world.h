@@ -1,6 +1,7 @@
 // World model: static map facts computed once, plus per-turn perception and memory.
 #pragma once
 #include "common.h"
+#include "params.h"
 
 enum GroupState : std::uint8_t
 {
@@ -101,6 +102,7 @@ struct Enemy
 		if (ready(kit.cc)) b = std::max(b, focus * kit.cc_mod);
 		if (ready(kit.aoe)) b = std::max(b, focus * kit.aoe_mod);
 		if (ready(kit.reset)) b = std::max(b, str);
+		if (P.burst_dash && ready(kit.dash) && kit.dash_mod > 0.f) b = std::max(b, focus * kit.dash_mod); // Heart of Ruin
 		return b;
 	}
 };

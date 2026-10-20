@@ -415,7 +415,7 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   traces never ran). From now on: a viable idea -> two branches from `main` named by the feature (on / off), each with its own `submissions/god.zip`; my
   checks are functional only (both SDKs build, games run with 0 faults, no extra turn rollovers, the new per-turn code's fuel measured); the user picks on
   the ladder. `main` keeps every new switch off (= v8) until the user decides.
-- **22:20 UTC: branch pair for the user's ladder test: `god-opponent-model-on` vs `god-opponent-model-off`** (both from main cf23155; the only
+- **22:01 UTC: branch pair for the user's ladder test: `god-opponent-model-on` vs `god-opponent-model-off`** (both from main cf23155; the only
   difference is `opp_model` 1 + `om_learned` 1 in `params.h`, each branch has its own `submissions/god.zip`: on sha256 bd493e64…, off 279247cc…;
   BUILDS rows on each branch). Before branching, the fuel check found the opponent model bleeding fuel: the leader spent 5.5-9.6k a turn
   (re-deriving altar sides from distance reads every turn); fixed in cf23155 (cached altar sides, per-turn memo, loops skipped with no enemy

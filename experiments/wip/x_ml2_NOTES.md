@@ -87,6 +87,14 @@ run sklearn with `OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1` (multithreaded BLAS 
   Vision probe: own vision is a Chebyshev square of radius 8 (walls block), the visible-tile mask is the team's union.
 - Fuel: one pass over <= 10 bodies and the camp groups near us, then 58 multiply-adds: negligible.
 
+- Fuel: `_mlkc40` release games, no rollover after round 3: gen16_98x99 vs `_mite` both sides 8 per team in rounds 1-3 (= `_cand2`);
+  contest and eight vs `_fA` (48 and 14 of our deaths: the model runs every contact turn) 0 rollovers (= `_cand2`).
+
+### Stacked on `_cand2` (official 34; `_cand2` 141/170, deaths 1,315-2,063)
+| variant | pooled 5 proxies | per proxy (`_mite _ifish _px9 _snk _fA`) | h2h vs `_cand2` | h2h vs `_ch2` | our deaths |
+|---|---|---|---|---|---|
+| **`_mlkc40`** (leave 0.4, flee 0.4, cornered) | **149/170 87.6** | 28 27 29 32 33 (`_cand2` 29 24 27 31 30) | **19/34 (309-340)** | 22/34 (313-432) | 1,180 (-10%) |
+
 ## Screen (official 34 vs `_ch2` + `_mite _ifish _px9 _snk _fA`; `_ch2` pooled 129/170)
 | variant | switches | pooled | h2h vs `_ch2` | our deaths (5 proxies) | their deaths | games changed |
 |---|---|---|---|---|---|---|

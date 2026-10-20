@@ -116,6 +116,15 @@ running or unfinished, and what to do next, so a new agent can continue without 
   pools for `_cand2`, then on `_cand2`: `_c2_oh3`, `_c2_oh4` (`open_hold`), `_c2_sf1`, `_c2_sf2` (`strike_first`), `_c2_ea` (`engage_angle`),
   `_c2_bg20`. The ES exploiter runs at nice 15 (CPU goes to the screens first).
 
+- **Checkpoint 00:10 UTC (Oct 20): new lead `_mlkc40`** (ML agent) = `_cand2` + `experiments/wip/x_ml2.patch` (base copy `bots/_x_ml2c`) with
+  `ml2_leave` 0.4, `ml2_flee` 0.4, `ml2_cornered` 1: the ladder-trained logistic danger model (P(die within 8 rounds), 58 features, weights in
+  `src/ml2_model.h`); the part that works is `ml2_cornered` (deadly states count as cornered, so the body trades instead of giving free hits).
+  Official 34 vs the 5 proxies **149/170** (`_cand2` 141, `_ch2` 129); h2h vs `_cand2` 19/34 (deaths 309-340), vs `_ch2` 22/34 (313-432);
+  rollovers unchanged (gen16 8 per team r1-3; contest / eight 0). Health-only ablation (`_mlhp45`, same veto at health < 45%) 133: the model
+  picks better. On `_ch2`: `_mlcf40` 141 / 20 (deaths -19%). **Wide validation running** (agent: `_mlkc40` on 28 generated + pad17 + gen2 vs
+  `_cand2`, `_ch2` + 5 proxies; coordinator: `_ch2` and `_cand2` vs the 5 proxies on the same pools). Coordinator's rally 13 / recall_join 2 /
+  flee_exit / grouped: level or worse (SUGGESTIONS.md). ES exploiter stopped after 2 generations (history `experiments/wip/x_es13_history.json`).
+
 ## S12. SESSION 12 (2026-10-19, same container as S10/S11): read this first
 
 - Shipped bot at the start: **`legend_m14`** (`submissions/legend.zip` sha256 50ca7600…, frozen `bots/_pg3`, S7R). Baseline for every A/B: `_pg3`.

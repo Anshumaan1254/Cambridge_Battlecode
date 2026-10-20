@@ -1,6 +1,6 @@
 diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
 --- bots/_g4/src/brain.cpp	2026-10-20 10:13:52.705410239 +0000
-+++ bots/_x_g5/src/brain.cpp	2026-10-20 11:21:35.278709988 +0000
++++ bots/_x_g5/src/brain.cpp	2026-10-20 11:30:10.479798667 +0000
 @@ -96,6 +96,97 @@
  		rep(v, power, 300);
  		return v;
@@ -195,7 +195,26 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  			for (std::size_t i = 0; i < g.camps.size(); ++i)
  			{
  				const int d = cheb(g.camps[i].pos, pos);
-@@ -3020,7 +3142,7 @@
+@@ -2908,9 +3030,15 @@
+ 	{
+ 		float eb = 0;
+ 		for (const auto& e : W.enemies)
+-			if (e.alive && e.visible && !W.enemy_spawn.is_set(e.pos) &&
+-				cheb(e.pos, pos) <= std::max(e.kit.attack_range + (e.kit.ranged ? 0 : 1), enemy_spell_reach(e, false)) + 2)
+-				eb += e.str + e.burst();
++			if (e.alive && e.visible && !W.enemy_spawn.is_set(e.pos))
++			{
++				const int reach = std::max(e.kit.attack_range + (e.kit.ranged ? 0 : 1), enemy_spell_reach(e, false));
++				const int d = cheb(e.pos, pos);
++				if (d <= reach + 2)
++					eb += e.str + e.burst();
++				else if (P.burst_far > 0.f && d <= reach + P.burst_far_d)
++					eb += P.burst_far * (e.str + e.burst()); // burst_far: the ones one or two steps from reach
++			}
+ 		threshold = std::max(threshold, P.burst_retreat * eb);
+ 	}
+ 	if (hp < threshold && P.finish_camp && camp_in > 0 && enemy_near_d > P.finish_enemy_d && task_group >= 0 &&
+@@ -3020,7 +3148,7 @@
  	const int ours = static_cast<int>(bc::global_submitted_gems(team::ally));
  	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
  	gold_v = P.gold_value;
@@ -204,7 +223,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	{
  		// Gold only turns into gems through the shards it buys, and a shard pays off over the rounds left: +5
  		// strength on 40-50 is about +5% farming rate, which earns back 30 gold x gold_value = 6.6 gems in
-@@ -3150,6 +3272,8 @@
+@@ -3150,6 +3278,8 @@
  	if (gems == 0)
  		return false;
  	auto& W = world();
@@ -213,7 +232,73 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	if (P.mi_island_bank > 0 && inside_island())
  	{
  		// No altar inside an island (default branch): recall out (the bag is kept) once it is worth banking.
-@@ -3920,7 +4044,9 @@
+@@ -3385,6 +3515,26 @@
+ 	return in;
+ }
+ 
++// gold_rank: who converts gold into the most damage (patch 3.0: Power emblems in the damage stat decide fights and farming speed).
++int gold_rank_of(CT t)
++{
++	switch (t)
++	{
++	case CT::stellar:
++	case CT::prism: return 4;
++	case CT::tavi:
++	case CT::cassi:
++	case CT::willow:
++	case CT::vesper_vale: return 3;
++	case CT::issac:
++	case CT::marcella:
++	case CT::vendetta: return 2;
++	case CT::varg:
++	case CT::ryth: return 1;
++	default: return 0; // Ren, Heart of Ruin
++	}
++}
++
+ bool Brain::ally_melee(int ally) const
+ {
+ 	const auto t = world().allies[static_cast<std::size_t>(ally)].type;
+@@ -3808,9 +3958,29 @@
+ 	switch (g.st)
+ 	{
+ 	case ST_REWARD:
++	{
++		// gold_rank: the reward goes to the best gold user among the living allies within gold_rank_d of it (not to the lowest index).
++		bool outranked = false, outrank_lower = false;
++		if (P.gold_rank)
++		{
++			const int rm = gold_rank_of(type);
++			for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 8; ++i)
++			{
++				const auto& a = W.allies[static_cast<std::size_t>(i)];
++				if (i == W.my_index || !a.alive || !a.visible || a.seen_round != round || a.channeling)
++					continue;
++				if (nav().group_dist(g, a.pos) > P.gold_rank_d)
++					continue;
++				const int ra = gold_rank_of(a.type);
++				outranked |= ra > rm;
++				outrank_lower |= ra < rm && i < W.my_index;
++			}
++			if (outranked && !(capture_group_id == g.id && g.mask.is_set(pos)))
++				{ WHY(4); return -1; }
++		}
+ 		// One body captures; if allies claim it, the lowest index takes it unless we are clearly nearer
+ 		// (the joiner may still be walking in while we stand next to the reward).
+-		if (claimers && first_claimer < W.my_index && closer_lower_claimer)
++		if (claimers && first_claimer < W.my_index && closer_lower_claimer && !outrank_lower)
+ 			{ WHY(4); return -1; }
+ 		if (P.no_split && !(P.big_reward > 0 && g.gems >= P.big_reward && g.enemy_on_tile))
+ 		{
+@@ -3836,6 +4006,7 @@
+ 		eta = d_tile;
+ 		time = static_cast<float>(eta) + 6.f;
+ 		break;
++	}
+ 	case ST_RESPAWN:
+ 	{
+ 		const int avail = g.ready_round - round;
+@@ -3920,7 +4091,9 @@
  				// part of the time (ranged_exposure). taken = sum_k str_k x (q t_{k-1} + t_k - t_{k-1} - 1).
  				// A melee champion on a pack of n equal camps takes (n+1)/(2n) of the old constant-incoming
  				// product, which overstated a pack by up to 2x.
@@ -224,7 +309,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  				std::array<float, 8> hs{}, ss{};
  				int n = 0;
  				float raw = 0;
-@@ -4004,7 +4130,8 @@
+@@ -4004,7 +4177,8 @@
  			time = static_cast<float>(d_adj + wait) + ring_kill + 6.f;
  			share = P.o2_ring_share;
  		}
@@ -234,7 +319,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  			obj_team_ready(g, hp_left, team_kill))
  		{
  			// Objective map: too heavy for us and the bodies already on it, but not for the whole team.
-@@ -4036,7 +4163,7 @@
+@@ -4036,7 +4210,7 @@
  		}
  	}
  
@@ -243,7 +328,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	if (!g.ours)
  	{
  		const float risk = sc_risk;
-@@ -4082,6 +4209,13 @@
+@@ -4082,6 +4256,13 @@
  	}
  	if (round - g.enemy_round < 12)
  		time += 12.f;
@@ -257,7 +342,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	if (sc_alert && alert_zone.is_set(g.center))
  		time += 25.f;
  	// Learned pain: regions where we lost champions recently cost extra rounds.
-@@ -4923,7 +5057,9 @@
+@@ -4923,7 +5104,9 @@
  bool Brain::farm_group(Group& g)
  {
  	auto& W = world();
@@ -268,7 +353,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	const bool obj_first = obj && P.obj_attackers_first;
  	if (contest_tiles(g))
  		return true;
-@@ -4960,7 +5096,7 @@
+@@ -4960,7 +5143,7 @@
  				debug_block({ std::printf("GW r=%d %d near=%d need=%d since=%d awake=%d\n", round, static_cast<int>(type), near, need, obj_gather_since, (int)g.awake); });
  #endif
  				task = T_WAIT;
@@ -398,7 +483,7 @@ diff -ruN bots/_g4/src/nav.h bots/_x_g5/src/nav.h
  	bool ensure_group(int id, long long fuel_floor = 45000);
 diff -ruN bots/_g4/src/params.h bots/_x_g5/src/params.h
 --- bots/_g4/src/params.h	2026-10-20 10:13:52.709297892 +0000
-+++ bots/_x_g5/src/params.h	2026-10-20 11:21:35.275845343 +0000
++++ bots/_x_g5/src/params.h	2026-10-20 11:30:10.475831968 +0000
 @@ -176,6 +176,8 @@
  							   //     9 = Mite (Jungle, Durability in the damage stat, Bruiser health, Power)
  							   // 2 = value-model builds (tools/analysis/item_value.py): Bruiser over Power, early Treasure
@@ -408,7 +493,7 @@ diff -ruN bots/_g4/src/params.h bots/_x_g5/src/params.h
  							   // 11 = Intercontinental Fish (ladder #1, 45 games of Oct 19): carries open with Power in the damage stat,
  							   //     tanks with Bruiser + Durability health, Home health second on the carries, then Power forever
  	// Home emblem (recall takes 3 turn ends instead of 5). IC buys it second on the bodies whose first emblem is a damage
-@@ -209,6 +211,47 @@
+@@ -209,6 +211,56 @@
  							   // centre triple 11-13 tiles from the team fight, 4 of ours lost to 5 of theirs; "help that does not come")
  	float rally_hp = 0.6f;	   // ... with at least this health fraction
  	int pd_hor3 = 1;			   // patch 3.0: Heart of Ruin instead of Cassi & Issac at team size 3 (draft.cpp pd_score)
@@ -450,6 +535,15 @@ diff -ruN bots/_g4/src/params.h bots/_x_g5/src/params.h
 +							   // the caster ring (Prism, Stellar, C&I, Ryth, Tavi) lost it 72-1008 twice on the ladder with 37 deaths: both teams
 +							   // meet there every respawn, and the casters die to Power-stacked melee)
 +	int pd_obj_mid = 2;
++	int gold_rank = 0;		   // 1: a landed reward goes to the body that turns gold into the most damage (Stellar, Prism > Tavi, Cassi, Willow, Vesper >
++							   // Issac, Marcella, Vendetta > Varg, Ryth > Ren, Heart of Ruin) among the living allies within gold_rank_d of it, not to the
++							   // lowest index: on the ladder (25 games, Oct 20) our Ren took 35-55% of the team gold and our Stellar earned 442-544 a
++							   // game (first emblem r208-661) while the top teams spread gold evenly (Stellar 1,080-2,718, first emblem r130-268)
++	int gold_rank_d = 5;
++	float burst_far = 0.f;	   // > 0: burst_retreat also counts, at this weight, enemies within burst_far_d more tiles than their reach: the opener
++							   // arrives from 2-3 tiles out and kills a hurt body in 2 rounds (25 ladder games of Oct 20: our health at the first hit
++							   // median 34%, death within 2 rounds in 57% of our champion deaths), so a hurt body leaves while it still can
++	int burst_far_d = 5;
 +	int build_tail = 0;	   // build_style 2 lists end after 24-30 emblems; 1: then Power in the damage stat for ever (the five top teams of
 +							   // Oct 20: 950 Power-dmg emblems in 25 games; our Ren sat on 612 gold unspent on average, 13,410 on the no-altar map),
 +							   // 2: the Bruiser cycle for ever

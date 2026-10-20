@@ -240,6 +240,15 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   (8,4,11,9,0), `_dh3` (8,4,3,11,0), `_dh4` (8,4,3,9,11), `_dm1` (11,8,9,0,6), `_dv1` (1,3,9,2,4), `_dc1` (5,4,3,6,11) vs `_g4` (forced drafts are
   measurement only: the result becomes priors and enemy-pick terms of the parameter draft; the user: nothing forced or hardcoded ships, everything
   from the map and the enemy's moves). ML agent told to add the 25 games to its training set.
+- **12:05 UTC**: doc `docs/strategy_v2/15_LOSSES_OCT20.md` (the 25 games: results by opponent, builds, fights, camp deaths, maps). Tools
+  `tools/strategy_v2/opener_ctx.py` (what our body did when the enemy opened on it: health at the first hit median 34%, death within 2 rounds
+  57%; both teams spend the same share of field time hurt, so they pick our hurt bodies), `tools/ledger_maps.py OPP BOT...` (per-map ledger
+  wins). Killer x victim: their Stellar 104 of our 362 champion deaths, HoR 72 in 11 games; our C&I 148 (41%); the two teams without C&I beat
+  us 9-1. nx61x61: the central 71-gem group is captured by whoever stands on its tile (38998622_01: we dealt 2,850 of 4,460, their Stellar
+  took it 6 rounds later; 0 of 8 kills captured by us). Results so far (42 games vs `_g4`; control `_g5x0` 28): `build_tail` 1 / 2 28 / 26,
+  `pd_obj_side` 27 (nx50x50 0/2 vs the caster draft of `_g4`; but `_g5br` vs `_pw` 0/2 there), `_d0f` 24, `_dh1` 23; `_g5br` vs `_pw` 30/42
+  (loses nx50x50 and nx61x61 0/2). New switches: `burst_far` (+ `burst_far_d`), `gold_rank` (+ `gold_rank_d`); variants `_g5bf5`, `_g5bf8`,
+  `_g5bf5d4`, `_g5gr1`, `_g5gr1d8` (q9), `_g5bg40`, `_g5bg40p`, `_g5bg40d`, `_g5oa1` and the drafts vs `_pw` (q10).
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

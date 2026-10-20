@@ -664,6 +664,7 @@ struct Params
 	int opp_model = 0;			// 1: the leader classifies the enemy every om_window rounds (farmer, invader, deathball, objective, altar,
 								// ambush) and broadcasts a plan id (bit 7 of bytes 0-2, replacing the stance bits; ids 0-2 = the stance);
 								// every body applies the plan's preset in update_mode() after the stance block (deficit / race on top)
+	int om_force = 0;			// > 0: oracle test only: the leader broadcasts this plan id from om_start on (bounds what a perfect classifier can gain)
 	int om_act = 1;				// 0: classify and trace only (the plan id carries the learner's stance): calibration runs against labelled proxies
 	int om_window = 20;			// rounds per classification window (also the invasion counter's window)
 	int om_start = 100;			// no plan change before this round (both teams farm their own half in the opening)

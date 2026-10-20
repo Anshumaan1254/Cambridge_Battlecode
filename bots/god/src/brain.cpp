@@ -715,7 +715,7 @@ void Brain::turn()
 		if (W.my_index == 0)
 		{
 			if (P.opp_model)
-				C.write_plan(P.om_act ? opp_model().plan_id(learner().stance) : learner().stance);
+				C.write_plan(P.om_force > 0 && round >= P.om_start ? P.om_force : P.om_act ? opp_model().plan_id(learner().stance) : learner().stance);
 			else
 				C.write_stance(learner().stance);
 		}
@@ -763,7 +763,7 @@ void Brain::turn()
 		if (W.my_index == 0)
 		{
 			if (P.opp_model)
-				C.write_plan(P.om_act ? opp_model().plan_id(L.stance) : L.stance);
+				C.write_plan(P.om_force > 0 && round >= P.om_start ? P.om_force : P.om_act ? opp_model().plan_id(L.stance) : L.stance);
 			else
 				C.write_stance(L.stance);
 		}

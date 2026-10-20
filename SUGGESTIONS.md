@@ -153,3 +153,17 @@ kept their last seen state (asleep) while hitting us, so recalls were started in
 Verdict: the retreat latch (bit 2) and the true-path escape (16) cost 8 wins of 42 head-to-head: a body that leaves an elk at the engine-range
 line and keeps going home gives up the camp (and the fight next to it). The light form (`_cd13he`) is level head-to-head with 79% fewer unopposed
 camp deaths; it is carried into the GOD v7 candidate only if it holds on top of v6 against `_g4`, `_pw` and `_m15`.
+
+### Session 14, on top of GOD v6 (`bots/_x_g7` = `bots/god` + `experiments/wip/x_g7.patch`: the camp-death switches, `open_follow_*`, `dash_box`; all 0 = v6)
+
+| Variant | What | vs `_g4` (v6 30/42) | vs `_pw` (32) | vs `_m15` (25) | unopposed deaths / pace (v6 96 / 1044.1) |
+|---|---|---|---|---|---|
+| `_g7cd` | `cd_range` 13, `cd_enemy_d` 8, `cd_hidden` 3 (the light camp-range fix that was level on v5) | **23** (deaths 688-785) | 30 | **31** | 26 / 1066.6 |
+| `_g7f150` | `open_follow_until` 150: every body from index 1 farms the lowest-index claimant's group when it holds >= 2000 camp health (Nyx's 4-stack on elk groups) | **23** | - | - | 7 deaths unopposed on nx60x60 alone, first capture r88, 30 banked by r200 (v6 38) |
+
+Why the blob opening did not reproduce Nyx's (trace `opening.py`, nx60x60 unopposed): the followers do pick the same elk group, but they still start
+hitting it 10-22 rounds apart (Issac r35, Ryth r39, Cassi r44, Stellar r45, Varg r57: different first targets before the leader's claim settles, the
+claims seen a round late) and still leave one by one at their retreat lines (recalls r41, r48, r50), so the elk takes 15+ rounds instead of Nyx's 9
+and the second elk is finished by two bodies. Nyx's four bodies leave spawn together, hit the elk within 3 rounds of each other and nobody retreats
+until the group is dead (then every body capture-recalls). The missing parts are the synchronized start (gather outside the elk's range until the
+stack is complete) and a shared "finish the group" commitment while the stack holds; the follow rule alone costs 7 of 42 games.

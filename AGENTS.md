@@ -324,6 +324,19 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   `cd_hidden` on the v5 base, cells `_cd3h*`); its winner is to be re-measured on top of `bots/god` before any v7. Next after that: the fights on our own
   half when a Power-stacked team opens (deaths 121-7), contest_v3 / eight_v3 openings, the `_m15` cell.
 
+- **16:25 UTC**: the camp-death agent was stopped by the user; its work is in `experiments/wip/x_cd.patch` / `x_cd_NOTES.md` and SUGGESTIONS (table):
+  `safety()` scanned camps within 3 only (pre-patch range), hidden camps kept their asleep state; the light fix (`cd_range` 13 + `cd_enemy_d` 8 +
+  `cd_hidden` 3) is level on v5 (28/42, unopposed camp deaths 90 -> 19) but **on top of v6 it loses: 23/42 vs `_g4`, 30 vs `_pw`, 31 vs `_m15`**
+  (`_g7cd`): parked. Openings traced unopposed (`$S/opening.py` on decoded replays; our GOD v6 vs idle on 4 maps vs Nyx's games): on nx60x60 Nyx
+  banks 148 by r200 (contested) to our 38 (unopposed): four Nyx bodies hit each elk within 3 rounds of each other, 9 rounds per elk, nobody
+  retreats, capture-recall after the group (first capture r46); ours arrive 12 rounds apart, split after the first elk, heal-trip (58 rounds, first
+  capture r92); Ren dashed in and out of a hole pocket (gold clusters at (16,15)/(16,16)) for 32 rounds. On fragment_v3 / interlock_v3 our unopposed
+  economy beats Nyx's contested one (those losses are contact). New switches on `bots/_x_g7` (= `bots/god` + `experiments/wip/x_g7.patch`, all 0 =
+  v6): `open_follow_until` / `open_follow_from` / `open_follow_hp` (the blob opening on every map, leader = index 1, heavy groups only): **23/42
+  vs `_g4`: rejected** (the followers still start 10-22 rounds apart and retreat one by one; SUGGESTIONS has the trace); `dash_box` 3 (a dash kit's
+  unstick box 7x7 on hole maps: the Ren pocket stall) and `cd_hidden` 3 alone (`_g7h3`) running in `$S/q20.sh` with the control `_g7x0` vs `_g4`, then
+  idle / `_pw`. 2.2.5 scratch project `$S/p225` still set up for the old-ruleset build check (`tools/ship_god.sh` does the 3.0.1 side).
+
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first
 

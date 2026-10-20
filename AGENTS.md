@@ -175,6 +175,15 @@ running or unfinished, and what to do next, so a new agent can continue without 
   body = Ren works the enemy half while healthy and carrying < 10: `enemy_half_penalty` x `decoy_half`, `deny_bonus` + `decoy_deny`;
   `_dc0` control, `_dc1` (0.2 / +0.5, r0-600), `_dc2` (0 / +1.0), `_dc3` (r150-2000); official 34 vs `_mlkc40` + 5 proxies).
 
+- **Checkpoint 05:45 UTC**: decoy rejected (`_dc1` 137, `_dc2` 125, `_dc3` 141; h2h 17 / 18 / 15); `_ml3e30` wide 478/670 (`_mlkc40` 475,
+  h2h 65/134): a tie, not shipped; `_pz_ar0` wide 479/670 (h2h 65/134): level, `aoe_reach5` stays; fallback zip without it:
+  `submissions/candidates/legend_m15_noreach5_20261020.zip` (for a gem-scarce final pool). Robustness vs other styles (official 34, `_mlkc40` /
+  `_ch2`): `_pg3` (= m14) 16 / 21, `_m8` 17 / 21 (same flips: m14 = m8 there), `_ST` 30 / 30, `_eD` 32 / 33, ES exploiter `_esx` 18 / 13,
+  `_stlm` 22 / 21. Traced fragment A vs `_m8` (80-1056, deaths 23-6; `_ch2` wins it): r122 the ML exit pulled Cassi, Issac and Ren out together
+  with their Stellar at 175 HP and their Issac at 720; our slow pair died anyway at r127 with no kill; `_ch2` stayed, traded 2 for 2, won.
+  New switches `ml2_stayk` (no ML exit while P(kill8) >= X) and `ml2_trade` (no ML exit while an enemy in reach + 1 has health <= N x our local
+  damage per round): `bots/_x_tr` = `_mlkc40` + `experiments/wip/x_tr.patch`; `q30.sh`: control `_tr0`, `_trk4`, `_trt15`, `_trk6`, `_trt3`.
+
 ## S12. SESSION 12 (2026-10-19, same container as S10/S11): read this first
 
 - Shipped bot at the start: **`legend_m14`** (`submissions/legend.zip` sha256 50ca7600…, frozen `bots/_pg3`, S7R). Baseline for every A/B: `_pg3`.

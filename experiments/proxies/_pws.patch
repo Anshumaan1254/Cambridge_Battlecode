@@ -1,0 +1,35 @@
+diff -ruN v7base/src/params.h prx/src/params.h
+--- v7base/src/params.h	2026-10-20 19:09:56.404332324 +0000
++++ prx/src/params.h	2026-10-20 19:10:10.124155953 +0000
+@@ -1,3 +1,4 @@
++#define LEGEND_DRAFT 11,8,4,0,9
+ // Every tunable weight and threshold lives here so variants can be generated for self-play tuning.
+ #pragma once
+ #include "common.h"
+@@ -164,7 +165,7 @@
+ 							   // 100% of the time, we 19%); 2 = also re-ward after ward_bush_gap rounds when a bush is in reach and our ward is not in it
+ 	int ward_bush_gap = 3;	   // ... (ward_bush 2)
+ 	int ward_bush_maps = 1;	   // 0 = ward bushes on every map; 1 = only on lone-monolith (contest-type) maps
+-	int mapdraft = 6;		   // 0 = our composition choice; sparring proxies: 1 = Mite's per-map drafts, 2 = ifish's (draft.cpp)
++	int mapdraft = 0;		   // 0 = our composition choice; sparring proxies: 1 = Mite's per-map drafts, 2 = ifish's (draft.cpp)
+ 							   // 7 = Intercontinental Fish's per-map table (sparring proxy, session 12)
+ 							   // 3 = ours with the top teams' choices where they beat ours (rushbait-v2, interlock, expanse; stampede with md_stampede)
+ 	int md_stampede = 1;	   // mapdraft 3: stampede drafts the 2nd team's casters (Prism, Stellar, C&I, Ryth, Tavi) for the ring plan
+@@ -176,7 +177,7 @@
+ 	float pd_elk = 0.3f; // team size 4: Ryth only with elk share >= pd_elk
+ 	float pd_counter = 1.f;
+ 	int pd_obj_multi = 1;	   // 1: an objective map also needs the lone gem group to be a multi-camp group (draft.cpp derive_params)
+-	int build_style = 2;	   // 0 = old farm builds, 1 = health/durability/treasure builds (ladder-proven),
++	int build_style = 12;	   // 0 = old farm builds, 1 = health/durability/treasure builds (ladder-proven),
+ 							   // sparring proxies: 3 / 4 / 10 = ifish (frontline health then Power / Monster then Power / 3 or 4 by map),
+ 							   //     9 = Mite (Jungle, Durability in the damage stat, Bruiser health, Power)
+ 							   // 2 = value-model builds (tools/analysis/item_value.py): Bruiser over Power, early Treasure
+@@ -280,7 +281,7 @@
+ 	int build_tail = SDK_HAS_HOR ? 1 : 0;	   // build_style 2 lists end after 24-30 emblems; 1: then Power in the damage stat for ever (the five top teams of
+ 							   // Oct 20: 950 Power-dmg emblems in 25 games; our Ren sat on 612 gold unspent on average, 13,410 on the no-altar map),
+ 							   // 2: the Bruiser cycle for ever
+-	int hor_strike = SDK_HAS_HOR ? 1 : 0;		   // 1: a melee champion with a damaging dash (Heart of Ruin) uses it as its fight spell in engage(): it dashes onto a tile
++	int hor_strike = 1;		   // 1: a melee champion with a damaging dash (Heart of Ruin) uses it as its fight spell in engage(): it dashes onto a tile
+ 							   // within dash range that has the target inside the landing radius (most enemies hit first). Before, only the ranged branch
+ 							   // set strike_dash, and mob_dash() blocks a damaging dash within strike_dash_hold of an enemy: on nx31x31_c3 vs legend_m15 our
+ 							   // Heart of Ruin spent 391 rounds within 3 of an enemy and landed the dash on one once (62 of its 70 dashes were walking)

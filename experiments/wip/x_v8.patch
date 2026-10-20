@@ -1,6 +1,6 @@
 diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
 --- god/src/brain.cpp	2026-10-20 17:55:18.383016184 +0000
-+++ _x_v8/src/brain.cpp	2026-10-20 19:05:44.710872884 +0000
++++ _x_v8/src/brain.cpp	2026-10-20 19:11:24.207596582 +0000
 @@ -255,7 +255,17 @@
  		switch (t)
  		{
@@ -51,7 +51,25 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	if (P.mi_health_emblem)
  	{
  		// mi_health_emblem (default branch): a Durability health emblem (-10% damage taken, +5 health points) right after the
-@@ -815,6 +840,8 @@
+@@ -633,6 +658,8 @@
+ 	if (!alive)
+ 	{
+ 		XM(xm_dead());
++		if (was_alive && P.death_learn)
++			dl_on_death();
+ 		if (was_alive && P.ml2_adapt > 0.f)
+ 			ml2_learn(true); // the evaluations of the last 8 rounds ended in a death
+ 		was_alive = false;
+@@ -702,6 +729,8 @@
+ 			}
+ 	}
+ 	build_danger();
++	if (P.death_learn)
++		dl_record();
+ 	if (P.kill_captures > 0.f)
+ 		for (const auto& g : W.groups)
+ 			if (g.st == ST_RESPAWN && g.id >= 0 && g.id < static_cast<int>(dmg_on.size()))
+@@ -815,6 +844,8 @@
  
  	if (P.mi_chip)
  		chip_passing();
@@ -60,7 +78,73 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	place_ward(false);
  	update_priority();
  	if (P.unstick_rounds > 0)
-@@ -958,6 +985,11 @@
+@@ -876,6 +907,65 @@
+ 	mi_camp_in_prev = mi_camp_in;
+ }
+ 
++void Brain::dl_record()
++{
++	auto& W = world();
++	DLRow r;
++	r.round = round;
++	r.hpf = hp / std::max(1.f, max_hp);
++	for (const auto& e : W.enemies)
++		if (e.alive && e.visible && cheb(e.pos, pos) <= 5)
++		{
++			++r.enemies5;
++			r.casters5 += e.kit.dmg >= 0 || e.kit.aoe >= 0 || e.kit.cc >= 0 || e.kit.dash_mod > 0.f;
++		}
++	for (const auto& a : W.allies)
++		r.allies6 += a.handle != self && a.alive && a.visible && cheb(a.pos, pos) <= 6;
++	r.channel = flag(state, bc::champion_state::recalling) || flag(state, bc::champion_state::submitting_gems);
++	dl_hist[static_cast<std::size_t>(round % 5)] = r;
++}
++
++void Brain::dl_on_death()
++{
++	// The rows of the last 5 rounds before this death (newest first).
++	std::array<const DLRow*, 5> h{};
++	int n = 0;
++	for (int k = 1; k <= 5; ++k)
++	{
++		const auto& r = dl_hist[static_cast<std::size_t>(((round - k) % 5 + 5) % 5)];
++		if (r.round == round - k)
++			h[static_cast<std::size_t>(n++)] = &r;
++	}
++	if (n == 0)
++		return;
++	bool any_enemy = false, caster = false, alone = n >= 3;
++	int max_en = 0;
++	for (int k = 0; k < n; ++k)
++	{
++		any_enemy |= h[static_cast<std::size_t>(k)]->enemies5 > 0;
++		caster |= h[static_cast<std::size_t>(k)]->casters5 > 0;
++		max_en = std::max(max_en, h[static_cast<std::size_t>(k)]->enemies5);
++		if (k < 3)
++			alone &= h[static_cast<std::size_t>(k)]->allies6 == 0;
++	}
++	const float hp3 = n >= 3 ? h[2]->hpf : h[static_cast<std::size_t>(n - 1)]->hpf;
++	auto bump = [&](float& v, int& r, float step, float cap) { v = std::min(cap, dl_val(v, r) + step); r = round; };
++	const char* kind = "other";
++	if (h[0]->channel)
++		bump(dl_chan, dl_chan_r, 2.f, 4.f), kind = "channel";
++	else if (!any_enemy)
++		bump(dl_camp, dl_camp_r, 0.05f, 0.15f), kind = "camp";
++	else if (hp3 >= 0.6f && caster)
++		bump(dl_burst, dl_burst_r, 0.2f, 0.6f), kind = "burst";
++	else if (alone && max_en >= 2)
++		bump(dl_iso, dl_iso_r, 0.1f, 0.4f), kind = "isolated";
++#ifdef DL_TRACE
++	debug_block({ std::printf("DL r=%d ch=%d kind=%s hp3=%.2f burst=%.2f iso=%.2f chan=%.1f camp=%.2f\n", round, static_cast<int>(type), kind, hp3, dl_burst, dl_iso, dl_chan, dl_camp); });
++#else
++	(void)kind;
++#endif
++}
++
+ void Brain::remember_positions()
+ {
+ 	// Called first thing in a turn: where we stood at the end of our last turn and where we saw the allies then
+@@ -958,6 +1048,11 @@
  		}
  		if (d <= 4 && (e.ready(e.kit.cc) || (e.ready(e.kit.aoe) && e.kit.aoe_stuns)))
  			stunner_close = true;
@@ -72,7 +156,16 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  		else if (P.aoe_reach5 && e.ready(e.kit.aoe) && e.kit.aoe_stuns && d <= static_cast<int>(e.kit.aoe_range + e.kit.aoe_radius))
  			stunner_close = true; // Ryth's area stun cancels a tribute from 5
  	}
-@@ -1449,11 +1481,16 @@
+@@ -989,7 +1084,7 @@
+ 		int left = std::max(1, static_cast<int>((gems + 9) / 10) - 1);
+ 		if (P.tribute_elapsed && round - tribute_start <= tribute_ticks)
+ 			left = std::max(1, tribute_ticks - (round - tribute_start));
+-		if (incoming * static_cast<float>(left + 1) >= hp || (stunner_close && gems >= 20 && threat_close))
++		if (incoming * static_cast<float>(left + 1) >= hp || (stunner_close && gems >= 20 && threat_close && left > P.chan_keep))
+ 			cancel = true;
+ 	}
+ 	if (cancel)
+@@ -1449,11 +1544,16 @@
  				if (bc::map::walls().is_set(mid))
  					continue;
  			}
@@ -93,7 +186,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  			if (n > best_n || (n == best_n && dd < best_d))
  				best_n = n, best_d = dd, best = p;
  		}
-@@ -1616,8 +1653,17 @@
+@@ -1616,8 +1716,17 @@
  		if (best)
  			cast_unit_champ(kit.heal, best->ch);
  	}
@@ -112,7 +205,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  }
  
  void Brain::use_locks()
-@@ -2059,10 +2105,11 @@
+@@ -2059,10 +2168,11 @@
  		float dps = e->str + e->focus * best_mod(e->kit) / 8.f + eb / 3.f;
  		if (e->ready(e->kit.cc) || (e->ready(e->kit.aoe) && e->kit.aoe_stuns))
  			++stunners, dps *= 1.15f;
@@ -126,7 +219,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	}
  	// Our side: self plus visible allies within 6 (with their spells, not just basic attacks).
  	float my_burst = 0;
-@@ -2071,11 +2118,74 @@
+@@ -2071,11 +2181,74 @@
  	if (ready(kit.aoe)) my_burst = std::max(my_burst, focus * kit.aoe_mod);
  	if (ready(kit.reset)) my_burst = std::max(my_burst, str);
  	float our_hp = hp, our_dps = str + focus * best_mod(kit) / 8.f + my_burst / 3.f;
@@ -201,7 +294,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	for (const auto& a : W.allies)
  		if (a.handle != self && a.alive && a.visible && cheb(a.pos, pos) <= 6 && (!P.support_filter || can_support(a, E)))
  		{
-@@ -2113,7 +2223,7 @@
+@@ -2113,7 +2286,7 @@
  				if (g.hp[i] <= 0 || g.camps[i].str <= 0)
  					continue;
  				const vec2 c = g.camps[i].pos;
@@ -210,7 +303,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  				for (int k = 0; k < side_n; ++k)
  				{
  					const int dd = cheb(side_pos[static_cast<std::size_t>(k)], c);
-@@ -2144,7 +2254,7 @@
+@@ -2144,7 +2317,7 @@
  
  	// Backup: allies in sight, plus hidden allies whose claimed camp is close (they are a few steps away).
  	// Half our deaths on the ladder were lone champions caught by two or more enemies.
@@ -219,7 +312,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	int dead_allies = 0;
  	{
  		const auto& C = comms();
-@@ -2156,7 +2266,7 @@
+@@ -2156,7 +2329,7 @@
  				++dead_allies;
  				continue;
  			}
@@ -228,7 +321,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  				continue;
  			const int cg = i < 6 ? C.claim[static_cast<std::size_t>(i)] : -1;
  			const vec2 at = a.visible ? a.pos : (cg >= 0 && cg < static_cast<int>(W.groups.size()) ? W.groups[static_cast<std::size_t>(cg)].center : vec2{ -100, -100 });
-@@ -2233,6 +2343,40 @@
+@@ -2233,6 +2406,40 @@
  	const bool on_spawn = W.ally_spawn.is_set(pos);
  	const bool can_escape = on_spawn || !chaser || (ready(kit.dash) && !chaser_dash) || static_cast<float>(dh) + 1.f < t_die;
  
@@ -269,7 +362,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	bool fight = false;
  	// P.pair_kill_adv: a low Cassi or Issac (below pair_low_hp) needs this advantage for a 'sure kill' (allies' burst is a guess).
  	const bool low_pair = (type == CT::cassi || type == CT::issac) && hp < P.pair_low_hp * max_hp;
-@@ -2436,14 +2580,15 @@
+@@ -2436,14 +2643,15 @@
  		}
  		// ml2_cornered: also when combat() thinks a chaser cannot be outrun. Ladder rows in reach, no kill, P(die8) 0.3-0.5 with
  		// can_escape = 0: our bodies that hit died 51% (kill8 20%), those that stepped away 29% (P >= 0.5: 74% vs 38%).
@@ -287,7 +380,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  		{
  			ml2_exit_round = round;
  			post_danger(tgt->pos);
-@@ -2494,7 +2639,8 @@
+@@ -2494,7 +2702,8 @@
  	if (fight)
  	{
  		last_fight_round = round;
@@ -297,7 +390,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  		learner().on_fight(round);
  		task = T_FIGHT;
  		return engage(*tgt);
-@@ -2556,7 +2702,7 @@
+@@ -2556,7 +2765,7 @@
  			{
  			}
  		}
@@ -306,7 +399,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  		{
  			// Melee champions can still swing after walking.
  			if (!kit.ranged && can_attack)
-@@ -2596,7 +2742,7 @@
+@@ -2596,7 +2805,7 @@
  			{
  			}
  		}
@@ -315,7 +408,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  			return true;
  		if (W.ally_spawn.is_set(pos))
  		{
-@@ -2840,6 +2986,10 @@
+@@ -2840,6 +3049,10 @@
  	if (d <= kit.attack_range)
  	{
  		dbg_eng += 10;
@@ -326,7 +419,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  		const bool want_stun = e.channeling || e.kit.ranged == false || P.px_mode && P.px_stun_first;
  		if (want_stun)
  			cast_unit_champ(kit.cc, ec);
-@@ -3010,6 +3160,28 @@
+@@ -3010,13 +3223,35 @@
  	return true;
  }
  
@@ -355,7 +448,24 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  bool Brain::safe_to_recall() const
  {
  	// Any damage cancels a recall: no awake camp in range and no enemy that could reach us during the channel.
-@@ -3114,6 +3286,8 @@
+ 	if (in_awake_camp_range() || danger.is_set(pos))
+ 		return false;
+ 	for (const auto& e : world().enemies)
+-		if (e.alive && e.seen_round >= 0 && round - e.seen_round <= 2 && cheb(e.pos, pos) <= 7)
++		if (e.alive && e.seen_round >= 0 && round - e.seen_round <= 2 && cheb(e.pos, pos) <= 7 + static_cast<int>(dl_val(dl_chan, dl_chan_r)))
+ 			return false;
+ 	return true;
+ }
+@@ -3093,7 +3328,7 @@
+ 			}
+ 		}
+ 	// P.pair_retreat_hp: Cassi & Issac walk home from camps earlier (a body caught low by an enemy kills both bodies).
+-	const float rhp = (type == CT::cassi || type == CT::issac) ? std::max(P.retreat_hp, P.pair_retreat_hp) : P.retreat_hp;
++	const float rhp = ((type == CT::cassi || type == CT::issac) ? std::max(P.retreat_hp, P.pair_retreat_hp) : P.retreat_hp) + dl_val(dl_camp, dl_camp_r);
+ 	float threshold = std::max(rhp * max_hp, camp_in * static_cast<float>(P.safety_v2 ? escape + 1 : 4));
+ 	if (obj_in > 0)
+ 	{
+@@ -3114,10 +3349,12 @@
  				const int d = cheb(e.pos, pos);
  				if (d <= reach + 2)
  					eb += e.str + e.burst();
@@ -364,7 +474,21 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  				else if (P.burst_far > 0.f && d <= reach + P.burst_far_d)
  					eb += P.burst_far * (e.str + e.burst()); // burst_far: the ones one or two steps from reach
  			}
-@@ -3225,7 +3399,21 @@
+-		threshold = std::max(threshold, P.burst_retreat * eb);
++		threshold = std::max(threshold, P.burst_retreat * (1.f + dl_val(dl_burst, dl_burst_r)) * eb);
+ 	}
+ 	if (hp < threshold && P.finish_camp && camp_in > 0 && enemy_near_d > P.finish_enemy_d && task_group >= 0 &&
+ 		task_group < static_cast<int>(W.groups.size()))
+@@ -3177,7 +3414,7 @@
+ 	stance = comms().stance;
+ 	if (P.mono_grouped_until > 0 && world().mono_mode && round < P.mono_grouped_until)
+ 		stance = STANCE_GROUPED; // lone-monolith maps: the first contact is a team wipe for whoever arrives piecemeal
+-	isolated_fight_adv = P.isolated_fight_adv;
++	isolated_fight_adv = P.isolated_fight_adv + dl_val(dl_iso, dl_iso_r);
+ 	mono_forced = P.mono_grouped_until > 0 && world().mono_mode && round < P.mono_grouped_until;
+ 	if (stance == STANCE_GROUPED)
+ 	{
+@@ -3225,7 +3462,21 @@
  	}
  	const int ours = static_cast<int>(bc::global_submitted_gems(team::ally));
  	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
@@ -387,7 +511,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	if (P.math_gold && !(P.no_altar_gold && world().no_altar_now()))
  	{
  		// Gold only turns into gems through the shards it buys, and a shard pays off over the rounds left: +5
-@@ -3238,7 +3426,7 @@
+@@ -3238,7 +3489,7 @@
  		float left = static_cast<float>(static_cast<int>(bc::constants::max_rounds) - round);
  		if (lead_g > 0 && round > 0)
  			left = std::min(left, static_cast<float>(static_cast<int>(bc::constants::winning_gems) - lead_g) * static_cast<float>(round) / static_cast<float>(lead_g));
@@ -396,7 +520,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	}
  	if (ours - theirs >= P.lead)
  	{
-@@ -3418,6 +3606,14 @@
+@@ -3418,6 +3669,14 @@
  	// farming (the bag is safer moving with us than dying at their altar) unless the game is on the line.
  	if (altar_unsafe(a) && !endgame && !winning && !force)
  		return false;
@@ -411,7 +535,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	task = T_TRIBUTE;
  	const vec2 altar = W.altars[static_cast<std::size_t>(a)];
  	if (cheb(pos, altar) > 1)
-@@ -3469,6 +3665,18 @@
+@@ -3469,6 +3728,18 @@
  bool Brain::respond_to_alert()
  {
  	auto& C = comms();
@@ -430,7 +554,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	if (!C.fresh(round, 6) || (C.alert_kind != AL_RALLY && C.alert_kind != AL_OPPORTUNITY))
  		return false;
  	// An enemy channelling a tribute (posted as an opportunity) is the cheapest kill in the game, and the
-@@ -4381,6 +4589,28 @@
+@@ -4381,6 +4652,28 @@
  	}
  	if (sc_alert && alert_zone.is_set(g.center))
  		time += 25.f;
@@ -459,7 +583,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	// Learned pain: regions where we lost champions recently cost extra rounds.
  	time += P.pain_w * learner().pain_at(g.center) * (stance == STANCE_PUSH ? 0.5f : 1.f);
  	if (stance == STANCE_GROUPED && !claimers && (!mono_forced || (P.mono_gmask & 8)))
-@@ -4592,6 +4822,11 @@
+@@ -4592,6 +4885,11 @@
  			sc_recent[static_cast<std::size_t>(sc_recent_n++)] = { e.pos, e.hp, e.str + e.focus * best_mod(e.kit) / 8.f + e.burst() / 3.f };
  	}
  	sc_risk = static_cast<float>(alive_enemies) / std::max<std::size_t>(1, W.enemies.size());
@@ -471,7 +595,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	sc_alert = !alert_zone.is_empty();
  	// Objective team plan: one group for the whole team, the objective group claimed by the lowest-index body (ours included).
  	sc_obj_focus = -1;
-@@ -5047,10 +5282,57 @@
+@@ -5047,10 +5345,57 @@
  
  bool Brain::W_dist_home_ok() const { return world().dist_home(pos) > P.cap_recall_min_home && world().dist_home(pos) < BIG; }
  
@@ -531,7 +655,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  		// Centre the blast on the camp with the most live neighbours.
 diff -ruN god/src/brain.h _x_v8/src/brain.h
 --- god/src/brain.h	2026-10-20 17:55:18.410994399 +0000
-+++ _x_v8/src/brain.h	2026-10-20 19:05:44.709048880 +0000
++++ _x_v8/src/brain.h	2026-10-20 19:08:43.702572273 +0000
 @@ -75,6 +75,7 @@
  	bool dbg_hit_other = false;	   // SPELL_TRACE: the melee step-then-hit-another-enemy branch swung
  	bool safe_to_recall() const;
@@ -563,22 +687,44 @@ diff -ruN god/src/brain.h _x_v8/src/brain.h
  	bool cast_self(int slot);
  	bool ready(int slot) const { return slot >= 0 && cd[static_cast<std::size_t>(slot)] <= 0 && can_cast && !cast_done; }
  	void support_spells();
-@@ -210,6 +220,8 @@
+@@ -210,6 +220,21 @@
  	bool step(const bc::bitboard& goals, bool avoid_danger, bool allow_dash);
  	int mob_dash() const;
  	bool strike_dash = false;
 +	bool shield_deferred = false;
++	struct DLRow
++	{
++		int round = -1000;
++		float hpf = 1.f;
++		int enemies5 = 0, casters5 = 0, allies6 = 0;
++		bool channel = false;
++	};
++	std::array<DLRow, 5> dl_hist{}; // P.death_learn: last 5 rounds (ring)
++	float dl_burst = 0, dl_iso = 0, dl_chan = 0, dl_camp = 0;
++	int dl_burst_r = -1000, dl_iso_r = -1000, dl_chan_r = -1000, dl_camp_r = -1000;
++	float dl_val(float v, int r) const { return P.death_learn ? v * std::max(0.f, 1.f - static_cast<float>(round - r) / static_cast<float>(std::max(1, P.dl_decay))) : 0.f; }
++	void dl_record();
++	void dl_on_death();
 +	float gv_base = -1.f; // P.gv_map: map-derived gold value (computed once) // hor_strike 2: the shield was held for the strike dash this turn (cast at the end of the turn if no cast happened)
  	bool go_group(Group& g, int stop_at, bool avoid);
  	bool go_altar(int id);
  	bool go_home_step(bool avoid);
 diff -ruN god/src/params.h _x_v8/src/params.h
 --- god/src/params.h	2026-10-20 17:55:18.412895754 +0000
-+++ _x_v8/src/params.h	2026-10-20 19:05:44.708645437 +0000
-@@ -286,6 +286,47 @@
++++ _x_v8/src/params.h	2026-10-20 19:11:24.205674526 +0000
+@@ -286,6 +286,56 @@
  							   // Heart of Ruin spent 391 rounds within 3 of an enemy and landed the dash on one once (62 of its 70 dashes were walking)
  	int burst_dash = 0;		   // 1: Enemy::burst() counts a ready damaging dash (Heart of Ruin: 1.75 x focus) like a spell; the fight estimate, burst
  							   // retreat, burst_exit, danger map and the ml2 burst_e5 input read it (before: no dash damage; build_react already had it)
++	int chan_keep = 0;	   // v8: a tribute with <= chan_keep turns left is not cancelled for a stunner nearby (only if their damage kills us first):
++				   // contest_v3, v7 vs legend_m15: Stellar (3,150 health, two allies next to it) cancelled a 200-gem tribute 1-2 turns
++				   // before it landed (an enemy stunner came within 4), restarted the 20-turn channel and died with the bag 6 rounds later
++	int death_learn = 0;	   // v8 P1-2: on its first dead turn a body classifies its death from its last 5 rounds and nudges one setting of its own
++				   // (decays linearly over dl_decay rounds): burst (>= 60% health 3 rounds before, a caster within 5) -> burst_retreat
++				   // x (1 + 0.2 per death, max +0.6); isolated (no ally within 6 for 3 rounds, 2+ enemies within 5) -> isolated_fight_adv
++				   // +0.1 (max +0.4); channel (recalling / banking) -> recall safety radius +2 (max +4); camp (no enemy within 6) ->
++				   // retreat line +0.05 (max +0.15)
++	int dl_decay = 200;
 +	int threat_map = 0;	   // v8 P1-1: enemy threat at a group instead of the pain map: each living enemy seen t <= tm_memory rounds ago at P
 +				   // can be within t + 2 tiles of P now (dead ones nowhere); weight 1 / (1 + (t / 8)^2) when the group centre is inside
 +				   // that area + 4; net = max(0, 1 - (our hp x dps there) / (their weighted hp x dps)); cost tm_w x net rounds. The pain

@@ -380,6 +380,15 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   (3.0.2 baseline `_g8s`: `_g4` 31, `_pws` 25 so far), then `q31.sh` (`_v8x0` control, `_v8s2`, `_v8c1`, `_v8s2h12`, `_v8c2`).
 - **19:30 UTC**: 3.0.2 baseline of v7 done (`_g4` 31, `_pws` 25, `_pw` 31, `_pc` 36, `_m15` 28, `_mite` 40, `_ifish` 39, pace 1045.5; non-HoR games replay
   the 3.0.1 rows exactly). `sup_mode` (P0-4 support-aware fights) added to `bots/_x_v8`; `q32.sh` queues `_v8y0` (control) and `_v8p15/9/13/1`.
+- **19:40 UTC (container clock; the "19:30" label above was ahead of it)**: HoR cells (wins of 42 vs `_g4` / `_pws` / `_pw` / `_pc` / `_m15`;
+  v7 `_g8s` 31 / 25 / 31 / 36 / 28): `_v8s2` 31 / 25 / 34 / 36 / 29; **`_v8c1` (`hor_strike` 2 + `hor_camp` 1) 30 / 33 / 38 / 37 / 30, pace 1034.2
+  (v7 1045.5): the lead (+16)**; `_v8c2` +7; `_v8s2h12` +0; `_v8p15` (`sup_mode` 15) 27 / 26 / 35 / - / 30. New switches in `bots/_x_v8` (all off =
+  v7; control `_v8x0` / `_v8y0` replay v7's games): `escort_bag`, `alert_prio`, `fm_mode`, `hor_threat`, `gv_map` (+ `gv_rho_ref`, `gv_exp`),
+  `hor_build`, `tail_stat`, `threat_map`, `death_learn`, `chan_keep` (contest trace: a 200-gem tribute cancelled 1-2 turns before landing).
+  Hooks (nx31x31_c4) is lost by side A whichever bot plays it (mirror turn order + snowball). Proxies reproducible: `experiments/proxies/*.patch`
+  on the v7 zip (`setup_session.sh`). Summary tool: `python3 tools/v8sum.py --opps _g4,_pws,_pw,_pc,_m15,idle _g8s VARIANTS`. Queues q33-q39 run
+  the rest (learners, escort, alert priority, lock hits, fm, hor_threat, gv, HoR builds, HoR draft priors, threat map, tail stat, aoe_reach5,
+  death learning, chan_keep, then `_v8c1` vs `_g8s`, `_mite`, `_ifish`, `_px9`). `_x_v8` compiles on 2.2.5 (`$S/p225`).
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

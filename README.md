@@ -13,7 +13,28 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Current build: `legend_m15` (session 13, Oct 20): a danger model learned from the ladder
+## Current build: **GOD** (`submissions/god.zip`, session 13, Oct 20): `legend_m15` rebuilt for balance patch 3.0
+
+The Oct 20 patch (cambc 3.0.1) re-balanced every champion, cut camp rewards (wolf 4 gems, elk 15, gem cluster 7), added the Golem camp
+and the champion Heart of Ruin, doubled kill gold and made elks (4) and monoliths (5) hit from farther. GOD = `legend_m15` plus:
+
+- camp attack ranges read from the engine instead of an assumed 3 (danger zones, the objective ring and the kite plan stand one tile
+  outside the real range and count only spells that reach);
+- Heart of Ruin: item builds, its dash counted as burst and held for fights (it lands for 1.75 x focus and stuns), drafted instead of
+  Cassi & Issac on 3-champion maps;
+- golem camps in the map analysis; gold valued 0.33 gems (was 0.22): a wolf now pays 4 gems and 40 gold.
+
+| Measure (cambc 3.0.1; proxies = our code with the top teams' drafts / builds) | GOD v2 | `legend_m15` |
+|---|---|---|
+| official map files vs the 5 proxies | **158/170** | 130/170 |
+| head-to-head (official / patch-style maps) | **25/34, 23/34** | - |
+| patch-style maps (`maps/p30`) vs Mite / ifish / `_px9` | **81/102** | 64/102 |
+| unopposed pace, patch-style maps (rounds to 1000) | 834 | 877 |
+
+The new official map pool could not be downloaded here (the environment blocks 2026a.battlecode.co.uk), so the patch-style maps stand in
+for it. `submissions/legend.zip` (`legend_m15`) still compiles on 3.0.1.
+
+## Previous build: `legend_m15` (session 13, Oct 20): a danger model learned from the ladder
 
 `submissions/legend.zip` = `legend_m15` (`submissions/history/legend_m15_20261020.zip`). It is `legend_m14_commit` (the bot the user made
 the main one on Oct 19) plus:

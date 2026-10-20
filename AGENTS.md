@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-20 09:05 UTC (session 13: BALANCE PATCH 3.0 (cambc 3.0.1): building the GOD bot `bots/god`; read §S13-GOD first)**.
+- Last updated: **2026-10-20 09:55 UTC (session 13: patch 3.0; SHIPPED `submissions/god.zip` = GOD v2; read §S13-GOD first)**.
   Rule from the user: update this file and push at every step. Start with **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
@@ -49,6 +49,19 @@ running or unfinished, and what to do next, so a new agent can continue without 
   8,11,4,9,0 (no C&I), `_gdh3` 11,4,3,8,9, `_gdw` 11,8,3,4,7 (+ Willow), `_gdh4` 11,8,4,9,0, vs `_mlkc40`, `_mite`, `_ifish`; `$S/g1b.sh`: `_g1`, `_g2`
   vs `_mlkc40` + 5 proxies. Next: draft priors from the screen, gold value (a wolf is now 4 gems + 40 gold), fight margin (kills 100 gold),
   then ship `submissions/god.zip`.
+
+- **Checkpoint 09:55 UTC: SHIPPED GOD v2** (`submissions/god.zip` sha256 f1a13eef…, history `god_v1_20261020.zip`, `god_v2_20261020.zip`,
+  BUILDS rows; `bots/god` wasm = `_g3v33`). Screens (new engine, official map files, vs `_mite _ifish _px9 _snk _fA`, 170 games):
+  `legend_m15` 130, `_g1` / `_g2` 144 (h2h vs m15 26 / 25), `_g3` (+ `pd_hor3`) 145 (26), gold value on `_g3`: 0.33 **158** (h2h vs `_g3` 20,
+  vs m15 25), 0.44 156 (19, 22), 0.55 159 (19, 21), 0.66 156 (23, 20); `_g2`-based: 0.11 148 (14 vs `_g2`), fight_margin 1.15 149 (15).
+  Draft screen (forced picks on `_g2`, vs m15 / Mite / ifish, 102 games): Ren, HoR, Stellar, Varg, Ryth 87; param draft 86; Ren, Stellar,
+  C&I, Varg, Ryth 83; HoR first 76-79; HoR first with C&I second 57; + Willow 66. By team size: 3-maps HoR instead of C&I 20-23/24 vs 19
+  (fragment, packs), 5-maps C&I better (45-47 vs 40): hence `pd_hor3` (draft.cpp: size 3, not objective / open farming). Unopposed pace
+  official files `legend_m15` 1396.6, GOD v1 1295.6. **Patch-style maps** `maps/p30/` (official maps + gem clusters next to wolves / elks /
+  gem clusters; `tools/mapgen/patch30.mjs`; `maps/p30g/` 6 copies with a golem per side): vs Mite / ifish / `_px9` (102): `legend_m15` 64,
+  `_g3` 73, `_g3v33` **81**; h2h `_g3v33` vs `_g3` 21/34, vs m15 23/34; pace 834 / 828 / 877. Golems are farmed (interlock copy: 3 kills).
+  Running `$S/q35.sh` on `_g4` (= GOD v2): `_g4fm` (fight_margin 1.15), `_g4ml5` / `_g4ml3` (ML cut-offs 0.5 / 0.3), `_g4tm30` (tribute_min 30),
+  official vs `_g4` + m15 + 5 proxies, and p30 vs `_g4`.
 
 ## S13. SESSION 13 (2026-10-19 21:00 UTC, new container): read this first
 

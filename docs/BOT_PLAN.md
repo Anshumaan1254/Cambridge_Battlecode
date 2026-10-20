@@ -1,4 +1,8 @@
-# The whole plan of our bot (`legend_m14`, shipped in `submissions/legend.zip`)
+# The whole plan of our bot (`legend_m15`, shipped in `submissions/legend.zip` on Oct 20)
+
+`legend_m15` = `legend_m14` + "finish the camp you started" (`commit_hit` 2, session 12) + session 13's area-spell reach 5
+(`aoe_reach5` 2), openers (`open_first` 2), no map-size test for the caster ring (`o2_ring_size` 0), fight instead of a shop recall
+(`recall_join` 1) and a danger model trained on 160 ladder games (`ml2_*`).
 
 A top-down map of what the bot does, in the order it does it. Every number is a value in `bots/legend/src/params.h`
 (the name in brackets). Code: `draft.cpp` (draft), `world.*` (what we know about the map and the units), `nav.*` (paths),
@@ -62,9 +66,11 @@ fight only when the numbers say we win, and coordinate every body through the te
    timers; read shared memory; publish our share of the team's carried gems.
 3. **Learn**: champion damage taken marks a painful place (pain map), an enemy death near us relieves it; an enemy banking or
    recalling with a bag is posted as an OPPORTUNITY alert.
-4. **Danger map**: every tile an enemy can hit next turn (attack range, +1 melee step, +2 with a dash ready, 4 with a spell ready),
-   plus awake camps' reach.
-5. **Channels**: recalling / banking / teleporting continues; a recall is cancelled when a threat closes in (any hit breaks it anyway).
+4. **Danger map**: every tile an enemy can hit next turn (attack range, +1 melee step, +2 with a dash ready, 4 with a spell ready,
+   5 for area spells = range + radius, range + 1 for stuns that allow a walk: `aoe_reach5` 2), plus awake camps' reach.
+5. **Channels**: recalling / banking / teleporting continues; a recall is cancelled when a threat closes in (any hit breaks it anyway),
+   and a healthy body recalling only to shop or heal cancels it to join a fight next to it (enemy within 7, a healthy ally within 6
+   with an enemy within 5: `recall_join`).
 6. **Shop** (on spawn or dead): next shards of the plan; a teleport crystal when islands or hops exist; a spare altar lock.
 7. **Team context** (`update_mode`):
    - being invaded -> stay together, off their half; winning fights -> take their camps and more fights;
@@ -109,11 +115,17 @@ fight only when the numbers say we win, and coordinate every body through the te
    - leave early when the group here outmatches us (advantage < 0.8, `outmatch_flee_adv`; 0.45 against one stronger enemy) while
      they are still out of stun range; Cassi & Issac leave earlier (+0.3, `pair_flee_bonus`);
    - having fought last turn, keep fighting unless the estimate clearly drops (no in-and-out dancing);
-   - never dive their spawn; a game-winning bag beats any fight we can walk away from.
+   - never dive their spawn; a game-winning bag beats any fight we can walk away from;
+   - **danger model** (`ml2_*`, logistic on 58 features of what the body sees: health, stats, spells ready, enemies / allies within
+     3-5-7 and their health and damage, distance home, bushes, camps awake...; trained on 160 real ladder games): P(this body dies
+     within 8 rounds). A fight with no kill this turn is dropped when P >= 0.4, even when the old rule thought we were cornered;
+     out of reach and not fighting, the body walks away when P >= 0.4 and an enemy is within 5.
 5. **Targets**: the lowest-health body we can kill this turn with our hit + ready spell + allies next to it (`px_mode` 2);
    the weaker of Cassi & Issac (both bodies die); a low body does not swing at Ren.
 6. **Execution**: hit what is in reach before walking; melee swings before stepping away; area spells from distance 5 (`aoe_cast5`);
-   stun the nearest chaser when fleeing; casters cast on camps on the way (`cast_en_route`).
+   openers (`open_first` 2): a ranged body with its opener ready waits at the edge of the enemy's reach (at most 2 rounds) so they step
+   in and we cast first, and a walk-compatible spell (Cassi's stun) is cast right after a fight step; stun the nearest chaser when
+   fleeing; casters cast on camps on the way (`cast_en_route`).
 
 ## 5. Farming — `farm()` and `group_score()`
 
@@ -129,13 +141,15 @@ fight only when the numbers say we win, and coordinate every body through the te
 2. **Coordination through claims** (shared memory): one collector per reward (the first to arrive, then the lower index); a second or
    third body joins only heavy groups (at most 3 extra: `max_join`) and only if it arrives before the claimers finish (`join_reach`);
    a yielding body still counts as helper damage.
-3. **Stability**: keep the current target unless a new one scores 15% better (`hysteresis`); give up on a target with no progress for
-   2 x eta + 60 rounds (blacklisted 40 rounds).
+3. **Stability**: keep the current target unless a new one scores 15% better (`hysteresis`), and while we hit a live camp in the
+   last 2 rounds its score counts double (`commit_hit` 2: 198 abandoned camps in 17 traced games); give up on a target with no
+   progress for 2 x eta + 60 rounds (blacklisted 40 rounds).
 4. **Capture**: stand on the reward tiles (6 rounds); recall-while-capturing (start the recall so it lands with the reward) when home is
    far; bank first at a nearby altar when that is shorter.
 5. **Special plans**:
    - *objective map*: the whole team takes the objective group claimed by the lowest-index body, heals before the walk, gathers outside
-     camp reach; with Prism / Tavi and 5 champions the casters ring it from distance 4 and never step into camp reach (`o2_ring` 3);
+     camp reach; with Prism / Tavi and 5 champions the casters ring it from distance 4 and never step into camp reach (`o2_ring` 3; no
+     map-size test any more: `o2_ring_size` 0);
    - *contest (lone monolith) map*: bodies move as one blob behind the lowest claimant until round 200 (`mono_follow_until`), ward bushes;
    - islands via teleport crystals, hole crossings with a dash, crystal hops over mazes.
 6. **Nothing worth farming**: top up at home if hurt or rich, else wait next to the soonest respawn on our half, else go back up an ally.

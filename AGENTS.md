@@ -192,7 +192,7 @@ running or unfinished, and what to do next, so a new agent can continue without 
   consistently, then validate on pad17 + generated + held-out (not used in training) and the official screen. `tune_out/` is git-ignored:
   copy `history.json`, `best_params.json` to `experiments/wip/x_es15_*` when done.
 
-- **Checkpoint 06:10 UTC: the user: "legend m15 is still losing to Mite and Nyx; fix the issues after completing all other tasks"** (no replays
+- **Checkpoint 05:40 UTC: the user: "legend m15 is still losing to Mite and Nyx; fix the issues after completing all other tasks"** (no replays
   of m15 came with it; Nyx is a team name not seen in any file). From the Oct 19 replays: **Mite = group 2306b82f** (drafts match our MITE table
   except Ren instead of Tavi as the 5th pick on stampede / contest); Nyx candidates 25464f3d (C&I-first + Tavi / Willow / Vendetta, 0/5) or
   44b9a95f (Varg-first, 2/5). vs Mite (`$S/farmstat.mjs`, `caps.mjs`, `track.mjs`, `deaths.mjs`): interlock / collision are economy losses

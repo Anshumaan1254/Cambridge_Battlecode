@@ -64,6 +64,24 @@ No fuel problem: 72 of our turns roll over, all in rounds 1-6.
   within attack range against our 5 casters at distance 4; our Issac farmed elsewhere while Cassi rang the objective) and 2.2k to our bodies.
   Locally the same plan wins 8 of 10 stampede games (it loses both to the sneaky-bush proxy, whose ring out-damages ours).
 
+## 2c. Mite (group 2306b82f) and the Nyx candidates (after `legend_m15`; the user: "still losing to Mite and Nyx")
+
+- Mite = 2306b82f: its drafts match our MITE table (session 10) except that Ren replaced Tavi as the 5th pick (stampede, contest). We lost 0/5:
+  interlock 650-1010 and collision 476-1018 while winning the kills (deaths 6-10, 12-16), swirl 88-1004 (deaths 20-3), stampede 72-1008
+  (objective stolen), contest 0-0 on gold.
+- Interlock (40x40, spawns in opposite corners, our 3 wolf packs on x = 5, theirs on x = 34, elk pairs in the two other corners): Mite put
+  4 bodies on the corner elk pair (31-32, 10) from r40 and took it at r63, then took the corner elks 8 times (576 gems; ours 0 neutral). Our
+  bodies farmed only our 3 wolf packs: Issac solo-cleared one in 25 rounds (720 -> 280 HP), Cassi banked at the centre altar at r57 and then
+  hovered at (21-29, 16-25) for 70 rounds placing wards. Unopposed `legend_m15` takes those elks (648 neutral gems), so it is contact, not scoring.
+- Swirl (45x30, spawns top / bottom 15 apart): 20 of our deaths at the centre camps (18-22, 12-15), from r56 on: Mite holds the centre and our
+  bodies walk back in one or two at a time (0-160 at r100, 0-408 at r200).
+- All 10 groups (`$S/respawn_ctx.mjs`, 47 non-contest games): an own-side camp that respawns is first hit after 39.3 rounds by us, 33.8 by
+  them, with an ally within 5 at the respawn in 48% / 49%; but they kill their own-side camps 919 times to our 672 (+37%): faster clears, more
+  bodies alive, less walking. Captures 1.5-2x ours in most games.
+- Nyx: not identified (no file names teams); 25464f3d (C&I-first + Tavi / Willow / Vendetta, 0/5: two close races, two blowouts) or
+  44b9a95f (Varg-first everywhere, 2/5). A Mite proxy on our brain with their drafts / builds / ring / reward stealing (`_mite2`) loses to
+  `legend_m15` 26/34: the gap is their execution, which our code family does not reproduce.
+
 ## 3. What was built and measured (session 13)
 
 See AGENTS.md §S13 for the live state, `experiments/wip/x_s13.patch` (coordinator switches) and `experiments/wip/x_zone.patch` (zones agent).

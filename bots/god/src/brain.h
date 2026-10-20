@@ -141,6 +141,9 @@ private:
 	mutable std::size_t item_flags_idx = static_cast<std::size_t>(-1);
 	mutable bool jungle_ok = false, durability_ok = false, monster_ok = false, home_ok = false;
 	void insert_home(std::size_t at);
+	void insert_health(std::size_t at);
+	float base_hp = 0, hp_growth = 1, base_str = 0, str_growth = 1, base_focus = 0, focus_growth = 1; // gold_rank 2: our design stats
+	float enemy_burst_seen = 0; // build_react: the biggest potential one-round burst any visible enemy has shown this game
 	int recall_turns() const;
 	int recalls_started = 0; // ic_home 3
 	std::array<int, 6> prev_claim{ -1, -1, -1, -1, -1, -1 }; // reward_claim_gone: last round's claims
@@ -264,6 +267,8 @@ private:
 	float last_hp = 0;
 	int last_hit_round = -100;
 	std::vector<int> blacklist; // per group: round until which we ignore it
+	std::vector<float> dmg_on;  // kill_captures: our damage on each group since its last respawn
+	void note_dmg(int gid, float amount);
 	// Last-resort unstick: a walking task that stays inside a 3x3 box without attacking for unstick_rounds.
 	int last_act_round = -100;
 	vec2 ust_anchor{ -1, -1 };

@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-20 13:30 UTC (session 15, parallel: the sprint documents, SHIPPED GOD v5.1 for both rulesets; read §S15 and §S14 first, then §S13-GOD, §S13)**.
+- Last updated: **2026-10-20 15:40 UTC (session 14: SHIPPED GOD v6 for both rulesets; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
   Rule from the user: update this file and push at every step. Start with **§S14**, then **§S13-GOD**, **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
@@ -303,6 +303,26 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   team Ren, Stellar, Varg, Ryth, HoR (4: Ren, Stellar, Ryth, HoR), vs Ren-first the usual five, vs Prism / Marcella / HoR (bruisers picked last) the
   usual five; nx50x50 no caster draft. `_g6m` = `_g6` + the refit danger model at 0.2. Queue q16: both vs `_g4`, `_pw`, `_pc`, `_ph`, `_m15`, idle;
   `_g5os` vs `_pw`. Ship rule: `_g6` >= v5 head-to-head (28) and better on the Power proxies; then `_mite`, `_ifish`, `_px9`.
+
+- **15:40 UTC: SHIPPED GOD v6** = `_g6c` (`submissions/god.zip` sha256 222edc01…, history `god_v6_20261020.zip`, source hash 9cea4540b46e, `bots/god/src`
+  = it; BUILDS row, README; `tools/ship_god.sh CAND VERSION` = copy into `bots/god`, clean build, wasm check against the candidate, bundle, history copy)
+  = `_g6m` (= v5 + `build_tail` 1, `build_react` 2.5, `pd_obj_side` 1, `pd_hor_prior` 0.4, `pd_counter_hor` 0.8, `pd_front_free` 0, the ml4 danger model
+  at `ml2_leave` / `ml2_flee` 0.2) + session 15's compat layer (`x_sdkcompat.patch`; the prior case and the bruiser counter use `D_HOR`, `build_tail`'s
+  focus list `CT_HOR`), every v5 / v6 switch written `SDK_HAS_HOR ? new : legend_m15's`, and **both logistic weight sets in `ml2_model.h`** (`ML2NEW_*` /
+  `ML2OLD_*`, chosen by `SDK_HAS_HOR` through constexpr pointers; the boosted trees are the same in both). Wasm on 3.0.1 byte-identical to the measured
+  `_g6m` (65ed376b…), so its rows hold (42 games, v5 in brackets): h2h vs `_g4` **30** (28; deaths 637-872 vs 697-754), `_pw` 32 (30), `_pc` 38 (34), `_ph`
+  33 (31), `_mite` 39 (40), `_ifish` 39 (35), `_px9` 37 (34), **`_m15` 25 (30): the one weak cell** (`_g6` = the same without the model refit: 26 / 31 /
+  36 / 33 / 40 / 37 / 33, `_m15` 29; the refit wins every Power-proxy cell and loses to our old code family), idle 42/42, pace 1037.1 on the 20 common
+  maps (v5 1039.6), 0 faults. **The zip builds on 2.2.5 too** (wasm 36df4b99…): scratch project `$S/p225` = the 2.2.5 CLI unpacked from its wheel
+  (`pip download cambc==2.2.5 --no-deps`, `cambc-2.2.5.data/scripts/cambc init --yes .` fetches the old SDK into the asset cache even though the map
+  pull is blocked), `maps` / `tools` / `experiments` symlinked to the repo, `PATH` prefixed with the CLI's directory, then `tools/ledger.py run g6c mlkc40
+  --maps 'maps/comp/*.map26a'` writes to the 2.2.5 ledger: **18/34 vs legend_m15 on the official maps = GOD v5.1's 18/34** (rows
+  `experiments/results/ledger/g6c_vs_mlkc40.jsonl`). Build gotcha: the wasm toolchain is not fully deterministic (two variants of 1,069,227 bytes, 32
+  bytes apart at offset 12432, from identical sources in different directories; they play identical games: 2 games vs `_g4`, same statistics), so
+  `ship_god.sh` clean-builds `bots/god` and re-running it once settles a failed check. Running: agent `cd` (camp deaths, Opus; `experiments/wip/x_cd_NOTES.md`:
+  `safety()` scanned camps within 3 only, the pre-patch range, so bodies oscillated at distance 3 / 4 of elks; switches `cd_range` bits, `cd_enemy_d`,
+  `cd_hidden` on the v5 base, cells `_cd3h*`); its winner is to be re-measured on top of `bots/god` before any v7. Next after that: the fights on our own
+  half when a Power-stacked team opens (deaths 121-7), contest_v3 / eight_v3 openings, the `_m15` cell.
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

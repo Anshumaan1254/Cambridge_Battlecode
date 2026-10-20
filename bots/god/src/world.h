@@ -115,6 +115,7 @@ struct Ally
 	float hp = 0, max_hp = 1, str = 0, focus = 0;
 	Kit kit{};
 	bool kit_ready = false;
+	float base_hp = 0, hp_growth = 1, base_str = 0, str_growth = 1, base_focus = 0, focus_growth = 1; // gold_rank 2: design stats (cached)
 	int died_round = -1000; // last death we saw (respawn after respawn_time)
 	int seen_round = -1000; // last round this body saw it (pos is that sighting)
 	bool channeling = false; // recalling, banking or teleporting when last seen (cannot fight)

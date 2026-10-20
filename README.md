@@ -13,7 +13,30 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Current build: **GOD v5.1** (`submissions/god.zip`, session 15, Oct 20): GOD v5 for both rulesets
+## Current build: **GOD v6** (`submissions/god.zip`, session 14, Oct 20): GOD v5.1 + the lessons of 25 ladder losses
+
+GOD v3 lost 25 ladder games to five top teams (`docs/strategy_v2/15_LOSSES_OCT20.md`): every one of them stacks Power emblems in its damage
+stat (6,542 damage points to our 2,739), opens fights on our own half (our deaths 121 to their 7 when they open), spreads its gold over the
+team, and 26% of our gold was never spent. GOD v6 keeps what measured better on the 21 maps of those games: the build never ends (Power in
+the damage stat once the list is done), a reactive health emblem whenever our max health falls below 2.5 x the biggest burst a visible enemy
+has shown, the objective draft only for a gem group on our side of the map (the Prism / Tavi misdraft on nx50x50 cost two games), draft
+priors that put Heart of Ruin in the pair's slot against bruiser picks seen before ours (nothing forced, nothing per map), and the danger
+model retrained on the 45 patch-3.0 games. Both rulesets: without Heart of Ruin in the SDK it plays GOD v5.1's old-rules game (legend_m15's
+values and model weights). Every switch is in `params.h`; `experiments/wip/x_g5.patch` on GOD v2 is the full diff.
+
+| Measure (cambc 3.0.1, the 21 maps of the Nyx and loss games, both sides, 42 games per cell) | GOD v6 | GOD v5 |
+|---|---|---|
+| Head-to-head vs GOD v2 (`_g4`) | **30/42** (deaths 637-872) | 28/42 (697-754) |
+| vs the Power-stacking ladder proxies `_pw` / `_pc` / `_ph` | **32 / 38 / 33** | 30 / 34 / 31 |
+| vs `_mite` / `_ifish` / `_px9` | 39 / 39 / 37 | 40 / 35 / 34 |
+| vs legend_m15 (`_m15`) | 25/42 | 30/42 |
+| Unopposed pace, rounds to 1000 gems (20 maps) | 1037.1 | 1039.6 |
+| SDK 2.2.5 (the handbook's rules): official 34, head-to-head vs legend_m15 | 18/34 | 18/34 (GOD v5.1) |
+
+The weak cell is legend_m15 (the pre-patch bot): the retrained danger model leaves fights earlier against our own old code family, while
+it gains against every Power-stacking proxy. The ladder is the real test; `submissions/history/god_v5_1_20261020.zip` is the rollback.
+
+## Previous build: **GOD v5.1** (`submissions/god.zip`, session 15, Oct 20): GOD v5 for both rulesets
 
 The sprint documents (`docs/sprint/GameRules.md`, `BotAPICpp.md`) describe the game before patch 3.0 and an API without Heart of Ruin, Golem or
 the damaging dash fields; GOD v5 named all three and **did not compile against that API** (a failed compile removes the team from matchmaking).

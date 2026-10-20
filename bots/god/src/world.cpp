@@ -449,6 +449,9 @@ void World::perceive(vec2 me)
 			{
 				a.kit = kit_of(bc::champion_designs[static_cast<std::size_t>(a.type)]);
 				a.kit_ready = true;
+				const auto bs = bc::champion_designs[static_cast<std::size_t>(a.type)].base_stats();
+				a.base_hp = bs.base_health, a.hp_growth = bs.health_growth, a.base_str = bs.base_strength, a.str_growth = bs.strength_growth;
+				a.base_focus = bs.base_focus, a.focus_growth = bs.focus_growth;
 			}
 		}
 	}

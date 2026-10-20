@@ -30,6 +30,7 @@ struct Features
 	int gem_groups = 0;		   // groups that give gems (excluding monolith-only)
 	float gem_group_hp = 0;	   // pd_obj_heavy: total camp health of the heaviest gem group, and its camps that fight back
 	int gem_group_att = 0;
+	int gem_group_da = 0, gem_group_de = 0; // pd_obj_side: walking distance of the heaviest gem group from our spawn and from theirs
 	double mean_dist = 0;
 	int area = 0, holes = 0, altars = 0;
 	bool ready = false;
@@ -107,7 +108,7 @@ void analyse()
 		F.harmless += attackers == 0;
 		F.gem_groups += (has_gem || has_wolf || has_elk) && !has_mono;
 		if ((has_gem || has_wolf || has_elk) && !has_mono && ghp > F.gem_group_hp)
-			F.gem_group_hp = ghp, F.gem_group_att = attackers;
+			F.gem_group_hp = ghp, F.gem_group_att = attackers, F.gem_group_da = da, F.gem_group_de = de;
 		dsum += da;
 	}
 	F.mean_dist = F.groups ? dsum / F.groups : 0;
@@ -294,7 +295,7 @@ bool table_pick(const std::vector<D>& mine)
 struct MapParams
 {
 	int team = 5;
-	double pack_share = 0, elk_share = 0;
+	double pack_share = 0, elk_share = 0, gold_share = 0;
 	bool objective = false, monolith_only = false, open_small = false;
 };
 MapParams MP;
@@ -309,10 +310,12 @@ void derive_params()
 	MP.team = std::clamp(F.team, 3, 5);
 	MP.pack_share = F.multi / g;
 	MP.elk_share = F.elk / g;
+	MP.gold_share = F.gold / g;
 	// pd_obj_multi: the lone gem group must also be a multi-camp group (stampede and maps/obj: an elk + gem objective). On the gold_elk
 	// maps the only gem group is one elk camp: no objective plan fires there, so the caster draft would farm without its ring.
 	MP.objective = F.gem_groups == 1 && F.mono == 0 && (!P.pd_obj_multi || F.multi >= 1) &&
-		(!P.pd_obj_heavy || (F.gem_group_hp >= P.obj_min_hp && F.gem_group_att >= P.obj_min_attackers)); // pd_obj_heavy: the same test as the brain's objective mode
+		(!P.pd_obj_heavy || (F.gem_group_hp >= P.obj_min_hp && F.gem_group_att >= P.obj_min_attackers)) && // pd_obj_heavy: the same test as the brain's objective mode
+		(!P.pd_obj_side || F.gem_group_de - F.gem_group_da > P.pd_obj_mid); // pd_obj_side: the objective must be on our side, not midway between the spawns
 	MP.monolith_only = F.gem_groups == 0 && F.mono > 0;
 	MP.open_small = MP.team <= 3 && F.area >= P.pd_open_area && F.mean_dist >= P.pd_open_dist;
 	pd_type = MP.objective ? 2 : MP.open_small ? 1 : 0;
@@ -328,7 +331,7 @@ double prior(D c)
 	{
 	case D::ren: return 1.0;
 	case D::stellar: return 0.95;
-	case D::cassi_and_issac: return 0.9;
+	case D::cassi_and_issac: return P.pd_ci_prior;
 	case D::varg: return 0.62;
 	case D::ryth: return 0.6;
 	case D::prism: return 0.36;
@@ -336,7 +339,7 @@ double prior(D c)
 	case D::vendetta: return 0.3;
 	case D::marcella: return 0.2;
 	case D::vesper_vale: return 0.12;
-	case D_HOR: return 0.5; // patch 3.0's new champion: see pd_hor3
+	case D_HOR: return P.pd_hor_prior; // patch 3.0's new champion: see pd_hor3, pd_counter_hor
 	default: return 0.1;
 	}
 }
@@ -394,14 +397,24 @@ double pd_score(D c, const std::vector<D>& team, const std::vector<D>& enemy)
 	}
 	if (c == D::stellar && casters == 0)
 		v += 0.2; // one ranged carry
-	if (is_front(c) && fronts >= MP.team - 2)
-		v -= 0.4; // at most team - 2 frontliners (the pair and a ranged carry take the rest)
+	if (is_front(c) && fronts >= MP.team - P.pd_front_free)
+		v -= P.pd_front_pen; // at most team - pd_front_free frontliners (the pair and a ranged carry take the rest)
 	// Counters to the enemy's visible picks.
 	int e_cast = 0, e_dive = 0;
 	for (auto e : enemy)
 		e_cast += is_caster(e), e_dive += is_front(e);
 	if (c == D::ryth)
 		v += P.pd_counter * (0.06 * std::max(0, e_cast - 1) + 0.05 * std::max(0, e_dive - 2));
+	// Session 14 (patch 3.0): bruiser picks on the enemy side favour Heart of Ruin over the pair; gold-rich halves favour the gold champions.
+	int e_bruise = 0;
+	for (auto e : enemy)
+		e_bruise += e == D_HOR || e == D::marcella || e == D::vendetta;
+	if (c == D_HOR && !pair)
+		v += P.pd_counter_hor * e_bruise; // Heart of Ruin takes the pair's slot, never a frontliner's (HoR for Varg / Ryth: 19 / 14 of 42)
+	if (c == D::cassi_and_issac)
+		v -= P.pd_counter_hor * e_bruise;
+	if (c == D::vesper_vale || c == D::marcella)
+		v += P.pd_gold_vesper * MP.gold_share;
 	if (c == D::varg)
 		v -= P.pd_counter * 0.04 * std::max(0, e_cast - 1);
 	return v;

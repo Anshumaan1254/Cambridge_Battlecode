@@ -346,6 +346,15 @@ std::vector<I> build_for(CT t, int bs)
 			cycle(v, { I::bruiser_shard_of_strength, I::bruiser_shard_of_strength, I::bruiser_shard_of_health }, 8);
 			break;
 		}
+		if (P.build_tail)
+		{
+			// The list must never run out (session 14): Power in the damage stat (1) or the Bruiser mix (2) for the rest of the game.
+			const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
+			if (P.build_tail == 1)
+				rep(v, focus ? I::power_shard_of_focus : I::power_shard_of_strength, 300);
+			else
+				cycle(v, { focus ? I::bruiser_shard_of_focus : I::bruiser_shard_of_strength, focus ? I::bruiser_shard_of_focus : I::bruiser_shard_of_strength, I::bruiser_shard_of_health }, 40);
+		}
 		return v;
 	}
 	if (bs == 1)
@@ -505,6 +514,11 @@ void Brain::init()
 	self = handle_of(me);
 	type = me.champion_name();
 	kit = kit_of(me);
+	{
+		const auto bs = me.base_stats();
+		base_hp = bs.base_health, hp_growth = bs.health_growth, base_str = bs.base_strength, str_growth = bs.strength_growth;
+		base_focus = bs.base_focus, focus_growth = bs.focus_growth;
+	}
 	const auto abl = me.abilities();
 	ab.assign(abl.begin(), abl.end());
 	build = build_for(type, P.build_style);
@@ -546,6 +560,7 @@ void Brain::init()
 		W.islands_pending = false, W.find_islands();
 	W.init_units();
 	blacklist.assign(W.groups.size(), -1);
+	dmg_on.assign(W.groups.size(), 0.f);
 	nav().init();
 	learner().init(W.W, W.H);
 	comms().bodies = static_cast<int>(W.allies.size());
@@ -687,6 +702,14 @@ void Brain::turn()
 			}
 	}
 	build_danger();
+	if (P.kill_captures > 0.f)
+		for (const auto& g : W.groups)
+			if (g.st == ST_RESPAWN && g.id >= 0 && g.id < static_cast<int>(dmg_on.size()))
+				dmg_on[static_cast<std::size_t>(g.id)] = 0.f;
+	if (P.build_react > 0.f)
+		for (const auto& e : W.enemies)
+			if (e.alive && e.visible)
+				enemy_burst_seen = std::max(enemy_burst_seen, e.str + e.focus * std::max({ e.kit.dmg_mod, e.kit.cc_mod, e.kit.aoe_mod, e.kit.dash_mod }));
 	if (P.mi_learn_burst || P.mi_lethal)
 		learn_burst();
 	XM(xm_pre());
@@ -1018,6 +1041,8 @@ void Brain::shop()
 	}
 	if (P.ic_home == 3 && recalls_started >= P.ic_home_recalls)
 		insert_home(build_idx);
+	if (P.build_react > 0.f && alive && enemy_burst_seen > 0.f && max_hp < P.build_react * enemy_burst_seen && gold >= 150)
+		insert_health(build_idx); // build_react: answer the enemy's damage with health before the next planned emblem
 	while (build_idx < build.size() && gold >= 30)
 	{
 		const I item = build[build_idx];
@@ -1175,7 +1200,7 @@ int Brain::nearest_altar(int& dist) const
 		if (P.altar_no_camp >= 2 && !W.altar_open(static_cast<int>(i)))
 			continue; // its approach tile is a living camp's spawn tile
 		if (W.altar_locked_by_enemy(static_cast<int>(i)))
-			d += 6; // three hits to clear it
+			d += P.lock_hits_sdk ? 2 * static_cast<int>(bc::constants::altar_lock_hits) : 6; // hits to clear it (patch 3.0: 5)
 		if (altar_unsafe(static_cast<int>(i)))
 			d += P.unsafe_altar_penalty; // contested and enemies seen there: our carriers die on the way
 		if (d < dist)
@@ -1335,6 +1360,12 @@ void Brain::prebuild_fields()
 }
 
 // ---------------------------------------------------------------------------------------------- actions
+
+void Brain::note_dmg(int gid, float amount)
+{
+	if (gid >= 0 && gid < static_cast<int>(dmg_on.size()))
+		dmg_on[static_cast<std::size_t>(gid)] += amount;
+}
 
 bool Brain::attack_unit(const bc::unit& u)
 {
@@ -3021,9 +3052,15 @@ bool Brain::safety()
 	{
 		float eb = 0;
 		for (const auto& e : W.enemies)
-			if (e.alive && e.visible && !W.enemy_spawn.is_set(e.pos) &&
-				cheb(e.pos, pos) <= std::max(e.kit.attack_range + (e.kit.ranged ? 0 : 1), enemy_spell_reach(e, false)) + 2)
-				eb += e.str + e.burst();
+			if (e.alive && e.visible && !W.enemy_spawn.is_set(e.pos))
+			{
+				const int reach = std::max(e.kit.attack_range + (e.kit.ranged ? 0 : 1), enemy_spell_reach(e, false));
+				const int d = cheb(e.pos, pos);
+				if (d <= reach + 2)
+					eb += e.str + e.burst();
+				else if (P.burst_far > 0.f && d <= reach + P.burst_far_d)
+					eb += P.burst_far * (e.str + e.burst()); // burst_far: the ones one or two steps from reach
+			}
 		threshold = std::max(threshold, P.burst_retreat * eb);
 	}
 	if (hp < threshold && P.finish_camp && camp_in > 0 && enemy_near_d > P.finish_enemy_d && task_group >= 0 &&
@@ -3431,6 +3468,19 @@ void Brain::insert_home(std::size_t at)
 	item_flags_idx = static_cast<std::size_t>(-1);
 }
 
+void Brain::insert_health(std::size_t at)
+{
+	// build_react: one health emblem (Durability health first: -10% damage taken; then Bruiser health) at the next emblem boundary,
+	// unless the next planned emblem is a health emblem already.
+	at = std::max(at, build_idx);
+	at = std::min(build.size(), (at + 4) / 5 * 5);
+	if (at < build.size() && is_health_shard(build[at]))
+		return;
+	const I it = durability_done() ? I::bruiser_shard_of_health : I::durability_shard_of_health;
+	build.insert(build.begin() + static_cast<std::ptrdiff_t>(at), 5, it);
+	item_flags_idx = static_cast<std::size_t>(-1);
+}
+
 int Brain::recall_turns() const
 {
 	// Recall takes recall_time turn ends, three with a Home emblem.
@@ -3498,6 +3548,26 @@ float Brain::incoming_on(const Group& g) const
 	if (kit.cc >= 0 || kit.aoe_stuns)
 		in *= 1.f - std::min(0.35f, (kit.aoe_stuns ? g.cluster : 1.f) / (8.f * std::max(1, g.attackers)));
 	return in;
+}
+
+// gold_rank: who converts gold into the most damage (patch 3.0: Power emblems in the damage stat decide fights and farming speed).
+int gold_rank_of(CT t)
+{
+	switch (t)
+	{
+	case CT::stellar:
+	case CT::prism: return 4;
+	case CT::tavi:
+	case CT::cassi:
+	case CT::willow:
+	case CT::vesper_vale: return 3;
+	case CT::issac:
+	case CT::marcella:
+	case CT::vendetta: return 2;
+	case CT::varg:
+	case CT::ryth: return 1;
+	default: return 0; // Ren, Heart of Ruin
+	}
 }
 
 bool Brain::ally_melee(int ally) const
@@ -3923,9 +3993,54 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 	switch (g.st)
 	{
 	case ST_REWARD:
+	{
+		// gold_rank: the reward goes to the best gold user among the living allies within gold_rank_d of it (not to the lowest index).
+		bool outranked = false, outrank_lower = false;
+		if (P.gold_rank)
+		{
+			const int rm = gold_rank_of(type);
+			// gold_rank 2: the poorest body first (stat points bought, from the visible stats and the design growth), the type rank breaks ties
+			const float my_pts = (max_hp - base_hp) / std::max(1.f, hp_growth) + (str - base_str) / std::max(1.f, str_growth) + (focus - base_focus) / std::max(1.f, focus_growth);
+			for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 8; ++i)
+			{
+				const auto& a = W.allies[static_cast<std::size_t>(i)];
+				if (i == W.my_index || !a.alive || !a.visible || a.seen_round != round || a.channeling)
+					continue;
+				if (nav().group_dist(g, a.pos) > P.gold_rank_d)
+					continue;
+				const int ra = gold_rank_of(a.type);
+				bool above = ra > rm, below = ra < rm;
+				if (P.gold_rank == 2)
+				{
+					const float a_pts = (a.max_hp - a.base_hp) / std::max(1.f, a.hp_growth) + (a.str - a.base_str) / std::max(1.f, a.str_growth) + (a.focus - a.base_focus) / std::max(1.f, a.focus_growth);
+					above = a_pts + P.gold_rank_margin < my_pts || (std::fabs(a_pts - my_pts) <= P.gold_rank_margin && ra > rm);
+					below = my_pts + P.gold_rank_margin < a_pts || (std::fabs(a_pts - my_pts) <= P.gold_rank_margin && ra < rm);
+				}
+				outranked |= above;
+				outrank_lower |= below && i < W.my_index;
+			}
+			if (outranked && !(capture_group_id == g.id && g.mask.is_set(pos)))
+				{ WHY(4); return -1; }
+		}
+		if (P.kill_captures > 0.f && g.id >= 0 && g.id < static_cast<int>(dmg_on.size()) && g.max_hp > 0.f)
+		{
+			// kill_captures: the killer takes the reward; a body that did little yields to a living ally near the group.
+			const float share = dmg_on[static_cast<std::size_t>(g.id)] / g.max_hp;
+			if (share >= P.kill_captures)
+				outrank_lower = true;
+			else if (share <= 1.f - P.kill_captures && !(capture_group_id == g.id && g.mask.is_set(pos)))
+				for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 8; ++i)
+				{
+					const auto& a = W.allies[static_cast<std::size_t>(i)];
+					if (i == W.my_index || !a.alive || !a.visible || a.seen_round != round || a.channeling)
+						continue;
+					if (nav().group_dist(g, a.pos) <= P.gold_rank_d && nav().group_dist(g, a.pos) <= d_tile)
+						{ WHY(4); return -1; }
+				}
+		}
 		// One body captures; if allies claim it, the lowest index takes it unless we are clearly nearer
 		// (the joiner may still be walking in while we stand next to the reward).
-		if (claimers && first_claimer < W.my_index && closer_lower_claimer)
+		if (claimers && first_claimer < W.my_index && closer_lower_claimer && !outrank_lower)
 			{ WHY(4); return -1; }
 		if (P.no_split && !(P.big_reward > 0 && g.gems >= P.big_reward && g.enemy_on_tile))
 		{
@@ -3951,6 +4066,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 		eta = d_tile;
 		time = static_cast<float>(eta) + 6.f;
 		break;
+	}
 	case ST_RESPAWN:
 	{
 		const int avail = g.ready_round - round;
@@ -4200,6 +4316,13 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 	}
 	if (round - g.enemy_round < 12)
 		time += 12.f;
+	if (P.mid_risk > 0.f && round < P.mid_risk_until && g.d_ally < BIG && g.d_enemy < BIG && g.d_ally + g.d_enemy > 0)
+	{
+		// Opening: the groups both teams reach at the same time (the midline) are where the first team fight happens.
+		const float mid = 1.f - static_cast<float>(std::abs(g.d_ally - g.d_enemy)) / static_cast<float>(g.d_ally + g.d_enemy);
+		const float fade = std::min(1.f, static_cast<float>(P.mid_risk_until - round) / static_cast<float>(std::max(1, P.mid_risk_fade)));
+		time += P.mid_risk * mid * mid * fade;
+	}
 	if (sc_alert && alert_zone.is_set(g.center))
 		time += 25.f;
 	// Learned pain: regions where we lost champions recently cost extra rounds.
@@ -4889,12 +5012,21 @@ bool Brain::spells_on_camp(Group& g, std::size_t idx, bool save_cc)
 		}
 		if (best_n >= 2 || kit.dmg < 0 || !ready(kit.dmg))
 			if (cast_ground(kit.aoe, best))
+			{
+				note_dmg(g.id, focus * kit.aoe_mod * static_cast<float>(std::max(1, best_n)));
 				return true;
+			}
 	}
 	if (kit.dmg >= 0 && d <= static_cast<int>(kit.dmg_range) && cast_unit_camp(kit.dmg, c.camp))
+	{
+		note_dmg(g.id, focus * kit.dmg_mod);
 		return true;
+	}
 	if (kit.cc >= 0 && d <= static_cast<int>(kit.cc_range) && !save_cc && (kit.cc_mod > 0 || g.awake) && cast_unit_camp(kit.cc, c.camp))
+	{
+		note_dmg(g.id, focus * kit.cc_mod);
 		return true;
+	}
 	return false;
 }
 
@@ -4985,6 +5117,7 @@ bool Brain::attack_chain_camp(Group& g, std::size_t idx)
 	auto& W = world();
 	if (!attack_unit(g.camps[idx].camp))
 		return false;
+	note_dmg(g.id, str);
 	if (g.id == task_group)
 		task_progress = round, target_hit_round = round;
 #ifdef LEGEND_TRACE
@@ -5007,8 +5140,8 @@ bool Brain::attack_chain_camp(Group& g, std::size_t idx)
 			if (target == g.camps.size())
 				return true;
 		}
-		if (cast_self(kit.reset))
-			attack_unit(g.camps[target].camp);
+		if (cast_self(kit.reset) && attack_unit(g.camps[target].camp))
+			note_dmg(g.id, str);
 	}
 	return true;
 }

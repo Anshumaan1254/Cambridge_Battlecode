@@ -7,7 +7,7 @@ cd "$(dirname "$0")/.."
 cand=$1; ver=$2
 [ -d "bots/$cand/src" ] || { echo "no bots/$cand/src"; exit 1; }
 cp bots/$cand/src/*.cpp bots/$cand/src/*.h bots/god/src/
-cambc build god > /dev/null
+rm -rf bots/god/.cambc bots/god/compile_commands.json && cambc build god > /dev/null # clean build: a stale build dir gave a different wasm from identical sources (session 14)
 a=$(sha256sum bots/$cand/.cambc/build/bot.wasm | cut -c1-16); b=$(sha256sum bots/god/.cambc/build/bot.wasm | cut -c1-16)
 [ "$a" = "$b" ] || { echo "wasm differs: $cand $a god $b"; exit 1; }
 rm -f submissions/god.zip && cambc bundle god --output submissions/god.zip > /dev/null

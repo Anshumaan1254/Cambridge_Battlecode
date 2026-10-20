@@ -2,9 +2,9 @@
 #pragma once
 #include "common.h"
 // Two rulesets (docs/sprint/RULES_DIFF.md): the engine we are compiled with tells which one runs. SDK_HAS_HOR (Heart of Ruin in the SDK)
-// = patch 3.0: GOD v5's values. Without it (the sprint handbook's rules: old camp values, no Golem, no Heart of Ruin) the seven values
-// marked SDK_HAS_HOR take legend_m15's: on cambc 2.2.5 they won 148 of 170 vs the five proxies on the official maps (legend_m15 149,
-// GOD v5's values 127; gold_value 0.33 and altar_no_camp 2 cost most: corners, lanes, pilgrimage), 18/34 head-to-head vs legend_m15.
+// = patch 3.0: GOD v6's values. Without it (the sprint handbook's rules: old camp values, no Golem, no Heart of Ruin) every value marked
+// SDK_HAS_HOR takes legend_m15's (session 15: on cambc 2.2.5 GOD's patch-3.0 values lost 16 of 170 proxy games; legend_m15's values 148/170),
+// and the ml2 danger model takes legend_m15's logistic weights (ml2_model.h).
 
 struct Params
 {
@@ -230,6 +230,13 @@ struct Params
 	int stall_guard = SDK_HAS_HOR ? 10 : 0;	   // > 0: a walking task (farm, capture, tribute, home, flee) that stays inside a 3x3 box this many rounds without acting
 							   // drops its target; a dash kit also routes without hole crossings for stall_dash_off rounds (fields rebuilt)
 	int stall_dash_off = 150;
+	float mid_risk = 0.f;	   // > 0: before mid_risk_until, a group near the midline costs this many rounds x (1 - |d_ally - d_enemy| / (d_ally + d_enemy))^2:
+							   // both teams reach the centre groups at the same time with full teams (fragment_v3 vs Nyx: our three bodies opened on the centre
+							   // elk + wolf group at r10, met their four bodies there at r26 and were all below 30% health by r58 with no capture; Nyx took a
+							   // side wolf first). The term fades out linearly over the last mid_risk_fade rounds before mid_risk_until
+	int mid_risk_until = 200;
+	int mid_risk_fade = 50;
+	int lock_hits_sdk = 0;	   // 1: an enemy-locked altar costs 2 x constants::altar_lock_hits extra steps (patch 3.0: 5 hits, was 3; the literal said 6)
 	int mono_team = 0;		   // 1: a lone monolith group (one camp: 20,000 health, 200 strength, range 5 since patch 3.0; 200 gems + 300 gold a kill) is a
 							   // team target on any map, like an objective group: scored with the whole living team's damage when obj_team_ready says the
 							   // team clears it within obj_clear_max absorbing at most obj_absorb of its health pool, gathered outside its reach first,
@@ -242,6 +249,37 @@ struct Params
 							   // >= obj_min_hp with >= obj_min_attackers camps that fight back (nx50x50: one elk + gem cluster group and 27 gold
 							   // clusters per side took the caster draft: 72-1008). Same test as World::detect_objective
 
+	int pd_front_free = 0;	   // parameter draft: at most team - pd_front_free frontliners (the pair and a ranged carry take the rest), penalty pd_front_pen
+	float pd_front_pen = SDK_HAS_HOR ? 0.4f : 0.f;
+	float pd_hor_prior = 0.4f;  // parameter draft priors re-tunable for patch 3.0 (session 14): Heart of Ruin and Cassi & Issac at any team size
+	float pd_ci_prior = 0.9f;
+	float pd_counter_hor = SDK_HAS_HOR ? 0.8f : 0.f; // per enemy bruiser pick seen (Heart of Ruin, Marcella, Vendetta): + for Heart of Ruin, - for Cassi & Issac (the pair
+							   // died 148 of our 362 champion deaths in the 25 ladder games of Oct 20; the two teams without the pair beat us 9-1)
+	float pd_gold_vesper = 0.f; // x the share of our half's groups that hold gold: Vesper Vale (+33% gold since patch 3.0) and Marcella (2 gold per gem)
+	int pd_obj_side = SDK_HAS_HOR ? 1 : 0;	   // 1: the draft's objective map also needs the lone gem group nearer to our spawn than to theirs by more than pd_obj_mid steps
+							   // (session 14: nx50x50's only gem group, 2 elks + 6 gems = 72 gems, sits midway between the spawns with two altars next to it;
+							   // the caster ring (Prism, Stellar, C&I, Ryth, Tavi) lost it 72-1008 twice on the ladder with 37 deaths: both teams
+							   // meet there every respawn, and the casters die to Power-stacked melee)
+	int pd_obj_mid = 2;
+	float build_react = SDK_HAS_HOR ? 2.5f : 0.f;   // > 0: a reactive health emblem (Durability health, then Bruiser health) is inserted at the shop whenever our max
+							   // health is below this x the biggest one-round burst (strength + focus x best spell) any enemy has shown us this game:
+							   // the build answers the enemy's Power stacks (25 ladder games of Oct 20: first-round damage 33% of max health, median)
+	float kill_captures = 0.f; // > 0: the body that dealt at least this share of a group's health takes its reward even if a lower-index ally claims
+							   // it, and a body that dealt less than 1 - share yields to a living ally within gold_rank_d (25 ladder games of Oct 20: our
+							   // Stellar took part in 354 group kills and captured 103, our Ren 233 and 221: the killer's gold went to the lowest index)
+	int gold_rank = 0;		   // 1: a landed reward goes to the body (2: to the body that has bought the fewest stat points, ties by the same rank) that turns gold into the most damage (Stellar, Prism > Tavi, Cassi, Willow, Vesper >
+							   // Issac, Marcella, Vendetta > Varg, Ryth > Ren, Heart of Ruin) among the living allies within gold_rank_d of it, not to the
+							   // lowest index: on the ladder (25 games, Oct 20) our Ren took 35-55% of the team gold and our Stellar earned 442-544 a
+							   // game (first emblem r208-661) while the top teams spread gold evenly (Stellar 1,080-2,718, first emblem r130-268)
+	int gold_rank_d = 5;
+	float gold_rank_margin = 5.f; // gold_rank 2: the poorest body (fewest stat points bought) collects; within this many points the type rank decides
+	float burst_far = 0.f;	   // > 0: burst_retreat also counts, at this weight, enemies within burst_far_d more tiles than their reach: the opener
+							   // arrives from 2-3 tiles out and kills a hurt body in 2 rounds (25 ladder games of Oct 20: our health at the first hit
+							   // median 34%, death within 2 rounds in 57% of our champion deaths), so a hurt body leaves while it still can
+	int burst_far_d = 5;
+	int build_tail = SDK_HAS_HOR ? 1 : 0;	   // build_style 2 lists end after 24-30 emblems; 1: then Power in the damage stat for ever (the five top teams of
+							   // Oct 20: 950 Power-dmg emblems in 25 games; our Ren sat on 612 gold unspent on average, 13,410 on the no-altar map),
+							   // 2: the Bruiser cycle for ever
 	int strike_dash_hold = 9;   // patch 3.0: a damaging dash (Heart of Ruin) is not used to walk while an enemy was seen within this many tiles
 	int flee_exit = 0;		   // 1: a body walking home from inside enemy reach / an awake camp's range takes a sideways step out of it when
 							   // every step toward home stays inside (nav.cpp step_field)
@@ -555,8 +593,8 @@ struct Params
 	// Fight / danger model learned from real ladder games (agent ml2, session 13; experiments/wip/x_ml2_NOTES.md,
 	// tools/ml/ml2_*.py). P(this body dies within 8 rounds) from a logistic model on what the body sees (ml2_model.h),
 	// trained on 160 ladder games (ours vs ladder teams and top teams vs each other). All 0 = legend_m14_commit.
-	float ml2_leave = 0.4f;		// a fight we can walk away from (no kill now) is dropped when P(die8) >= this
-	float ml2_flee = 0.4f;		// not in reach, not fighting: walk away when P(die8) >= this and an enemy is within flee_dist
+	float ml2_leave = SDK_HAS_HOR ? 0.2f : 0.4f;		// a fight we can walk away from (no kill now) is dropped when P(die8) >= this
+	float ml2_flee = SDK_HAS_HOR ? 0.2f : 0.4f;		// not in reach, not fighting: walk away when P(die8) >= this and an enemy is within flee_dist
 	float ml2_enter = 0.f;		// not fighting: fight when P(kill8) >= this and P(die8) < ml2_enter_die (target within reach + 1)
 	float ml2_enter_die = 0.15f;
 	int ml2_hold = 0;			// after a model exit, keep out (no proactive fight) for this many rounds

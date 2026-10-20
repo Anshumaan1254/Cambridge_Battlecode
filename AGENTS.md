@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-20 21:37 UTC (session 14: opponent-model upgrade built, all off; strength tests now on the user's ladder via branch pairs, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
+- Last updated: **2026-10-20 21:37 UTC (session 14: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
   Rule from the user: update this file and push at every step. Start with **§S14**, then **§S13-GOD**, **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
@@ -415,6 +415,17 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   traces never ran). From now on: a viable idea -> two branches from `main` named by the feature (on / off), each with its own `submissions/god.zip`; my
   checks are functional only (both SDKs build, games run with 0 faults, no extra turn rollovers, the new per-turn code's fuel measured); the user picks on
   the ladder. `main` keeps every new switch off (= v8) until the user decides.
+- **22:20 UTC: branch pair for the user's ladder test: `god-opponent-model-on` vs `god-opponent-model-off`** (both from main cf23155; the only
+  difference is `opp_model` 1 + `om_learned` 1 in `params.h`, each branch has its own `submissions/god.zip`: on sha256 bd493e64…, off 279247cc…;
+  BUILDS rows on each branch). Before branching, the fuel check found the opponent model bleeding fuel: the leader spent 5.5-9.6k a turn
+  (re-deriving altar sides from distance reads every turn); fixed in cf23155 (cached altar sides, per-turn memo, loops skipped with no enemy
+  in view): 516 fuel per body-turn (leader 1.9k, others 0.2k, p99 5.4k, max 14.4k; 100x100: 440 / p99 2.7k). Functional checks (6 maps x 2
+  sides x `_v8k1` / `_pws` / `_pxI`, 36 games per branch, release mode = platform): 0 faults both; lost turns after round 3 on 143, off 174;
+  both zips build on SDK 3.0.2 and 2.2.5; off = v8 (12/12 games identical, events + shared memory); the plan engages in live games
+  (OPP_TRACE: 71% of windows vs the invader proxy, 12% vs v8, 8.5 plan changes per game vs the proxy). Docs: `docs/CHANGES.md` (every
+  feature, results, risks, self-review), `docs/TESTING.md` (commands), `docs/COMMS.md`. **Waiting for the user's decision.** If "on" wins:
+  set the two switches on main, ship as GOD v9 (zip, history, BUILDS, README). If "off" wins: v8 stays. Not proposed (measured worse or
+  never measured): ward plan, anchors, chain farming, gank, deny-altar, `om_sight`, Prism banker; `watchdog` is inert (no throwing turns).
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

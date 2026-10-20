@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-20 09:55 UTC (session 13: patch 3.0; SHIPPED `submissions/god.zip` = GOD v2; read §S13-GOD first)**.
+- Last updated: **2026-10-20 10:55 UTC (session 14: GOD v3 vs Nyx; read §S14 first, then §S13-GOD)**.
   Rule from the user: update this file and push at every step. Start with **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
@@ -13,6 +13,57 @@ running or unfinished, and what to do next, so a new agent can continue without 
   is either offline (training parameters before submission) or in-match (adapting inside one game).
 
 ---
+
+## S14. SESSION 14 (2026-10-20 10:10 UTC, new container): GOD v3 against Nyx: read this first
+
+- **The user's request**: we lose almost every game to the team **Nyx** after patch 3.0 (17 of 20; the two zips `new_maps_us_vs_nyx.zip`,
+  `old_maps_us_vs_nyx.zip` = 4 match groups, 20 games, we are side A in all). Study them, find what Nyx does better, build a GOD that beats
+  it (loopholes allowed), better than GOD v2 (`submissions/god.zip`) and `legend_m15`; no hardcoded map strategy; every change a switch in
+  `params.h` + a ledger A/B on `maps/nyx_new` + `maps/comp30`; ship a zip only when measured better (h2h vs GOD v2 and vs the proxies);
+  push to `main` at every step; checkpoints here (§S14.8); few subagents; never `pkill -f`.
+- **Setup**: `tools/setup_session.sh` now installs **cambc 3.0.1** (all 30 old bots + proxies build and hash-check ok). `cambc maps pull` is
+  **blocked** (proxy 403 on 2026a.battlecode.co.uk): the maps come from the replays. Baselines rebuilt from the zips: `bots/_g4` = GOD v2
+  (`submissions/god.zip`, source hash 19a1785457d3 = `bots/god`), `bots/_m15` = `legend_m15` (hash 7f1fbbaa8fa8 = `bots/legend`).
+- **Inputs now in the repo**: `experiments/nyx_oct20/<group>_<nn>_<map>.repl26a` (20 replays) + `index.json` (map, side A, drafts, score)
+  + `analysis/` (run_all.py report and CSVs, `stalls_us.txt`, `group_kills_by_team.txt`); maps: `maps/comp30/` = the 10 changed official
+  maps seen in the replays (ambush30 ... lanes30; gem / gold clusters added), `maps/nyx_new/` = the 10 new maps (`nyx_<size>_<sym>_c<n>_<hash>`).
+  Tools: `tools/strategy_v2/analyze.py` (patch-3.0 champion stats, Heart of Ruin), `stuck_eps.py` (stall episodes), `killers.py` (bodies and
+  rounds per camp-group kill, both teams). Scratchpad scripts (lost with the container): `screen_nyx.sh BOT OPP...` = ledger cells on the 20
+  Nyx maps (`--maps 'maps/nyx_new/*.map26a,maps/comp30/*.map26a' --jobs 3`).
+
+### S14.1 What Nyx does (20 games, `experiments/nyx_oct20/analysis/report.md`)
+
+- **Draft**: Ren, Stellar, C&I, Ryth, Varg (= the old ifish table; our `mapdraft` 2 defaults by team size reproduce it); 3-champion maps Ren,
+  Stellar, C&I; three games Varg, Vendetta, C&I, Willow, Ryth. We drafted Heart of Ruin instead of C&I on the four 3-champion maps and lost
+  3 of them (`_g4` also loses both nyx_31x31_c3 games to `_m15`'s C&I draft): **`pd_hor3` is wrong**. On the new 50x50 ($27, E1, g3 per side)
+  the parameter draft called it an objective map (one gem group + any multi-camp group) and took Prism / Tavi: 72-1008, 39 deaths.
+- **Economy is the gap (x2.3)**: camp gems 10,740 vs 24,203; gold earned 86,615 vs **237,299**; captures 492 vs 1,160; camp time 15.5% vs
+  20.5% of alive rounds; camp damage per camp round 89 vs 144; idle 8.3% vs 3.3% of body-rounds. Camp-group kills (first hit to kill):
+  **2 gold clusters 149 of ours (13.9 rounds) vs 538 (8.1)**, 4 gold 25 vs 101, 1gold+1wolf 61 (211 rounds!) vs 163 (84), 1elk+1gem 23 (167)
+  vs 66 (116), 2elk+2gold 8 vs 42 (72). Same bodies per kill (1.2-3.5): the difference is damage and commitment, not team size.
+- **Builds**: Nyx buys **Treasure first on every body** (Stellar / Cassi TfE at r46-180, Ren ThE, Issac TsE), then Jungle (dmg stat) or Bruiser
+  health, Durability, then **Power in the damage stat forever** (1,097 Power-dmg emblems in 20 games; their Stellar ends with PfE20-27 = 1,500+
+  focus, 3,000-damage casts). Damage points per 1,000 gold 33.6 vs our 21.6; our first emblems come 100-300 rounds later (Cassi r641 vs r140).
+- **Recalls**: 1,752 vs 1,136, at 0.70 health (ours 0.42), 788 overlapping a capture (ours 341): recall as transport after every capture.
+- **Deaths**: 333 vs 271; 51% of ours are bursts from >= 60% health; their Stellar killed 79 of our bodies, Cassi 49.
+- **Hard stalls (the three worst losses)**: (1) `nyx_50x41` (one altar inside a wall box whose only neighbour tile is a monolith's spawn tile):
+  all six of our bodies stood next to the sleeping monolith for 1,000+ rounds trying to walk onto its tile (sticky tribute to an altar whose
+  approach tile is a camp tile), 0-0 at r2000, lost on gold 9,262 vs 56,770 (`_m15` and `_g4` both stall there locally too); (2) `nyx_61x71`:
+  our Ren stood at (42,24) for 1,197 rounds with a 44-gem bag (reproduces locally: `_g4` Ren r271-732, Issac r1022-1216 on the same tile);
+  (3) `nyx_60x60` (878 holes): Ren and Issac oscillated between three tiles ~400 rounds each (dash-hole routing).
+- Unopposed `_g4` pace on the 20 maps: mean 1,116 rounds (Nyx contested: 757-1,534): our farming alone is not slower; contact, stalls and
+  the damage snowball are.
+
+### S14.2 Baselines on the 20 Nyx maps (ledger_v3, 40 games per cell)
+
+`_g4` (GOD v2): vs `_m15` **29/40**; vs `_mite` 34, `_ifish` 31, `_px9` 30, `_snk` 34, `_fA` 35 = 164/200 (the 2.2.5-era proxies are weak on
+the new engine); vs idle 40/40 (pace above). `_g4` loses both nyx_50x41 (0-0, gold) and both nyx_31x31_c3 games to `_m15`.
+
+### S14.8 Checkpoints
+
+- **10:55 UTC**: replays decoded, maps extracted and committed, baselines measured, stalls reproduced. Next: `bots/_x_g5` (= `bots/god` +
+  switches, all off = GOD v2): altar approach tiles never on camp tiles + no-altar gold mode, `pd_hor3` 0, objective draft only for heavy
+  groups, Nyx-style builds (`build_style` 12: Treasure, then Power dmg), the 61x71 stall, dash-hole oscillation; A/B each on the 20 maps.
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first
 

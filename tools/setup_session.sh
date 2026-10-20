@@ -6,7 +6,7 @@
 set -e
 cd "$(dirname "$0")/.."
 if [ "$1" != "--bots" ]; then
-	pip install -q cambc==2.2.5
+	pip install -q cambc==3.0.1
 	cambc init --yes . > /dev/null 2>&1 || true   # map refresh fails in the cloud (platform blocked): fine
 	C="curl -sSL --cacert /root/.ccr/ca-bundle.crt"
 	mkdir -p /root/.cache/cambc && pushd /root/.cache/cambc > /dev/null

@@ -16,13 +16,14 @@ import statistics
 import sys
 from collections import deque
 
-BASE = {  # health, growth, strength, growth, focus, growth  (handbook)
-    'Cassi': (700, 71.25, 30, 3.5, 70, 15), 'Issac': (900, 95, 40, 4.75, 100, 10),
-    'Ryth': (1200, 100, 50, 5, 100, 10), 'VesperVale': (900, 100, 45, 5, 100, 10),
-    'Prism': (700, 75, 35, 3.5, 80, 10), 'Stellar': (750, 75, 35, 3.5, 100, 10),
-    'Vendetta': (800, 100, 70, 5, 100, 10), 'Marcella': (1200, 100, 45, 5, 50, 10),
-    'Tavi': (750, 75, 35, 5, 100, 10), 'Willow': (700, 50, 45, 3, 105, 5),
-    'Ren': (900, 100, 40, 5, 100, 10), 'Varg': (1000, 100, 50, 5, 100, 10),
+BASE = {  # health, growth, strength, growth, focus, growth  (handbook, patch 3.0 of Oct 20 2026)
+    'Cassi': (600, 65, 30, 3, 70, 13), 'Issac': (900, 80, 40, 3, 100, 10),
+    'Ryth': (1200, 100, 45, 5, 100, 10), 'VesperVale': (900, 100, 50, 5, 100, 10),
+    'Prism': (700, 60, 35, 2.5, 80, 8), 'Stellar': (750, 75, 30, 3.5, 85, 9),
+    'Vendetta': (800, 100, 70, 6, 100, 10), 'Marcella': (1200, 100, 45, 5, 60, 15),
+    'Tavi': (750, 75, 45, 5, 100, 10), 'Willow': (700, 50, 55, 3, 120, 5),
+    'Ren': (900, 100, 35, 5, 100, 9), 'Varg': (1000, 100, 40, 5, 100, 10),
+    'HeartOfRuin': (1000, 100, 40, 5, 100, 15),
 }
 CH = ['Ryth', 'VesperVale', 'Vendetta', 'Cassi', 'Issac', 'Stellar', 'Prism', 'Marcella', 'Willow', 'Ren', 'Varg', 'Tavi', 'HeartOfRuin']
 FAM = 'MPDTJHB'

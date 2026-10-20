@@ -132,4 +132,4 @@ print(f"  allies within 6 at the opener: {collections.Counter(r['allies'] for r 
 print(f"  after the opener: hit back {share('b', lambda r: r['back'] > 0):.0%}, moved away from the opener in the next 3 rounds {share('w', lambda r: r['away'] > 0):.0%}")
 if listing:
     for r in sorted(sel, key=lambda r: (r['game'], r['r'])):
-        print(f"   {r['game']} r{r['r']:4d}-{r['death']:4d} {r['who']:8s} by {r['att']:8s} {r['kind']:12s} d{r['dist']} hp{r['hpf']:.2f} camp{r['camp_hits']:2d} ch{r['champ_hits']:2d} mv{r['moved']:2d} cap{r['captured']} back{r['back']:2d} away{r['away']} al{r['allies']} en{r['enemies']} taken{r['taken']:5d}")
+        print(f"   {r['game']} r{r['r']:4d}-{r['death']:4d} {r['who']:8s} by {r['att']:8s} {r['kind']:12s} d{r['dist']} hp{r['hpf']:.2f} camp{r['camp_hits']:2d} ch{r['champ_hits']:2d} mv{r['moved']:2d} cap{r['captured']} back{r['back']:2d} away{r['away']} al{r['allies']} en{r['enemies']} taken{int(r['taken']):5d}")

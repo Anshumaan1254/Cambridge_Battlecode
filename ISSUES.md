@@ -46,6 +46,8 @@ or engineering limits.
 | 18 | `tribute()` / `no_altar_gold` | on a map with no usable altar the bot never tributes and values gems at 0; it does not try teleport crystals to reach a walled-off altar | if the final pool has an altar reachable only by crystal, we never bank there | medium |
 | 19 | `stall_guard` 10, `stall_dash_off` 150, `dash_gain1` | literals: a stalled walking task is dropped after 10 rounds, hole routing is off for 150 rounds | tuned on nx61x71 / nx60x60 only | low |
 | 20 | `pd_obj_heavy` uses `obj_min_hp` 4500 at draft time | same thresholds as the brain's objective mode (ISSUES #7) | a heavy objective just under 4,500 health gets no caster draft | medium |
+| 21 | `draft.cpp` objective draft (`MP.objective`, Prism first, the caster ring) | fires on any map whose only gem group is heavy, including one midway between the spawns (nx50x50: 2 elks + 6 gems, two altars next to it, 27 gold clusters per side); the ring lost it 72-1008 twice on the ladder (Nyx, f8a4f886) with 37 deaths: both teams meet there every respawn | the caster team dies to Power-stacked melee on a contested centre; `pd_obj_side` (objective nearer to us than to them by `pd_obj_mid` 2 steps) under test | high |
+| 22 | `gold_rank_of()` (brain.cpp, `gold_rank`) | a fixed ranking of champion types for who collects a landed reward (Stellar, Prism > Tavi, Cassi, Willow, Vesper > Issac, Marcella, Vendetta > Varg, Ryth > Ren, Heart of Ruin); not map dependent, but it encodes the patch-3.0 value of gold per champion (Power in the damage stat) | a future patch that changes the stat growth per shard changes the right order | low |
 
 ## Proxy-only hardcoding (off in the shipped bot)
 

@@ -249,6 +249,18 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   `pd_obj_side` 27 (nx50x50 0/2 vs the caster draft of `_g4`; but `_g5br` vs `_pw` 0/2 there), `_d0f` 24, `_dh1` 23; `_g5br` vs `_pw` 30/42
   (loses nx50x50 and nx61x61 0/2). New switches: `burst_far` (+ `burst_far_d`), `gold_rank` (+ `gold_rank_d`); variants `_g5bf5`, `_g5bf8`,
   `_g5bf5d4`, `_g5gr1`, `_g5gr1d8` (q9), `_g5bg40`, `_g5bg40p`, `_g5bg40d`, `_g5oa1` and the drafts vs `_pw` (q10).
+- **11:45 UTC**: draft screen vs `_g4` (forced lists, `mapdraft` 0; of 42; forced control `_d0f` 24): `_dh1` HoR, Ren, Stellar, Ryth, Varg 23, **`_dh2` Ren,
+  Stellar, HoR, Varg, Ryth 25**, `_dh3` HoR for Varg 19, `_dh4` HoR for Ryth 14, `_dm1` HoR, Ren, Varg, Ryth, Marcella 18, `_dv1` Vesper, C&I, Varg,
+  Vendetta, Stellar 14; `_dc1` running; the same vs `_pw` queued (q10). The draft code is now parametric for the patch-3.0 tuning: `pd_hor_prior`
+  (0.5), `pd_ci_prior` (0.9), `pd_counter_hor` (per enemy HoR / Marcella / Vendetta pick: + HoR, - C&I), `pd_gold_vesper` (x gold share of our
+  half: Vesper, Marcella), `pd_obj_side` / `pd_obj_mid`; defaults = v5 play. New: `build_react` (a Durability / Bruiser health emblem is inserted
+  at the shop whenever max health < build_react x the biggest potential burst any visible enemy has shown: the build answers their Power),
+  variants `_g5rb25`, `_g5rb35` (+ `build_tail` 1; q11). Proxies `_pc` (c47c8c26: Prism, Stellar, C&I, Marcella, HoR + Power builds) and `_pv`
+  (e6475502: Vesper, C&I, Varg, Vendetta, Stellar) built, not yet run. **ES stopped at generation 3** (load 20 on 4 cores: the screens come first;
+  gens 0-2 mean-policy reward +0.29 / -0.42 / -0.01, nothing to apply; history `experiments/wip/x_es_nyx_history.json`). Deaths run at 2:1 in
+  every 200-round bucket (59-75 vs ~30); contest_v3 (57 deaths vs c47c8c26): the opening 5v5 brawl at r38-55 lost (their Stellar cast first
+  from 5), then bodies walking alone into their roaming 3 (Prism, Marcella, Stellar) at 64-98% health, dead in 1-9 rounds. ISSUES #21 (objective
+  draft on a central group), #22 (`gold_rank_of` order).
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

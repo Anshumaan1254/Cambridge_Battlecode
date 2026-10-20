@@ -661,12 +661,12 @@ struct Params
 	int ml2_gb = 0;				// 1: P(die8) from the boosted trees (held-out AUC on our bodies 0.829 vs the logistic's 0.806)
 
 	// ---- Opponent model and counter plans (F1; opponent.h, docs/CHANGES.md, docs/COMMS.md). All 0 / off = GOD v8 play.
-	int opp_model = 0;			// 1: the leader classifies the enemy every om_window rounds (farmer, invader, deathball, objective, altar,
+	int opp_model = 1;			// 1: the leader classifies the enemy every om_window rounds (farmer, invader, deathball, objective, altar,
 								// ambush) and broadcasts a plan id (bit 7 of bytes 0-2, replacing the stance bits; ids 0-2 = the stance);
 								// every body applies the plan's preset in update_mode() after the stance block (deficit / race on top)
 	int om_force = 0;			// > 0: oracle test only: the leader broadcasts this plan id from om_start on (bounds what a perfect classifier can gain)
 	int om_act = 1;				// 0: classify and trace only (the plan id carries the learner's stance): calibration runs against labelled proxies
-	int om_learned = 0;			// 1: classify with the fitted model (om_model.h, tools/omfit.py: none vs raider, held-out window accuracy 0.70)
+	int om_learned = 1;			// 1: classify with the fitted model (om_model.h, tools/omfit.py: none vs raider, held-out window accuracy 0.70)
 								// instead of the hand-written evidence; raider -> the INVADER plan
 	float om_feat_lambda = 0.8f; // ... forgetting of the smoothed features (the fit used 0.8)
 	float om_p_on = 0.6f;		// ... P(raider) to switch to the INVADER plan

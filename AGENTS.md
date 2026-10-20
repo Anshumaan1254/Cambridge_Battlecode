@@ -349,7 +349,7 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   rounds), so the elk still takes 14 rounds and the second elk 40. What would copy Nyx: a round-1 team assignment (the four strongest hitters on
   the nearest elk group, the dash body on the spawn gold clusters) and no one-by-one retreats while the stack holds (SUGGESTIONS). Every switch
   measured on top of v6 today lost head-to-head (camp range 23, follow 23, dash box 27, hidden camps 24, gather 22; control 30): **GOD v6 stays
-  shipped**; its weak cell is legend_m15 (25/42). `_g7ga3` still running (`$S/q21.sh`).
+  shipped**; its weak cell is legend_m15 (25/42). `gather_any` 3 (`_g7ga3`) 25/42: rejected too. Nothing is running.
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

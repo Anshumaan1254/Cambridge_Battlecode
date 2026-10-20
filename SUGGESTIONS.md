@@ -163,6 +163,7 @@ camp deaths; it is carried into the GOD v7 candidate only if it holds on top of 
 | `_g7db3` | `dash_box` 3: a dash kit's unstick box 7x7 on hole maps (the Ren hole-pocket stall) | 27 (13 games flipped either way) | running | - | 84 / 1050.7 (nx60x60 B 930 -> 866, nx61x71 A 1256 -> 1150, but ambush_v3 A 1195 -> 1312, nx51x40, nx100x100 B slower) |
 | `_g7h3` | `cd_hidden` 3 alone (camps hidden behind a wall / bush that hit us count as awake for 3 rounds) | 24 | running | - | - |
 | `_g7ga2` | `gather_any` 2: the objective gather rule on every map (the first claimer at a heavy sleeping group holds outside its range until 2 claimers are within 6, max 30 rounds) | **22** | - | - | 6 deaths unopposed on nx60x60, first capture r92, 45 banked by r200 |
+| `_g7ga3` | `gather_any` 3 | 25 | - | - | - |
 
 Why the blob opening did not reproduce Nyx's (trace `opening.py`, nx60x60 unopposed): the followers do pick the same elk group, but they still start
 hitting it 10-22 rounds apart (Issac r35, Ryth r39, Cassi r44, Stellar r45, Varg r57: different first targets before the leader's claim settles, the

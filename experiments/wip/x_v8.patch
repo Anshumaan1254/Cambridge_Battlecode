@@ -1,6 +1,6 @@
 diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
 --- god/src/brain.cpp	2026-10-20 17:55:18.383016184 +0000
-+++ _x_v8/src/brain.cpp	2026-10-20 19:01:43.749604134 +0000
++++ _x_v8/src/brain.cpp	2026-10-20 19:05:44.710872884 +0000
 @@ -255,7 +255,17 @@
  		switch (t)
  		{
@@ -430,7 +430,48 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	if (!C.fresh(round, 6) || (C.alert_kind != AL_RALLY && C.alert_kind != AL_OPPORTUNITY))
  		return false;
  	// An enemy channelling a tribute (posted as an opportunity) is the cheapest kill in the game, and the
-@@ -5047,10 +5255,57 @@
+@@ -4381,6 +4589,28 @@
+ 	}
+ 	if (sc_alert && alert_zone.is_set(g.center))
+ 		time += 25.f;
++	if (P.threat_map)
++	{
++		// Where the enemies seen recently can be now, against what we can bring there (us + visible allies within 8 of it).
++		float th = 0, td = 0;
++		for (int k = 0; k < sc_threat_n; ++k)
++		{
++			const auto& te = sc_threat[static_cast<std::size_t>(k)];
++			if (cheb(te.pos, g.center) > te.age + 2 + 4)
++				continue;
++			const float c = 1.f / (1.f + (static_cast<float>(te.age) / 8.f) * (static_cast<float>(te.age) / 8.f));
++			th += c * te.hp, td += c * te.dps;
++		}
++		if (td > 0.f)
++		{
++			float oh = hp, od = str + focus * best_mod(kit) / 8.f;
++			for (const auto& a : W.allies)
++				if (a.handle != self && a.alive && a.visible && cheb(a.pos, g.center) <= 8)
++					oh += a.hp, od += a.str + a.focus * best_mod(a.kit) / 8.f;
++			time += P.tm_w * std::max(0.f, 1.f - (oh * od) / std::max(1.f, th * td));
++		}
++	}
++	else
+ 	// Learned pain: regions where we lost champions recently cost extra rounds.
+ 	time += P.pain_w * learner().pain_at(g.center) * (stance == STANCE_PUSH ? 0.5f : 1.f);
+ 	if (stance == STANCE_GROUPED && !claimers && (!mono_forced || (P.mono_gmask & 8)))
+@@ -4592,6 +4822,11 @@
+ 			sc_recent[static_cast<std::size_t>(sc_recent_n++)] = { e.pos, e.hp, e.str + e.focus * best_mod(e.kit) / 8.f + e.burst() / 3.f };
+ 	}
+ 	sc_risk = static_cast<float>(alive_enemies) / std::max<std::size_t>(1, W.enemies.size());
++	sc_threat_n = 0;
++	if (P.threat_map)
++		for (const auto& e : W.enemies)
++			if (e.alive && e.seen_round >= 0 && round - e.seen_round <= P.tm_memory && sc_threat_n < static_cast<int>(sc_threat.size()) && !W.enemy_spawn.is_set(e.pos))
++				sc_threat[static_cast<std::size_t>(sc_threat_n++)] = { e.pos, round - e.seen_round, e.hp, e.str + e.focus * best_mod(e.kit) / 8.f + e.burst() / 3.f };
+ 	sc_alert = !alert_zone.is_empty();
+ 	// Objective team plan: one group for the whole team, the objective group claimed by the lowest-index body (ours included).
+ 	sc_obj_focus = -1;
+@@ -5047,10 +5282,57 @@
  
  bool Brain::W_dist_home_ok() const { return world().dist_home(pos) > P.cap_recall_min_home && world().dist_home(pos) < BIG; }
  
@@ -490,7 +531,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  		// Centre the blast on the camp with the most live neighbours.
 diff -ruN god/src/brain.h _x_v8/src/brain.h
 --- god/src/brain.h	2026-10-20 17:55:18.410994399 +0000
-+++ _x_v8/src/brain.h	2026-10-20 18:57:41.258591746 +0000
++++ _x_v8/src/brain.h	2026-10-20 19:05:44.709048880 +0000
 @@ -75,6 +75,7 @@
  	bool dbg_hit_other = false;	   // SPELL_TRACE: the melee step-then-hit-another-enemy branch swung
  	bool safe_to_recall() const;
@@ -499,7 +540,22 @@ diff -ruN god/src/brain.h _x_v8/src/brain.h
  	void post_danger(vec2 at);
  	void prepare_scoring();
  	struct RecentEnemy
-@@ -199,6 +200,7 @@
+@@ -84,6 +85,14 @@
+ 	};
+ 	std::array<RecentEnemy, 8> sc_recent{};
+ 	int sc_recent_n = 0;
++	struct ThreatEnemy
++	{
++		vec2 pos;
++		int age;
++		float hp, dps;
++	};
++	std::array<ThreatEnemy, 8> sc_threat{}; // P.threat_map
++	int sc_threat_n = 0;
+ 	float sc_risk = 0;
+ 	bool sc_alert = false;
+ 	int sc_obj_focus = -1; // objective group the team plan is limited to this turn (P.obj_focus)
+@@ -199,6 +208,7 @@
  	bool cast_unit_champ(int slot, const bc::champion& c);
  	bool cast_ground(int slot, vec2 p);
  	bool strike_dash_at(const Enemy& e); // P.hor_strike: damaging dash onto a tile with the target in the landing radius
@@ -507,7 +563,7 @@ diff -ruN god/src/brain.h _x_v8/src/brain.h
  	bool cast_self(int slot);
  	bool ready(int slot) const { return slot >= 0 && cd[static_cast<std::size_t>(slot)] <= 0 && can_cast && !cast_done; }
  	void support_spells();
-@@ -210,6 +212,8 @@
+@@ -210,6 +220,8 @@
  	bool step(const bc::bitboard& goals, bool avoid_danger, bool allow_dash);
  	int mob_dash() const;
  	bool strike_dash = false;
@@ -518,11 +574,17 @@ diff -ruN god/src/brain.h _x_v8/src/brain.h
  	bool go_home_step(bool avoid);
 diff -ruN god/src/params.h _x_v8/src/params.h
 --- god/src/params.h	2026-10-20 17:55:18.412895754 +0000
-+++ _x_v8/src/params.h	2026-10-20 19:01:43.748466266 +0000
-@@ -286,6 +286,41 @@
++++ _x_v8/src/params.h	2026-10-20 19:05:44.708645437 +0000
+@@ -286,6 +286,47 @@
  							   // Heart of Ruin spent 391 rounds within 3 of an enemy and landed the dash on one once (62 of its 70 dashes were walking)
  	int burst_dash = 0;		   // 1: Enemy::burst() counts a ready damaging dash (Heart of Ruin: 1.75 x focus) like a spell; the fight estimate, burst
  							   // retreat, burst_exit, danger map and the ml2 burst_e5 input read it (before: no dash damage; build_react already had it)
++	int threat_map = 0;	   // v8 P1-1: enemy threat at a group instead of the pain map: each living enemy seen t <= tm_memory rounds ago at P
++				   // can be within t + 2 tiles of P now (dead ones nowhere); weight 1 / (1 + (t / 8)^2) when the group centre is inside
++				   // that area + 4; net = max(0, 1 - (our hp x dps there) / (their weighted hp x dps)); cost tm_w x net rounds. The pain
++				   // map marked where we lost, faded on a timer whether the enemy left or not, and was per body (plan P1-1).
++	int tm_memory = 40;
++	float tm_w = 20.f;
 +	int tail_stat = 0;	   // v8 P1-7: build_tail 1's endless Power stat from the engine, not a typed champion list: focus when focus_growth x
 +				   // (sum of our spell modifiers) / 8 (cooldown) beats strength_growth x (1 + 1/8 with an attack reset), else strength
 +	int hor_build = 0;	   // v8 P0-1f Heart of Ruin builds after the 3.0.2 hotfix (focus per shard 15 -> 12, health still +100): 1 health first

@@ -37,3 +37,17 @@ obsolete (pain map), so it waits for its results.
   games on the four 3-champion maps (our HoR draft) changed. vs the HoR proxies every game changed (their HoR is in every draft).
 - Phase 4 code in `bots/_x_v8`: `sup_mode` bits 1 / 2 / 4 / 8 (weighted helpers, backup from helpers only, step toward help, danger-model
   threshold + support); variants `_v8p1`, `_v8p9`, `_v8p13`, `_v8p15` (HoR switches off) queued (`q32.sh`) after the HoR variants (`q31.sh`).
+- Phase 1 (HoR, 42 games per cell; v7 `_g8s` on 3.0.2 in brackets): `_v8s2` (`hor_strike` 2) `_g4` 31 (31), `_pws` 25 (25), `_pw` 34 (31), `_pc` 36
+  (36), `_m15` 29 (28), pace = v7; **`_v8c1` (+ `hor_camp` 1: dash onto a pack when it hits >= 1 live camp) `_g4` 30, `_pws` 33, `_pw` 38, `_pc` 37,
+  `_m15` 30, pace 1034.2 (v7 1045.5; fragment 1497 -> 1309, nx40x40 967 -> 922)**: the lead; `_v8s2h12` (`strike_dash_hold` 12) 31 / 24 / 32; `_v8c2`
+  (`hor_camp` 2) 28 vs `_pws`, 37 / 37. HOR_TRACE nx31x31_c3 vs `_m15`: 21 strike dashes (v7 ~10), most from contact.
+- P1-6 map gold ratio rho (gold / respawn over gems / respawn, engine rewards) on the 21 maps: 4.4-9.6 (median 6.3), elk-arena 20.5. The
+  review's formula (0.22 at 4, 0.33 at 10) would give 0.23-0.31 on 19 maps, i.e. the measured-worse direction (0.22: 19/42): `gv_map` uses
+  0.33 x (rho / 6.3)^0.5 instead.
+- P1-7 engine-derived tail stat (`tail_stat`): focus_growth x spell modifiers / 8 vs strength_growth x (1 + 1/8 with a reset): Ryth, Issac, Varg
+  strength, Stellar, Cassi focus (= the typed list); **Ren (1.41 vs 5.0) and Heart of Ruin (2.62 vs 4.0) flip to strength** (the model ignores
+  Ren's retaliation). Variant `_v8tt1`.
+- P0-7 traces (v7 vs legend_m15, both sides, `tools/strategy_v2/v8metrics.py`): **hooks (nx31x31_c4) is lost by side A whichever bot plays it**
+  (v7 as A 66-1012, legend_m15 as A 22-1012; captures 4 vs 46, banks 3 vs 46): the first centre fight (r26-40) goes 5 deaths to 4 against A,
+  then A dies 53 times of 72 on its own half; unopposed A finishes at r1091 (B r965). A mirror turn-order artifact plus a snowball, not a
+  draft problem. contest_v3 and nx61x61: legend_m15 wins both sides (v7 lost the 200-gem monolith bag as A; nx61x61 bags lost 262 vs 125).

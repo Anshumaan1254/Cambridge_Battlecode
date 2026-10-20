@@ -1,6 +1,6 @@
 diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
 --- bots/_g4/src/brain.cpp	2026-10-20 10:13:52.705410239 +0000
-+++ bots/_x_g5/src/brain.cpp	2026-10-20 11:36:59.479788857 +0000
++++ bots/_x_g5/src/brain.cpp	2026-10-20 11:50:00.711759723 +0000
 @@ -96,6 +96,97 @@
  		rep(v, power, 300);
  		return v;
@@ -115,10 +115,34 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  		return v;
  	}
  	if (bs == 1)
-@@ -596,6 +696,10 @@
+@@ -414,6 +514,11 @@
+ 	self = handle_of(me);
+ 	type = me.champion_name();
+ 	kit = kit_of(me);
++	{
++		const auto bs = me.base_stats();
++		base_hp = bs.base_health, hp_growth = bs.health_growth, base_str = bs.base_strength, str_growth = bs.strength_growth;
++		base_focus = bs.base_focus, focus_growth = bs.focus_growth;
++	}
+ 	const auto abl = me.abilities();
+ 	ab.assign(abl.begin(), abl.end());
+ 	build = build_for(type, P.build_style);
+@@ -455,6 +560,7 @@
+ 		W.islands_pending = false, W.find_islands();
+ 	W.init_units();
+ 	blacklist.assign(W.groups.size(), -1);
++	dmg_on.assign(W.groups.size(), 0.f);
+ 	nav().init();
+ 	learner().init(W.W, W.H);
+ 	comms().bodies = static_cast<int>(W.allies.size());
+@@ -596,6 +702,14 @@
  			}
  	}
  	build_danger();
++	if (P.kill_captures > 0.f)
++		for (const auto& g : W.groups)
++			if (g.st == ST_RESPAWN && g.id >= 0 && g.id < static_cast<int>(dmg_on.size()))
++				dmg_on[static_cast<std::size_t>(g.id)] = 0.f;
 +	if (P.build_react > 0.f)
 +		for (const auto& e : W.enemies)
 +			if (e.alive && e.visible)
@@ -126,7 +150,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	if (P.mi_learn_burst || P.mi_lethal)
  		learn_burst();
  	XM(xm_pre());
-@@ -705,6 +809,8 @@
+@@ -705,6 +819,8 @@
  	update_priority();
  	if (P.unstick_rounds > 0)
  		unstick();
@@ -135,7 +159,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	prebuild_fields();
  	XM(xm_post());
  #ifdef LEGEND_TRACE
-@@ -781,19 +887,36 @@
+@@ -781,19 +897,36 @@
  	// gives the target up for a while. Every path to it may be held by allies or camps that do not move, or the
  	// target sits where its own tiles block it; re-planning elsewhere beats standing there.
  	auto& W = world();
@@ -175,7 +199,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	blacklist[static_cast<std::size_t>(task_group)] = round + P.unstick_blacklist;
  	task_group = -1;
  	tp_hop = -1;
-@@ -908,6 +1031,8 @@
+@@ -908,6 +1041,8 @@
  	}
  	if (P.ic_home == 3 && recalls_started >= P.ic_home_recalls)
  		insert_home(build_idx);
@@ -184,7 +208,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	while (build_idx < build.size() && gold >= 30)
  	{
  		const I item = build[build_idx];
-@@ -1062,8 +1187,10 @@
+@@ -1062,8 +1197,10 @@
  	{
  		nav().ensure_altar(static_cast<int>(i));
  		int d = nav().altar_dist(static_cast<int>(i), pos);
@@ -196,7 +220,20 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  		if (altar_unsafe(static_cast<int>(i)))
  			d += P.unsafe_altar_penalty; // contested and enemies seen there: our carriers die on the way
  		if (d < dist)
-@@ -2052,7 +2179,7 @@
+@@ -1224,6 +1361,12 @@
+ 
+ // ---------------------------------------------------------------------------------------------- actions
+ 
++void Brain::note_dmg(int gid, float amount)
++{
++	if (gid >= 0 && gid < static_cast<int>(dmg_on.size()))
++		dmg_on[static_cast<std::size_t>(gid)] += amount;
++}
++
+ bool Brain::attack_unit(const bc::unit& u)
+ {
+ 	if (!can_attack)
+@@ -2052,7 +2195,7 @@
  	// P.pair_low_hp: Cassi & Issac leave a fight they can walk away from earlier (ladder: 64% of our 59 pair deaths were
  	// triggered by the partner below 25% health, the other partner healthy (73% above 75%) and 7+ tiles away).
  	const float low_hp = (type == CT::cassi || type == CT::issac) ? P.pair_low_hp : 0.25f;
@@ -205,7 +242,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  		fight = false;
  	// mi_lethal (default branch): it has shown it can kill us from here; leave unless the kill is ours first.
  	if (P.mi_lethal && fight && !killable && !(in_reach && !can_escape) && lethal >= hp)
-@@ -2866,7 +2993,8 @@
+@@ -2866,7 +3009,8 @@
  		{
  			// Only while no enemy is near: with enemies around the old line stays (gold_mono_48 vs _k1: the two
  			// monoliths are 9 tiles apart; 20 of our 33 deaths were next to ours and they took 2 of our 3 kills).
@@ -215,7 +252,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  			for (std::size_t i = 0; i < g.camps.size(); ++i)
  			{
  				const int d = cheb(g.camps[i].pos, pos);
-@@ -2908,9 +3036,15 @@
+@@ -2908,9 +3052,15 @@
  	{
  		float eb = 0;
  		for (const auto& e : W.enemies)
@@ -234,7 +271,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  		threshold = std::max(threshold, P.burst_retreat * eb);
  	}
  	if (hp < threshold && P.finish_camp && camp_in > 0 && enemy_near_d > P.finish_enemy_d && task_group >= 0 &&
-@@ -3020,7 +3154,7 @@
+@@ -3020,7 +3170,7 @@
  	const int ours = static_cast<int>(bc::global_submitted_gems(team::ally));
  	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
  	gold_v = P.gold_value;
@@ -243,7 +280,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	{
  		// Gold only turns into gems through the shards it buys, and a shard pays off over the rounds left: +5
  		// strength on 40-50 is about +5% farming rate, which earns back 30 gold x gold_value = 6.6 gems in
-@@ -3150,6 +3284,8 @@
+@@ -3150,6 +3300,8 @@
  	if (gems == 0)
  		return false;
  	auto& W = world();
@@ -252,7 +289,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	if (P.mi_island_bank > 0 && inside_island())
  	{
  		// No altar inside an island (default branch): recall out (the bag is kept) once it is worth banking.
-@@ -3316,6 +3452,19 @@
+@@ -3316,6 +3468,19 @@
  	item_flags_idx = static_cast<std::size_t>(-1);
  }
  
@@ -272,7 +309,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  int Brain::recall_turns() const
  {
  	// Recall takes recall_time turn ends, three with a Home emblem.
-@@ -3385,6 +3534,26 @@
+@@ -3385,6 +3550,26 @@
  	return in;
  }
  
@@ -299,7 +336,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  bool Brain::ally_melee(int ally) const
  {
  	const auto t = world().allies[static_cast<std::size_t>(ally)].type;
-@@ -3808,9 +3977,29 @@
+@@ -3808,9 +3993,54 @@
  	switch (g.st)
  	{
  	case ST_REWARD:
@@ -309,6 +346,8 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
 +		if (P.gold_rank)
 +		{
 +			const int rm = gold_rank_of(type);
++			// gold_rank 2: the poorest body first (stat points bought, from the visible stats and the design growth), the type rank breaks ties
++			const float my_pts = (max_hp - base_hp) / std::max(1.f, hp_growth) + (str - base_str) / std::max(1.f, str_growth) + (focus - base_focus) / std::max(1.f, focus_growth);
 +			for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 8; ++i)
 +			{
 +				const auto& a = W.allies[static_cast<std::size_t>(i)];
@@ -317,11 +356,34 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
 +				if (nav().group_dist(g, a.pos) > P.gold_rank_d)
 +					continue;
 +				const int ra = gold_rank_of(a.type);
-+				outranked |= ra > rm;
-+				outrank_lower |= ra < rm && i < W.my_index;
++				bool above = ra > rm, below = ra < rm;
++				if (P.gold_rank == 2)
++				{
++					const float a_pts = (a.max_hp - a.base_hp) / std::max(1.f, a.hp_growth) + (a.str - a.base_str) / std::max(1.f, a.str_growth) + (a.focus - a.base_focus) / std::max(1.f, a.focus_growth);
++					above = a_pts + P.gold_rank_margin < my_pts || (std::fabs(a_pts - my_pts) <= P.gold_rank_margin && ra > rm);
++					below = my_pts + P.gold_rank_margin < a_pts || (std::fabs(a_pts - my_pts) <= P.gold_rank_margin && ra < rm);
++				}
++				outranked |= above;
++				outrank_lower |= below && i < W.my_index;
 +			}
 +			if (outranked && !(capture_group_id == g.id && g.mask.is_set(pos)))
 +				{ WHY(4); return -1; }
++		}
++		if (P.kill_captures > 0.f && g.id >= 0 && g.id < static_cast<int>(dmg_on.size()) && g.max_hp > 0.f)
++		{
++			// kill_captures: the killer takes the reward; a body that did little yields to a living ally near the group.
++			const float share = dmg_on[static_cast<std::size_t>(g.id)] / g.max_hp;
++			if (share >= P.kill_captures)
++				outrank_lower = true;
++			else if (share <= 1.f - P.kill_captures && !(capture_group_id == g.id && g.mask.is_set(pos)))
++				for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 8; ++i)
++				{
++					const auto& a = W.allies[static_cast<std::size_t>(i)];
++					if (i == W.my_index || !a.alive || !a.visible || a.seen_round != round || a.channeling)
++						continue;
++					if (nav().group_dist(g, a.pos) <= P.gold_rank_d && nav().group_dist(g, a.pos) <= d_tile)
++						{ WHY(4); return -1; }
++				}
 +		}
  		// One body captures; if allies claim it, the lowest index takes it unless we are clearly nearer
  		// (the joiner may still be walking in while we stand next to the reward).
@@ -330,7 +392,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  			{ WHY(4); return -1; }
  		if (P.no_split && !(P.big_reward > 0 && g.gems >= P.big_reward && g.enemy_on_tile))
  		{
-@@ -3836,6 +4025,7 @@
+@@ -3836,6 +4066,7 @@
  		eta = d_tile;
  		time = static_cast<float>(eta) + 6.f;
  		break;
@@ -338,7 +400,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	case ST_RESPAWN:
  	{
  		const int avail = g.ready_round - round;
-@@ -3920,7 +4110,9 @@
+@@ -3920,7 +4151,9 @@
  				// part of the time (ranged_exposure). taken = sum_k str_k x (q t_{k-1} + t_k - t_{k-1} - 1).
  				// A melee champion on a pack of n equal camps takes (n+1)/(2n) of the old constant-incoming
  				// product, which overstated a pack by up to 2x.
@@ -349,7 +411,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  				std::array<float, 8> hs{}, ss{};
  				int n = 0;
  				float raw = 0;
-@@ -4004,7 +4196,8 @@
+@@ -4004,7 +4237,8 @@
  			time = static_cast<float>(d_adj + wait) + ring_kill + 6.f;
  			share = P.o2_ring_share;
  		}
@@ -359,7 +421,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  			obj_team_ready(g, hp_left, team_kill))
  		{
  			// Objective map: too heavy for us and the bodies already on it, but not for the whole team.
-@@ -4036,7 +4229,7 @@
+@@ -4036,7 +4270,7 @@
  		}
  	}
  
@@ -368,7 +430,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	if (!g.ours)
  	{
  		const float risk = sc_risk;
-@@ -4082,6 +4275,13 @@
+@@ -4082,6 +4316,13 @@
  	}
  	if (round - g.enemy_round < 12)
  		time += 12.f;
@@ -382,7 +444,48 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	if (sc_alert && alert_zone.is_set(g.center))
  		time += 25.f;
  	// Learned pain: regions where we lost champions recently cost extra rounds.
-@@ -4923,7 +5123,9 @@
+@@ -4771,12 +5012,21 @@
+ 		}
+ 		if (best_n >= 2 || kit.dmg < 0 || !ready(kit.dmg))
+ 			if (cast_ground(kit.aoe, best))
++			{
++				note_dmg(g.id, focus * kit.aoe_mod * static_cast<float>(std::max(1, best_n)));
+ 				return true;
++			}
+ 	}
+ 	if (kit.dmg >= 0 && d <= static_cast<int>(kit.dmg_range) && cast_unit_camp(kit.dmg, c.camp))
++	{
++		note_dmg(g.id, focus * kit.dmg_mod);
+ 		return true;
++	}
+ 	if (kit.cc >= 0 && d <= static_cast<int>(kit.cc_range) && !save_cc && (kit.cc_mod > 0 || g.awake) && cast_unit_camp(kit.cc, c.camp))
++	{
++		note_dmg(g.id, focus * kit.cc_mod);
+ 		return true;
++	}
+ 	return false;
+ }
+ 
+@@ -4867,6 +5117,7 @@
+ 	auto& W = world();
+ 	if (!attack_unit(g.camps[idx].camp))
+ 		return false;
++	note_dmg(g.id, str);
+ 	if (g.id == task_group)
+ 		task_progress = round, target_hit_round = round;
+ #ifdef LEGEND_TRACE
+@@ -4889,8 +5140,8 @@
+ 			if (target == g.camps.size())
+ 				return true;
+ 		}
+-		if (cast_self(kit.reset))
+-			attack_unit(g.camps[target].camp);
++		if (cast_self(kit.reset) && attack_unit(g.camps[target].camp))
++			note_dmg(g.id, str);
+ 	}
+ 	return true;
+ }
+@@ -4923,7 +5174,9 @@
  bool Brain::farm_group(Group& g)
  {
  	auto& W = world();
@@ -393,7 +496,7 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  	const bool obj_first = obj && P.obj_attackers_first;
  	if (contest_tiles(g))
  		return true;
-@@ -4960,7 +5162,7 @@
+@@ -4960,7 +5213,7 @@
  				debug_block({ std::printf("GW r=%d %d near=%d need=%d since=%d awake=%d\n", round, static_cast<int>(type), near, need, obj_gather_since, (int)g.awake); });
  #endif
  				task = T_WAIT;
@@ -404,19 +507,29 @@ diff -ruN bots/_g4/src/brain.cpp bots/_x_g5/src/brain.cpp
  		}
 diff -ruN bots/_g4/src/brain.h bots/_x_g5/src/brain.h
 --- bots/_g4/src/brain.h	2026-10-20 10:13:52.706414238 +0000
-+++ bots/_x_g5/src/brain.h	2026-10-20 11:36:59.475769175 +0000
-@@ -141,6 +141,8 @@
++++ bots/_x_g5/src/brain.h	2026-10-20 11:50:00.707559801 +0000
+@@ -141,6 +141,9 @@
  	mutable std::size_t item_flags_idx = static_cast<std::size_t>(-1);
  	mutable bool jungle_ok = false, durability_ok = false, monster_ok = false, home_ok = false;
  	void insert_home(std::size_t at);
 +	void insert_health(std::size_t at);
++	float base_hp = 0, hp_growth = 1, base_str = 0, str_growth = 1, base_focus = 0, focus_growth = 1; // gold_rank 2: our design stats
 +	float enemy_burst_seen = 0; // build_react: the biggest potential one-round burst any visible enemy has shown this game
  	int recall_turns() const;
  	int recalls_started = 0; // ic_home 3
  	std::array<int, 6> prev_claim{ -1, -1, -1, -1, -1, -1 }; // reward_claim_gone: last round's claims
+@@ -264,6 +267,8 @@
+ 	float last_hp = 0;
+ 	int last_hit_round = -100;
+ 	std::vector<int> blacklist; // per group: round until which we ignore it
++	std::vector<float> dmg_on;  // kill_captures: our damage on each group since its last respawn
++	void note_dmg(int gid, float amount);
+ 	// Last-resort unstick: a walking task that stays inside a 3x3 box without attacking for unstick_rounds.
+ 	int last_act_round = -100;
+ 	vec2 ust_anchor{ -1, -1 };
 diff -ruN bots/_g4/src/draft.cpp bots/_x_g5/src/draft.cpp
 --- bots/_g4/src/draft.cpp	2026-10-20 10:13:52.707005123 +0000
-+++ bots/_x_g5/src/draft.cpp	2026-10-20 11:38:48.871754826 +0000
++++ bots/_x_g5/src/draft.cpp	2026-10-20 11:46:10.982621901 +0000
 @@ -27,6 +27,9 @@
  	int team = 3;
  	int groups = 0, gem = 0, gold = 0, wolf = 0, elk = 0, mono = 0, multi = 0, harmless = 0;
@@ -492,7 +605,17 @@ diff -ruN bots/_g4/src/draft.cpp bots/_x_g5/src/draft.cpp
  	default: return 0.1;
  	}
  }
-@@ -394,6 +404,16 @@
+@@ -386,14 +396,24 @@
+ 	}
+ 	if (c == D::stellar && casters == 0)
+ 		v += 0.2; // one ranged carry
+-	if (is_front(c) && fronts >= MP.team - 2)
+-		v -= 0.4; // at most team - 2 frontliners (the pair and a ranged carry take the rest)
++	if (is_front(c) && fronts >= MP.team - P.pd_front_free)
++		v -= P.pd_front_pen; // at most team - pd_front_free frontliners (the pair and a ranged carry take the rest)
+ 	// Counters to the enemy's visible picks.
+ 	int e_cast = 0, e_dive = 0;
+ 	for (auto e : enemy)
  		e_cast += is_caster(e), e_dive += is_front(e);
  	if (c == D::ryth)
  		v += P.pd_counter * (0.06 * std::max(0, e_cast - 1) + 0.05 * std::max(0, e_dive - 2));
@@ -582,7 +705,7 @@ diff -ruN bots/_g4/src/nav.h bots/_x_g5/src/nav.h
  	bool ensure_group(int id, long long fuel_floor = 45000);
 diff -ruN bots/_g4/src/params.h bots/_x_g5/src/params.h
 --- bots/_g4/src/params.h	2026-10-20 10:13:52.709297892 +0000
-+++ bots/_x_g5/src/params.h	2026-10-20 11:38:48.867816465 +0000
++++ bots/_x_g5/src/params.h	2026-10-20 11:50:00.701413171 +0000
 @@ -176,6 +176,8 @@
  							   //     9 = Mite (Jungle, Durability in the damage stat, Bruiser health, Power)
  							   // 2 = value-model builds (tools/analysis/item_value.py): Bruiser over Power, early Treasure
@@ -592,7 +715,7 @@ diff -ruN bots/_g4/src/params.h bots/_x_g5/src/params.h
  							   // 11 = Intercontinental Fish (ladder #1, 45 games of Oct 19): carries open with Power in the damage stat,
  							   //     tanks with Bruiser + Durability health, Home health second on the carries, then Power forever
  	// Home emblem (recall takes 3 turn ends instead of 5). IC buys it second on the bodies whose first emblem is a damage
-@@ -209,6 +211,64 @@
+@@ -209,6 +211,70 @@
  							   // centre triple 11-13 tiles from the team fight, 4 of ours lost to 5 of theirs; "help that does not come")
  	float rally_hp = 0.6f;	   // ... with at least this health fraction
  	int pd_hor3 = 1;			   // patch 3.0: Heart of Ruin instead of Cassi & Issac at team size 3 (draft.cpp pd_score)
@@ -629,6 +752,8 @@ diff -ruN bots/_g4/src/params.h bots/_x_g5/src/params.h
 +							   // >= obj_min_hp with >= obj_min_attackers camps that fight back (nx50x50: one elk + gem cluster group and 27 gold
 +							   // clusters per side took the caster draft: 72-1008). Same test as World::detect_objective
 +
++	int pd_front_free = 2;	   // parameter draft: at most team - pd_front_free frontliners (the pair and a ranged carry take the rest), penalty pd_front_pen
++	float pd_front_pen = 0.4f;
 +	float pd_hor_prior = 0.5f;  // parameter draft priors re-tunable for patch 3.0 (session 14): Heart of Ruin and Cassi & Issac at any team size
 +	float pd_ci_prior = 0.9f;
 +	float pd_counter_hor = 0.f; // per enemy bruiser pick seen (Heart of Ruin, Marcella, Vendetta): + for Heart of Ruin, - for Cassi & Issac (the pair
@@ -642,11 +767,15 @@ diff -ruN bots/_g4/src/params.h bots/_x_g5/src/params.h
 +	float build_react = 0.f;   // > 0: a reactive health emblem (Durability health, then Bruiser health) is inserted at the shop whenever our max
 +							   // health is below this x the biggest one-round burst (strength + focus x best spell) any enemy has shown us this game:
 +							   // the build answers the enemy's Power stacks (25 ladder games of Oct 20: first-round damage 33% of max health, median)
-+	int gold_rank = 0;		   // 1: a landed reward goes to the body that turns gold into the most damage (Stellar, Prism > Tavi, Cassi, Willow, Vesper >
++	float kill_captures = 0.f; // > 0: the body that dealt at least this share of a group's health takes its reward even if a lower-index ally claims
++							   // it, and a body that dealt less than 1 - share yields to a living ally within gold_rank_d (25 ladder games of Oct 20: our
++							   // Stellar took part in 354 group kills and captured 103, our Ren 233 and 221: the killer's gold went to the lowest index)
++	int gold_rank = 0;		   // 1: a landed reward goes to the body (2: to the body that has bought the fewest stat points, ties by the same rank) that turns gold into the most damage (Stellar, Prism > Tavi, Cassi, Willow, Vesper >
 +							   // Issac, Marcella, Vendetta > Varg, Ryth > Ren, Heart of Ruin) among the living allies within gold_rank_d of it, not to the
 +							   // lowest index: on the ladder (25 games, Oct 20) our Ren took 35-55% of the team gold and our Stellar earned 442-544 a
 +							   // game (first emblem r208-661) while the top teams spread gold evenly (Stellar 1,080-2,718, first emblem r130-268)
 +	int gold_rank_d = 5;
++	float gold_rank_margin = 5.f; // gold_rank 2: the poorest body (fewest stat points bought) collects; within this many points the type rank decides
 +	float burst_far = 0.f;	   // > 0: burst_retreat also counts, at this weight, enemies within burst_far_d more tiles than their reach: the opener
 +							   // arrives from 2-3 tiles out and kills a hurt body in 2 rounds (25 ladder games of Oct 20: our health at the first hit
 +							   // median 34%, death within 2 rounds in 57% of our champion deaths), so a hurt body leaves while it still can
@@ -659,7 +788,7 @@ diff -ruN bots/_g4/src/params.h bots/_x_g5/src/params.h
  							   // every step toward home stays inside (nav.cpp step_field)
 diff -ruN bots/_g4/src/world.cpp bots/_x_g5/src/world.cpp
 --- bots/_g4/src/world.cpp	2026-10-20 10:13:52.709495603 +0000
-+++ bots/_x_g5/src/world.cpp	2026-10-20 10:48:11.958542278 +0000
++++ bots/_x_g5/src/world.cpp	2026-10-20 11:45:03.919167807 +0000
 @@ -39,6 +39,16 @@
  	// altars are computed later (find_islands from prebuild_fields, contested() on first use).
  	const auto walls_lin = walls.export_linear_buffer();
@@ -729,7 +858,17 @@ diff -ruN bots/_g4/src/world.cpp bots/_x_g5/src/world.cpp
  	hops.assign(groups.size(), Hop{});
  	mono_share = mono_rate_total > 0 ? mono_rate_lone / mono_rate_total : 0;
  	// mono_size50: only on 50x50 maps (contest and its copies). On the 24 generated monolith-only test maps (maps/gold*/gold_mono*, 30-80
-@@ -537,4 +573,34 @@
+@@ -413,6 +449,9 @@
+ 			{
+ 				a.kit = kit_of(bc::champion_designs[static_cast<std::size_t>(a.type)]);
+ 				a.kit_ready = true;
++				const auto bs = bc::champion_designs[static_cast<std::size_t>(a.type)].base_stats();
++				a.base_hp = bs.base_health, a.hp_growth = bs.health_growth, a.base_str = bs.base_strength, a.str_growth = bs.strength_growth;
++				a.base_focus = bs.base_focus, a.focus_growth = bs.focus_growth;
+ 			}
+ 		}
+ 	}
+@@ -537,4 +576,34 @@
  	}
  }
  
@@ -767,7 +906,7 @@ diff -ruN bots/_g4/src/world.cpp bots/_x_g5/src/world.cpp
 +const bc::bitboard& World::route_walls() const { return P.dash_holes && dash_kit && round >= dash_off_until ? dash_walls : walls; }
 diff -ruN bots/_g4/src/world.h bots/_x_g5/src/world.h
 --- bots/_g4/src/world.h	2026-10-20 10:13:52.709596381 +0000
-+++ bots/_x_g5/src/world.h	2026-10-20 10:48:11.958265271 +0000
++++ bots/_x_g5/src/world.h	2026-10-20 11:45:03.915763914 +0000
 @@ -41,6 +41,7 @@
  	int radius = 0;		// Chebyshev reach of the tiles from the centre
  	bool ours = true;
@@ -776,7 +915,15 @@ diff -ruN bots/_g4/src/world.h bots/_x_g5/src/world.h
  
  	// Dynamic memory
  	GroupState st = ST_ALIVE; // every group starts alive
-@@ -156,6 +157,11 @@
+@@ -114,6 +115,7 @@
+ 	float hp = 0, max_hp = 1, str = 0, focus = 0;
+ 	Kit kit{};
+ 	bool kit_ready = false;
++	float base_hp = 0, hp_growth = 1, base_str = 0, str_growth = 1, base_focus = 0, focus_growth = 1; // gold_rank 2: design stats (cached)
+ 	int died_round = -1000; // last death we saw (respawn after respawn_time)
+ 	int seen_round = -1000; // last round this body saw it (pos is that sighting)
+ 	bool channeling = false; // recalling, banking or teleporting when last seen (cannot fight)
+@@ -156,6 +158,11 @@
  	void detect_objective();
  	Field home; // steps from our spawn
  	int spawn_altar_d = BIG; // walking steps from our spawn to the nearest altar's approach tile

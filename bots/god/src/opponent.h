@@ -81,6 +81,11 @@ struct OppModel
 	int switches = 0;
 	OmWindow cur;
 	int win_id = -1;
+	// P.om_learned: the fitted classifier (om_model.h) on exponentially smoothed window features.
+	std::array<float, 17> fema{};
+	bool fema_init = false;
+	float p_raider = 0.f;
+	static void features(const OmWindow& w, int bodies, float* f); // must match tools/omfit.py feat()
 
 	void set_prior(const std::vector<bc::champion_type>& enemy);
 	void end_window(int bodies, int round);

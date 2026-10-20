@@ -1,6 +1,7 @@
 #include "opponent.h"
 
 #include "learn.h"
+#include "om_model.h"
 #include "params.h"
 
 #include <cmath>
@@ -63,6 +64,18 @@ void OppModel::set_prior(const std::vector<bc::champion_type>& enemy)
 	score = prior;
 }
 
+void OppModel::features(const OmWindow& w, int bodies, float* f)
+{
+	const float B = static_cast<float>(std::max(1, bodies));
+	const float v[17] = { static_cast<float>(w.inv) / B, static_cast<float>(w.inv_self) / 20.f, static_cast<float>(w.ally_deaths), static_cast<float>(w.enemy_deaths),
+		static_cast<float>(w.multi_deaths), static_cast<float>(w.pack) / 3.f, static_cast<float>(w.vis_max) / 3.f, static_cast<float>(w.bank_events),
+		static_cast<float>(w.bank_gems) / 50.f, static_cast<float>(w.bank_lump) / 100.f, static_cast<float>(w.ward_home), static_cast<float>(w.ward_altar),
+		static_cast<float>(w.ward_bush), static_cast<float>(w.altar_presence) / 5.f, static_cast<float>(w.bush_hits), static_cast<float>(w.unseen_hits),
+		static_cast<float>(w.heavy_lost) };
+	for (int i = 0; i < 17; ++i)
+		f[i] = v[i];
+}
+
 void OppModel::end_window(int bodies, int round)
 {
 	const OmWindow& w = cur;
@@ -96,6 +109,40 @@ void OppModel::end_window(int bodies, int round)
 		}
 	}
 	cus_mu = windows == 0 ? contact : cus_mu + P.om_cus_alpha * (contact - cus_mu);
+	if (P.om_learned)
+	{
+		// Fitted classifier (tools/omfit.py, om_model.h): P(raider: invader or deathball) from the smoothed signals; a hysteresis band
+		// (om_p_on / om_p_off) and the minimum duration keep the plan from flickering, a fired change detector bypasses the duration.
+		static_assert(OM_NF == 17 && OM_NROW == 1, "om_model.h must be the binary none / raider model");
+		float f[17];
+		features(w, bodies, f);
+		const float lam = P.om_feat_lambda;
+		for (int i = 0; i < 17; ++i)
+		{
+			auto& e = fema[static_cast<std::size_t>(i)];
+			e = !fema_init ? f[i] : fired ? 0.5f * e + 0.5f * f[i] : lam * e + (1.f - lam) * f[i];
+		}
+		fema_init = true;
+		float z = OM_B[0];
+		for (int i = 0; i < 17; ++i)
+			z += OM_W[0][i] * fema[static_cast<std::size_t>(i)];
+		p_raider = 1.f / (1.f + std::exp(-z));
+		ev.fill(0.f);
+		ev[ARC_INVADER] = p_raider;
+		score = ev;
+		++windows;
+		if (round < P.om_start)
+			return;
+		const bool held = windows - arc_since >= P.om_min_windows;
+		int next = arc;
+		if (arc != ARC_INVADER && p_raider >= P.om_p_on && (held || fired || arc == ARC_NONE))
+			next = ARC_INVADER;
+		else if (arc == ARC_INVADER && p_raider < P.om_p_off && (held || fired))
+			next = ARC_NONE;
+		if (next != arc)
+			arc = next, arc_since = windows, ++switches;
+		return;
+	}
 	// Exponential forgetting; a fired change detector forgets faster (half the old memory at once).
 	const float lam = fired ? 0.5f * P.om_lambda : P.om_lambda;
 	for (int a = 1; a < ARC_COUNT; ++a)

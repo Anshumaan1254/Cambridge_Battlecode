@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""tools/omfit.py [--train FILE] [--test FILE] [--lambda L] [--export bots/god/src/om_model.h] [--classes none,invader,deathball,...]
+"""tools/omfit.py [--train FILE] [--test FILE] [--lambda L] [--export bots/god/src/om_model.h] [--classes none,invader,...] [--merge a:b,...]
 
 Fits the opponent model's window classifier from labelled traces (tools/omtrace.py) and reports how well it separates the styles.
 - Features: the per-window signals the leader logs (OPP_TRACE), scaled as in OppModel::features(), then exponentially smoothed over the
@@ -59,6 +59,9 @@ def main():
 	export = opt('--export', None)
 	classes = opt('--classes', 'none,invader,deathball,objective,ambush,altar').split(',')
 	merge = {'farmer': 'none'}
+	for kv in opt('--merge', '').split(','):
+		if ':' in kv:
+			merge[kv.split(':')[0]] = kv.split(':')[1]
 	from sklearn.linear_model import LogisticRegression
 	Xtr, ytr, _ = smoothed(games(train), lam, start, merge)
 	keep = np.isin(ytr, classes)
@@ -90,13 +93,13 @@ def main():
 			f.write('// Opponent-model window classifier (P.opp_model): multinomial logistic regression fitted by tools/omfit.py on labelled\n')
 			f.write(f'// sparring traces ({os.path.basename(train)}, forgetting {lam}); logit_k = W[k] . features + B[k], features as OppModel::features().\n')
 			f.write('#pragma once\n\n')
-			f.write(f'constexpr int OM_NF = {len(FEATS)};\nconstexpr int OM_NC = {len(clf.classes_)};\n')
+			f.write(f'constexpr int OM_NF = {len(FEATS)};\nconstexpr int OM_NC = {len(clf.classes_)};\nconstexpr int OM_NROW = {W.shape[0]}; // 1 = binary: the row is the logit of the second class against the first\n')
 			f.write('// classes, in order: ' + ', '.join(clf.classes_) + '\n')
-			f.write('constexpr int OM_CLASS_ARC[OM_NC] = { ' + ', '.join({'none': '0', 'farmer': '1', 'invader': '2', 'deathball': '3', 'objective': '4', 'altar': '5', 'ambush': '6'}[c] for c in clf.classes_) + ' };\n')
-			f.write('constexpr float OM_W[OM_NC][OM_NF] = {\n')
+			f.write('constexpr int OM_CLASS_ARC[OM_NC] = { ' + ', '.join({'none': '0', 'farmer': '1', 'invader': '2', 'raider': '2', 'deathball': '3', 'objective': '4', 'altar': '5', 'ambush': '6'}[c] for c in clf.classes_) + ' };\n')
+			f.write('constexpr float OM_W[OM_NROW][OM_NF] = {\n')
 			for row in W:
 				f.write('\t{ ' + ', '.join(f'{v:.6e}f' for v in row) + ' },\n')
-			f.write('};\nconstexpr float OM_B[OM_NC] = { ' + ', '.join(f'{v:.6e}f' for v in b) + ' };\n')
+			f.write('};\nconstexpr float OM_B[OM_NROW] = { ' + ', '.join(f'{v:.6e}f' for v in b) + ' };\n')
 		print('\nexported', export)
 
 

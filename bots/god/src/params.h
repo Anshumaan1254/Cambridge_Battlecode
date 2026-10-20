@@ -666,6 +666,11 @@ struct Params
 								// every body applies the plan's preset in update_mode() after the stance block (deficit / race on top)
 	int om_force = 0;			// > 0: oracle test only: the leader broadcasts this plan id from om_start on (bounds what a perfect classifier can gain)
 	int om_act = 1;				// 0: classify and trace only (the plan id carries the learner's stance): calibration runs against labelled proxies
+	int om_learned = 0;			// 1: classify with the fitted model (om_model.h, tools/omfit.py: none vs raider, held-out window accuracy 0.70)
+								// instead of the hand-written evidence; raider -> the INVADER plan
+	float om_feat_lambda = 0.8f; // ... forgetting of the smoothed features (the fit used 0.8)
+	float om_p_on = 0.6f;		// ... P(raider) to switch to the INVADER plan
+	float om_p_off = 0.4f;		// ... and below which it switches back
 	int om_window = 20;			// rounds per classification window (also the invasion counter's window)
 	int om_start = 100;			// no plan change before this round (both teams farm their own half in the opening)
 	float om_lambda = 0.6f;		// exponential forgetting of the archetype scores per window (a fired change detector halves it)

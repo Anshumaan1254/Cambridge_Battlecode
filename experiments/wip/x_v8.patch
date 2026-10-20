@@ -1,6 +1,6 @@
 diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
 --- god/src/brain.cpp	2026-10-20 17:55:18.383016184 +0000
-+++ _x_v8/src/brain.cpp	2026-10-20 18:52:45.012666430 +0000
++++ _x_v8/src/brain.cpp	2026-10-20 18:58:44.853604020 +0000
 @@ -815,6 +815,8 @@
  
  	if (P.mi_chip)
@@ -10,7 +10,19 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	place_ward(false);
  	update_priority();
  	if (P.unstick_rounds > 0)
-@@ -1449,11 +1451,16 @@
+@@ -958,6 +960,11 @@
+ 		}
+ 		if (d <= 4 && (e.ready(e.kit.cc) || (e.ready(e.kit.aoe) && e.kit.aoe_stuns)))
+ 			stunner_close = true;
++		else if ((P.hor_threat & 1) && e.kit.dash_mod > 0.f && e.ready(e.kit.dash) && d <= static_cast<int>(e.kit.dash_range + e.kit.dash_radius) + 1)
++		{
++			stunner_close = threat_close = true; // Heart of Ruin lands next to us and stuns
++			incoming += e.focus * e.kit.dash_mod;
++		}
+ 		else if (P.aoe_reach5 && e.ready(e.kit.aoe) && e.kit.aoe_stuns && d <= static_cast<int>(e.kit.aoe_range + e.kit.aoe_radius))
+ 			stunner_close = true; // Ryth's area stun cancels a tribute from 5
+ 	}
+@@ -1449,11 +1456,16 @@
  				if (bc::map::walls().is_set(mid))
  					continue;
  			}
@@ -31,7 +43,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  			if (n > best_n || (n == best_n && dd < best_d))
  				best_n = n, best_d = dd, best = p;
  		}
-@@ -1616,8 +1623,17 @@
+@@ -1616,8 +1628,17 @@
  		if (best)
  			cast_unit_champ(kit.heal, best->ch);
  	}
@@ -50,7 +62,36 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  }
  
  void Brain::use_locks()
-@@ -2076,6 +2092,59 @@
+@@ -2059,10 +2080,11 @@
+ 		float dps = e->str + e->focus * best_mod(e->kit) / 8.f + eb / 3.f;
+ 		if (e->ready(e->kit.cc) || (e->ready(e->kit.aoe) && e->kit.aoe_stuns))
+ 			++stunners, dps *= 1.15f;
++		const float pm = (P.fm_mode & 1) && e->type == CT_HOR ? 1.f + 0.5f * (1.f - e->hp / std::max(1.f, e->max_hp)) : 1.f;
+ 		their_hp += w * e->hp;
+-		their_dps += w * dps;
++		their_dps += w * dps * pm;
+ 		if (d <= reach_of(*e))
+-			incoming += e->str + e->burst() / 2.f;
++			incoming += (e->str + e->burst() / 2.f) * pm;
+ 	}
+ 	// Our side: self plus visible allies within 6 (with their spells, not just basic attacks).
+ 	float my_burst = 0;
+@@ -2071,11 +2093,74 @@
+ 	if (ready(kit.aoe)) my_burst = std::max(my_burst, focus * kit.aoe_mod);
+ 	if (ready(kit.reset)) my_burst = std::max(my_burst, str);
+ 	float our_hp = hp, our_dps = str + focus * best_mod(kit) / 8.f + my_burst / 3.f;
++	if ((P.fm_mode & 1) && type == CT_HOR)
++		our_dps *= 1.f + 0.5f * (1.f - hp / std::max(1.f, max_hp)); // Heart of Ruin hits harder the lower it is
++	if ((P.fm_mode & 2) && type == CT::ren)
++	{
++		// Ren returns 0.2 x focus of every hit: each enemy that can hit us this round pays it (B12: counted only against us).
++		int hitters = 0;
++		for (auto* e : E)
++			hitters += cheb(e->pos, pos) <= reach_of(*e);
++		our_dps += bc::constants::passive_abilities::ren_retaliation_focus_ratio * focus * static_cast<float>(std::min(hitters, 3));
++	}
+ 	float allies_burst = 0;
+ 	int allies_near = 0;
  	std::array<vec2, 8> side_pos{};
  	int side_n = 0;
  	side_pos[static_cast<std::size_t>(side_n++)] = pos;
@@ -110,7 +151,16 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	for (const auto& a : W.allies)
  		if (a.handle != self && a.alive && a.visible && cheb(a.pos, pos) <= 6 && (!P.support_filter || can_support(a, E)))
  		{
-@@ -2144,7 +2213,7 @@
+@@ -2113,7 +2198,7 @@
+ 				if (g.hp[i] <= 0 || g.camps[i].str <= 0)
+ 					continue;
+ 				const vec2 c = g.camps[i].pos;
+-				int best_d = 4, who = -1; // -1 none, 0 me, 1 ally, 2 enemy
++				int best_d = (P.fm_mode & 4) ? std::max(4, static_cast<int>(g.camps[i].range) + 1) : 4, who = -1; // -1 none, 0 me, 1 ally, 2 enemy
+ 				for (int k = 0; k < side_n; ++k)
+ 				{
+ 					const int dd = cheb(side_pos[static_cast<std::size_t>(k)], c);
+@@ -2144,7 +2229,7 @@
  
  	// Backup: allies in sight, plus hidden allies whose claimed camp is close (they are a few steps away).
  	// Half our deaths on the ladder were lone champions caught by two or more enemies.
@@ -119,7 +169,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	int dead_allies = 0;
  	{
  		const auto& C = comms();
-@@ -2156,7 +2225,7 @@
+@@ -2156,7 +2241,7 @@
  				++dead_allies;
  				continue;
  			}
@@ -128,7 +178,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  				continue;
  			const int cg = i < 6 ? C.claim[static_cast<std::size_t>(i)] : -1;
  			const vec2 at = a.visible ? a.pos : (cg >= 0 && cg < static_cast<int>(W.groups.size()) ? W.groups[static_cast<std::size_t>(cg)].center : vec2{ -100, -100 });
-@@ -2233,6 +2302,40 @@
+@@ -2233,6 +2318,40 @@
  	const bool on_spawn = W.ally_spawn.is_set(pos);
  	const bool can_escape = on_spawn || !chaser || (ready(kit.dash) && !chaser_dash) || static_cast<float>(dh) + 1.f < t_die;
  
@@ -169,7 +219,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  	bool fight = false;
  	// P.pair_kill_adv: a low Cassi or Issac (below pair_low_hp) needs this advantage for a 'sure kill' (allies' burst is a guess).
  	const bool low_pair = (type == CT::cassi || type == CT::issac) && hp < P.pair_low_hp * max_hp;
-@@ -2436,14 +2539,15 @@
+@@ -2436,14 +2555,15 @@
  		}
  		// ml2_cornered: also when combat() thinks a chaser cannot be outrun. Ladder rows in reach, no kill, P(die8) 0.3-0.5 with
  		// can_escape = 0: our bodies that hit died 51% (kill8 20%), those that stepped away 29% (P >= 0.5: 74% vs 38%).
@@ -187,7 +237,17 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  		{
  			ml2_exit_round = round;
  			post_danger(tgt->pos);
-@@ -2556,7 +2660,7 @@
+@@ -2494,7 +2614,8 @@
+ 	if (fight)
+ 	{
+ 		last_fight_round = round;
+-		comms().post(AL_RALLY, tgt->pos, round);
++		if (!(P.alert_prio && comms().fresh(round, 6) && (comms().alert_kind == AL_OPPORTUNITY || (P.escort_bag > 0 && comms().alert_kind == AL_DANGER))))
++			comms().post(AL_RALLY, tgt->pos, round);
+ 		learner().on_fight(round);
+ 		task = T_FIGHT;
+ 		return engage(*tgt);
+@@ -2556,7 +2677,7 @@
  			{
  			}
  		}
@@ -196,7 +256,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  		{
  			// Melee champions can still swing after walking.
  			if (!kit.ranged && can_attack)
-@@ -2596,7 +2700,7 @@
+@@ -2596,7 +2717,7 @@
  			{
  			}
  		}
@@ -205,7 +265,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  			return true;
  		if (W.ally_spawn.is_set(pos))
  		{
-@@ -2840,6 +2944,10 @@
+@@ -2840,6 +2961,10 @@
  	if (d <= kit.attack_range)
  	{
  		dbg_eng += 10;
@@ -216,7 +276,111 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  		const bool want_stun = e.channeling || e.kit.ranged == false || P.px_mode && P.px_stun_first;
  		if (want_stun)
  			cast_unit_champ(kit.cc, ec);
-@@ -5047,10 +5155,57 @@
+@@ -3010,6 +3135,28 @@
+ 	return true;
+ }
+ 
++bool Brain::bag_needs_escort(int i) const
++{
++	auto& W = world();
++	if (P.escort_bag <= 0 || static_cast<int>(gems) < P.escort_bag)
++		return false;
++	const vec2 at = W.altars[static_cast<std::size_t>(i)];
++	bool hot = round - W.altar_enemy_round[static_cast<std::size_t>(i)] <= P.escort_quiet;
++	for (const auto& e : W.enemies)
++		hot |= e.alive && e.visible && cheb(e.pos, at) <= 10;
++	if (!hot)
++		return false;
++	int living = 0, near = 0;
++	for (const auto& a : W.allies)
++	{
++		if (a.handle == self || !a.alive)
++			continue;
++		++living;
++		near += a.visible && !a.channeling && a.hp >= 0.5f * a.max_hp && cheb(a.pos, at) <= 5;
++	}
++	return near < std::min(2, living);
++}
++
+ bool Brain::safe_to_recall() const
+ {
+ 	// Any damage cancels a recall: no awake camp in range and no enemy that could reach us during the channel.
+@@ -3114,6 +3261,8 @@
+ 				const int d = cheb(e.pos, pos);
+ 				if (d <= reach + 2)
+ 					eb += e.str + e.burst();
++				if ((P.hor_threat & 2) && e.kit.dash_mod > 0.f && e.ready(e.kit.dash) && d <= static_cast<int>(e.kit.dash_range + e.kit.dash_radius) + 1)
++					eb += e.focus * e.kit.dash_mod;
+ 				else if (P.burst_far > 0.f && d <= reach + P.burst_far_d)
+ 					eb += P.burst_far * (e.str + e.burst()); // burst_far: the ones one or two steps from reach
+ 			}
+@@ -3225,7 +3374,21 @@
+ 	}
+ 	const int ours = static_cast<int>(bc::global_submitted_gems(team::ally));
+ 	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
+-	gold_v = P.gold_value;
++	if (gv_base < 0.f)
++	{
++		gv_base = P.gold_value;
++		float sg = 0, sm = 0;
++		for (const auto& g : world().groups)
++			if (g.respawn > 0)
++				sg += static_cast<float>(g.gold) / static_cast<float>(g.respawn), sm += static_cast<float>(g.gems) / static_cast<float>(g.respawn);
++		const float rho = sm > 0.f ? sg / sm : 10.f;
++		if (P.gv_map)
++			gv_base = std::clamp(P.gold_value * std::pow(std::max(0.01f, rho) / P.gv_rho_ref, P.gv_exp), 0.15f, 0.5f);
++#ifdef GV_TRACE
++		debug_block({ std::printf("GV rho=%.2f gv=%.3f groups=%d\n", rho, gv_base, static_cast<int>(world().groups.size())); });
++#endif
++	}
++	gold_v = gv_base;
+ 	if (P.math_gold && !(P.no_altar_gold && world().no_altar_now()))
+ 	{
+ 		// Gold only turns into gems through the shards it buys, and a shard pays off over the rounds left: +5
+@@ -3238,7 +3401,7 @@
+ 		float left = static_cast<float>(static_cast<int>(bc::constants::max_rounds) - round);
+ 		if (lead_g > 0 && round > 0)
+ 			left = std::min(left, static_cast<float>(static_cast<int>(bc::constants::winning_gems) - lead_g) * static_cast<float>(round) / static_cast<float>(lead_g));
+-		gold_v = P.gold_value * std::clamp(left / std::max(1.f, P.gold_horizon), 0.f, 1.f);
++		gold_v = gv_base * std::clamp(left / std::max(1.f, P.gold_horizon), 0.f, 1.f);
+ 	}
+ 	if (ours - theirs >= P.lead)
+ 	{
+@@ -3418,6 +3581,14 @@
+ 	// farming (the bag is safer moving with us than dying at their altar) unless the game is on the line.
+ 	if (altar_unsafe(a) && !endgame && !winning && !force)
+ 		return false;
++	if (!endgame && !winning && !force && bag_needs_escort(a))
++	{
++		// v8 escort_bag: the bag is a long channel at a hot altar: call the team first (keep farming / healing meanwhile).
++		auto& C = comms();
++		if (!(C.fresh(round, 6) && C.alert_kind == AL_OPPORTUNITY))
++			C.post(AL_DANGER, W.altars[static_cast<std::size_t>(a)], round);
++		return false;
++	}
+ 	task = T_TRIBUTE;
+ 	const vec2 altar = W.altars[static_cast<std::size_t>(a)];
+ 	if (cheb(pos, altar) > 1)
+@@ -3469,6 +3640,18 @@
+ bool Brain::respond_to_alert()
+ {
+ 	auto& C = comms();
++	if (P.escort_bag > 0 && C.fresh(round, 6) && C.alert_kind == AL_DANGER && P.alert_radius <= 0)
++	{
++		// ESCORT (the DANGER code): a carrier waits for us at a hot altar; stand next to it, between it and the enemy side.
++		const int d = cheb(C.alert_pos, pos);
++		if (hp < 0.5f * max_hp || task == T_CAPTURE || reward_here() || d > P.escort_r || d <= 2)
++			return false;
++		task = T_FIGHT;
++		bc::bitboard goal;
++		goal.draw_chebyshev(C.alert_pos, 2.f);
++		goal &= ~world().walls;
++		return step(goal, false, true);
++	}
+ 	if (!C.fresh(round, 6) || (C.alert_kind != AL_RALLY && C.alert_kind != AL_OPPORTUNITY))
+ 		return false;
+ 	// An enemy channelling a tribute (posted as an opportunity) is the cheapest kill in the game, and the
+@@ -5047,10 +5230,57 @@
  
  bool Brain::W_dist_home_ok() const { return world().dist_home(pos) > P.cap_recall_min_home && world().dist_home(pos) < BIG; }
  
@@ -276,8 +440,16 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  		// Centre the blast on the camp with the most live neighbours.
 diff -ruN god/src/brain.h _x_v8/src/brain.h
 --- god/src/brain.h	2026-10-20 17:55:18.410994399 +0000
-+++ _x_v8/src/brain.h	2026-10-20 18:48:46.636671962 +0000
-@@ -199,6 +199,7 @@
++++ _x_v8/src/brain.h	2026-10-20 18:57:41.258591746 +0000
+@@ -75,6 +75,7 @@
+ 	bool dbg_hit_other = false;	   // SPELL_TRACE: the melee step-then-hit-another-enemy branch swung
+ 	bool safe_to_recall() const;
+ 	bool altar_unsafe(int i) const;
++	bool bag_needs_escort(int i) const; // P.escort_bag
+ 	void post_danger(vec2 at);
+ 	void prepare_scoring();
+ 	struct RecentEnemy
+@@ -199,6 +200,7 @@
  	bool cast_unit_champ(int slot, const bc::champion& c);
  	bool cast_ground(int slot, vec2 p);
  	bool strike_dash_at(const Enemy& e); // P.hor_strike: damaging dash onto a tile with the target in the landing radius
@@ -285,21 +457,41 @@ diff -ruN god/src/brain.h _x_v8/src/brain.h
  	bool cast_self(int slot);
  	bool ready(int slot) const { return slot >= 0 && cd[static_cast<std::size_t>(slot)] <= 0 && can_cast && !cast_done; }
  	void support_spells();
-@@ -210,6 +211,7 @@
+@@ -210,6 +212,8 @@
  	bool step(const bc::bitboard& goals, bool avoid_danger, bool allow_dash);
  	int mob_dash() const;
  	bool strike_dash = false;
-+	bool shield_deferred = false; // hor_strike 2: the shield was held for the strike dash this turn (cast at the end of the turn if no cast happened)
++	bool shield_deferred = false;
++	float gv_base = -1.f; // P.gv_map: map-derived gold value (computed once) // hor_strike 2: the shield was held for the strike dash this turn (cast at the end of the turn if no cast happened)
  	bool go_group(Group& g, int stop_at, bool avoid);
  	bool go_altar(int id);
  	bool go_home_step(bool avoid);
 diff -ruN god/src/params.h _x_v8/src/params.h
 --- god/src/params.h	2026-10-20 17:55:18.412895754 +0000
-+++ _x_v8/src/params.h	2026-10-20 18:52:45.006713306 +0000
-@@ -286,6 +286,17 @@
++++ _x_v8/src/params.h	2026-10-20 18:58:44.851791857 +0000
+@@ -286,6 +286,36 @@
  							   // Heart of Ruin spent 391 rounds within 3 of an enemy and landed the dash on one once (62 of its 70 dashes were walking)
  	int burst_dash = 0;		   // 1: Enemy::burst() counts a ready damaging dash (Heart of Ruin: 1.75 x focus) like a spell; the fight estimate, burst
  							   // retreat, burst_exit, danger map and the ml2 burst_e5 input read it (before: no dash damage; build_react already had it)
++	int gv_map = 0;	   // v8 P1-6: gold_value from the map: rho = sum(gold / respawn) / sum(gems / respawn) over the camp groups (engine
++				   // rewards), value = gold_value x (rho / gv_rho_ref)^gv_exp, clamped 0.15-0.5. The review's formula (0.22 at rho 4,
++				   // 0.33 at 10) gave 0.23-0.31 on 19 of the 21 official maps (their rho is 4.4-9.6, median 6.3; elk-arena 20.5): the 0.22
++				   // direction measured worse (19/42), so the reference is the measured best 0.33 at the pool median.
++	float gv_rho_ref = 6.3f;
++	float gv_exp = 0.5f;
++	int fm_mode = 0;	   // v8 P1-3 fight-model effects (bits): 1 Heart of Ruin's passive (up to +50% damage at 0 health, linear; engine
++				   // constant heart_of_ruin_missing_health_damage_max_bonus) on both sides; 2 our Ren's retaliation (0.2 x focus per
++				   // enemy hitting it) on our side; 4 combat()'s camp term uses each camp's engine range (elk / golem 4, monolith 5), not 3
++	int hor_threat = 0;	   // v8 P1-4 enemy Heart of Ruin, narrow (bits): 1 in handle_channel() a ready dash within dash range + radius + 1 is a
++				   // stunner (its landing stun cancels a tribute / recall); 2 safety()'s burst retreat adds the ready dash's landing damage
++				   // within that reach (Enemy::burst() ignores it; the blunt burst_dash counted it everywhere and lost)
++	int escort_bag = 0;	   // v8 P0-6: a bag of >= this many gems is not tributed at an altar where an enemy was seen within 6 in the last
++				   // escort_quiet rounds (or is visible within 10 now) until min(2, living allies) healthy allies stand within 5 of it;
++				   // meanwhile it posts an ESCORT alert there (the DANGER code, never posted in v7). Contest_v3: a 200-gem bag is a
++				   // 20-turn channel; three tries at the central altar with enemies around, then the carrier died with the bag. 0 = off.
++	int escort_quiet = 12;
++	int escort_r = 14;		   // allies answer an ESCORT alert from this far (healthy, not capturing)
++	int alert_prio = 0;		   // v8 B9: a RALLY never replaces a fresh OPPORTUNITY / ESCORT (one shared alert slot)
 +	int sup_mode = 0;	   // v8 P0-4 support-aware fights (bits): 1 visible allies within sup_radius weighted by w = 1 - arrival / my time to live
 +				   // (0 when it would die within a round, is walking away, hurt below retreat_hp or channeling) instead of every
 +				   // supporting ally within 6 at full weight; 2 the backup head-count from those helpers only (no unseen claims, B10);

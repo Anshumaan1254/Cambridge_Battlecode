@@ -174,6 +174,20 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   164/200, vs idle 40/40 (`experiments/results/ledger_v3/_g4_vs_*`). Working copy `bots/_x_g5` = `bots/god`; next: switches for the altar /
   no-altar mode, the dash-hole stall, `pd_hor3` 0, objective draft only for heavy groups, Nyx builds (`build_style` 12), gold value; A/B on the
   20 maps (h2h vs `_g4`, then the proxies).
+- **12:20 UTC**: `bots/_x_g5` = `bots/god` + `experiments/wip/x_g5.patch` (rebuild: `cp -r bots/god bots/_x_g5 && cd bots/_x_g5 && patch -p1
+  < ../../experiments/wip/x_g5.patch`; control plays GOD v2's games: 6/6 identical vs `_mite`). Switches (all off = v2): `altar_no_camp`
+  (altar approach tiles never on camp tiles; `World::no_altar` when none is left) + `no_altar_gold` (gems worth 0, no tribute trips, full
+  gold value), `dash_gain1` + `stall_guard` 10 / `stall_dash_off` 150 (a stalled walking task of any kind drops its target; a dash kit routes
+  without hole crossings for a while), `pd_obj_heavy` (draft objective only for a heavy lone gem group), `build_style` 12 (Nyx: Treasure,
+  Jungle / Bruiser, Durability, then Power dmg forever), 13 (Treasure, our style-2 survival emblems, then Power dmg), 14 (13 without Treasure).
+  **H2h vs `_g4` on the 20 maps (40 games)**: `_g5a` (altar + no-altar gold) **23**, `_g5n` (dash + stall guard) **24**, `_g5all` (everything
+  with builds 12) 21, `_g5b` (builds 12 alone) **16**, `_g5d` (`pd_hor3` 0 + `pd_obj_heavy`) 18. Local checks: `_g5n` on nx61x71 no stall;
+  `_g5a` on nx50x41 earns 44,035 gold vs `_m15`'s 2,994 (deaths 7-36) but `_m15` banked 80 gems there: **the altar opens when the monolith
+  on its only approach tile is dead** (a dead camp tile is standable), so the unlock plan (kill the 40k-HP double monolith late, hold the
+  tile, bank from it) is the real win condition on that map (not built yet). Nyx's builds lose inside our brain (as every top-team build
+  did before): traced corners_v3 (120-1003): an even brawl at r146-156 on our half went 4 deaths to 2 before anyone had an emblem, then kill
+  gold (100 each) snowballed. Running `q2.sh`: `_g5and` (a + n + obj heavy), `_g5b13`, `_g5b14`, `_g5r` (`home_hp` 0.6, `cap_recall_hp` 0.7:
+  Nyx recalls at 0.70 health), `_g5d1` (`pd_hor3` 0), `_g5d2` h2h vs `_g4`, then `_g5and` vs `_m15` + 3 proxies.
 - 10:40 UTC: handoff written. Nothing left running (the baseline of S14.6 finished; the checkpoint loop of session 13 stops with the container).
   Also measured before the handoff: `_g4fm` (GOD v2 + `fight_margin` 1.15) h2h vs GOD v2 10/34 on the old official files: rejected.
   Untested queue from session 13 (cheap to resume, all on `bots/god`): `ml2_leave`/`ml2_flee` 0.5 and 0.3, `tribute_min` 30 (games are

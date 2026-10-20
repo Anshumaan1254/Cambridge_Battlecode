@@ -1,0 +1,389 @@
+diff -ruN bots/god/src/brain.cpp bots/_x_g5/src/brain.cpp
+--- bots/god/src/brain.cpp	2026-10-20 09:54:49.204529383 +0000
++++ bots/_x_g5/src/brain.cpp	2026-10-20 10:40:56.985176611 +0000
+@@ -96,6 +96,97 @@
+ 		rep(v, power, 300);
+ 		return v;
+ 	}
++	if (bs == 12)
++	{
++		// Nyx (patch 3.0, 20 games of Oct 20, experiments/nyx_oct20/analysis): Treasure first on every body (Stellar / Cassi TfE at r46-180, Ren
++		// ThE, Issac TsE, Varg ThE), then Jungle in the damage stat (casters) or Bruiser health (melee), Durability, then Power in the damage
++		// stat for the rest of the game (1,097 Power-dmg emblems in 20 games: their Stellar ends with 20-27 of them). The patch made gold
++		// plentiful (gold clusters 120 HP for 20 gold, kills 100): damage snowballs into more gold.
++		const bool focus = t == CT::ren || t == CT::heart_of_ruin || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
++		const I pw = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
++		switch (t)
++		{
++		case CT::stellar:
++		case CT::cassi:
++		case CT::prism:
++		case CT::tavi:
++		case CT::willow:
++			rep(v, I::treasure_shard_of_focus, 5);
++			rep(v, I::jungle_shard_of_focus, 5);
++			rep(v, I::durability_shard_of_focus, 5);
++			rep(v, I::bruiser_shard_of_health, 5);
++			break;
++		case CT::ren:
++		case CT::heart_of_ruin:
++			rep(v, I::treasure_shard_of_health, 5);
++			rep(v, I::bruiser_shard_of_health, 5);
++			rep(v, I::durability_shard_of_health, 5);
++			break;
++		case CT::issac:
++			rep(v, I::treasure_shard_of_strength, 5);
++			rep(v, I::power_shard_of_strength, 5);
++			rep(v, I::durability_shard_of_health, 5);
++			break;
++		case CT::ryth:
++		case CT::marcella:
++			rep(v, I::treasure_shard_of_health, 5);
++			rep(v, I::bruiser_shard_of_health, 5);
++			rep(v, I::durability_shard_of_health, 5);
++			break;
++		default: // Varg, Vendetta, Vesper
++			rep(v, I::treasure_shard_of_health, 5);
++			rep(v, I::jungle_shard_of_health, 5);
++			rep(v, I::durability_shard_of_health, 5);
++			break;
++		}
++		rep(v, pw, 300);
++		return v;
++	}
++	if (bs == 13 || bs == 14)
++	{
++		// Session 14 hybrids. 13: Treasure first (gold snowball), then our survival emblems (Jungle health on Ren / Ryth, Monster dmg then
++		// Durability health on the carries, as build_style 2), then Power in the damage stat for ever (instead of Bruiser cycles: late
++		// game our bodies reached 7,000 health and 500 damage while Nyx's Stellar one-shot them). 14: the same without Treasure first.
++		const bool focus = t == CT::ren || t == CT::heart_of_ruin || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
++		const I pw = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
++		const I tr = focus ? I::treasure_shard_of_focus : I::treasure_shard_of_strength;
++		const I mo = focus ? I::monster_shard_of_focus : I::monster_shard_of_strength;
++		switch (t)
++		{
++		case CT::ren:
++		case CT::heart_of_ruin:
++			if (bs == 13) rep(v, I::treasure_shard_of_health, 5);
++			rep(v, I::jungle_shard_of_health, 5);
++			if (bs == 14) rep(v, I::treasure_shard_of_focus, 5);
++			rep(v, mo, 5);
++			rep(v, I::durability_shard_of_health, 5);
++			break;
++		case CT::ryth:
++		case CT::marcella:
++			if (bs == 13) rep(v, I::treasure_shard_of_health, 5);
++			rep(v, I::jungle_shard_of_health, 5);
++			rep(v, mo, 5);
++			rep(v, I::durability_shard_of_health, 5);
++			break;
++		case CT::cassi:
++		case CT::willow:
++		case CT::issac:
++			if (bs == 13) rep(v, tr, 5);
++			rep(v, mo, 5);
++			rep(v, I::durability_shard_of_health, 5);
++			if (t == CT::issac) rep(v, I::jungle_shard_of_health, 5);
++			break;
++		default: // Stellar, Prism, Tavi, Varg, Vendetta, Vesper
++			if (bs == 13) rep(v, tr, 5);
++			rep(v, mo, 5);
++			if (bs == 14) rep(v, tr, 5);
++			if (t == CT::varg || t == CT::vendetta || t == CT::vesper_vale) rep(v, I::jungle_shard_of_strength, 5);
++			rep(v, I::durability_shard_of_health, 5);
++			break;
++		}
++		rep(v, pw, 300);
++		return v;
++	}
+ 	if (bs == 11)
+ 	{
+ 		// Intercontinental Fish (ladder #1; emblem order of its bodies in 36 games of Oct 19, experiments/interwin_oct19):
+@@ -705,6 +796,8 @@
+ 	update_priority();
+ 	if (P.unstick_rounds > 0)
+ 		unstick();
++	if (P.stall_guard > 0 && W.dash_off_until == round) // hole crossings are back: the plain-walls fields are stale
++		nav().reset_fields();
+ 	prebuild_fields();
+ 	XM(xm_post());
+ #ifdef LEGEND_TRACE
+@@ -781,19 +874,36 @@
+ 	// gives the target up for a while. Every path to it may be held by allies or camps that do not move, or the
+ 	// target sits where its own tiles block it; re-planning elsewhere beats standing there.
+ 	auto& W = world();
+-	const bool walking = task == T_FARM || task == T_CAPTURE;
++	// stall_guard (session 14): every walking task counts, not only farm / capture (nx61x71: Ren stood 1,197 rounds in a tribute trip at a
++	// hole crossing the dash could not take); a dash kit then routes without hole crossings for a while and rebuilds its fields.
++	const bool guard = P.stall_guard > 0 && (task == T_TRIBUTE || task == T_HOME || task == T_FLEE);
++	const bool walking = task == T_FARM || task == T_CAPTURE || guard;
+ 	const bool on_reward = task == T_CAPTURE && task_group >= 0 && W.groups[static_cast<std::size_t>(task_group)].mask.is_set(pos);
+-	if (!walking || task_group < 0 || on_reward || last_act_round >= round - 1 || W.ally_spawn.is_set(pos) || cheb(pos, ust_anchor) > 1)
++	if (!walking || (task_group < 0 && !guard) || on_reward || last_act_round >= round - 1 || W.ally_spawn.is_set(pos) || cheb(pos, ust_anchor) > 1 ||
++		flag(state, bc::champion_state::recalling) || flag(state, bc::champion_state::submitting_gems) || flag(state, bc::champion_state::teleporting))
+ 	{
+ 		ust_anchor = pos;
+ 		ust_since = round;
+ 		return;
+ 	}
+-	if (round - ust_since < P.unstick_rounds)
++	if (round - ust_since < (guard ? P.stall_guard : P.unstick_rounds))
+ 		return;
+ #ifdef LEGEND_TRACE
+ 	debug_block({ std::printf("UNSTICK r=%d %d task=%d g=%d pos=(%d,%d) since=%d\n", round, static_cast<int>(type), task, task_group, pos.x, pos.y, ust_since); });
+ #endif
++	if (P.stall_guard > 0 && kit.dash >= 0 && P.dash_holes)
++	{
++		W.dash_off_until = round + P.stall_dash_off;
++		nav().reset_fields();
++	}
++	if (guard)
++	{
++		task = T_NONE;
++		tribute_cancel_round = round; // no new tribute trip for two rounds: farm() re-plans from here first
++		ust_anchor = pos;
++		ust_since = round;
++		return;
++	}
+ 	blacklist[static_cast<std::size_t>(task_group)] = round + P.unstick_blacklist;
+ 	task_group = -1;
+ 	tp_hop = -1;
+@@ -2052,7 +2162,7 @@
+ 	// P.pair_low_hp: Cassi & Issac leave a fight they can walk away from earlier (ladder: 64% of our 59 pair deaths were
+ 	// triggered by the partner below 25% health, the other partner healthy (73% above 75%) and 7+ tiles away).
+ 	const float low_hp = (type == CT::cassi || type == CT::issac) ? P.pair_low_hp : 0.25f;
+-	if (fight && !killable && can_escape && (hp < low_hp * max_hp || (static_cast<int>(gems) >= P.bag_caution && adv < 1.5f)))
++	if (fight && !killable && can_escape && (hp < low_hp * max_hp || (static_cast<int>(gems) >= P.bag_caution && adv < 1.5f && !(P.no_altar_gold && W.no_altar))))
+ 		fight = false;
+ 	// mi_lethal (default branch): it has shown it can kill us from here; leave unless the kill is ours first.
+ 	if (P.mi_lethal && fight && !killable && !(in_reach && !can_escape) && lethal >= hp)
+@@ -3020,7 +3130,7 @@
+ 	const int ours = static_cast<int>(bc::global_submitted_gems(team::ally));
+ 	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
+ 	gold_v = P.gold_value;
+-	if (P.math_gold)
++	if (P.math_gold && !(P.no_altar_gold && world().no_altar))
+ 	{
+ 		// Gold only turns into gems through the shards it buys, and a shard pays off over the rounds left: +5
+ 		// strength on 40-50 is about +5% farming rate, which earns back 30 gold x gold_value = 6.6 gems in
+@@ -3150,6 +3260,8 @@
+ 	if (gems == 0)
+ 		return false;
+ 	auto& W = world();
++	if (P.no_altar_gold && W.no_altar)
++		return false; // no usable altar on this map: the bag can never be banked (gold earned decides at r2000)
+ 	if (P.mi_island_bank > 0 && inside_island())
+ 	{
+ 		// No altar inside an island (default branch): recall out (the bag is kept) once it is worth banking.
+@@ -4036,7 +4148,7 @@
+ 		}
+ 	}
+ 
+-	float value = (static_cast<float>(g.gems) + gold_v * static_cast<float>(g.gold)) * share;
++	float value = ((P.no_altar_gold && W.no_altar ? 0.f : static_cast<float>(g.gems)) + gold_v * static_cast<float>(g.gold)) * share;
+ 	if (!g.ours)
+ 	{
+ 		const float risk = sc_risk;
+diff -ruN bots/god/src/draft.cpp bots/_x_g5/src/draft.cpp
+--- bots/god/src/draft.cpp	2026-10-20 09:54:49.207581701 +0000
++++ bots/_x_g5/src/draft.cpp	2026-10-20 10:35:38.400954266 +0000
+@@ -27,6 +27,8 @@
+ 	int team = 3;
+ 	int groups = 0, gem = 0, gold = 0, wolf = 0, elk = 0, mono = 0, multi = 0, harmless = 0;
+ 	int gem_groups = 0;		   // groups that give gems (excluding monolith-only)
++	float gem_group_hp = 0;	   // pd_obj_heavy: total camp health of the heaviest gem group, and its camps that fight back
++	int gem_group_att = 0;
+ 	double mean_dist = 0;
+ 	int area = 0, holes = 0, altars = 0;
+ 	bool ready = false;
+@@ -73,12 +75,14 @@
+ 	for (const auto& g : bc::map::camp_groups())
+ 	{
+ 		int da = BIG, de = BIG, attackers = 0;
++		float ghp = 0;
+ 		bool has_elk = false, has_mono = false, has_wolf = false, has_gem = false, has_gold = false;
+ 		for (const auto& c : g.camps())
+ 		{
+ 			const auto a = home.get(c.spawn_position()), e = away.get(c.spawn_position());
+ 			da = std::min(da, a == UNREACH ? BIG : static_cast<int>(a));
+ 			de = std::min(de, e == UNREACH ? BIG : static_cast<int>(e));
++			ghp += c.base_stats().base_health;
+ 			switch (c.kind())
+ 			{
+ 			case bc::camp_type::wolf: has_wolf = true, ++attackers; break;
+@@ -101,6 +105,8 @@
+ 		F.multi += attackers >= 2;
+ 		F.harmless += attackers == 0;
+ 		F.gem_groups += (has_gem || has_wolf || has_elk) && !has_mono;
++		if ((has_gem || has_wolf || has_elk) && !has_mono && ghp > F.gem_group_hp)
++			F.gem_group_hp = ghp, F.gem_group_att = attackers;
+ 		dsum += da;
+ 	}
+ 	F.mean_dist = F.groups ? dsum / F.groups : 0;
+@@ -304,7 +310,8 @@
+ 	MP.elk_share = F.elk / g;
+ 	// pd_obj_multi: the lone gem group must also be a multi-camp group (stampede and maps/obj: an elk + gem objective). On the gold_elk
+ 	// maps the only gem group is one elk camp: no objective plan fires there, so the caster draft would farm without its ring.
+-	MP.objective = F.gem_groups == 1 && F.mono == 0 && (!P.pd_obj_multi || F.multi >= 1);
++	MP.objective = F.gem_groups == 1 && F.mono == 0 && (!P.pd_obj_multi || F.multi >= 1) &&
++		(!P.pd_obj_heavy || (F.gem_group_hp >= P.obj_min_hp && F.gem_group_att >= P.obj_min_attackers)); // pd_obj_heavy: the same test as the brain's objective mode
+ 	MP.monolith_only = F.gem_groups == 0 && F.mono > 0;
+ 	MP.open_small = MP.team <= 3 && F.area >= P.pd_open_area && F.mean_dist >= P.pd_open_dist;
+ 	pd_type = MP.objective ? 2 : MP.open_small ? 1 : 0;
+diff -ruN bots/god/src/nav.cpp bots/_x_g5/src/nav.cpp
+--- bots/god/src/nav.cpp	2026-10-20 09:54:49.209002331 +0000
++++ bots/_x_g5/src/nav.cpp	2026-10-20 10:34:54.743575453 +0000
+@@ -37,6 +37,16 @@
+ 	altar_fields.assign(w.altars.size(), Field{});
+ }
+ 
++void Nav::reset_fields()
++{
++	// The routing walls changed (P.stall_guard switched hole crossings off or on): every cached field is stale.
++	for (auto& f : group_fields)
++		f = Field{};
++	for (auto& f : altar_fields)
++		f = Field{};
++	detour.field = nullptr;
++}
++
+ bool Nav::ensure_group(int id, long long fuel_floor)
+ {
+ 	auto& fld = group_fields[static_cast<std::size_t>(id)];
+@@ -386,6 +396,39 @@
+ 				catch (...)
+ 				{
+ 				}
++				// dash_gain1: the crossing's far side is only one field step closer (two crossing holes chained: the field's path goes
++				// hole -> hole, which no dash can follow): a ready dash that gains one step still beats waiting here for ever (nx61x71).
++				if (P.dash_gain1 && c <= 0)
++				{
++					vec2 best = pos;
++					int best_d = here;
++					for (int dy = -2; dy <= 2; ++dy)
++						for (int dx = -2; dx <= 2; ++dx)
++						{
++							const vec2 q{ pos.x + dx, pos.y + dy };
++							if ((dx == 0 && dy == 0) || !bc::map::is_in_bounds(q) || blocked.is_set(q) || (avoid && avoid->is_set(q)))
++								continue;
++							if ((std::abs(dx) == 2 || std::abs(dy) == 2) && bc::map::walls().is_set(vec2{ pos.x + dx / 2, pos.y + dy / 2 }))
++								continue;
++							const int v = field.get(q);
++							if (v < best_d)
++								best_d = v, best = q;
++						}
++					if (!(best == pos))
++					{
++						try
++						{
++							if (me.abilities()[static_cast<std::size_t>(dash_slot)].use(best))
++							{
++								pos = best;
++								return true;
++							}
++						}
++						catch (...)
++						{
++						}
++					}
++				}
+ 				if (c <= P.dash_wait_max)
+ 					return false;
+ 				break;
+diff -ruN bots/god/src/nav.h bots/_x_g5/src/nav.h
+--- bots/god/src/nav.h	2026-10-20 09:54:49.209002331 +0000
++++ bots/_x_g5/src/nav.h	2026-10-20 10:34:54.743898598 +0000
+@@ -11,6 +11,7 @@
+ 	int built_this_turn = 0;
+ 
+ 	void init();
++	void reset_fields(); // drop every cached field (the routing walls changed)
+ 	void new_turn() { built_this_turn = 0; }
+ 	// Build the field if it is missing and the turn budget allows; returns true when available.
+ 	bool ensure_group(int id, long long fuel_floor = 45000);
+diff -ruN bots/god/src/params.h bots/_x_g5/src/params.h
+--- bots/god/src/params.h	2026-10-20 09:54:49.209002331 +0000
++++ bots/_x_g5/src/params.h	2026-10-20 10:40:56.985896484 +0000
+@@ -176,6 +176,8 @@
+ 							   //     9 = Mite (Jungle, Durability in the damage stat, Bruiser health, Power)
+ 							   // 2 = value-model builds (tools/analysis/item_value.py): Bruiser over Power, early Treasure
+ 							   //     on the rich farmers, survival first on Cassi & Issac, builds that never run out
++							   // 12 = Nyx (patch 3.0, Oct 20): Treasure first on every body, Jungle (dmg stat) / Bruiser health, Durability, then Power dmg forever
++							   // 13 = Treasure first, our survival emblems (style 2's first two), then Power dmg forever; 14 = 13 without Treasure first
+ 							   // 11 = Intercontinental Fish (ladder #1, 45 games of Oct 19): carries open with Power in the damage stat,
+ 							   //     tanks with Bruiser + Durability health, Home health second on the carries, then Power forever
+ 	// Home emblem (recall takes 3 turn ends instead of 5). IC buys it second on the bodies whose first emblem is a damage
+@@ -209,6 +211,21 @@
+ 							   // centre triple 11-13 tiles from the team fight, 4 of ours lost to 5 of theirs; "help that does not come")
+ 	float rally_hp = 0.6f;	   // ... with at least this health fraction
+ 	int pd_hor3 = 1;			   // patch 3.0: Heart of Ruin instead of Cassi & Issac at team size 3 (draft.cpp pd_score)
++	// Session 14 (GOD v3, the Nyx games of Oct 20). All 0 = GOD v2's games.
++	int altar_no_camp = 0;	   // 1: altar approach tiles never include a camp's spawn tile (nx50x41: the only neighbour of the one altar is a monolith
++							   // tile; six bodies stood next to the sleeping monolith for 1,000+ rounds trying to step onto it); an altar with no
++							   // approach tile left is unusable, and with no usable altar reachable from spawn the map has no banking (World::no_altar)
++	int no_altar_gold = 0;	   // 1: on a map with no usable altar the gems are worth nothing: groups score by gold only (full gold_value, no
++							   // end-of-game decay), no tribute trips, the bag never makes a body cautious (the tiebreak at r2000: gold earned, then kills)
++	int dash_gain1 = 0;		   // 1: at a hole crossing where every improving walking step is a hole, a ready dash that gains one field step is taken
++							   // (nx61x71: two crossing holes chained diagonally; the field's path went hole -> hole and the body waited forever)
++	int stall_guard = 0;	   // > 0: a walking task (farm, capture, tribute, home, flee) that stays inside a 3x3 box this many rounds without acting
++							   // drops its target; a dash kit also routes without hole crossings for stall_dash_off rounds (fields rebuilt)
++	int stall_dash_off = 150;
++	int pd_obj_heavy = 0;	   // 1: the draft's objective map (Prism first, the caster ring) also needs the lone gem group to be heavy: total camp health
++							   // >= obj_min_hp with >= obj_min_attackers camps that fight back (nx50x50: one elk + gem cluster group and 27 gold
++							   // clusters per side took the caster draft: 72-1008). Same test as World::detect_objective
++
+ 	int strike_dash_hold = 9;   // patch 3.0: a damaging dash (Heart of Ruin) is not used to walk while an enemy was seen within this many tiles
+ 	int flee_exit = 0;		   // 1: a body walking home from inside enemy reach / an awake camp's range takes a sideways step out of it when
+ 							   // every step toward home stays inside (nav.cpp step_field)
+diff -ruN bots/god/src/world.cpp bots/_x_g5/src/world.cpp
+--- bots/god/src/world.cpp	2026-10-20 09:54:49.209002331 +0000
++++ bots/_x_g5/src/world.cpp	2026-10-20 10:34:54.743247160 +0000
+@@ -39,6 +39,13 @@
+ 	// altars are computed later (find_islands from prebuild_fields, contested() on first use).
+ 	const auto walls_lin = walls.export_linear_buffer();
+ 	auto bit = [](const std::vector<std::uint8_t>& v, int i) { return ((v[static_cast<std::size_t>(i) >> 3] >> (i & 7)) & 1) != 0; };
++	// altar_no_camp: a camp's spawn tile is not standable while the camp lives (and the group never respawns while a body stands on it),
++	// so it is no approach tile (nx50x41: the one altar's only non-hole neighbour is a monolith's tile).
++	bc::bitboard camp_tiles;
++	if (P.altar_no_camp)
++		for (const auto& g : bc::map::camp_groups())
++			for (const auto& c : g.camps())
++				camp_tiles.set(c.spawn_position());
+ 	for (auto a : altars)
+ 	{
+ 		std::vector<vec2> app;
+@@ -47,7 +54,7 @@
+ 			for (int dx = -1; dx <= 1; ++dx)
+ 			{
+ 				const vec2 p{ a.x + dx, a.y + dy };
+-				if ((dx || dy) && p.x >= 0 && p.y >= 0 && p.x < W && p.y < H && !bit(walls_lin, p.y * W + p.x))
++				if ((dx || dy) && p.x >= 0 && p.y >= 0 && p.x < W && p.y < H && !bit(walls_lin, p.y * W + p.x) && !(P.altar_no_camp && camp_tiles.is_set(p)))
+ 					app.push_back(p);
+ 			}
+ 		altar_approach.push_back(std::move(app));
+@@ -64,6 +71,7 @@
+ 	for (const auto& app : altar_approach)
+ 		for (auto t : app)
+ 			spawn_altar_d = std::min(spawn_altar_d, home.get(t));
++	no_altar = P.altar_no_camp && spawn_altar_d >= BIG; // no usable altar on foot from spawn: the game is decided on gold earned, then kills
+ 	// altar_contested is computed on first use (contested()): ~17k fuel on altar-rich maps, not needed in the opening.
+ 	altar_contested.clear();
+ 	altar_enemy_round.assign(altars.size(), -1000);
+@@ -537,4 +545,4 @@
+ 	}
+ }
+ 
+-const bc::bitboard& World::route_walls() const { return P.dash_holes && dash_kit ? dash_walls : walls; }
++const bc::bitboard& World::route_walls() const { return P.dash_holes && dash_kit && round >= dash_off_until ? dash_walls : walls; }
+diff -ruN bots/god/src/world.h bots/_x_g5/src/world.h
+--- bots/god/src/world.h	2026-10-20 09:54:49.209002331 +0000
++++ bots/_x_g5/src/world.h	2026-10-20 10:34:54.742912298 +0000
+@@ -156,6 +156,8 @@
+ 	void detect_objective();
+ 	Field home; // steps from our spawn
+ 	int spawn_altar_d = BIG; // walking steps from our spawn to the nearest altar's approach tile
++	bool no_altar = false;	 // no usable altar reachable from our spawn (P.altar_no_camp): banking is impossible on this map
++	int dash_off_until = -1; // P.stall_guard: until this round this body routes without hole crossings (route_walls)
+ 	bc::bitboard home_reach; // tiles reachable on foot from our spawn
+ 	Field away; // steps from enemy spawn
+ 

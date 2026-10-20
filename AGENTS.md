@@ -194,6 +194,11 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   `pd_obj_heavy` alone 19 (kept in v3 as the principled fix). Running `q3.sh`: `_g5u` (`altar_no_camp` 2: the camp-blocked altar opens when the
   camp dies, the blocking group is a team unlock target), `_g5ex` (`elk_exposure`), `_g5gv5` / `_g5gv2` (`gold_value` 0.5 / 0.22) h2h vs
   `_g4`; `_g5and` vs idle (pace). Next levers: the fights on our own half when Nyx opens (80 deaths to 10), the economy snowball.
+- **13:20 UTC**: **`altar_no_camp` 2 works**: `_g5u` (= v3 switches with mode 2) wins nx50x41 **1092-0 and 1054-0 vs `_g4`** (and 1013-0 at r679
+  vs `_m15` locally: Ryth captured the 400-gem double monolith at r616, the team banked 604 + 91 + 318 from its tile); h2h vs `_g4` 25/40
+  (deaths 708-692). Queued (`q4.sh`): `_g5u` vs `_m15` + 3 proxies + idle, then farming-commitment variants `_g5ch3` (`commit_hit` 3),
+  `_g5mt8` (`max_trips` 8), `_g5jr2` (`join_reach` 2.0) vs idle and `_g4`. A Fable subagent retrains the danger model on the Nyx games
+  (`bots/_x_ml4`, `experiments/wip/x_ml4_NOTES.md`, variants `_g5ml`, `_g5ml30`). Candidate for the next ship: `_g5u`.
 - 10:40 UTC: handoff written. Nothing left running (the baseline of S14.6 finished; the checkpoint loop of session 13 stops with the container).
   Also measured before the handoff: `_g4fm` (GOD v2 + `fight_margin` 1.15) h2h vs GOD v2 10/34 on the old official files: rejected.
   Untested queue from session 13 (cheap to resume, all on `bots/god`): `ml2_leave`/`ml2_flee` 0.5 and 0.3, `tribute_min` 30 (games are

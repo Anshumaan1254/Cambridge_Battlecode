@@ -207,6 +207,7 @@ struct Params
 	int rally_r = 9;		   // respond_to_alert: answer an ally's rally from at most this far (ladder contest r25-40: our Ren farmed the
 							   // centre triple 11-13 tiles from the team fight, 4 of ours lost to 5 of theirs; "help that does not come")
 	float rally_hp = 0.6f;	   // ... with at least this health fraction
+	int pd_hor3 = 1;			   // patch 3.0: Heart of Ruin instead of Cassi & Issac at team size 3 (draft.cpp pd_score)
 	int strike_dash_hold = 9;   // patch 3.0: a damaging dash (Heart of Ruin) is not used to walk while an enemy was seen within this many tiles
 	int flee_exit = 0;		   // 1: a body walking home from inside enemy reach / an awake camp's range takes a sideways step out of it when
 							   // every step toward home stays inside (nav.cpp step_field)

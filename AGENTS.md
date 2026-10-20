@@ -152,6 +152,13 @@ running or unfinished, and what to do next, so a new agent can continue without 
   Rows traced (ladder 25464f3d_03): at 990 every body walked to far groups; Cassi's 66 capture landed 13 steps from our altar (7 tribute
   turns) while they split the last group 3 x 22 (3 turns each): geometry + pace, not a last-rounds choice; `finish_race` changed no local rows game.
 
+- **Checkpoint 05:55 UTC: held-out regression found** (gold, gold2, gold3, obj = 78 maps, 156 games): vs `_mite` `_mlkc40` 126 / `_ch2` 138 /
+  `_cand2` 122 (so `_cand2`'s switches cost it and the ML model wins 4 back); vs `_px9` 98 / 99 (level; per-pool swings of +-9: these long
+  gem-scarce games are chaotic). Objective theft (26 games): vs `_stl` `_mlkc40` 12, `_m15br` / `_m15brd` / `_m15brp` 13; vs `_stlm` 12 vs 16 / 16.
+  Running: `q23.sh` one-switch ablations of `_mlkc40` on held-out vs `_mite` (`_pz_ar0` aoe_reach5 0, `_pz_of0` open_first 0, `_pz_rs1`
+  o2_ring_size 1, `_pz_rj0` recall_join 0); `q24.sh` official screen of `_pz_ar0` (vs `_mlkc40` + 5 proxies) after `q20`. ML agent: `_ml3e40`
+  (enter fights at P(kill8) >= 0.4, P(die8) < 0.15) 147/170, h2h 16/34: no; more enter variants queued.
+
 ## S12. SESSION 12 (2026-10-19, same container as S10/S11): read this first
 
 - Shipped bot at the start: **`legend_m14`** (`submissions/legend.zip` sha256 50ca7600…, frozen `bots/_pg3`, S7R). Baseline for every A/B: `_pg3`.

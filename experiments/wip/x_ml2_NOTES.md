@@ -159,6 +159,11 @@ without --export-gb), then `ml2_model.h` = header + `ML2_NF = 58` + the three fi
 |---|---|---|---|---|---|
 | `_ml3c0` | control | 34/34 identical vs `_mite` | | | |
 | `_ml3e40` | ml2_enter 0.4 (P(die8) < 0.15) | 147/170 86.5 | 27 27 29 32 32 | 16/34 (340-329) | 127/170 |
+| `_ml3er40` | + ml2_recall_kill 0.4 (cancel a heal/shop recall) | 147/170 | same games as `_ml3e40` | 16/34 (340-329) | 127/170 |
+| `_ml3e50` | ml2_enter 0.5 | 148/170 87.1 | | 17/34 (344-334) | 146/170 |
+- The recall cancel never changes a game: a heal/shop recall starts only with no enemy within 7 (`safe_to_recall`), and one that
+  comes near cancels the recall anyway (`threat_close`), so the model is rarely evaluated while recalling with a fight next to us.
+- New switch `ml2_stay` T: skip combat()'s early flee (isolated / outmatched, not in reach) when P(die8) < T (variants `_ml3s10`, `_ml3s15`).
 - Two-action model (`tools/ml/ml2_tlearner.py`, weights `src/ml2_tl.h`): four logistic models P(die8 / kill8 | x) on the rows where the body
   hit a champion next round vs stepped away (83,516 rows, 15,680 ours). Direct-method check, value = kill8 - 1.5 die8, our rows: recommended
   hit and hit +0.36 / and stepped away +0.04; recommended away and stepped away -0.09 / and hit -0.31 (all teams the same pattern). The

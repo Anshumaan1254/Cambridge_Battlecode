@@ -32,4 +32,8 @@ obsolete (pain map), so it waits for its results.
 - Rows: `experiments/results/ledger_v3_0_2/` (cambc 3.0.2). 3.0.1 rows stay in `ledger_v3/`.
 
 ## Progress log (newest last; numbers are wins of 42)
-- 3.0.2 baseline of v7 (`_g8s`): `_g4` 31 (3.0.1: 31), `_pws` 25 (26); rest running.
+- 3.0.2 baseline of v7 (`_g8s`; 3.0.1 in brackets): `_g4` 31 (31), `_pws` 25 (26), `_pw` 31 (35), `_pc` 36 (39), `_m15` 28 (29), `_mite` 40, `_ifish` 39,
+  idle 42 (pace 1045.5; 1044.1). Check: vs `_g4`, `_m15`, idle the 34 games without Heart of Ruin replay the 3.0.1 rows exactly; only the 8
+  games on the four 3-champion maps (our HoR draft) changed. vs the HoR proxies every game changed (their HoR is in every draft).
+- Phase 4 code in `bots/_x_v8`: `sup_mode` bits 1 / 2 / 4 / 8 (weighted helpers, backup from helpers only, step toward help, danger-model
+  threshold + support); variants `_v8p1`, `_v8p9`, `_v8p13`, `_v8p15` (HoR switches off) queued (`q32.sh`) after the HoR variants (`q31.sh`).

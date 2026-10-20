@@ -1,6 +1,6 @@
 diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
 --- god/src/brain.cpp	2026-10-20 17:55:18.383016184 +0000
-+++ _x_v8/src/brain.cpp	2026-10-20 18:48:46.641947299 +0000
++++ _x_v8/src/brain.cpp	2026-10-20 18:52:45.012666430 +0000
 @@ -815,6 +815,8 @@
  
  	if (P.mi_chip)
@@ -50,7 +50,162 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  }
  
  void Brain::use_locks()
-@@ -2840,6 +2856,10 @@
+@@ -2076,6 +2092,59 @@
+ 	std::array<vec2, 8> side_pos{};
+ 	int side_n = 0;
+ 	side_pos[static_cast<std::size_t>(side_n++)] = pos;
++	// v8 sup_mode: helpers weighted by whether they arrive before we die (the user's rule: support counts as much as it is in time).
++	int sup_helpers = 0;
++	float sup_hp = 0;
++	vec2 help_pos{ -100, -100 };
++	int help_arr = BIG;
++	if (P.sup_mode & 1)
++	{
++		const float t_me = hp / std::max(1.f, std::max(incoming, 0.5f * their_dps));
++		for (int i = 0; i < static_cast<int>(W.allies.size()); ++i)
++		{
++			const auto& a = W.allies[static_cast<std::size_t>(i)];
++			if (a.handle == self || !a.alive || !a.visible || cheb(a.pos, pos) > P.sup_radius || a.channeling || a.hp < P.retreat_hp * a.max_hp)
++				continue;
++			int de = BIG;
++			for (auto* e : E)
++				de = std::min(de, cheb(a.pos, e->pos));
++			if (i < 8 && ally_prev_round[static_cast<std::size_t>(i)] == round - 1)
++			{
++				int dp = BIG;
++				for (auto* e : E)
++					dp = std::min(dp, cheb(ally_prev_pos[static_cast<std::size_t>(i)], e->pos));
++				if (de > dp && de >= 3)
++					continue; // walking away from the fight
++			}
++			const int reach = std::max(a.kit.attack_range + (a.kit.ranged ? 0 : 1), (a.kit.dmg >= 0 || a.kit.cc >= 0 || a.kit.aoe >= 0) ? 4 : 0);
++			const int arr = std::max(0, de - reach - (a.kit.dash >= 0 ? 2 : 0));
++			float w = std::clamp(1.f - static_cast<float>(arr) / std::max(1.f, t_me), 0.f, 1.f);
++			float inc_a = 0;
++			for (auto* e : E)
++				if (cheb(e->pos, a.pos) <= reach_of(*e))
++					inc_a += e->str + e->burst() / 2.f;
++			if (a.hp <= inc_a)
++				w = 0.f; // focused down before it can help
++			if (w <= 0.f)
++				continue;
++			++sup_helpers;
++			sup_hp += w * a.hp;
++			if (arr < help_arr || (arr == help_arr && cheb(a.pos, pos) < cheb(help_pos, pos)))
++				help_arr = arr, help_pos = a.pos;
++			const float ab = std::max(a.str, a.focus * best_mod(a.kit));
++			our_hp += w * a.hp;
++			our_dps += w * (P.ally_spell_dps ? a.str + a.focus * best_mod(a.kit) / 8.f + ab / 3.f : a.str * 1.2f);
++			if (w >= 0.75f)
++				allies_burst += a.str;
++			if (w >= 0.5f)
++			{
++				++allies_near;
++				if (side_n < static_cast<int>(side_pos.size()))
++					side_pos[static_cast<std::size_t>(side_n++)] = a.pos;
++			}
++		}
++	}
++	else
+ 	for (const auto& a : W.allies)
+ 		if (a.handle != self && a.alive && a.visible && cheb(a.pos, pos) <= 6 && (!P.support_filter || can_support(a, E)))
+ 		{
+@@ -2144,7 +2213,7 @@
+ 
+ 	// Backup: allies in sight, plus hidden allies whose claimed camp is close (they are a few steps away).
+ 	// Half our deaths on the ladder were lone champions caught by two or more enemies.
+-	int backup = allies_near;
++	int backup = (P.sup_mode & 2) ? sup_helpers : allies_near;
+ 	int dead_allies = 0;
+ 	{
+ 		const auto& C = comms();
+@@ -2156,7 +2225,7 @@
+ 				++dead_allies;
+ 				continue;
+ 			}
+-			if (a.handle == self || (a.visible && cheb(a.pos, pos) <= 6))
++			if (a.handle == self || (a.visible && cheb(a.pos, pos) <= 6) || (P.sup_mode & 2))
+ 				continue;
+ 			const int cg = i < 6 ? C.claim[static_cast<std::size_t>(i)] : -1;
+ 			const vec2 at = a.visible ? a.pos : (cg >= 0 && cg < static_cast<int>(W.groups.size()) ? W.groups[static_cast<std::size_t>(cg)].center : vec2{ -100, -100 });
+@@ -2233,6 +2302,40 @@
+ 	const bool on_spawn = W.ally_spawn.is_set(pos);
+ 	const bool can_escape = on_spawn || !chaser || (ready(kit.dash) && !chaser_dash) || static_cast<float>(dh) + 1.f < t_die;
+ 
++	// sup_mode 4: leaving toward a helper that arrives within 3 rounds (one step, never into more enemy reach) instead of home:
++	// one-by-one retreats were the biggest loss pattern (19 of 33 deaths alone on nx61x61, 22 of 45 on contest_v3).
++	auto toward_help = [&]() -> bool {
++		if (!(P.sup_mode & 4) || help_arr > 3 || !can_move || hp < P.sup_low_hp * max_hp || cheb(help_pos, pos) <= 1)
++			return false;
++		auto n_reach = [&](vec2 p) {
++			int n = 0;
++			for (auto* e : E)
++				n += cheb(p, e->pos) <= reach_of(*e);
++			return n;
++		};
++		const int n0 = n_reach(pos), d0 = cheb(pos, help_pos);
++		const bc::bitboard blocked = Nav::blocked_now(pos);
++		vec2 best = pos;
++		int bn = n0 + 1, bd = d0;
++		for (int dy = -1; dy <= 1; ++dy)
++			for (int dx = -1; dx <= 1; ++dx)
++			{
++				const vec2 p{ pos.x + dx, pos.y + dy };
++				if ((dx == 0 && dy == 0) || !bc::map::is_in_bounds(p) || blocked.is_set(p) || W.walls.is_set(p))
++					continue;
++				const int n = n_reach(p), dd = cheb(p, help_pos);
++				if (n > n0 || dd >= d0)
++					continue;
++				if (n < bn || (n == bn && dd < bd))
++					bn = n, bd = dd, best = p;
++			}
++		if (best == pos)
++			return false;
++		bc::bitboard g;
++		g.set(best);
++		return step(g, false, false);
++	};
++
+ 	bool fight = false;
+ 	// P.pair_kill_adv: a low Cassi or Issac (below pair_low_hp) needs this advantage for a 'sure kill' (allies' burst is a guess).
+ 	const bool low_pair = (type == CT::cassi || type == CT::issac) && hp < P.pair_low_hp * max_hp;
+@@ -2436,14 +2539,15 @@
+ 		}
+ 		// ml2_cornered: also when combat() thinks a chaser cannot be outrun. Ladder rows in reach, no kill, P(die8) 0.3-0.5 with
+ 		// can_escape = 0: our bodies that hit died 51% (kill8 20%), those that stepped away 29% (P >= 0.5: 74% vs 38%).
+-		if (P.ml2_leave > 0.f && fight && !ml2_kill && (can_escape || P.ml2_cornered) && ml2_p_die >= P.ml2_leave)
++		const float ml2_sup = (P.sup_mode & 8) ? P.sup_ml2_bonus * std::min(1.f, sup_hp / std::max(1.f, max_hp)) : 0.f;
++		if (P.ml2_leave > 0.f && fight && !ml2_kill && (can_escape || P.ml2_cornered) && ml2_p_die >= P.ml2_leave + ml2_sup)
+ 			fight = false, ml2_exit_round = round;
+ 		if (P.ml2_hold > 0 && fight && !ml2_kill && !in_reach && round - ml2_exit_round <= P.ml2_hold)
+ 			fight = false; // we just left on the model: no proactive walk back in
+ 		if (P.ml2_enter > 0.f && !fight && ml2_p_kill >= P.ml2_enter && ml2_p_die < P.ml2_enter_die && d <= my_reach + 1 &&
+ 			!(W.enemy_spawn.is_set(tgt->pos) || cheb(tgt->pos, W.enemy_spawn_c) <= 3))
+ 			fight = true;
+-		if (P.ml2_flee > 0.f && !fight && !in_reach && !ml2_kill && ml2_p_die >= P.ml2_flee && nearest_enemy <= P.flee_dist && task != T_CAPTURE)
++		if (P.ml2_flee > 0.f && !fight && !in_reach && !ml2_kill && ml2_p_die >= P.ml2_flee + ml2_sup && nearest_enemy <= P.flee_dist && task != T_CAPTURE)
+ 		{
+ 			ml2_exit_round = round;
+ 			post_danger(tgt->pos);
+@@ -2556,7 +2660,7 @@
+ 			{
+ 			}
+ 		}
+-		if (go_home_step(true))
++		if (toward_help() || go_home_step(true))
+ 		{
+ 			// Melee champions can still swing after walking.
+ 			if (!kit.ranged && can_attack)
+@@ -2596,7 +2700,7 @@
+ 			{
+ 			}
+ 		}
+-		if (go_home_step(true))
++		if (toward_help() || go_home_step(true))
+ 			return true;
+ 		if (W.ally_spawn.is_set(pos))
+ 		{
+@@ -2840,6 +2944,10 @@
  	if (d <= kit.attack_range)
  	{
  		dbg_eng += 10;
@@ -61,7 +216,7 @@ diff -ruN god/src/brain.cpp _x_v8/src/brain.cpp
  		const bool want_stun = e.channeling || e.kit.ranged == false || P.px_mode && P.px_stun_first;
  		if (want_stun)
  			cast_unit_champ(kit.cc, ec);
-@@ -5047,10 +5067,57 @@
+@@ -5047,10 +5155,57 @@
  
  bool Brain::W_dist_home_ok() const { return world().dist_home(pos) > P.cap_recall_min_home && world().dist_home(pos) < BIG; }
  
@@ -140,11 +295,19 @@ diff -ruN god/src/brain.h _x_v8/src/brain.h
  	bool go_home_step(bool avoid);
 diff -ruN god/src/params.h _x_v8/src/params.h
 --- god/src/params.h	2026-10-20 17:55:18.412895754 +0000
-+++ _x_v8/src/params.h	2026-10-20 18:48:46.635748928 +0000
-@@ -286,6 +286,9 @@
++++ _x_v8/src/params.h	2026-10-20 18:52:45.006713306 +0000
+@@ -286,6 +286,17 @@
  							   // Heart of Ruin spent 391 rounds within 3 of an enemy and landed the dash on one once (62 of its 70 dashes were walking)
  	int burst_dash = 0;		   // 1: Enemy::burst() counts a ready damaging dash (Heart of Ruin: 1.75 x focus) like a spell; the fight estimate, burst
  							   // retreat, burst_exit, danger map and the ml2 burst_e5 input read it (before: no dash damage; build_react already had it)
++	int sup_mode = 0;	   // v8 P0-4 support-aware fights (bits): 1 visible allies within sup_radius weighted by w = 1 - arrival / my time to live
++				   // (0 when it would die within a round, is walking away, hurt below retreat_hp or channeling) instead of every
++				   // supporting ally within 6 at full weight; 2 the backup head-count from those helpers only (no unseen claims, B10);
++				   // 4 a body leaving a fight steps toward a helper that arrives within 3 rounds when that enters no more enemy reach;
++				   // 8 the danger model's leave / flee threshold rises by sup_ml2_bonus x min(1, weighted helper health / max health)
++	int sup_radius = 10;
++	float sup_ml2_bonus = 0.2f;
++	float sup_low_hp = 0.25f;   // sup_mode 4: below this share of health the body goes home, not toward help
 +	int hor_camp = 0;	   // v8: a damaging dash (Heart of Ruin) farming a group dashes onto a tile in reach of the target camp with >= this many live
 +				   // camps in its landing radius (all hit and stunned); 0 = off. Only while no enemy is within strike_dash_hold.
 +	float hor_shield_hp = 0.5f; // hor_strike 2: the shield waits for the strike while health >= this share and the dash is ready with an enemy in its reach

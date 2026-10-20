@@ -378,6 +378,8 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   `bots/_x_v8` = v7 + `experiments/wip/x_v8.patch`: `hor_strike` 2 (contact strike, exposure tie-break, shield waits for the strike while health >=
   `hor_shield_hp` 0.5), `hor_camp` N (dash onto a camp pack). HOR_TRACE nx31x31_c3 vs `_m15`: 21 strikes (v7 ~10), won 1141-297. Running `$S/q30.sh`
   (3.0.2 baseline `_g8s`: `_g4` 31, `_pws` 25 so far), then `q31.sh` (`_v8x0` control, `_v8s2`, `_v8c1`, `_v8s2h12`, `_v8c2`).
+- **19:30 UTC**: 3.0.2 baseline of v7 done (`_g4` 31, `_pws` 25, `_pw` 31, `_pc` 36, `_m15` 28, `_mite` 40, `_ifish` 39, pace 1045.5; non-HoR games replay
+  the 3.0.1 rows exactly). `sup_mode` (P0-4 support-aware fights) added to `bots/_x_v8`; `q32.sh` queues `_v8y0` (control) and `_v8p15/9/13/1`.
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

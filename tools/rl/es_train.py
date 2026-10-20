@@ -30,7 +30,9 @@ import argparse, glob, json, math, os, random, re, shutil, subprocess, sys, time
 import numpy as np
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-OUT = os.path.join(ROOT, 'tune_out', 'es')
+OUT = os.path.abspath(os.environ.get('ES_OUT') or os.path.join(ROOT, 'tune_out', 'es'))  # absolute: run-batch resolves relative paths from the manifest's folder
+SRC_BOT = os.environ.get('ES_SRC', 'bots/legend')  # the bot whose params.h is trained (session 13: exploiter runs on other copies)
+PREFIX = os.environ.get('ES_PREFIX', '_es')
 
 
 def sh(cmd, **kw):
@@ -47,7 +49,7 @@ def git_commit():
 
 
 def read_defaults():
-    src = open(os.path.join(ROOT, 'bots/legend/src/params.h')).read()
+    src = open(os.path.join(ROOT, SRC_BOT, 'src/params.h')).read()
     return {k: v.strip() for k, v in re.findall(r'^\s*\w+ (\w+) = ([^;]+);', src, re.M)}
 
 
@@ -96,7 +98,7 @@ def make_variant(name, params):
     dst = os.path.join(ROOT, 'bots', name)
     shutil.rmtree(os.path.join(dst, 'src'), ignore_errors=True)
     os.makedirs(dst, exist_ok=True)
-    shutil.copytree(os.path.join(ROOT, 'bots/legend/src'), os.path.join(dst, 'src'))
+    shutil.copytree(os.path.join(ROOT, SRC_BOT, 'src'), os.path.join(dst, 'src'))
     shutil.copy(os.path.join(ROOT, 'bots/legend/.gitignore'), dst)
     hp = os.path.join(dst, 'src', 'params.h')
     src = open(hp).read()
@@ -246,15 +248,15 @@ def main():
         for i in range(args.pop):
             for sgn in (1, -1):
                 z = theta + sgn * args.sigma * eps[i]
-                name = f'_es{len(names)}'
+                name = f'{PREFIX}{len(names)}'
                 make_variant(name, space.values(z))
                 cands.append(z)
                 names.append(name)
         # The current mean is evaluated too (it is what we would ship). eval_params are exactly the values it was
         # built and played with, before this generation's update; only these may become best_params.json.
         eval_params = space.values(theta)
-        make_variant('_es_mean', eval_params)
-        names.append('_es_mean')
+        make_variant(f'{PREFIX}_mean', eval_params)
+        names.append(f'{PREFIX}_mean')
         t0 = time.time()
         rewards, winrates, stats = evaluate(names, opponents, maps, os.path.join(OUT, f'gen{gen}'), args.jobs, str(gen))
         if stats['missing'] or stats['rc']:
@@ -291,7 +293,7 @@ def main():
         say(f'   theta -> {space.values(theta)}')
         if is_best:
             say(f'   new best: gen {gen} evaluated at reward {mean_reward:+.3f}, written to best_params.json')
-    for n in [f'_es{i}' for i in range(2 * args.pop)] + ['_es_mean']:
+    for n in [f'{PREFIX}{i}' for i in range(2 * args.pop)] + [f'{PREFIX}_mean']:
         shutil.rmtree(os.path.join(ROOT, 'bots', n), ignore_errors=True)
     say('done')
 

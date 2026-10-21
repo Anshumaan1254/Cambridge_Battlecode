@@ -267,6 +267,7 @@ struct Params
 	float build_stat_margin = 2.f;
 	float build_stat_targets = 1.5f; // camps hit by an area spell / a damaging dash / Varg's splash, hits Ren takes a round
 	int pd_stat = 0;		   // patch 3.0.4: 1 = draft priors re-measured on engine 3.0.4 (pd_pri_*, pd_ci_prior, pd_hor_prior) x (relative stat power
+							   // (2 = the same without the pair +0.3 and ranged-carry +0.2 bonuses: the measured values already hold them)
 							   // now / on 3.0.4)^pd_stat_k from the engine's champion_designs (draft.cpp stat_prior), the "one ranged carry" bonus for
 							   // any caster (v8: Stellar only), and the first pick = the frontliner with the best prior (v8: Ren)
 	float pd_stat_k = 1.f;

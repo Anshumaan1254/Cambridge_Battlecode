@@ -426,7 +426,11 @@ double stat_prior(D c)
 		static const double REF[12] = { PD_STAT_REF };
 		const auto i = static_cast<std::size_t>(c);
 		if (i < 12 && REF[i] > 0)
-			v *= std::pow(rel_power(c) / REF[i], static_cast<double>(P.pd_stat_k));
+		{
+			const double r = rel_power(c) / REF[i];
+			if (std::fabs(r - 1.0) > 1e-3) // the anchors are printed to 4 decimals: on their own engine the scale is exactly 1
+				v *= std::pow(r, static_cast<double>(P.pd_stat_k));
+		}
 	}
 	return v;
 }
@@ -505,8 +509,8 @@ double pd_score(D c, const std::vector<D>& team, const std::vector<D>& enemy)
 	bool pair = false;
 	for (auto t : team)
 		fronts += is_front(t), casters += is_caster(t), pair |= t == D::cassi_and_issac;
-	if (c == D::cassi_and_issac && !pair)
-		v += 0.3; // every top draft has the pair: two bodies, the Cassi heal
+	if (c == D::cassi_and_issac && !pair && P.pd_stat < 2)
+		v += 0.3; // every top draft has the pair: two bodies, the Cassi heal (pd_stat 2: inside the measured value)
 	// pd_hor3 (patch 3.0): at team size 3, outside the objective / open farming types, Heart of Ruin (1000 health, a stunning dash, a
 	// self shield) instead of the nerfed pair: Ren, Heart of Ruin, Stellar won 20-23 of 24 vs legend_m15 / Mite / ifish proxies on the
 	// four 3-champion official maps, Ren, Stellar, C&I 19 (fragment 6 vs 4, packs 5-6 vs 4); at sizes 4-5 the pair stays (45-47 vs 40 of 54).
@@ -517,8 +521,8 @@ double pd_score(D c, const std::vector<D>& team, const std::vector<D>& enemy)
 		if (c == D::cassi_and_issac)
 			v -= 0.5;
 	}
-	if ((P.pd_stat ? is_caster(c) : c == D::stellar) && casters == 0)
-		v += 0.2; // one ranged carry (pd_stat: whichever caster, by its prior)
+	if ((P.pd_stat ? is_caster(c) : c == D::stellar) && casters == 0 && P.pd_stat < 2)
+		v += 0.2; // one ranged carry (pd_stat 1: whichever caster, by its prior; 2: inside the measured value)
 	if (is_front(c) && fronts >= MP.team - P.pd_front_free)
 		v -= P.pd_front_pen; // at most team - pd_front_free frontliners (the pair and a ranged carry take the rest)
 	// Counters to the enemy's visible picks.

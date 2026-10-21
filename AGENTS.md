@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-21 09:45 UTC (session 14: PATCH 3.0.4 arrived, engine switched to cambc 3.0.4, new GOD for the new balance in progress: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
+- Last updated: **2026-10-21 10:10 UTC (session 14: PATCH 3.0.4 arrived, engine switched to cambc 3.0.4, new GOD for the new balance in progress: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
   Rule from the user: update this file and push at every step. Start with **§S14**, then **§S13-GOD**, **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
@@ -475,6 +475,15 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   OPP MAPS` prints both drafts from 1-round games. Round 2 variants built: `_r_c0` (pd_stat, v8 priors: control), `_r_t1` (Tavi 0.96, Stellar
   0.5), `_r_t1b` (+ build_stat), `_r_t1k` (+ ally_kit), `_r_t1d` (+ Vendetta 1.02), `_r_v1` (Vesper 0.96, Stellar 0.5), `_r_vt` (Vesper + Tavi
   0.93), `_r_vd` (Vesper + Vendetta lead), `_r_v1k` (Vesper + ally_kit).
+- **10:10 UTC: round 1 done** (11 substitution screens + `pd_hor3` 0; table and values in `docs/strategy_v2/17_PATCH_3_0_4.md` §2):
+  Vesper for Stellar 71.8%, Vesper for Ren 61.9%, Tavi for Stellar 61.2%, Vendetta for Varg 58.3%, Prism for Stellar 57.7%, Willow for
+  Stellar 56.4%, Vendetta for Ren 54.8%, Tavi for C&I 53.5%, Vendetta for Ryth 49.7%, Marcella for Ren 48.4%, Tavi for Ren 46.8%. Fitted values
+  (log-odds, Stellar 0; `tools/draftmodel/subfit.py`): Vesper .97, Ryth .73, Vendetta .71, Ren .52, Marcella .46, Tavi .42, Varg .38, Prism .31,
+  C&I .28, Willow .26. `pd_stat` 2 = the measured values as priors without v8's pair / ranged-carry bonuses. Pools committed:
+  `experiments/pools/` (all308, train156, test152, fingerprints). Running: `q61` (third-party baseline on 3.0.4: `_v8k1` vs `_pws` 28/42,
+  `_pw` 40/42, `_pc` 34/42 so far; then `_q_s2t`), `q62` (round 2: `_r_c0`, `_r_v1`, `_r_vt`, `_r_vd`, `_r_v1k`, `_r_t1`, `_r_t1b`, `_r_t1k`,
+  `_r_t1d`), `q63` (round 3: `_k_fit2` = fitted values + at most 3 fronts at size 5: Ryth, Vesper, Vendetta, Ren, Tavi; `_k_fit` = fitted values:
+  Ryth, Vesper, Vendetta, Ren, Marcella; `_k_ci` = + C&I 0.5; `_r_v1b` = Vesper + `build_stat` margin 1.3: Ren builds strength).
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

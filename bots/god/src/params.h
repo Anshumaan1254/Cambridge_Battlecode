@@ -262,7 +262,7 @@ struct Params
 	int pd_obj_mid = 2;
 	int ally_kit = 0;		   // patch 3.0.4: 1 = an ally's damage on a camp group from its kit (engine modifiers, dps_on()'s arithmetic) instead of
 							   // the typed 3.4 / 2.0 / 1.5 x focus (Stellar / Cassi / the rest) of ally_dps_on() (ISSUES #39)
-	int pocket_fix = 0;	   // patch 3.0.4 (bits): 1 = a body where no walk leads home (a hole pocket entered by a dash) dashes to the landing tile with
+	int pocket_fix = 3;	   // patch 3.0.4 (bits): 1 = a body where no walk leads home (a hole pocket entered by a dash) dashes to the landing tile with
 							   // the shortest walk home when it goes home, else recalls; step_field skips its fallback search from tiles its field cannot
 							   // reach and from such pockets (it burned every turn's fuel there: 149 lost turns for a Vesper on nx100x100); 2 = in such a
 							   // pocket the dash takes us out as soon as it is up, whatever the task (after fights, not on a reward to capture)
@@ -272,7 +272,7 @@ struct Params
 							   // Brain::init) when one pays >= build_stat_margin x the other; else the typed list
 	float build_stat_margin = 2.f;
 	float build_stat_targets = 1.5f; // camps hit by an area spell / a damaging dash / Varg's splash, hits Ren takes a round
-	int pd_stat = 0;		   // patch 3.0.4: 1 = draft priors re-measured on engine 3.0.4 (pd_pri_*, pd_ci_prior, pd_hor_prior) + pd_stat_k x ln(relative
+	int pd_stat = 3;		   // patch 3.0.4: 1 = draft priors re-measured on engine 3.0.4 (pd_pri_*, pd_ci_prior, pd_hor_prior) + pd_stat_k x ln(relative
 							   // stat power now / on 3.0.4) from the engine's champion_designs (draft.cpp stat_prior), the "one ranged carry" bonus for
 							   // any caster (v8: Stellar only), and the first pick = the frontliner with the best prior (v8: Ren); 2 = the same
 							   // without the pair +0.3 and ranged-carry +0.2 bonuses (the measured values already hold them)

@@ -333,8 +333,122 @@ void derive_params()
 bool is_caster(D c) { return c == D::stellar || c == D::prism || c == D::tavi || c == D::vesper_vale || c == D::willow; }
 bool is_front(D c) { return c == D::ren || c == D::varg || c == D::ryth || c == D::vendetta || c == D::marcella || c == D_HOR; }
 
+// ---- pd_stat (patch 3.0.4): champion priors that follow the engine's numbers ----
+// A pick's stat power from champion_designs (engine data, read at draft time): per body, effective health (base health + one shield)
+// x the geometric mean of its damage per round against 1 and 3 targets (basic attacks +1/8 with an attack reset, Varg's splash x
+// targets; spells modifier x focus / 8-round cooldown, area spells and a damaging dash x targets; Ren's retaliation per hit taken;
+// Willow's heal counted as damage; Prism's focus + prism_focus_per_gem x pd_stat_gems carried; Heart of Ruin's damage + its passive
+// at pd_stat_missing of its health lost). Cassi & Issac add their two bodies. A pick's relative power = its power / the mean power
+// of the released picks.
+bc::champion_type type_of(D c, int body)
+{
+	const int d = static_cast<int>(c), ci = static_cast<int>(D::cassi_and_issac);
+	return static_cast<bc::champion_type>(d < ci ? d : d == ci ? d + body : d + 1);
+}
+
+double body_power(bc::champion_type t)
+{
+	const auto ti = static_cast<std::size_t>(t);
+	if (ti >= bc::champion_designs.size())
+		return 0;
+	const auto& ch = bc::champion_designs[ti];
+	const Kit k = kit_of(ch);
+	const auto s = ch.base_stats();
+	double foc = s.base_focus;
+	if (t == bc::champion_type::prism)
+		foc += bc::constants::passive_abilities::prism_focus_per_gem * P.pd_stat_gems;
+	auto dps = [&](double tg) {
+		double b = s.base_strength * (1.0 + (k.reset >= 0 ? 0.125 : 0.0));
+		if (t == bc::champion_type::varg)
+			b *= tg;
+		double sp = 0;
+		if (k.dmg >= 0)
+			sp += k.dmg_mod;
+		if (k.cc >= 0)
+			sp += k.cc_mod;
+		if (k.aoe >= 0)
+			sp += k.aoe_mod * (k.aoe_radius >= 1.f ? tg : 1.0);
+		if (k.dash >= 0)
+			sp += k.dash_mod * (k.dash_radius >= 1.f ? tg : 1.0);
+		if (k.heal >= 0)
+			sp += k.heal_mod;
+		double d = b + foc * sp / 8.0;
+		if (t == bc::champion_type::ren)
+			d += bc::constants::passive_abilities::ren_retaliation_focus_ratio * foc * std::min(tg, 3.0);
+		if (SDK_HAS_HOR && t == CT_HOR)
+			d *= 1.0 + 0.5 * P.pd_stat_missing; // engine constant heart_of_ruin_missing_health_damage_max_bonus (3.0 SDK only, ISSUES #35)
+		return d;
+	};
+	const double ehp = s.base_health + (k.shield >= 0 ? k.shield_mod * foc : 0.0);
+	return ehp * std::sqrt(std::max(0.0, dps(1.0) * dps(3.0)));
+}
+
+double stat_power(D c)
+{
+	return c == D::cassi_and_issac ? body_power(type_of(c, 0)) + body_power(type_of(c, 1)) : body_power(type_of(c, 0));
+}
+
+double rel_power(D c)
+{
+	static std::array<double, 16> cache{};
+	static bool ready = false;
+	if (!ready)
+	{
+		const int n = SDK_HAS_HOR ? 12 : 11;
+		double sum = 0;
+		for (int i = 0; i < n; ++i)
+			sum += cache[static_cast<std::size_t>(i)] = stat_power(static_cast<D>(i));
+		for (int i = 0; i < n; ++i)
+			cache[static_cast<std::size_t>(i)] /= std::max(1e-9, sum / n);
+		ready = true;
+#ifdef PSTAT_TRACE
+		for (int i = 0; i < n; ++i)
+			std::printf("PSTAT %d %.4f\n", i, cache[static_cast<std::size_t>(i)]);
+#endif
+	}
+	const auto i = static_cast<std::size_t>(c);
+	return i < cache.size() ? cache[i] : 1.0;
+}
+
+double prior(D c);
+
+// Relative stat power of each pick on engine 3.0.4 (draft ids 0-11; PSTAT_TRACE build of this code), the anchor of stat_prior().
+#define PD_STAT_REF 1.2322, 0.8519, 1.0842, 0.9500, 0.6349, 0.7289, 1.0842, 1.0300, 1.0157, 1.3414, 0.8658, 1.1807
+
+// pd_stat 1: the measured prior x (relative power now / relative power on the engine the prior was measured on)^pd_stat_k. The anchors
+// are the relative powers of engine 3.0.4 (PSTAT_TRACE prints them), the engine of the 3.0.4 priors: on 3.0.4 the scale is 1 exactly;
+// a later balance patch moves every prior by how much the patch moved that champion's power against the field.
+double stat_prior(D c)
+{
+	double v = prior(c);
+	if (P.pd_stat && P.pd_stat_k != 0.f)
+	{
+		static const double REF[12] = { PD_STAT_REF };
+		const auto i = static_cast<std::size_t>(c);
+		if (i < 12 && REF[i] > 0)
+			v *= std::pow(rel_power(c) / REF[i], static_cast<double>(P.pd_stat_k));
+	}
+	return v;
+}
+
 double prior(D c)
 {
+	if (P.pd_stat)
+		switch (c) // pd_stat: the priors re-measured on engine 3.0.4 (params.h pd_pri_*)
+		{
+		case D::ren: return P.pd_pri_ren;
+		case D::stellar: return P.pd_pri_stellar;
+		case D::cassi_and_issac: return P.pd_ci_prior;
+		case D::varg: return P.pd_pri_varg;
+		case D::ryth: return P.pd_pri_ryth;
+		case D::prism: return P.pd_pri_prism;
+		case D::tavi: return P.pd_pri_tavi;
+		case D::vendetta: return P.pd_pri_vendetta;
+		case D::marcella: return P.pd_pri_marcella;
+		case D::vesper_vale: return P.pd_pri_vesper;
+		case D::willow: return P.pd_pri_willow;
+		default: break;
+		}
 	switch (c)
 	{
 	case D::ren: return 1.0;
@@ -354,7 +468,7 @@ double prior(D c)
 
 double pd_score(D c, const std::vector<D>& team, const std::vector<D>& enemy)
 {
-	double v = prior(c);
+	double v = stat_prior(c);
 	// Map fit.
 	if (MP.objective)
 	{
@@ -403,8 +517,8 @@ double pd_score(D c, const std::vector<D>& team, const std::vector<D>& enemy)
 		if (c == D::cassi_and_issac)
 			v -= 0.5;
 	}
-	if (c == D::stellar && casters == 0)
-		v += 0.2; // one ranged carry
+	if ((P.pd_stat ? is_caster(c) : c == D::stellar) && casters == 0)
+		v += 0.2; // one ranged carry (pd_stat: whichever caster, by its prior)
 	if (is_front(c) && fronts >= MP.team - P.pd_front_free)
 		v -= P.pd_front_pen; // at most team - pd_front_free frontliners (the pair and a ranged carry take the rest)
 	// Counters to the enemy's visible picks.
@@ -449,12 +563,32 @@ bool param_pick(const std::vector<D>& mine_real)
 	};
 	static const D order_all[] = { D::ren, D::stellar, D::cassi_and_issac, D::varg, D::ryth, D::tavi, D::prism, D::vendetta, D::marcella,
 		D::vesper_vale, D::willow, D_HOR };
-	const std::span<const D> order(order_all, std::size(order_all) - (SDK_HAS_HOR ? 0 : 1)); // Heart of Ruin only when the SDK has it
+	const std::size_t n_order = std::size(order_all) - (SDK_HAS_HOR ? 0 : 1); // Heart of Ruin only when the SDK has it
+	static D order_st[12];
+	if (P.pd_stat)
+	{
+		// pd_stat: picks come out by prior (body indices follow it: the lower index wins claim ties), the fixed order breaking ties. With
+		// v8's table this is v8's order for every team it drafts.
+		std::copy(order_all, order_all + n_order, order_st);
+		std::stable_sort(order_st, order_st + n_order, [](D a, D b) { return stat_prior(a) > stat_prior(b); });
+	}
+	const std::span<const D> order(P.pd_stat ? order_st : order_all, n_order);
 	auto has = [](const std::vector<D>& v, D c) { return std::find(v.begin(), v.end(), c) != v.end(); };
 	if (mine.empty())
 	{
-		// First pick: the map type alone.
-		const D first = pd_type == 2 ? D::prism : pd_type == 1 ? D::cassi_and_issac : D::ren;
+		// First pick: the map type alone (pd_stat: on the default type the frontliner with the best prior, Ren in v8's table).
+		D first = pd_type == 2 ? D::prism : pd_type == 1 ? D::cassi_and_issac : D::ren;
+		if (P.pd_stat && pd_type == 0)
+		{
+			double bv = -1e9;
+			for (auto c : order)
+				if (is_front(c))
+				{
+					const double v = stat_prior(c);
+					if (v > bv)
+						bv = v, first = c;
+				}
+		}
 		if (P.ci_first && first != D::cassi_and_issac)
 		{
 			// ci_first: same team, Cassi & Issac picked first (picks are not exclusive: the order only sets body indices). The lower

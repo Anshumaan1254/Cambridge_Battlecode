@@ -266,6 +266,22 @@ struct Params
 							   // Brain::init) when one pays >= build_stat_margin x the other; else the typed list
 	float build_stat_margin = 2.f;
 	float build_stat_targets = 1.5f; // camps hit by an area spell / a damaging dash / Varg's splash, hits Ren takes a round
+	int pd_stat = 0;		   // patch 3.0.4: 1 = draft priors re-measured on engine 3.0.4 (pd_pri_*, pd_ci_prior, pd_hor_prior) x (relative stat power
+							   // now / on 3.0.4)^pd_stat_k from the engine's champion_designs (draft.cpp stat_prior), the "one ranged carry" bonus for
+							   // any caster (v8: Stellar only), and the first pick = the frontliner with the best prior (v8: Ren)
+	float pd_stat_k = 1.f;
+	float pd_stat_gems = 10.f;	   // gems Prism carries in the power estimate (prism_focus_per_gem each)
+	float pd_stat_missing = 0.3f; // Heart of Ruin's health lost in the power estimate (its passive)
+	float pd_pri_ren = 1.f;	   // pd_stat priors (defaults = v8's table)
+	float pd_pri_stellar = 0.95f;
+	float pd_pri_varg = 0.62f;
+	float pd_pri_ryth = 0.6f;
+	float pd_pri_prism = 0.36f;
+	float pd_pri_tavi = 0.33f;
+	float pd_pri_vendetta = 0.3f;
+	float pd_pri_marcella = 0.2f;
+	float pd_pri_vesper = 0.12f;
+	float pd_pri_willow = 0.1f;
 	int pd_sub_from = -1;	   // measurement only (patch 3.0.4 screen), -1 = off: the parameter draft plans as usual on a virtual roster where our
 	int pd_sub_to = -1;	   // pd_sub_to pick stands for pd_sub_from, and a planned pd_sub_from is picked as pd_sub_to (draft ids: 0 Ryth, 1 Vesper,
 							   // 2 Vendetta, 3 C&I, 4 Stellar, 5 Prism, 6 Marcella, 7 Willow, 8 Ren, 9 Varg, 10 Tavi, 11 Heart of Ruin): "Tavi wherever v8

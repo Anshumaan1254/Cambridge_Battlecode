@@ -426,6 +426,20 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   feature, results, risks, self-review), `docs/TESTING.md` (commands), `docs/COMMS.md`. **Waiting for the user's decision.** If "on" wins:
   set the two switches on main, ship as GOD v9 (zip, history, BUILDS, README). If "off" wins: v8 stays. Not proposed (measured worse or
   never measured): ward plan, anchors, chain farming, gank, deny-altar, `om_sight`, Prism banker; `watchdog` is inert (no throwing turns).
+- **Oct 21, 08:35 UTC (new container, same filesystem): the user: "A/B test the new bot with our older bot on every map we have and ensure the
+  new bot is clearly better than v8, nothing should be hardcoded, everything should be fair and square"** (this lifts the functional-only rule
+  for this task). Protocol: every distinct map we have = 308 layouts (327 files minus tile-identical copies: `maps/ladder` = `maps/comp`,
+  `maps/cl` and 3 of `maps/ct` = `maps/var17`, `p30/contest_p` = contest; `zz_test` dropped), both sides = 616 games per comparison (~13 min at 4
+  jobs); `tools/abstat.py BOT OPP [--pool F] [--by-dir]` = win rate + 95% Wilson interval + per-map pairs (2-0 / 1-1 / 0-2) + sign test. Most
+  maps split 1-1 in these near-mirror games (the side decides), so only 2-0 / 0-2 maps tell the bots apart. Tuning uses a fixed half of the maps
+  (156, `pool_train`), confirmation the other half (152) and then the full pool + third-party opponents. `tools/ledger.py run --keep DIR` keeps the
+  replays (~50 KB) and compact statistics; `tools/pdiff.py BASE BOT...` lists parameter differences.
+- **08:50 UTC, result: the opponent-model branch is NOT better than v8.** `_br_on` (= `god-opponent-model-on`'s zip) vs `_v8k1` on all 308
+  maps: **293/616 = 47.6%, 95% [43.6, 51.5]; maps 2-0 41, 1-1 211, 0-2 56, sign p 0.15**; deaths 13,384-13,312. Worst folders: comp 13/34, comp30
+  7/20, obj 8/24. In brawls the classifier reads ordinary contact as a raid (its features include deaths) and the INVADER preset's passive
+  grouped play loses. Running `$S/s1.sh`: stage-1 screen on the 156 tuning maps (312 games each) vs `_v8k1`: `om_force` 3 (the INVADER preset
+  always on), `om_p_on` 0.8, then single switches on v8: `fm_mode` 1, `strike_first` 1, `mi_learn_fight` 1.2, `mi_deny_gems`, `mi_flip_guard`,
+  `gv_map` (exp 1.0), `ml2_gb`, `ml2_adapt` 0.02, `om_sight`, `ward_enemy`, `gank`, `escort_bag` 40, `aoe_reach5` 3, `threat_map` (w 10), `mi_learn_burst`.
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

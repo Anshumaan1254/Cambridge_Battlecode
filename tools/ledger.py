@@ -160,6 +160,21 @@ def cmd_run(a):
 				except (ValueError, KeyError, OSError):
 					pass
 		append(a.bot, a.opp, rows)
+		if a.keep:
+			# --keep DIR: the replays (~50 KB each) and a compact copy of each statistics file (no timelines / events /
+			# heatmaps, ~10 KB) under DIR/<bot>_vs_<opp>/, for tracing the games later (the run directory is deleted below).
+			kd = os.path.join(a.keep, f'{a.bot}_vs_{a.opp}')
+			os.makedirs(kd, exist_ok=True)
+			for mn, s, st in meta:
+				rp = st[:-5] + '.repl26a'
+				if os.path.exists(rp):
+					shutil.copy(rp, os.path.join(kd, f'{mn}_{s}.repl26a'))
+				if os.path.exists(st):
+					try:
+						d = json.load(open(st))
+						json.dump({k: d[k] for k in ('match', 'teams', 'champions', 'roster', 'diagnostics') if k in d}, open(os.path.join(kd, f'{mn}_{s}.json'), 'w'))
+					except (ValueError, OSError):
+						pass
 		missing = len(meta) - len(rows)
 		print(f'  chunk {c // a.chunk + 1}/{(len(items) + a.chunk - 1) // a.chunk}: {len(rows)} games saved'
 			+ (f', {missing} without statistics (not saved; they will be retried)' if missing else ''), flush=True)
@@ -224,6 +239,7 @@ def main():
 	r = sub.add_parser('run'); r.add_argument('bot'); r.add_argument('opp')
 	r.add_argument('--maps', default='maps/comp/*.map26a'); r.add_argument('--jobs', type=int, default=2)
 	r.add_argument('--chunk', type=int, default=8); r.add_argument('--release', action='store_true')
+	r.add_argument('--keep', default=None, help='keep replays and compact statistics under this directory')
 	r.set_defaults(fn=cmd_run)
 	i = sub.add_parser('import'); i.add_argument('dir'); i.add_argument('--bot'); i.add_argument('--opp')
 	i.set_defaults(fn=cmd_import)

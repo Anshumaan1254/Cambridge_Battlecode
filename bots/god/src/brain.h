@@ -142,7 +142,11 @@ private:
 
 	// farming model
 	float dps_on(const Group& g) const;			  // our damage per round against g (splash, area, retaliation)
-	float incoming_on(const Group& g) const;	  // damage per round g deals to the champion it targets (after passives)
+	float incoming_on(const Group& g) const;
+	float incoming_on_raw(const Group& g) const; // P.farm_ema: the model before the learned multiplier
+	float my_shield = 0.f;						  // P.fm_buffs: our shield buff value
+	float farm_ema_v = 1.f, farm_pred = 0.f;		  // P.farm_ema: learned multiplier, last turn's prediction
+	int enemy_near_rounds = 0;					  // P.risky_persist: rounds in a row with an enemy within 9	  // damage per round g deals to the champion it targets (after passives)
 	float ally_dps_on(int ally, const Group& g) const; // estimated contribution of an ally farming g
 	bool ally_melee(int ally) const;
 	int trip_cost(const Group& g) const;		  // rounds to heal at spawn and come back to g
@@ -334,6 +338,13 @@ private:
 	int stance = 0;
 	int tribute_min = 34;
 	void update_mode();
+	// v9 (P.opp_plan): the team plan in force this turn and the preset knobs update_mode() cannot express through the thresholds above
+	int plan9_now = 0;
+	int rally_add = 0, opp_add = 0;
+	bool locks_contested = false;
+	bool enemy_on_our_half() const;
+	bool sparring_window() const; // v9: P.spar_from <= round < P.spar_to (sparring personas only)
+	bool ally_engaged(const Enemy& t) const; // P.ally_defend
 
 	// memory
 	int task = T_NONE, task_group = -1, task_since = 0;

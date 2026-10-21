@@ -93,6 +93,8 @@ struct Enemy
 	std::int32_t state = 0;
 	bool channeling = false, tributing = false, recalling = false;
 	std::array<int, 2> cd{ 0, 0 }; // ability cooldowns, readable while visible
+	float shield = 0.f;			   // P.fm_buffs: shield buff value (engine), while visible
+	bool stunned = false;		   // P.fm_buffs: stun buff active, while visible
 	bool ready(int slot) const { return slot >= 0 && cd[static_cast<std::size_t>(slot)] <= 0; }
 	// Damage it can add this turn on top of a basic attack (best ready spell or a reset swing).
 	float burst() const
@@ -121,6 +123,7 @@ struct Ally
 	int died_round = -1000; // last death we saw (respawn after respawn_time)
 	int seen_round = -1000; // last round this body saw it (pos is that sighting)
 	bool channeling = false; // recalling, banking or teleporting when last seen (cannot fight)
+	int hit_round = -1000;	 // P.ally_defend: last round we saw its health drop (seen on our previous turn too)
 };
 
 struct World

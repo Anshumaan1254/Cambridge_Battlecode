@@ -138,6 +138,9 @@ void Learner::tick(int round, bool leader, bool me_alive)
 	const auto si = static_cast<std::size_t>(stance);
 	// Soft (exponential moving average) update of the played stance; unplayed ones drift back to their
 	// priors so a single bad window cannot lock a stance out for the rest of the game.
+	if (P.bandit_discount > 0.f)
+		for (auto& v : q)
+			v *= 1.f - P.bandit_discount; // v9 tasks T11: old windows weigh less (a changing opponent makes old lessons stale)
 	q[si] += P.learn_rate * (r - q[si]);
 	++plays[si];
 	const std::array<float, STANCE_COUNT> q0{ P.q0_spread, P.q0_grouped, P.q0_push };

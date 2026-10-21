@@ -104,28 +104,28 @@ the invader. A better detector cannot make this layer pay: the presets themselve
 | INF-4 | exceptions, fuel, plan traces | `EXC_TRACE` build + `tools/tracecount.py`; `FUEL_TRACE` / `tools/fueltrace.py`; `OPP_TRACE` / `tools/opptrace.py` |
 | PAT-1 / FIX-6 | verify the patch numbers | done (doc 17): the 3.0.4 probe matches the notes; Heart of Ruin grows +12 focus, +3.5 strength, +100 health per shard (`experiments/results/probe_v3_0_4/`) |
 | PAT-2 | re-derive draft priors | done and superseded: the dynamic draft (`pd_stat` 3) values every pick from engine stats x map features; refit on 17,004 games: no gain (log loss 0.6233 vs 0.6255), monolith-map terms no gain |
-| PAT-3 | builds by evidence | `build_stat` margin 1.0 (`_m1b`) 250/312 vs v8 (reference 257), builds from the kit (`_m1g`) 249: no gain; `tavi_str`: (running) |
+| PAT-3 | builds by evidence | `build_stat` margin 1.0 (`_m1b`) 250/312 vs v8 (reference 257), builds from the kit (`_m1g`) 249, `tavi_str` 49.7%, `tail_stat` 48.1%: no gain |
 | PAT-4 | Prism bag | not applicable: the dynamic draft picks Prism in 3% of games |
-| PAT-5 | re-calibrate ml2 | screens `ml2_gb`, thresholds 0.15 / 0.3, `ml2_adapt` (running) |
+| PAT-5 | re-calibrate ml2 | `ml2_gb` 41.7%, thresholds 0.15 / 0.30 49.4% / 45.5%, `ml2_adapt` 51.3% (stage 1): the shipped model stays |
 | PAT-6 | post-patch sparring pool | built (see INF-3) |
-| PAT-7 | re-tune thresholds | single-parameter screens of fight / fight-back / isolated / cornered margins, bank size, gold value, burst retreat, retreat health, bag caution (running) |
-| FIX-1 | `safety_range` | v8 base 51.3% (neutral, fewer deaths); our base (running) |
-| FIX-2 | watchdog | exception count on our base (running); main also has its own `watchdog` |
-| FIX-3 | `enemy_comp_init` | (running) |
-| FIX-4 | `ring_reach` | (running); the ring needs Prism or Tavi, which our draft rarely picks |
-| FIX-5 | `tavi_str` | (running); Tavi is in 2% of our drafts |
-| FIX-7 | parameter hygiene | see section 6 |
+| PAT-7 | re-tune thresholds | 20 single-parameter screens (5c); the leaders `isolated_fight_adv` 1.35 and `fight_margin` 1.4 are in v10 (alone on the held-out maps they were level: 5d) |
+| FIX-1 | `safety_range` | v8 base 51.3%, our base 50.0% with fewer deaths: **in v10** |
+| FIX-2 | watchdog | 0 exceptions in 72 traced games; with a body forced to throw every turn after r300 it keeps 12-13 of 24 wins (10 without): **main's `watchdog` is in v10** (v9's `watchdog9` stays off: same effect, one of them is enough) |
+| FIX-3 | `enemy_comp_init` | 49.4%: changes almost no game, off |
+| FIX-4 | `ring_reach` | 50.3%: the ring needs Prism or Tavi, which our draft rarely picks; off |
+| FIX-5 | `tavi_str` | 49.7%: Tavi is in 2% of our drafts; off |
+| FIX-7 | parameter hygiene | every new switch defaults to off and is listed with its result here and in `SUGGESTIONS.md`; v10's values are in section 6 |
 | ADP-1 | dry run, detector tuning | done: fails gate G2 (section 3) |
-| ADP-2 | presets on | fails gate G3 on the normal pool (44.9% vs v8); per-plan ablation (running) |
+| ADP-2 | presets on | fails gate G3 on the normal pool (44.9% vs v8); one plan at a time 47.4-52.6% on stage 1 (none significant); forced plans lose to plain farming (section 3) |
 | ADP-3 / 4 / 5 / 6 / 7 | preset tuning, bandit reset, sharper evidence, classifier, bank cadence | depend on ADP-2 passing; ADP-6 is our `om_learned` classifier (session 14: not better) |
-| UPG-1 / 2 | sightings + influence map | the influence part is our `threat_map` (3.0.2: 124-129 vs v8's 140 over 4 cells); re-screen (running) |
-| UPG-3 | carrier interception | our `gank` (session 14: not better); re-screen (running) |
-| UPG-4 | wardens, locks, denial ramp | wardens = our `deny_altar` (session 14: 12/32); `deny_ramp` added here (running) |
-| UPG-5 | fights from P(kill8), P(die8) | our `ml2_enter` (session 13: ties); re-screen (running) |
-| UPG-6 | two-sided frag map | our `death_learn` (3.0.2: level); re-screen (running) |
+| UPG-1 / 2 | sightings + influence map | the influence part is our `threat_map`: 44.2% on our base (3.0.2: 124-129 vs v8's 140 over 4 cells); off |
+| UPG-3 | carrier interception | our `gank`: 50.0% (session 14: not better); off |
+| UPG-4 | wardens, locks, denial ramp | wardens = our `deny_altar` 46.2% (session 14: 12/32); `deny_ramp` (new) 50.0%: off |
+| UPG-5 | fights from P(kill8), P(die8) | our `ml2_enter` 49.4% (session 13: ties); off |
+| UPG-6 | two-sided frag map | our `death_learn` 47.4% (3.0.2: level); off |
 | UPG-7 | scripted two-body plays | not built |
 | DRF-1 / 2 / 3 | draft memory, zones, opening book | `dm_plan` (session 14: not better); zones closed in session 13 (bodies spread, fights lost); the opening book is replaced by the dynamic draft's map features |
-| REL-1 / 2 / 3 | fuel, regression, release | at the end, for the final candidate |
+| REL-1 / 2 / 3 | fuel, regression, release | done for v10 (`tools/finalcheck.sh`): section 5d |
 
 ### 4b. The second task file (`GOD_v9_Improvement_Tasks.md`, T01-T15; now `docs/strategy_v2/GOD_v9_Improvement_Tasks_oct21.md`)
 
@@ -134,17 +134,17 @@ same balance patch (it calls it 3.1; it is our engine 3.0.4) and overlaps the fi
 
 | Task | What it asks | Status here |
 |---|---|---|
-| T01 | count our own damaging dash (Heart of Ruin's landing) in `combat()`'s burst | **built** (`fix_my_dash`), screened (`_t01`) |
+| T01 | count our own damaging dash (Heart of Ruin's landing) in `combat()`'s burst | **built** (`fix_my_dash`), stage 1 53.2% with our deaths 2,518 vs 2,667: **in v10** |
 | T02 | re-tune the draft priors for the patch | superseded by the dynamic draft (`pd_stat` 3 has no per-champion prior); its ring-range gate concerns the objective draft our draft barely uses (Prism / Tavi in 2-3% of games) |
 | T03 | flip 12 existing switches after A/B | screened: `ml2_adapt`, `ml2_gb`, `threat_map`, `mono_team` above / below; groups A (`fm_mode` 7, `hor_threat` 3, `mi_learn_burst` 1, `sup_mode` 7, `chan_keep` 2: `_t3A`) and B (`finish_race` 120, `mi_endgame_bank` 100: `_t3B`), `tail_stat` 1 (`_t3ts`) and the singles |
 | T04-T07 | shared-memory v2, opponent model, plans, draft memory | the same design as the first plan's adaptive layer (sections 2-3: it loses, and its presets lose even when forced against their own target); our session-14 versions (`opp_model`, `dm_plan`) measured below v8 too |
 | T08 | team influence map | our `threat_map` (screened: 44.2%) and `om_sight` (shared sightings, screened) |
-| T09 | fight model: shields, stuns, hidden support, camp-damage calibration | **built**: `fm_buffs` (engine buff data: shield values and stuns of visible enemies and of us; both SDKs have the call), `farm_ema` (learned multiplier on the camp-damage model); hidden support needs the plans (not built) |
+| T09 | fight model: shields, stuns, hidden support, camp-damage calibration | **built**: `fm_buffs` (engine buff data: shield values and stuns of visible enemies and of us; both SDKs have the call) 48.1%, `farm_ema` (learned multiplier on the camp-damage model) 50.6%: both off; hidden support needs the plans (not built) |
 | T10 | carrier interception, altar guard | our `gank` (50.0%) and `deny_altar` (46.2%) |
-| T11 | non-stationary stance bandit | **built**: `bandit_discount` (exploration and reset need the opponent model) |
+| T11 | non-stationary stance bandit | **built**: `bandit_discount` (off, not screened: the stance learner is neutral to begin with, and exploration measured -2 points in session 1; exploration and reset need the opponent model) |
 | T12 | ward placement by information gain | not built (needs vision simulation per candidate tile; the plans' ward items measured nothing earlier) |
-| T13 | watchdog, guaranteed draft pick, exception report | watchdog: exists (fault test above); **built** `draft_guard` (a pick that throws falls back to a legal pick); exceptions: `EXC_TRACE`, 0 in 72 games |
-| T14 | herding exploit, held spells, seeded tie-breaks, Prism bag, dead knobs | **built** a (`risky_persist`) and b (`near_age_cap`); c (random tie-breaks against opponents who pre-position from our replays) cannot be measured locally; d not applicable (Prism 3%) |
+| T13 | watchdog, guaranteed draft pick, exception report | watchdog: exists (fault test above); **built** `draft_guard` (a pick that throws falls back to a legal pick); exceptions: `EXC_TRACE`, 0 in 72 games; **both in v10** (inert in normal play, insurance against a crash) |
+| T14 | herding exploit, held spells, seeded tie-breaks, Prism bag, dead knobs | **built** a (`risky_persist`) 51.3% and b (`near_age_cap`) 49.4%: off; c (random tie-breaks against opponents who pre-position from our replays) cannot be measured locally; d not applicable (Prism 3%) |
 | T15 | testing workflow | the ledger / abstat / abmargin protocol of this document |
 
 ## 5. Results of the re-screens on our 3.0.4 base
@@ -205,8 +205,41 @@ stage 1 only removes clear losers.
 | `_zma` `ml2_adapt` 0.02 | PAT-5 | 80 (51.3%) | 14 / 52 / 12 | 2,605-2,595 |
 | `_zme` `ml2_enter` 0.4 (fight on P(kill8)) | UPG-5 | 77 (49.4%) | 11 / 55 / 12 | 2,670-2,652 |
 | `_zad` `ally_defend` (new) | coordination audit | 79 (50.6%) | 5 / 69 / 4 | 2,550-2,508 |
+| `_zad35` `ally_defend` with `ally_defend_hp` 0.35 | coordination audit | 75 (48.1%) | | |
+| `_zfm12` / `_zfm14` / `_zfm15` `fight_margin` 1.2 / 1.4 / 1.5 | PAT-7 | 74 / 82 / 70 | 10/54/14, 11/60/7, 7/56/15 | |
+| `_zfb80` / `_zfb95` `fight_back_margin` 0.80 / 0.95 | PAT-7 | 78 / 71 | 9/60/9, 4/63/11 | |
+| `_zia11` / `_zia135` / `_zia15` `isolated_fight_adv` 1.10 / 1.35 / 1.50 | PAT-7 | 68 / **85** / 82 | 4/60/14, 15/55/8, 13/56/9 | 2,684 / 2,413 / 2,455 (vs 2,390 / 2,590 / 2,508) |
+| `_zcau` isolated 1.35 + fight margin 1.4 | PAT-7 | 84 | 15 / 54 / 9 | |
+| `_zcm65` / `_zcm85` `cornered_margin` | PAT-7 | 75 / 75 | | |
+| `_ztm44` / `_ztm64` `tribute_min` | PAT-7 | 75 / 77 | | |
+| `_zgv25` / `_zgv45` `gold_value` | PAT-7 | 80 / 82 | | |
+| `_zbr10` / `_zbr14` `burst_retreat` | PAT-7 | 76 / 77 | | |
+| `_zrh20` / `_zrh30` `retreat_hp` | PAT-7 | 75 / 80 | | |
+| `_zbc30` / `_zbc55` `bag_caution` | PAT-7 | 76 / 78 | | |
+| `_zgk` `gank` | UPG-3 | 78 | 1 / 76 / 1 | |
+| `_zda` `deny_altar` | UPG-4 | 72 | | |
+| `_ztmap` `threat_map` | UPG-2 / T08 | 69 (44.2%) | 10 / 49 / 19 | |
+| `_zdl` `death_learn` | UPG-6 | 74 | 0 / 74 / 4 | |
+| `_zcf` `chain_farm` | | 80 | | |
+| `_zhv15` / `_zhv2` `heavy_value` 1.5 / 2 | objective persona | 76 / 75 | | |
+| `_zmf0` no contest blob opening, `_zmt1` `mono_team` | contest | 74 / 74 | | |
+| `_t01` `fix_my_dash` | T01 | 83 | 19 / 45 / 14 | 2,518 (vs 2,667) |
+| `_t09b` / `_t09s` `fm_buffs` 3 / 1 | T09 | 75 / - | 13 / 49 / 16 | |
+| `_t09f` `farm_ema` 0.05 | T09 | 79 | 12 / 55 / 11 | |
+| `_t14a` `risky_persist` 2 | T14 | 80 | 4 / 72 / 2 | |
+| `_t14b` `near_age_cap` 3 | T14 | 77 | 6 / 65 / 7 | |
+| `_t3A` `fm_mode` 7 + `hor_threat` 3 + `mi_learn_burst` 1 + `sup_mode` 7 + `chan_keep` 2 | T03 group A | **59 (37.8%, p 0.005)** | 12 / 35 / 31 | 3,069 (vs 2,074) |
+| `_t3B` `finish_race` 120 + `mi_endgame_bank` 100 | T03 group B | 78 | 1 / 76 / 1 | |
+| `_t3ts` `tail_stat` 1 | T03 | 75 | 1 / 73 / 4 | |
+| `_zeh20` `enemy_half_penalty` 20 | PAT-7 | 55 of 96 (cut when the queue moved to the held-out test) | | |
 
-(more rows as the queue finishes)
+### 5d. The held-out test of the best combination
+
+Stage 1 can only remove losers: with 156 games one cell's standard deviation is about 4 points, and the best of 60 screens sits at
+53-55% by chance alone. The combination of the stage-1 leaders that are principled (watchdog, draft guard, `safety_range`,
+`fix_my_dash`, `isolated_fight_adv` 1.35, `fight_margin` 1.4) as `_v10a`, on the 152 held-out maps no choice today used:
+**153/304 = 50.3% vs `_m1p3` [44.7, 55.9], maps 27 / 99 / 26, margin +5.7 gems a map [-54.5, +65.6]: level.** The stage-1 gains
+were selection noise; none of them is a measurable improvement on new maps against our own best.
 
 ## 6. Decisions
 

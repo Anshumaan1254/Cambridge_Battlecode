@@ -28,7 +28,34 @@ int g_last_pick = -1; // P.dm_plan: our pick of this draft turn (the plan writte
 void note_pick(D c)
 {
 	g_last_pick = static_cast<int>(c);
-	bc::draft::pick(c);
+	if (!P.draft_guard)
+	{
+		bc::draft::pick(c);
+		return;
+	}
+	try
+	{
+		bc::draft::pick(c);
+		return;
+	}
+	catch (...)
+	{
+	}
+	// v9 tasks T13: a pick that throws (an SDK or roster surprise) must not leave the slot to the engine's random pick.
+	for (const D f : { D::ryth, D::vesper_vale, D::vendetta, D::varg, D::ren, D::marcella, D::tavi, D::prism, D::stellar, D::willow, D::cassi_and_issac })
+	{
+		if (f == c)
+			continue;
+		try
+		{
+			bc::draft::pick(f);
+			g_last_pick = static_cast<int>(f);
+			return;
+		}
+		catch (...)
+		{
+		}
+	}
 }
 
 struct Features
@@ -542,6 +569,12 @@ double model_value(D c)
 		P.pd_w_ranged_mono * f.ranged * (F.mono > 0 ? 1.0 : 0.0);
 	if (F.mono > 0) // monolith maps (20,000 health, range 5): what holds and what deals damage there
 		v += P.pd_w_hp_mono * f.hp + P.pd_w_basic_mono * f.basic + P.pd_w_spell_mono * f.spell + P.pd_w_area_mono * f.area;
+	if (P.pd_w_area_close != 0.0f || P.pd_w_stun_close != 0.0f)
+	{
+		// crowded maps (few tiles per champion: contact all game) pay for area damage and stuns; close = 1 at 50 x 50 with 5 a side
+		const double close = std::min(4.0, 2500.0 * F.team / 5.0 / std::max(625.0, static_cast<double>(F.area))) - 1.0;
+		v += (P.pd_w_area_close * f.area + P.pd_w_stun_close * f.stun) * close;
+	}
 	return v;
 }
 

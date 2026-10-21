@@ -1,3 +1,29 @@
+# v11 requests (Oct 21 evening): Prism draft, Prism anchor, Heart of Ruin aggressor, three phases, losing-adapt, wards. **Not shipped: GOD v10 stays**
+
+Request: draft Prism instead of Vesper Vale and let the bots play it out; Prism as the safe anchor (home-side groups, bags ~20 instead of
+54, danger exit 0.1 instead of 0.2, never the enemy half, the killer holds the reward tile until the anchor steps on); Heart of Ruin as
+the aggressor; three phases (0-666, 666-1332, 1332-2000); change strategy when losing; better ward placement from map analysis.
+Code `experiments/wip/x_v11.patch` on GOD v10 (every switch off = v10's play), notes `experiments/wip/x_v11_NOTES.md`. Engine 3.0.4,
+156 games per screen (train78a, both sides) head-to-head vs GOD v10.
+
+| Change | Switch | Result vs GOD v10 |
+|---|---|---|
+| Prism for Vesper Vale | `pd_sub_from` 1, `pd_sub_to` 5 | 58/156 = 37.2% (sign p 0.004) |
+| + Prism as the safe anchor with the hand-off | `anchors`, `anchor_prism`, `anchor_side` 0.45, `anchor_trib` 0.38, `anchor_ml2` 0.1, `handoff` | 37.2% (Vesper as the anchor: 41.0%) |
+| Heart of Ruin aggressor | `hor_aggro` 1 (always) / 2 (fresh, dash up, ally near) | 51.3% / 48.1% (level); 29.5% on the Prism team |
+| Three phases | `phases` 1 | 47.4% |
+| Losing: press or regroup | `lose_adapt` 1 | 51.3% |
+| Map-scored wards on our camps / altars | `ward_smart` 1 | 38.5% (deaths +620: loses the forward early warning) |
+| **Scouting wards** (best tile ahead on the walk field toward their spawn; bushes, the corridor, contested groups) | `ward_smart` 2 | **58.3%** train78a, 53.9% held-out test152, **54.5% on all 308 maps** (sign p 0.0097, margin +43 [+3, +83]); vs v8 held-out 80.9% (v10 79.9%); **19 outside opponents 655/798 vs v10 678** (ambush persona 20 vs 32 of 42) |
+| + a bush next to our target group first | `ward_smart` 3 | 51.9%, ambush persona 21/42 |
+| Prism team with everything above | `_v11Pw2` / `_v11` | 24.4% / 17.9% |
+
+Verdict: the Prism draft and every behaviour change except the scouting wards measure level or worse; the scouting wards beat v10
+head-to-head but lose to the outside opponents (the non-transitive pattern the ship rule rejects), so `submissions/god.zip` stays GOD v10.
+Two candidate zips for the ladder (`submissions/candidates/README.md`): `god_v11_scoutwards_20261021.zip` (`ward_smart` 2) and
+`god_v11_prism_anchor_20261021.zip` (the requested Prism team; weaker). The first ward search cost ~65k fuel a call (every group
+scored for 25 tiles) and lost a turn every 10 rounds per body: fixed before any measurement counted.
+
 # GOD v10 (Oct 21): the dynamic draft refitted, plus what held up from the v9 upload and the two plans
 
 Request: test the user's `god_v9_adaptive.zip`, take its better parts, carry out `GOD_Improvement_Plan.md` and `GOD_v9_Improvement_Tasks.md`

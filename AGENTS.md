@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-21 16:44 UTC (session 14: **SHIPPED GOD v10** = `_v10b` (`submissions/god.zip` sha256 245c446c…, `bots/god/src`; §S14.8 last bullet, doc 18 §5d-6); before that: the user's v9 upload measured (worse than v8 and far below our 3.0.4 bot); the plan's items being re-screened on our 3.0.4 base, §S14.8 last bullet; PATCH 3.0.4: the dynamic-draft GOD is built and confirmed (79.4% vs v8 on all 308 maps); ladder pair god-dynamic-draft-on / -off pushed, waiting for the user's pick: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
+- Last updated: **2026-10-21 19:55 UTC (session 14: v11 requests measured, none shipped: GOD v10 stays, two candidate zips, §S14.8 last bullet; before that: **SHIPPED GOD v10** = `_v10b` (`submissions/god.zip` sha256 245c446c…, `bots/god/src`; §S14.8 last bullet, doc 18 §5d-6); before that: the user's v9 upload measured (worse than v8 and far below our 3.0.4 bot); the plan's items being re-screened on our 3.0.4 base, §S14.8 last bullet; PATCH 3.0.4: the dynamic-draft GOD is built and confirmed (79.4% vs v8 on all 308 maps); ladder pair god-dynamic-draft-on / -off pushed, waiting for the user's pick: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
   Rule from the user: update this file and push at every step. Start with **§S14**, then **§S13-GOD**, **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
@@ -598,6 +598,15 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   are level (`hor_aggro` 2 48.1%, phases alone 47.4%, losing-adapt alone 51.3%). Running: `$S/q88.sh` (Prism + anchor + scouting wards
   `_v11Pw2`, the user's Prism team) then `$S/q89.sh` = `tools/finalcheck.sh _v11Aw2 _v10b` (v8, 19 outside opponents, pace, fuel).
   Ship `_v11Aw2` as GOD v11 only if the outside opponents are not worse than v10's 678/798.
+- **19:55 UTC: v11 decision: not shipped, GOD v10 stays.** `tools/finalcheck.sh _v11Aw2 _v10b`: vs v8 held-out 80.9% (v10 79.9%), h2h vs
+  v10 all 308 maps 54.5% (sign p 0.0097, margin +43 [+3, +83]), but the 19 outside opponents 655/798 vs v10's 678 (ambush persona `_pnA`
+  20 vs 32, `_k_fit` 21 vs 29); 0 faults, lost turns at the opponents' level. `ward_smart` 3 (bush next to our target first) did not
+  fix it (`_pnA` 21, h2h 51.9%). Prism team `_v11Pw2` 24.4%. Candidate zips (`submissions/candidates/README.md`):
+  `god_v11_scoutwards_20261021.zip` (ladder A/B option), `god_v11_prism_anchor_20261021.zip` (the requested Prism team). Docs: CHANGES
+  (top), SUGGESTIONS (v11 table), ISSUES #46-47, `experiments/wip/x_v11_NOTES.md`. Remote branches: the user wants only `main`,
+  `god-opponent-model-on`, `god-dynamic-draft-on`; the git proxy refuses deletions, so `god-dynamic-draft-off`, `god-opponent-model-off`,
+  `god-v10-on`, `god-v10-off`, `claude/nice-franklin-lgyb4x` must be deleted in the GitHub UI (all their content is on main:
+  `experiments/archive_branches/` and main's history). Nothing is running.
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first
 

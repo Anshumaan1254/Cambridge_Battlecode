@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-20 21:37 UTC (session 14: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
+- Last updated: **2026-10-21 09:15 UTC (session 14: PATCH 3.0.4 arrived, engine switched to cambc 3.0.4, new GOD for the new balance in progress: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
   Rule from the user: update this file and push at every step. Start with **§S14**, then **§S13-GOD**, **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
@@ -440,6 +440,21 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   grouped play loses. Running `$S/s1.sh`: stage-1 screen on the 156 tuning maps (312 games each) vs `_v8k1`: `om_force` 3 (the INVADER preset
   always on), `om_p_on` 0.8, then single switches on v8: `fm_mode` 1, `strike_first` 1, `mi_learn_fight` 1.2, `mi_deny_gems`, `mi_flip_guard`,
   `gv_map` (exp 1.0), `ml2_gb`, `ml2_adapt` 0.02, `om_sight`, `ward_enemy`, `gank`, `escort_bag` 40, `aoe_reach5` 3, `threat_map` (w 10), `mi_learn_burst`.
+- **09:10 UTC: stage 1 stopped (old balance) when the user sent a new balance patch.** On the 156 tuning maps vs `_v8k1` (312 games each):
+  `om_force` 3 (INVADER preset always on) 42.6% (sign p 0.007: the preset itself is harmful vs v8), `om_p_on` 0.8 51.3%, `fm_mode` 1 50.6%,
+  `strike_first` 1 45.8%, `mi_learn_fight` 1.2 47.8%, `mi_deny_gems` 51.9%: nothing clearly better; the rest of `s1.sh` never ran.
+- **09:15 UTC: PATCH 3.0.4 (the user, Oct 21): "make the new bot according to these changes and also compare them on these changes only"**,
+  plus the updated `GameRules.md` / `BotAPICpp.md` (now `docs/sprint/v3_0_4/`; notes `docs/patch_notes/week3_20261021.txt`). Nerfs: Stellar hp
+  750 -> 650 (+75 -> +65), focus 85 -> 70 (+9 -> +7); Heart of Ruin str 40 -> 30 (+4 -> +3.5), dash landing 1.75 -> 1.5 x focus; Ren S1 stun
+  damage 1.25 -> 0.75 x focus. Buffs: Vesper hp 900 -> 1000, str 50 -> 55; Vendetta hp 800 -> 1000; Tavi hp 750 -> 900, focus 100 -> 110; Prism
+  1 -> 1.5 focus per carried gem. API: `distance_field::copy_from` added. **Installed cambc 3.0.4** (`cambc.toml`, `setup_session.sh`); rows go
+  to `experiments/results/ledger_v3_0_4/` (`tools/abstat.py` now reads the installed engine's ledger). **Engine probe** (`tools/probe/
+  champion_stats_main.cpp`, output `experiments/results/probe_v3_0_4/`): the 3.0.4 engine reports exactly these numbers and nothing else changed
+  vs 3.0.2. GOD reads all of them at runtime (kit modifiers, base stats, constants), so its fight / burst / kill-time / build arithmetic follows
+  the patch by itself; what does not: the draft's hand-set champion priors (`draft.cpp` `prior()`, the Stellar / Ren / HoR terms in `pd_score`,
+  the Ren-first opening pick), tuned on 3.0.1-3.0.2. Plan: (1) v8 baseline on 3.0.4; (2) a draft whose champion values come from the engine's
+  stats (no per-champion constants), screened vs v8 on the tuning half; (3) confirmation on the held-out half and all 616 games + third parties;
+  (4) per the user's branch rule, a branch pair if it is clearly better.
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

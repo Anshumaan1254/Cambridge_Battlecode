@@ -10,7 +10,7 @@ Head-to-head statistics of BOT vs OPP from the ledger (rows on BOT's and OPP's c
 - --by-dir: the same per map folder.
 A bot is "clearly better" when the 95% interval of its win rate lies above 50% and the sign test is significant.
 """
-import glob, json, math, os, sys
+import glob, json, math, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -36,8 +36,15 @@ def sign_p(a, b):
 
 
 def latest_ledger():
-	ds = sorted(glob.glob(os.path.join(ROOT, 'experiments/results/ledger_v3_0_2')))
-	return ds[-1] if ds else os.path.join(ROOT, 'experiments/results/ledger_v3')
+	# the ledger of the installed engine (tools/ledger.py's rule), else the newest per-version folder
+	try:
+		sys.path.insert(0, os.path.join(ROOT, 'tools'))
+		import ledger
+		return ledger.LEDGER
+	except Exception:
+		ds = glob.glob(os.path.join(ROOT, 'experiments/results/ledger_v3_0_*'))
+		key = lambda d: tuple(int(x) for x in re.findall(r'\d+', os.path.basename(d)))
+		return max(ds, key=key) if ds else os.path.join(ROOT, 'experiments/results/ledger_v3')
 
 
 def rows(ledger, bot, opp):

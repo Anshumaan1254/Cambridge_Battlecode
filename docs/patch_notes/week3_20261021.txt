@@ -1,0 +1,31 @@
+Patch notes received from the user on 2026-10-21 (competition announcement, "@everyone"); engine cambc 3.0.4
+(docs/sprint/v3_0_4/GameRules.md and BotAPICpp.md are the updated rules and API from the same day).
+
+Nerfs
+Stellar: Health 750 -> 650; Health per shard 75 -> 65; Focus 85 -> 70; Focus per shard 9 -> 7
+Heart of Ruin: Strength 40 -> 30; Strength per shard 4 -> 3.5; Dash landing damage (S2) 1.75x Focus -> 1.5x Focus
+Ren: Stun damage (S1) 1.25x Focus -> 0.75x Focus
+
+Buffs
+Vesper Vale: Health 900 -> 1000; Strength 50 -> 55
+Vendetta: Health 800 -> 1000
+Tavi: Health 750 -> 900; Focus 100 -> 110
+Prism: Passive Focus per gem 1 -> 1.5
+
+API (BotAPICpp.md): distance_field::copy_from(source) and copy_from(source, mask) added.
+SDK header 3.0.4 vs 3.0.2: prism_focus_per_gem 1.0 -> 1.5, the two copy_from overloads; everything else equal (base stats
+and ability modifiers come from the engine at runtime through champion_designs / base_stats()).
+
+Engine probe (tools/probe/champion_stats_main.cpp as bots/_probe304/src/main.cpp; output in experiments/results/probe_v3_0_4/):
+champion_designs base stats and ability payloads as the engines report them at runtime. 3.0.2 -> 3.0.4 differences, all as
+announced, nothing else changed:
+  Vesper (type 1)   hp 900 -> 1000, str 50 -> 55
+  Vendetta (2)      hp 800 -> 1000
+  Stellar (5)       hp 750 -> 650 (+75 -> +65 per shard), focus 85 -> 70 (+9 -> +7 per shard)
+  Ren (9)           slot 0 cc modifier 1.25 -> 0.75 (stun damage = 0.75 x focus)
+  Tavi (11)         hp 750 -> 900, focus 100 -> 110
+  Heart of Ruin (12) str 40 -> 30 (+4 -> +3.5 per shard), dash landing modifier 1.75 -> 1.5
+  Prism             prism_focus_per_gem 1.0 -> 1.5 (SDK constant; the engine applies it, the bot reads the constant)
+GOD reads every one of these at runtime (common.h kit_of, champion_designs[].base_stats(), bc::constants), so its fight, burst,
+kill-time and build arithmetic follows the patch by itself. What does not follow: the draft's champion priors (draft.cpp prior(),
+pd_score's Stellar / Ren / HoR terms, the Ren-first opening pick), measured under 3.0.1-3.0.2.

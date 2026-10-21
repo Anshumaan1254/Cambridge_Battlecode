@@ -6,7 +6,7 @@
 set -e
 cd "$(dirname "$0")/.."
 if [ "$1" != "--bots" ]; then
-	pip install -q cambc==3.0.2   # patch 3.0 + the Heart of Ruin hotfix (Oct 20); rows per engine: ledger/ (2.2.5), ledger_v3/ (3.0.1), ledger_v3_0_2/
+	pip install -q cambc==3.0.4   # Oct 21 balance patch (Stellar, Heart of Ruin, Ren nerfs; Vesper, Vendetta, Tavi, Prism buffs); rows per engine: ledger/ (2.2.5), ledger_v3/ (3.0.1), ledger_v3_0_2/, ledger_v3_0_4/
 	cambc init --yes . > /dev/null 2>&1 || true   # map refresh fails in the cloud (platform blocked): fine
 	C="curl -sSL --cacert /root/.ccr/ca-bundle.crt"
 	mkdir -p /root/.cache/cambc && pushd /root/.cache/cambc > /dev/null

@@ -262,6 +262,8 @@ struct Params
 	int pd_obj_mid = 2;
 	int ally_kit = 0;		   // patch 3.0.4: 1 = an ally's damage on a camp group from its kit (engine modifiers, dps_on()'s arithmetic) instead of
 							   // the typed 3.4 / 2.0 / 1.5 x focus (Stellar / Cassi / the rest) of ally_dps_on() (ISSUES #39)
+	int build_kit = 0;		   // patch 3.0.4: 1 = the build from the kit (Brain::build_from_kit: damage stat by what a shard pays, melee opens with
+							   // Jungle health, ranged with Monster, the linked pair skips Treasure) instead of the per-champion lists of build_for()
 	int build_stat = 0;	   // patch 3.0.4: 1 = the build list's focus / strength shards in the stat the kit pays most for (engine numbers, brain.cpp
 							   // Brain::init) when one pays >= build_stat_margin x the other; else the typed list
 	float build_stat_margin = 2.f;

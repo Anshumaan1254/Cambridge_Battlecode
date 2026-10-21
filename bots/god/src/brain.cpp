@@ -534,6 +534,64 @@ Brain& brain()
 
 // ---------------------------------------------------------------------------------------------- lifecycle
 
+// build_kit (patch 3.0.4): the build from the engine's numbers, no list per champion. The damage stat is the one a shard pays most for
+// (focus_growth x the spell modifiers per 8-round cooldown, area spells and a damaging dash x 1.5 targets, heals, Ren's retaliation per
+// hit; vs strength_growth per basic attack, +1/8 with a reset, Varg's splash x 1.5). A melee body (it takes the camps' hits) opens with
+// Jungle health, a ranged one with the Monster emblem; then Treasure, Durability health and the Bruiser mix (two damage, one health)
+// as in v8's lists; the linked pair (Cassi & Issac: gold-poor, they die together) skips Treasure. build_tail adds Power in the damage
+// stat for the rest of the game.
+std::vector<I> Brain::build_from_kit() const
+{
+	const float tg = 1.5f;
+	float sp = 0;
+	if (kit.dmg >= 0)
+		sp += kit.dmg_mod;
+	if (kit.cc >= 0)
+		sp += kit.cc_mod;
+	if (kit.aoe >= 0)
+		sp += kit.aoe_mod * (kit.aoe_radius >= 1.f ? tg : 1.f);
+	if (kit.dash >= 0)
+		sp += kit.dash_mod * (kit.dash_radius >= 1.f ? tg : 1.f);
+	if (kit.heal >= 0)
+		sp += kit.heal_mod;
+	float vf = focus_growth * sp / 8.f;
+	if (type == CT::ren && !kit.ranged)
+		vf += bc::constants::passive_abilities::ren_retaliation_focus_ratio * focus_growth * tg;
+	const float vs = str_growth * (1.f + (kit.reset >= 0 ? 0.125f : 0.f)) * (type == CT::varg ? tg : 1.f);
+	const bool f = vf >= vs;
+	const I mon = f ? I::monster_shard_of_focus : I::monster_shard_of_strength, tre = f ? I::treasure_shard_of_focus : I::treasure_shard_of_strength,
+			bru = f ? I::bruiser_shard_of_focus : I::bruiser_shard_of_strength, pw = f ? I::power_shard_of_focus : I::power_shard_of_strength;
+	std::vector<I> v;
+	const bool linked = type == CT::cassi || type == CT::issac;
+	if (linked)
+	{
+		rep(v, mon, 5);
+		rep(v, I::durability_shard_of_health, 5);
+		cycle(v, { bru, I::bruiser_shard_of_health }, 12);
+	}
+	else if (!kit.ranged)
+	{
+		rep(v, I::jungle_shard_of_health, 5);
+		rep(v, mon, 5);
+		rep(v, tre, 5);
+		rep(v, I::durability_shard_of_health, 5);
+		cycle(v, { bru, bru, I::bruiser_shard_of_health }, 8);
+	}
+	else
+	{
+		rep(v, mon, 5);
+		rep(v, tre, 5);
+		rep(v, bru, 5);
+		rep(v, I::durability_shard_of_health, 5);
+		cycle(v, { bru, bru, I::bruiser_shard_of_health }, 8);
+	}
+	if (P.build_tail == 1)
+		rep(v, pw, 300);
+	else if (P.build_tail)
+		cycle(v, { bru, bru, I::bruiser_shard_of_health }, 40);
+	return v;
+}
+
 void Brain::init()
 {
 	init_round = static_cast<int>(bc::round_number());
@@ -548,8 +606,8 @@ void Brain::init()
 	}
 	const auto abl = me.abilities();
 	ab.assign(abl.begin(), abl.end());
-	build = build_for(type, P.build_style);
-	if (P.build_stat)
+	build = P.build_kit ? build_from_kit() : build_for(type, P.build_style);
+	if (P.build_stat && !P.build_kit)
 	{
 		// build_stat (patch 3.0.4): every focus / strength shard of the list in the stat this kit pays most for, from the engine's numbers:
 		// a focus shard adds focus_growth x the spell modifiers per cooldown (area spells and a damaging dash x build_stat_targets; Ren's

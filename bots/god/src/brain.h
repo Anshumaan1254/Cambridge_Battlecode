@@ -37,6 +37,7 @@ public:
 
 private:
 	// lifecycle
+	std::vector<bc::item_type> build_from_kit() const; // build_kit (patch 3.0.4)
 	void init();
 	void read_self();
 	void shop();

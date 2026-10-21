@@ -1,3 +1,34 @@
+# Testing the 3.0.4 GOD (dynamic draft): commands that reproduce every number in docs/strategy_v2/17_PATCH_3_0_4.md
+
+Engine cambc 3.0.4 (`tools/setup_session.sh` installs it; rows land in `experiments/results/ledger_v3_0_4/`). v8 = `_v8k1` (GOD v8 as
+shipped). Pools: `experiments/pools/` (all308, train156, test152; `README.md` there).
+
+```bash
+# 1. the engine's champion numbers (3.0.2 vs 3.0.4)
+mkdir -p bots/_probe304/src && cp tools/probe/champion_stats_main.cpp bots/_probe304/src/main.cpp
+cambc run _probe304 idle --map maps/comp30/corners_v3.map26a --rounds 2 -o /tmp/probe      # team-a.stdout inside the replay bundle
+
+# 2. substitution screens (v8's draft with one champion swapped; draft ids in params.h pd_sub_from)
+SRC=bots/god tools/variant.sh _q_s2v pd_sub_from=4 pd_sub_to=1                              # Vesper wherever v8 drafts Stellar
+python3 tools/ledger.py run _q_s2v _v8k1 --maps "$(cat experiments/pools/train156.csv)" --jobs 4 --keep KEEP
+python3 tools/abstat.py _q_s2v _v8k1 --pool experiments/pools/train156.csv
+python3 tools/drafts_of.py KEEP/_q_s2v_vs__v8k1 --by-size                                   # maps where our roster differs, by team size
+
+# 3. the draft-value model: dataset from kept games, map features, fit, export
+python3 tools/draftmodel/dataset.py GAMES.jsonl KEEP/_q_*_vs__v8k1 KEEP/_r_*_vs__v8k1 KEEP/_k_*_vs__v8k1
+SRC=bots/god tools/variant.sh _feat --define "LEGEND_FEATURES 1"                            # FEAT lines: one 1-round game per map
+python3 tools/draftmodel/fit.py GAMES.jsonl experiments/results/probe_v3_0_4/champions_engine_3_0_4.txt MAPFEAT.json --l2 1
+python3 tools/draftmodel/fit2.py GAMES.jsonl experiments/results/probe_v3_0_4/champions_engine_3_0_4.txt MAPFEAT.json --export
+
+# 4. the dynamic draft, its drafts, its fuel, its A/B
+SRC=bots/god tools/variant.sh _m1 pd_stat=3
+tools/draftcheck.sh _m1 _v8k1 'maps/comp30/*.map26a'                                        # both drafts from 1-round games
+SRC=bots/god tools/variant.sh _dfm pd_stat=3 --define "DRAFT_FUEL 1"                        # fuel of every draft turn (DFUEL lines)
+tools/abconfirm.sh _m1 _v8k1 KEEP                                                           # test152, train156, all308 + by folder
+python3 tools/v8sum.py --opps _pws,_pw,_pc,_g4,_m15,_mite,_ifish,_px9 _v8k1 _m1             # third parties (21-map pool)
+python3 tools/fueltrace.py _m1 _v8k1 _pws --maps "$M6" --jobs 4 --release                   # faults, lost turns (platform mode)
+```
+
 # Testing the GOD upgrade: commands that reproduce every number in docs/CHANGES.md
 
 Run from the repository root after `tools/setup_session.sh` (cambc 3.0.2, the wasm toolchain, and the sparring bots it rebuilds and

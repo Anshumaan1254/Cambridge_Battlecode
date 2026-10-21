@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-21 10:35 UTC (session 14: PATCH 3.0.4 arrived, engine switched to cambc 3.0.4, new GOD for the new balance in progress: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
+- Last updated: **2026-10-21 11:30 UTC (session 14: PATCH 3.0.4 arrived, engine switched to cambc 3.0.4, new GOD for the new balance in progress: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
   Rule from the user: update this file and push at every step. Start with **§S14**, then **§S13-GOD**, **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
@@ -491,6 +491,24 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   (`_q_s2v` third-party cells). Draft roles in `pd_stat` mode now come from the designs' attack range (same split as v8's name lists); the
   stat anchoring is additive (prior + k x ln(power ratio)). `tools/abconfirm.sh CAND [OPP]` (test152, train156, all308 + by folder).
   3.0.2 scratch project `$S/p302` (3.0.2 SDK, maps / experiments linked) for a backtest of the final candidate on the old balance.
+- **11:30 UTC: rounds 2-3 done; the user (11:10): "ensure nothing is hardcoded and everything is decided dynamically according to
+  the maps and the enemies moves and strategies".** Round 2 (pd_stat 1 priors): `_r_v1` (Vesper .96, Stellar .5) 72.4%, `_r_vt` (+ Tavi) 71.5%,
+  `_r_v1b` (+ `build_stat` margin 1.3: Ren builds strength) 74.4%, `_r_v1k` (+ `ally_kit`) 68.9%, `_r_vd` (Vendetta lead) 65.1%, `_r_t1` (Tavi)
+  61.5%, `_r_t1b` (+ build_stat) 58.0%, `_r_t1k` (+ ally_kit) 57.4%, `_r_t1d` 61.9%. **Round 3 (pd_stat 2, the fitted values as priors):
+  `_k_fit` (Ryth, Vesper, Vendetta, Ren, Marcella at 5) 246/312 = 78.8% [74.0, 83.0], maps 101 / 44 / 11, deaths 3,429-7,545**; `_k_fit2` (at
+  most 3 fronts: Tavi for Marcella) 76.9%; `_k_ci` (C&I for Marcella) 76.9%. Third parties (21-map pool, 8 proxies): Vesper swap `_q_s2v`
+  310/336 vs v8 283 (`_pws` 40 vs 28), pace 1002 vs 1100 rounds: the gain is general. **Dynamic draft (`pd_stat` 3, `draft.cpp`
+  `model_value`)**: a pick's value = w . features, every feature computed at draft time from the engine's designs (effective health,
+  basic damage with the reset, Varg's splash, spell / area damage, stuns, dash, range, Vesper's gold bonus, Ren's retaliation, bodies)
+  and this map's camp groups (pack / elk / gold shares, team size 3, spread, monoliths); weights `pd_w_*` = a logistic fit of 7,520 kept
+  games (`tools/draftmodel/{dataset,feats,fit}.py`: win ~ side + w . (our team's features - theirs); 5-fold leave-maps-out log loss 0.647
+  vs 0.691 side-only; it predicted the three round-3 cells it never saw within 3 points: 77.3 / 80.0 / 78.3 vs 76.9 / 76.9 / 78.8). v8's two
+  map types stay, in kit terms (objective ring: + 0.75 x range-4 spell damage share, melee - 0.6, melee area stun + 0.4; open small:
+  retaliation - 0.5, splash + 0.45); counters to the enemy's visible picks: `counter_model` (weights `pd_cw_*`, 0 until fitted on varied
+  opponents). **Draft fuel bug found and fixed before any screen**: the first `_m1` build recomputed the designs on every score: its later
+  draft turns (100k fuel) ran out and the engine drew the remaining picks at random (GameRules "Missing a pick"); now every pick's features,
+  ring value and range are cached in the first draft turn (10x fuel): later turns use 10-24k of 100k (v8 7-21k; pd_stat 2 up to 28k;
+  `DRAFT_FUEL` build prints it). The pd_stat 1/2 screens were not affected (their rosters are the planned ones in every kept game).
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

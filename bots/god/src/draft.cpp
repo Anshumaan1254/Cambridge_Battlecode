@@ -333,8 +333,15 @@ void derive_params()
 bc::champion_type type_of(D c, int body);
 int pick_range(D c, int body)
 {
+	static std::array<int, 32> cache{}; // 0 = not read yet (every attack range is >= 1)
+	const auto k = static_cast<std::size_t>(c) * 2 + static_cast<std::size_t>(body & 1);
+	if (k < cache.size() && cache[k])
+		return cache[k];
 	const auto ti = static_cast<std::size_t>(type_of(c, body));
-	return ti < bc::champion_designs.size() ? bc::champion_designs[ti].base_stats().base_attack_range : 1;
+	const int r = ti < bc::champion_designs.size() ? bc::champion_designs[ti].base_stats().base_attack_range : 1;
+	if (k < cache.size())
+		cache[k] = r;
+	return r;
 }
 // pd_stat: roles from the engine's designs (every body melee = frontliner, one ranged body = caster); the same split as v8's name lists.
 bool is_caster(D c)
@@ -427,6 +434,157 @@ double rel_power(D c)
 	return i < cache.size() ? cache[i] : 1.0;
 }
 
+// ---- pd_stat 3 (patch 3.0.4): the draft-value model ----
+// A pick's value = sum over model features of weight x feature, every feature computed at draft time from the engine's designs
+// (base stats, ability payloads, passive constants) and from this map's camp groups (analyse()); the weights (params.h pd_w_*) are the
+// logistic fit of 7,520 games on engine 3.0.4 (tools/draftmodel/fit.py: win ~ side + w . (our team's features - theirs), team features
+// = the sum over its picks). Nothing per champion is typed in: a balance patch changes the features, a new map the interactions.
+struct PickF
+{
+	double hp = 0, basic = 0, splash = 0, spell = 0, area = 0, stun = 0, dash = 0, ranged = 0, gold = 0, ret = 0, bodies = 0;
+};
+
+PickF body_feats(bc::champion_type t)
+{
+	PickF f;
+	const auto ti = static_cast<std::size_t>(t);
+	if (ti >= bc::champion_designs.size())
+		return f;
+	const auto& ch = bc::champion_designs[ti];
+	const auto s = ch.base_stats();
+	const double foc = s.base_focus;
+	double spell = 0, area = 0, heal = 0, shield = 0, stun = 0;
+	bool reset = false, dash = false;
+	for (const auto& a : ch.abilities())
+	{
+		const auto& inf = a.info();
+		if (!inf)
+			continue;
+		std::visit(
+			[&](const auto& v) {
+				using T = std::decay_t<decltype(v)>;
+				if constexpr (std::is_same_v<T, bc::ability_attack_reset>)
+				{
+					reset = true;
+					stun += v.enhanced_attack ? 1 : 0; // Marcella's enhanced attack stuns
+				}
+				else if constexpr (std::is_same_v<T, bc::ability_damage>)
+					spell += v.modifier * foc;
+				else if constexpr (std::is_same_v<T, bc::ability_cc>)
+					spell += v.modifier * foc, stun += 1;
+				else if constexpr (std::is_same_v<T, bc::ability_aoe_damage>)
+					area += v.modifier * foc, stun += v.duration > 0 ? 1 : 0;
+				else if constexpr (std::is_same_v<T, bc::ability_heal>)
+					heal += v.modifier * foc;
+				else if constexpr (std::is_same_v<T, bc::ability_shield>)
+					shield += v.modifier * foc;
+				else if constexpr (std::is_same_v<T, bc::ability_dash>)
+				{
+					dash = true;
+					if constexpr (requires { v.modifier; v.duration; }) // patch 3.0: Heart of Ruin's landing hit and stun
+						area += v.modifier * foc, stun += v.duration > 0 ? 1 : 0;
+				}
+			},
+			*inf);
+	}
+	const double basic = s.base_strength * (reset ? 1.125 : 1.0);
+	f.hp = (s.base_health + shield) / 1000.0;
+	f.basic = basic / 50.0;
+	f.splash = t == bc::champion_type::varg && bc::constants::passive_abilities::varg_splash_radius > 0 ? basic / 50.0 : 0.0; // strength again on each other target
+	f.spell = (spell + heal) / 8.0 / 50.0;
+	f.area = area / 8.0 / 50.0;
+	f.stun = stun;
+	f.dash = dash ? 1.0 : 0.0;
+	f.ranged = s.base_attack_range > 1 ? 1.0 : 0.0;
+	f.gold = t == bc::champion_type::vesper_vale ? bc::constants::passive_abilities::vesper_vale_bonus_gold_percent / 100.0 : 0.0;
+	f.ret = t == bc::champion_type::ren ? bc::constants::passive_abilities::ren_retaliation_focus_ratio * foc / 50.0 : 0.0;
+	f.bodies = 1;
+	return f;
+}
+
+bc::champion_type type_of(D c, int body);
+
+PickF pick_feats_raw(D c)
+{
+	PickF f = body_feats(type_of(c, 0));
+	if (c == D::cassi_and_issac)
+	{
+		const PickF g = body_feats(type_of(c, 1));
+		f.hp += g.hp, f.basic += g.basic, f.splash += g.splash, f.spell += g.spell, f.area += g.area, f.stun += g.stun, f.dash += g.dash,
+			f.ranged += g.ranged, f.gold += g.gold, f.ret += g.ret, f.bodies += g.bodies;
+	}
+	return f;
+}
+
+// Designs never change: every pick's features once, in the first draft turn (10x fuel); later turns (100k fuel) only add them up.
+PickF pick_feats(D c)
+{
+	static std::array<PickF, 16> cache{};
+	static std::array<bool, 16> ready{};
+	const auto i = static_cast<std::size_t>(c);
+	if (i >= cache.size())
+		return pick_feats_raw(c);
+	if (!ready[i])
+		cache[i] = pick_feats_raw(c), ready[i] = true;
+	return cache[i];
+}
+
+double model_value(D c)
+{
+	const PickF f = pick_feats(c);
+	const double g = std::max(1, F.groups);
+	double v = P.pd_w_hp * f.hp + P.pd_w_basic * f.basic + P.pd_w_splash * f.splash + P.pd_w_spell * f.spell + P.pd_w_area * f.area +
+		P.pd_w_stun * f.stun + P.pd_w_dash * f.dash + P.pd_w_ranged * f.ranged + P.pd_w_gold * f.gold + P.pd_w_ret * f.ret + P.pd_w_bodies * f.bodies;
+	// map interactions: area damage on packs, stuns on elks, a gold bonus on gold groups, several bodies on a 3-a-side map, a dash on a
+	// spread-out map, range on monolith maps (range 5)
+	v += P.pd_w_area_pack * (f.area + f.splash) * F.multi / g + P.pd_w_stun_elk * f.stun * F.elk / g + P.pd_w_gold_gold * f.gold * F.gold / g +
+		P.pd_w_bodies_small * f.bodies * (F.team <= 3 ? 1.0 : 0.0) + P.pd_w_dash_dist * f.dash * F.mean_dist / 30.0 +
+		P.pd_w_ranged_mono * f.ranged * (F.mono > 0 ? 1.0 : 0.0);
+	return v;
+}
+
+// Objective maps (the caster ring, v8's rule in kit terms): spell damage that reaches 4 (the ring stands outside the camps' reach),
+// area spells x 2 targets, relative to the best pick's.
+double ring_of_raw(D c);
+double ring_of(D c)
+{
+	static std::array<double, 16> cache{};
+	static std::array<bool, 16> ready{};
+	const auto i = static_cast<std::size_t>(c);
+	if (i >= cache.size())
+		return ring_of_raw(c);
+	if (!ready[i])
+		cache[i] = ring_of_raw(c), ready[i] = true;
+	return cache[i];
+}
+
+double ring_of_raw(D c)
+{
+	double r = 0;
+	for (int b = 0; b < (c == D::cassi_and_issac ? 2 : 1); ++b)
+	{
+		const auto ti = static_cast<std::size_t>(type_of(c, b));
+		if (ti >= bc::champion_designs.size())
+			continue;
+		const auto& ch = bc::champion_designs[ti];
+		const Kit k = kit_of(ch);
+		const double foc = ch.base_stats().base_focus;
+		if (k.dmg >= 0 && k.dmg_range >= 4.f)
+			r += foc * k.dmg_mod;
+		if (k.cc >= 0 && k.cc_range >= 4.f)
+			r += foc * k.cc_mod;
+		if (k.aoe >= 0 && k.aoe_range >= 4.f)
+			r += foc * k.aoe_mod * (k.aoe_radius >= 1.f ? 2.0 : 1.0);
+	}
+	return r / 8.0;
+}
+
+bool area_stun_of(D c)
+{
+	const PickF f = pick_feats(c);
+	return f.area > 0 && f.stun > 0;
+}
+
 double prior(D c);
 
 // Relative stat power of each pick on engine 3.0.4 (draft ids 0-11; PSTAT_TRACE build of this code), the anchor of stat_prior().
@@ -488,8 +646,12 @@ double prior(D c)
 	}
 }
 
+double pd_score_model(D c, const std::vector<D>& team, const std::vector<D>& enemy);
+
 double pd_score(D c, const std::vector<D>& team, const std::vector<D>& enemy)
 {
+	if (P.pd_stat >= 3)
+		return pd_score_model(c, team, enemy);
 	double v = stat_prior(c);
 	// Map fit.
 	if (MP.objective)
@@ -566,10 +728,72 @@ double pd_score(D c, const std::vector<D>& team, const std::vector<D>& enemy)
 
 int g_sub_done = 0; // P.pd_sub_from: our pd_sub_to pick stands for pd_sub_from (the draft instance lives through the whole draft)
 
+double counter_model(D c, const std::vector<D>& enemy);
+
+// pd_stat 3: the model's value of c on this map against the enemy's visible picks, plus v8's two map types in kit terms (measured
+// rules: the objective ring and open small-team maps).
+double pd_score_model(D c, const std::vector<D>& team, const std::vector<D>& enemy)
+{
+	(void)team; // the model is additive over picks: a pick's value does not depend on ours
+	double v = model_value(c);
+	if (MP.objective)
+	{
+		static double rmax = -1;
+		if (rmax < 0)
+		{
+			rmax = 0;
+			for (int i = 0; i < (SDK_HAS_HOR ? 12 : 11); ++i)
+				rmax = std::max(rmax, ring_of(static_cast<D>(i)));
+		}
+		v += P.pd_obj_ring * ring_of(c) / std::max(1e-9, rmax); // v8: Prism / Tavi +0.75 (the ring kills the camps from 4)
+		if (is_front(c))
+			v += area_stun_of(c) ? P.pd_obj_tank : -P.pd_obj_melee; // v8: Ryth +0.4 (tank, area stun), Ren / Varg -0.6
+	}
+	if (MP.open_small)
+	{
+		const PickF f = pick_feats(c);
+		if (f.ret > 0)
+			v -= P.pd_open_ret; // v8: Ren -0.5 (a farming race without contact: retaliation earns nothing)
+		if (f.splash > 0)
+			v += P.pd_open_splash; // v8: Varg +0.45 (splash on the packs)
+	}
+	return v + counter_model(c, enemy);
+}
+
+// Counters to the enemy's visible picks (pd_stat 3): the enemy team's features (the same model features, summed over its picks)
+// against ours: an enemy with melee basic damage favours our range and stuns; an enemy with burst favours our health. Weights
+// pd_cw_* (0 = no counter term).
+double counter_model(D c, const std::vector<D>& enemy)
+{
+	if (enemy.empty() || (P.pd_cw_ranged_melee == 0.f && P.pd_cw_stun_melee == 0.f && P.pd_cw_hp_burst == 0.f && P.pd_cw_dash_ranged == 0.f))
+		return 0;
+	double e_melee = 0, e_burst = 0, e_ranged = 0;
+	for (auto e : enemy)
+	{
+		const PickF g = pick_feats(e);
+		e_melee += (g.bodies - g.ranged) > 0 ? g.basic * (g.bodies - g.ranged) / g.bodies : 0.0;
+		e_burst += g.spell + g.area;
+		e_ranged += g.ranged;
+	}
+	const PickF f = pick_feats(c);
+	return P.pd_cw_ranged_melee * f.ranged * e_melee + P.pd_cw_stun_melee * f.stun * e_melee + P.pd_cw_hp_burst * f.hp * e_burst +
+		P.pd_cw_dash_ranged * f.dash * e_ranged;
+}
+
 bool param_pick(const std::vector<D>& mine_real)
 {
 	if (!mp_ready)
 		derive_params();
+#ifdef PSTAT_TRACE
+	if (P.pd_stat >= 3 && mine_real.empty())
+		for (int i = 0; i < (SDK_HAS_HOR ? 12 : 11); ++i)
+		{
+			const PickF f = pick_feats(static_cast<D>(i));
+			std::printf("PMODEL %d hp=%.4f basic=%.4f splash=%.4f spell=%.4f area=%.4f stun=%.0f dash=%.0f ranged=%.0f gold=%.3f ret=%.4f bodies=%.0f value=%.4f score=%.4f\n", i,
+				f.hp, f.basic, f.splash, f.spell, f.area, f.stun, f.dash, f.ranged, f.gold, f.ret, f.bodies, model_value(static_cast<D>(i)),
+				pd_score(static_cast<D>(i), {}, {}));
+		}
+#endif
 	const std::vector<D> enemy = bc::draft::current_draft(team::enemy);
 	std::vector<D> mine = mine_real;
 	if (P.pd_sub_from >= 0 && g_sub_done)
@@ -592,7 +816,15 @@ bool param_pick(const std::vector<D>& mine_real)
 		// pd_stat: picks come out by prior (body indices follow it: the lower index wins claim ties), the fixed order breaking ties. With
 		// v8's table this is v8's order for every team it drafts.
 		std::copy(order_all, order_all + n_order, order_st);
-		std::stable_sort(order_st, order_st + n_order, [](D a, D b) { return stat_prior(a) > stat_prior(b); });
+		if (P.pd_stat >= 3)
+		{
+			double val[16] = {};
+			for (std::size_t i = 0; i < n_order; ++i)
+				val[static_cast<std::size_t>(order_st[i])] = pd_score(order_st[i], {}, enemy);
+			std::stable_sort(order_st, order_st + n_order, [&](D a, D b) { return val[static_cast<std::size_t>(a)] > val[static_cast<std::size_t>(b)]; });
+		}
+		else
+			std::stable_sort(order_st, order_st + n_order, [](D a, D b) { return stat_prior(a) > stat_prior(b); });
 	}
 	const std::span<const D> order(P.pd_stat ? order_st : order_all, n_order);
 	auto has = [](const std::vector<D>& v, D c) { return std::find(v.begin(), v.end(), c) != v.end(); };
@@ -600,7 +832,19 @@ bool param_pick(const std::vector<D>& mine_real)
 	{
 		// First pick: the map type alone (pd_stat: on the default type the frontliner with the best prior, Ren in v8's table).
 		D first = pd_type == 2 ? D::prism : pd_type == 1 ? D::cassi_and_issac : D::ren;
-		if (P.pd_stat && pd_type == 0)
+		if (P.pd_stat >= 3)
+		{
+			// pd_stat 3: the best pick by the model on this map (on the default type the best frontliner: the lead body)
+			double bv = -1e9;
+			for (auto c : order)
+				if (pd_type != 0 || is_front(c))
+				{
+					const double v = pd_score(c, {}, enemy);
+					if (v > bv)
+						bv = v, first = c;
+				}
+		}
+		else if (P.pd_stat && pd_type == 0)
 		{
 			double bv = -1e9;
 			for (auto c : order)
@@ -716,7 +960,17 @@ void play_draft_pick();
 void play_draft()
 {
 	g_last_pick = -1;
+#ifdef DRAFT_FUEL
+	const auto f0 = bc::fuel_remaining();
 	play_draft_pick();
+	const auto f1 = bc::fuel_remaining();
+	debug_block({
+		std::printf("DFUEL turn_start=%llu used=%lld pick=%d\n", static_cast<unsigned long long>(f0), static_cast<long long>(f0) - static_cast<long long>(f1), g_last_pick);
+		std::fflush(stdout);
+	});
+#else
+	play_draft_pick();
+#endif
 	if (P.dm_plan)
 		try
 		{
@@ -741,8 +995,10 @@ void play_draft_pick()
 		catch (...)
 		{
 		}
-		std::printf("FEAT team=%d groups=%d gem=%d gold=%d wolf=%d elk=%d mono=%d multi=%d harmless=%d gem_groups=%d mean_dist=%.2f area=%d holes=%d altars=%d\n",
-			F.team, F.groups, F.gem, F.gold, F.wolf, F.elk, F.mono, F.multi, F.harmless, F.gem_groups, F.mean_dist, F.area, F.holes, F.altars);
+		std::printf("FEAT team=%d groups=%d gem=%d gold=%d wolf=%d elk=%d mono=%d multi=%d harmless=%d gem_groups=%d mean_dist=%.2f area=%d holes=%d altars=%d"
+			" ghp=%.0f gatt=%d gda=%d gde=%d\n",
+			F.team, F.groups, F.gem, F.gold, F.wolf, F.elk, F.mono, F.multi, F.harmless, F.gem_groups, F.mean_dist, F.area, F.holes, F.altars,
+			F.gem_group_hp, F.gem_group_att, F.gem_group_da, F.gem_group_de);
 	}
 #endif
 	if (P.mapdraft == 6)

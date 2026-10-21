@@ -283,6 +283,35 @@ struct Params
 	float pd_pri_marcella = 0.2f;
 	float pd_pri_vesper = 0.12f;
 	float pd_pri_willow = 0.1f;
+	// pd_stat 3: the draft-value model (draft.cpp model_value): weights of the logistic fit on 3.0.4 games (tools/draftmodel/fit.py; features:
+	// effective health / 1000, basic damage / 50 a round, Varg's splash, spell damage (+ heal) / 50 a round, area damage / 50, stuns, a dash,
+	// ranged, gold bonus, Ren's retaliation, bodies; interactions with the map's pack / elk / gold shares, team size 3, spread, monoliths)
+	float pd_w_hp = 0.514f;
+	float pd_w_basic = 0.531f;
+	float pd_w_splash = 0.f;
+	float pd_w_spell = 0.030f;
+	float pd_w_area = 0.545f;
+	float pd_w_stun = 0.209f;
+	float pd_w_dash = 0.059f;
+	float pd_w_ranged = 0.f;
+	float pd_w_gold = 0.742f;
+	float pd_w_ret = 0.f;
+	float pd_w_bodies = -0.864f;
+	float pd_w_area_pack = 0.237f;
+	float pd_w_stun_elk = 0.009f;
+	float pd_w_gold_gold = 0.185f;
+	float pd_w_bodies_small = -0.225f;
+	float pd_w_dash_dist = 0.153f;
+	float pd_w_ranged_mono = 0.108f;
+	float pd_obj_ring = 0.75f;	   // objective map: + x (the pick's spell damage from 4) / (the best pick's) (v8: Prism / Tavi +0.75)
+	float pd_obj_tank = 0.4f;	   // objective map: a melee pick with an area stun (v8: Ryth +0.4); other melee picks - pd_obj_melee (v8: Ren / Varg -0.6)
+	float pd_obj_melee = 0.6f;
+	float pd_open_ret = 0.5f;	   // open small-team map: - for retaliation (v8: Ren -0.5), + for splash (v8: Varg +0.45)
+	float pd_open_splash = 0.45f;
+	float pd_cw_ranged_melee = 0.f; // counters (pd_stat 3): x our pick's feature x the enemy picks' melee basic damage / burst / ranged count
+	float pd_cw_stun_melee = 0.f;
+	float pd_cw_hp_burst = 0.f;
+	float pd_cw_dash_ranged = 0.f;
 	int pd_sub_from = -1;	   // measurement only (patch 3.0.4 screen), -1 = off: the parameter draft plans as usual on a virtual roster where our
 	int pd_sub_to = -1;	   // pd_sub_to pick stands for pd_sub_from, and a planned pd_sub_from is picked as pd_sub_to (draft ids: 0 Ryth, 1 Vesper,
 							   // 2 Vendetta, 3 C&I, 4 Stellar, 5 Prism, 6 Marcella, 7 Willow, 8 Ren, 9 Varg, 10 Tavi, 11 Heart of Ruin): "Tavi wherever v8

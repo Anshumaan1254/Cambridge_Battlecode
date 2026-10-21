@@ -1,6 +1,6 @@
 diff -ruN god/src/brain.cpp _x_v10/src/brain.cpp
 --- god/src/brain.cpp	2026-10-21 11:53:13.190357600 +0000
-+++ _x_v10/src/brain.cpp	2026-10-21 14:21:45.588874392 +0000
++++ _x_v10/src/brain.cpp	2026-10-21 15:36:50.393058200 +0000
 @@ -4,11 +4,13 @@
  #include "learn.h"
  #include "draft.h"
@@ -105,7 +105,24 @@ diff -ruN god/src/brain.cpp _x_v10/src/brain.cpp
  			if (t == CT_HOR && P.hor_build >= 2)
  				cycle(v, { I::bruiser_shard_of_health, I::bruiser_shard_of_focus }, 30);
  			else if (P.build_tail == 1)
-@@ -795,6 +804,11 @@
+@@ -778,6 +787,16 @@
+ 			c = 99;
+ 		cd[s] = c;
+ 	}
++	if (P.fm_buffs & 1)
++	{
++		my_shield = 0.f;
++		std::array<bc::detail::buff_data, static_cast<std::size_t>(bc::buff_types::count)> raw{};
++		std::uint32_t n = 0;
++		if (bc::detail::sdk_champion_buff_data(self, raw.data(), static_cast<std::uint32_t>(raw.size()), &n) == 0)
++			for (std::uint32_t k = 0; k < n && k < raw.size(); ++k)
++				if (raw[k].type == static_cast<std::uint32_t>(bc::buff_types::shield))
++					my_shield = std::max(0.f, raw[k].data.shield.value);
++	}
+ 	const std::uint32_t before = gems;
+ 	bc::detail::sdk_champion_gems(self, &gems);
+ 	bc::detail::sdk_champion_gold(self, &gold);
+@@ -795,6 +814,11 @@
  	if (!inited)
  		init();
  	read_self();
@@ -117,7 +134,7 @@ diff -ruN god/src/brain.cpp _x_v10/src/brain.cpp
  	if (alive && round < P.start_round)
  	{
  		prebuild_fields();
-@@ -826,11 +840,31 @@
+@@ -826,11 +850,38 @@
  			else
  				C.write_stance(learner().stance);
  		}
@@ -132,6 +149,13 @@ diff -ruN god/src/brain.cpp _x_v10/src/brain.cpp
  	}
  	W.perceive(pos);
  	C.read(round);
++	if (P.farm_ema > 0.f && farm_pred > 0.f)
++	{
++		// T09d: last turn we farmed alone inside every live camp's reach; health lost since then vs the model's prediction.
++		if (hp <= last_hp && enemies_within(6) == 0)
++			farm_ema_v = std::clamp(farm_ema_v + P.farm_ema * (std::clamp((last_hp - hp) / farm_pred, 0.f, 3.f) - farm_ema_v), 0.7f, 1.5f);
++		farm_pred = 0.f;
++	}
 +	if (P.opp_plan && !P.opp_model)
 +	{
 +		// v9: shared evidence for the opponent model. Any body that sees an enemy on our half sets the contact bit; the leader
@@ -149,7 +173,45 @@ diff -ruN god/src/brain.cpp _x_v10/src/brain.cpp
  	if (P.reward_claim_gone)
  	{
  		// Shared memory says who works which group. A living ally whose claim leaves a reward we cannot see has taken it
-@@ -2298,7 +2332,8 @@
+@@ -1057,6 +1108,25 @@
+ 			}
+ 	});
+ #endif
++	if (P.farm_ema > 0.f)
++	{
++		// T09d: remember what the camp model predicts for the next round when we farm alone inside every live camp's reach; the next
++		// turn compares it with the health we actually lost (a model that measures its own error).
++		farm_pred = 0.f;
++		if (task == T_FARM && task_group >= 0 && task_group < static_cast<int>(W.groups.size()))
++		{
++			const auto& g = W.groups[static_cast<std::size_t>(task_group)];
++			bool all_in_reach = g.st == ST_ALIVE && g.awake;
++			for (std::size_t i = 0; i < g.camps.size() && all_in_reach; ++i)
++				if (g.hp[i] > 0 && g.camps[i].str > 0)
++					all_in_reach = cheb(g.camps[i].pos, pos) <= g.camps[i].range;
++			for (std::size_t i = 0; i < W.allies.size() && all_in_reach; ++i)
++				if (static_cast<int>(i) != W.my_index && W.allies[i].alive && W.allies[i].visible && cheb(W.allies[i].pos, g.center) <= 5)
++					all_in_reach = false; // a camp hits the nearest champion only
++			if (all_in_reach && enemies_within(6) == 0)
++				farm_pred = incoming_on_raw(g);
++		}
++	}
+ 	C.write_self(W.my_index, (task == T_FARM || task == T_CAPTURE || task == T_WAIT) ? task_group : -1);
+ 	last_hp = hp;
+ }
+@@ -1722,8 +1792,10 @@
+ 			if (!P.bank_ignore_spawn || !W.enemy_spawn.is_set(e.pos))
+ 				enemy_near_field = true;
+ 		}
+-		enemy_near_d = std::min(enemy_near_d, std::max(0, ed - age));
++		enemy_near_d = std::min(enemy_near_d, std::max(0, ed - (P.near_age_cap > 0 ? std::min(age, P.near_age_cap) : age)));
+ 	}
++	if (P.risky_persist > 0)
++		enemy_near_rounds = enemy_near_field ? enemy_near_rounds + 1 : 0;
+ 	mi_camp_in = 0;
+ 	for (const auto& g : W.groups)
+ 		if (g.st == ST_ALIVE && g.awake && g.hp_total > 0 && !g.harmless && cheb(g.center, pos) <= 10)
+@@ -2298,7 +2370,8 @@
  		for (const auto& e : W.enemies)
  			if (e.visible && e.alive && e.tributing && cheb(e.pos, a) <= 1)
  				enemy_tributing = true;
@@ -159,7 +221,41 @@ diff -ruN god/src/brain.cpp _x_v10/src/brain.cpp
  		bool has_any_lock = false;
  		try
  		{
-@@ -3118,6 +3153,9 @@
+@@ -2836,9 +2909,11 @@
+ 		if (e->ready(e->kit.cc) || (e->ready(e->kit.aoe) && e->kit.aoe_stuns))
+ 			++stunners, dps *= 1.15f;
+ 		const float pm = (P.fm_mode & 1) && e->type == CT_HOR ? 1.f + 0.5f * (1.f - e->hp / std::max(1.f, e->max_hp)) : 1.f;
+-		their_hp += w * e->hp;
++		their_hp += w * (e->hp + ((P.fm_buffs & 1) ? e->shield : 0.f));
++		if ((P.fm_buffs & 2) && e->stunned)
++			dps *= 0.7f; // a stunned enemy loses the first round of a ~3-round exchange
+ 		their_dps += w * dps * pm;
+-		if (d <= reach_of(*e))
++		if (d <= reach_of(*e) && !((P.fm_buffs & 2) && e->stunned))
+ 			incoming += (e->str + e->burst() / 2.f) * pm;
+ 	}
+ 	// Our side: self plus visible allies within 6 (with their spells, not just basic attacks).
+@@ -2847,7 +2922,9 @@
+ 	if (ready(kit.cc)) my_burst = std::max(my_burst, focus * kit.cc_mod);
+ 	if (ready(kit.aoe)) my_burst = std::max(my_burst, focus * kit.aoe_mod);
+ 	if (ready(kit.reset)) my_burst = std::max(my_burst, str);
+-	float our_hp = hp, our_dps = str + focus * best_mod(kit) / 8.f + my_burst / 3.f;
++	if (P.fix_my_dash && ready(kit.dash) && kit.dash_mod > 0.f)
++		my_burst = std::max(my_burst, focus * kit.dash_mod); // T01: Heart of Ruin's landing is its fight spell (burst_vs counts it; this did not)
++	float our_hp = hp + ((P.fm_buffs & 1) ? my_shield : 0.f), our_dps = str + focus * best_mod(kit) / 8.f + my_burst / 3.f;
+ 	if ((P.fm_mode & 1) && type == CT_HOR)
+ 		our_dps *= 1.f + 0.5f * (1.f - hp / std::max(1.f, max_hp)); // Heart of Ruin hits harder the lower it is
+ 	if ((P.fm_mode & 2) && type == CT::ren)
+@@ -3054,7 +3131,7 @@
+ 	}
+ 	const int aoe_r5 = P.aoe_cast5 && ready(kit.aoe) ? static_cast<int>(kit.aoe_range + kit.aoe_radius) : 0;
+ 	bool killable = d <= std::max(my_reach, (ready(kit.dmg) || ready(kit.cc)) ? 4 : 0) &&
+-		tgt->hp <= burst_vs(*tgt) + allies_burst;
++		tgt->hp + ((P.fm_buffs & 1) ? tgt->shield : 0.f) <= burst_vs(*tgt) + allies_burst;
+ 	if (!killable && aoe_r5 > 0 && d <= aoe_r5)
+ 		killable = tgt->hp <= (d <= kit.attack_range && can_attack ? str : 0.f) + focus * kit.aoe_mod + allies_burst; // F2: the area from 5
+ 	const bool in_reach = P.aoe_reach5 == 3 ? danger4.is_set(pos) : danger.is_set(pos);
+@@ -3118,6 +3195,9 @@
  		fight = true;
  	else if (in_reach && !can_escape && adv >= P.cornered_margin)
  		fight = true; // fleeing a same-speed chaser hands it free hits: trade instead
@@ -169,7 +265,7 @@ diff -ruN god/src/brain.cpp _x_v10/src/brain.cpp
  	else if (tgt->channeling && adv >= 0.9f)
  		fight = true;
  	// P.pair_low_hp: Cassi & Issac leave a fight they can walk away from earlier (ladder: 64% of our 59 pair deaths were
-@@ -3988,7 +4026,10 @@
+@@ -3988,7 +4068,10 @@
  			for (std::size_t i = 0; i < g.camps.size(); ++i)
  			{
  				const int d = cheb(g.camps[i].pos, pos);
@@ -181,7 +277,7 @@ diff -ruN god/src/brain.cpp _x_v10/src/brain.cpp
  					continue;
  				bool shielded = false;
  				for (const auto& a : W.allies)
-@@ -4003,11 +4044,11 @@
+@@ -4003,11 +4086,11 @@
  				if (obj)
  				{
  					obj_in += g.camps[i].str;
@@ -195,7 +291,7 @@ diff -ruN god/src/brain.cpp _x_v10/src/brain.cpp
  			}
  		}
  	// P.pair_retreat_hp: Cassi & Issac walk home from camps earlier (a body caught low by an enemy kills both bodies).
-@@ -4158,6 +4199,17 @@
+@@ -4158,6 +4241,17 @@
  		if (plan_now >= PLAN_INVADER)
  			stance = preset_of(plan_now).stance; // a counter plan brings its own stance
  	}
@@ -213,7 +309,7 @@ diff -ruN god/src/brain.cpp _x_v10/src/brain.cpp
  	if (P.mono_grouped_until > 0 && world().mono_mode && round < P.mono_grouped_until)
  		stance = STANCE_GROUPED; // lone-monolith maps: the first contact is a team wipe for whoever arrives piecemeal
  	isolated_fight_adv = P.isolated_fight_adv + dl_val(dl_iso, dl_iso_r);
-@@ -4370,6 +4422,63 @@
+@@ -4370,6 +4464,63 @@
  		else if (s == 4)
  			enemy_half_penalty *= 0.5f;
  	}
@@ -277,7 +373,17 @@ diff -ruN god/src/brain.cpp _x_v10/src/brain.cpp
  }
  
  int Brain::style_now() const
-@@ -4586,8 +4695,16 @@
+@@ -4475,7 +4626,8 @@
+ 	const bool winning = wins_with(static_cast<int>(gems)) && gems > 0;
+ 	if (P.prism_bank && type == CT::prism && !force && !endgame && !winning && hp >= P.prism_bank_hp * max_hp)
+ 		return false; // F4 Prism banker: the bag is focus (+1 per gem); bank it only when it wins, at the end, or when we may lose it
+-	const bool risky = enemy_near_field && static_cast<int>(gems) >= P.tribute_risky;
++	const bool risky = enemy_near_field && static_cast<int>(gems) >= P.tribute_risky &&
++		(P.risky_persist <= 0 || enemy_near_rounds >= P.risky_persist || hp < 0.6f * max_hp); // T14a: one flash sighting no longer herds a bag to an altar
+ 	// Once a bank trip starts, finish it: re-deciding every turn let a passing enemy or the on-the-way test
+ 	// flip the choice each round and the champion oscillated in place for hundreds of rounds.
+ 	const bool committed = P.sticky_tribute && task == T_TRIBUTE && static_cast<int>(gems) >= 10;
+@@ -4586,8 +4738,16 @@
  	const bool opp = C.alert_kind == AL_OPPORTUNITY;
  	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
  	const bool their_endgame = theirs >= P.endgame_alarm;
@@ -296,7 +402,19 @@ diff -ruN god/src/brain.cpp _x_v10/src/brain.cpp
  	if (hp < hp_gate * max_hp || ((task == T_CAPTURE || reward_here()) && !their_endgame))
  		return false;
  	const int d = cheb(C.alert_pos, pos);
-@@ -4874,8 +4991,11 @@
+@@ -4699,6 +4859,11 @@
+ 
+ float Brain::incoming_on(const Group& g) const
+ {
++	return P.farm_ema > 0.f ? incoming_on_raw(g) * farm_ema_v : incoming_on_raw(g);
++}
++
++float Brain::incoming_on_raw(const Group& g) const
++{
+ 	float in = 0;
+ 	for (std::size_t i = 0; i < g.camps.size(); ++i)
+ 		if (g.hp[i] > 0)
+@@ -4874,8 +5039,11 @@
  		d += foc * k.dmg_mod;
  	if (k.cc >= 0 && k.cc_range >= rd && k.cc_mod > 0)
  		d += foc * k.cc_mod;
@@ -310,7 +428,7 @@ diff -ruN god/src/brain.cpp _x_v10/src/brain.cpp
  	return d / 8.f;
  }
  
-@@ -5467,6 +5587,8 @@
+@@ -5467,6 +5635,8 @@
  	float value = ((P.no_altar_gold && W.no_altar_now() && !g.unlock ? 0.f : static_cast<float>(g.gems)) + gold_v * static_cast<float>(g.gold)) * share;
  	if (P.handoff)
  		value *= value_mult_handoff;
@@ -319,7 +437,7 @@ diff -ruN god/src/brain.cpp _x_v10/src/brain.cpp
  	if (P.pxs_style)
  	{
  		const int s = style_now();
-@@ -5807,7 +5929,7 @@
+@@ -5807,7 +5977,7 @@
  	auto& W = world();
  	if (task != T_CAPTURE && cast_en_route())
  		return;
@@ -328,7 +446,7 @@ diff -ruN god/src/brain.cpp _x_v10/src/brain.cpp
  	{
  		int leader = -1;
  		for (int i = 0; i < static_cast<int>(W.allies.size()); ++i)
-@@ -6528,6 +6650,33 @@
+@@ -6528,6 +6698,33 @@
  				return true;
  			}
  	}
@@ -364,8 +482,21 @@ diff -ruN god/src/brain.cpp _x_v10/src/brain.cpp
  		note_dmg(g.id, focus * kit.dmg_mod);
 diff -ruN god/src/brain.h _x_v10/src/brain.h
 --- god/src/brain.h	2026-10-21 11:51:00.960652072 +0000
-+++ _x_v10/src/brain.h	2026-10-21 13:43:32.256646839 +0000
-@@ -334,6 +334,13 @@
++++ _x_v10/src/brain.h	2026-10-21 15:36:39.350978637 +0000
+@@ -142,7 +142,11 @@
+ 
+ 	// farming model
+ 	float dps_on(const Group& g) const;			  // our damage per round against g (splash, area, retaliation)
+-	float incoming_on(const Group& g) const;	  // damage per round g deals to the champion it targets (after passives)
++	float incoming_on(const Group& g) const;
++	float incoming_on_raw(const Group& g) const; // P.farm_ema: the model before the learned multiplier
++	float my_shield = 0.f;						  // P.fm_buffs: our shield buff value
++	float farm_ema_v = 1.f, farm_pred = 0.f;		  // P.farm_ema: learned multiplier, last turn's prediction
++	int enemy_near_rounds = 0;					  // P.risky_persist: rounds in a row with an enemy within 9	  // damage per round g deals to the champion it targets (after passives)
+ 	float ally_dps_on(int ally, const Group& g) const; // estimated contribution of an ally farming g
+ 	bool ally_melee(int ally) const;
+ 	int trip_cost(const Group& g) const;		  // rounds to heal at spawn and come back to g
+@@ -334,6 +338,13 @@
  	int stance = 0;
  	int tribute_min = 34;
  	void update_mode();
@@ -449,8 +580,44 @@ diff -ruN god/src/comms.h _x_v10/src/comms.h
  Comms& comms();
 diff -ruN god/src/draft.cpp _x_v10/src/draft.cpp
 --- god/src/draft.cpp	2026-10-21 12:30:53.632763330 +0000
-+++ _x_v10/src/draft.cpp	2026-10-21 13:29:00.962110459 +0000
-@@ -542,6 +542,12 @@
++++ _x_v10/src/draft.cpp	2026-10-21 15:36:50.393656374 +0000
+@@ -28,7 +28,34 @@
+ void note_pick(D c)
+ {
+ 	g_last_pick = static_cast<int>(c);
+-	bc::draft::pick(c);
++	if (!P.draft_guard)
++	{
++		bc::draft::pick(c);
++		return;
++	}
++	try
++	{
++		bc::draft::pick(c);
++		return;
++	}
++	catch (...)
++	{
++	}
++	// v9 tasks T13: a pick that throws (an SDK or roster surprise) must not leave the slot to the engine's random pick.
++	for (const D f : { D::ryth, D::vesper_vale, D::vendetta, D::varg, D::ren, D::marcella, D::tavi, D::prism, D::stellar, D::willow, D::cassi_and_issac })
++	{
++		if (f == c)
++			continue;
++		try
++		{
++			bc::draft::pick(f);
++			g_last_pick = static_cast<int>(f);
++			return;
++		}
++		catch (...)
++		{
++		}
++	}
+ }
+ 
+ struct Features
+@@ -542,6 +569,12 @@
  		P.pd_w_ranged_mono * f.ranged * (F.mono > 0 ? 1.0 : 0.0);
  	if (F.mono > 0) // monolith maps (20,000 health, range 5): what holds and what deals damage there
  		v += P.pd_w_hp_mono * f.hp + P.pd_w_basic_mono * f.basic + P.pd_w_spell_mono * f.spell + P.pd_w_area_mono * f.area;
@@ -463,6 +630,19 @@ diff -ruN god/src/draft.cpp _x_v10/src/draft.cpp
  	return v;
  }
  
+diff -ruN god/src/learn.cpp _x_v10/src/learn.cpp
+--- god/src/learn.cpp	2026-10-20 20:49:05.662343963 +0000
++++ _x_v10/src/learn.cpp	2026-10-21 15:39:18.432707510 +0000
+@@ -138,6 +138,9 @@
+ 	const auto si = static_cast<std::size_t>(stance);
+ 	// Soft (exponential moving average) update of the played stance; unplayed ones drift back to their
+ 	// priors so a single bad window cannot lock a stance out for the rest of the game.
++	if (P.bandit_discount > 0.f)
++		for (auto& v : q)
++			v *= 1.f - P.bandit_discount; // v9 tasks T11: old windows weigh less (a changing opponent makes old lessons stale)
+ 	q[si] += P.learn_rate * (r - q[si]);
+ 	++plays[si];
+ 	const std::array<float, STANCE_COUNT> q0{ P.q0_spread, P.q0_grouped, P.q0_push };
 diff -ruN god/src/main.cpp _x_v10/src/main.cpp
 --- god/src/main.cpp	2026-10-21 11:47:26.704689840 +0000
 +++ _x_v10/src/main.cpp	2026-10-21 13:22:32.952726537 +0000
@@ -853,7 +1033,7 @@ diff -ruN god/src/opp9.h _x_v10/src/opp9.h
 +Opp9& opp9();
 diff -ruN god/src/params.h _x_v10/src/params.h
 --- god/src/params.h	2026-10-21 12:30:53.634061104 +0000
-+++ _x_v10/src/params.h	2026-10-21 14:21:45.589959432 +0000
++++ _x_v10/src/params.h	2026-10-21 15:39:18.436190383 +0000
 @@ -313,6 +313,8 @@
  	float pd_w_basic_mono = 0.f;
  	float pd_w_spell_mono = 0.f;
@@ -863,7 +1043,7 @@ diff -ruN god/src/params.h _x_v10/src/params.h
  	float pd_obj_ring = 0.75f;	   // objective map: + x (the pick's spell damage from 4) / (the best pick's) (v8: Prism / Tavi +0.75)
  	float pd_obj_tank = 0.4f;	   // objective map: a melee pick with an area stun (v8: Ryth +0.4); other melee picks - pd_obj_melee (v8: Ren / Varg -0.6)
  	float pd_obj_melee = 0.6f;
-@@ -659,6 +661,59 @@
+@@ -659,6 +661,68 @@
  	float deny_capture_mult = 1.3f; // value multiplier for contesting an enemy's capture
  
  	// Fight execution (strategy v2, replay audit of 15 top-team games: 74% of the rounds our champions were hit by
@@ -894,6 +1074,15 @@ diff -ruN god/src/params.h _x_v10/src/params.h
 +	float opp_even_bal = -0.25f;  // trades count as even (HUNT, not RACE) down to this balance: a net loss decays below it in ~3 windows
 +	int opp_deny_at = 850;		  // their banked gems from which DENY applies when they also finish first
 +	float opp_dive_prior = 0.15f; // initial contact index per enemy diver (melee or dash champion) beyond the second
++	int fix_my_dash = 0;		  // v9 tasks T01: combat()'s my_burst also counts our own ready damaging dash (Heart of Ruin's landing, focus x dash_mod), as
++						  // burst_vs() already does (0 = v8: a Heart of Ruin judged its fights without its main spell)
++	int fm_buffs = 0;		  // T09 (bits): 1 shields (a visible enemy's shield adds to its effective health, ours to ours: engine buff data),
++						  // 2 a stunned enemy deals x0.7 in the exchange and nothing to us this round
++	float farm_ema = 0.f;	  // T09d: > 0: learning rate of a multiplier (0.7-1.5) on incoming_on() from the camp damage we actually took vs predicted
++	int risky_persist = 0;	  // T14a: the "risky" bank needs an enemy within 9 for this many rounds in a row (or health < 60%); 0 = one sighting
++	int near_age_cap = 0;	  // T14b: a sighting's age shortens enemy_near_d by at most this many tiles (hold_spell_dist reads it); 0 = unbounded
++	float bandit_discount = 0.f; // T11: > 0: every stance value x (1 - this) at each window close before the update (0.2: a window 10 windows back weighs 10%)
++	int draft_guard = 0;	  // T13: a draft pick that throws falls back to the first legal pick of a fixed list (else the engine picks at random)
 +	float heavy_value = 1.f;	  // value x this for heavy groups (a monolith or >= om_heavy gems); the sparring objective style uses x pxs_obj_mult
 +	int ally_defend = 0;		  // 1: join a fight at the hit-back bar (fight_back_margin) when a visible ally within the target's reach + 1 took damage since
 +						  // our last turn and we have at least ally_defend_hp of our health (the vetoes below the ladder still apply)
@@ -925,7 +1114,7 @@ diff -ruN god/src/params.h _x_v10/src/params.h
  								// (ranged: attack/cast and stand; melee: attack, then still step toward the target)
 diff -ruN god/src/world.cpp _x_v10/src/world.cpp
 --- god/src/world.cpp	2026-10-20 19:48:22.388239270 +0000
-+++ _x_v10/src/world.cpp	2026-10-21 13:43:32.248660381 +0000
++++ _x_v10/src/world.cpp	2026-10-21 15:36:39.350546199 +0000
 @@ -345,6 +345,27 @@
  	bc::detail::check(bc::detail::sdk_enemies(handles.data(), count, &count));
  	for (std::uint32_t i = 0; i < count; ++i)
@@ -954,7 +1143,29 @@ diff -ruN god/src/world.cpp _x_v10/src/world.cpp
  }
  
  void Group::update_cluster()
-@@ -436,6 +457,8 @@
+@@ -428,6 +449,21 @@
+ 			std::int32_t c = 0;
+ 			e.cd[slot] = bc::detail::sdk_champion_cooldown(e.handle, slot, &c) == 0 ? c : 0;
+ 		}
++		if (P.fm_buffs)
++		{
++			// v9 tasks T09: shields (Varg 2.5 x focus, Heart of Ruin 1.5 x focus) and stuns are invisible in the health number.
++			e.shield = 0.f, e.stunned = false;
++			std::array<bc::detail::buff_data, static_cast<std::size_t>(bc::buff_types::count)> raw{};
++			std::uint32_t n = 0;
++			if (bc::detail::sdk_champion_buff_data(e.handle, raw.data(), static_cast<std::uint32_t>(raw.size()), &n) == 0)
++				for (std::uint32_t k = 0; k < n && k < raw.size(); ++k)
++				{
++					if (raw[k].type == static_cast<std::uint32_t>(bc::buff_types::shield))
++						e.shield = std::max(0.f, raw[k].data.shield.value);
++					else if (raw[k].type == static_cast<std::uint32_t>(bc::buff_types::stun))
++						e.stunned = true;
++				}
++		}
+ 		e.seen_round = round;
+ 	}
+ 	for (auto& a : allies)
+@@ -436,6 +472,8 @@
  		a.visible = a.alive && read_champion(a.handle, info);
  		if (a.visible)
  		{
@@ -965,8 +1176,17 @@ diff -ruN god/src/world.cpp _x_v10/src/world.cpp
  			a.pos = { info.x, info.y };
 diff -ruN god/src/world.h _x_v10/src/world.h
 --- god/src/world.h	2026-10-20 19:48:22.395413449 +0000
-+++ _x_v10/src/world.h	2026-10-21 13:43:32.244664186 +0000
-@@ -121,6 +121,7 @@
++++ _x_v10/src/world.h	2026-10-21 15:36:39.350002027 +0000
+@@ -93,6 +93,8 @@
+ 	std::int32_t state = 0;
+ 	bool channeling = false, tributing = false, recalling = false;
+ 	std::array<int, 2> cd{ 0, 0 }; // ability cooldowns, readable while visible
++	float shield = 0.f;			   // P.fm_buffs: shield buff value (engine), while visible
++	bool stunned = false;		   // P.fm_buffs: stun buff active, while visible
+ 	bool ready(int slot) const { return slot >= 0 && cd[static_cast<std::size_t>(slot)] <= 0; }
+ 	// Damage it can add this turn on top of a basic attack (best ready spell or a reset swing).
+ 	float burst() const
+@@ -121,6 +123,7 @@
  	int died_round = -1000; // last death we saw (respawn after respawn_time)
  	int seen_round = -1000; // last round this body saw it (pos is that sighting)
  	bool channeling = false; // recalling, banking or teleporting when last seen (cannot fight)

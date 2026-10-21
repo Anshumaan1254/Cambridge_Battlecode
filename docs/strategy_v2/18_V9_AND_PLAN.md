@@ -67,6 +67,18 @@ Gate G3 (presets on: non-inferior on the normal pool, superior on the switcher p
 `_v9x0` 32/42, paired margin -117.5 gems a map [-262.5, +33.1]**. Plain v8 already beats that invader 76%: in our code family raiding
 is a weak strategy, so a counter-plan has little to gain and its false alarms cost farming.
 
+**ADP-2's culprit search: each plan forced on for whole games** (`opp_force`, our 3.0.4 base, 21-map pool, 42 games each; FARM =
+`_m1p3`, the plan's "perfect detector" case):
+
+| Opponent (persona) | FARM | DEFEND | PUNISH | EVADE | HUNT |
+|---|---|---|---|---|---|
+| invader `_pnI` | **36** | 28 | 35 | 35 | 30 |
+| v9 raider r400-700 `_pnV` | **28** | 27 | 22 | 28 | 22 |
+| deathball `_pnD` | **41** | 39 | 39 | 40 | 39 |
+
+No counter-plan beats plain farming even against the style it was written for; DEFEND (the answer to invaders) is the worst against
+the invader. A better detector cannot make this layer pay: the presets themselves point the wrong way for our bot.
+
 ### 3b. Code review of the upload (what is right, what is fragile)
 
 - It works: no compile error on the real SDK, no fault or exception in our games, every switch inert at its default (the guards
@@ -115,6 +127,26 @@ is a weak strategy, so a counter-plan has little to gain and its false alarms co
 | DRF-1 / 2 / 3 | draft memory, zones, opening book | `dm_plan` (session 14: not better); zones closed in session 13 (bodies spread, fights lost); the opening book is replaced by the dynamic draft's map features |
 | REL-1 / 2 / 3 | fuel, regression, release | at the end, for the final candidate |
 
+### 4b. The second task file (`GOD_v9_Improvement_Tasks.md`, T01-T15; now `docs/strategy_v2/GOD_v9_Improvement_Tasks_oct21.md`)
+
+Received at 15:30 UTC with the request to implement whatever it adds and deliver the best bot now. It is written against v8 for the
+same balance patch (it calls it 3.1; it is our engine 3.0.4) and overlaps the first plan:
+
+| Task | What it asks | Status here |
+|---|---|---|
+| T01 | count our own damaging dash (Heart of Ruin's landing) in `combat()`'s burst | **built** (`fix_my_dash`), screened (`_t01`) |
+| T02 | re-tune the draft priors for the patch | superseded by the dynamic draft (`pd_stat` 3 has no per-champion prior); its ring-range gate concerns the objective draft our draft barely uses (Prism / Tavi in 2-3% of games) |
+| T03 | flip 12 existing switches after A/B | screened: `ml2_adapt`, `ml2_gb`, `threat_map`, `mono_team` above / below; groups A (`fm_mode` 7, `hor_threat` 3, `mi_learn_burst` 1, `sup_mode` 7, `chan_keep` 2: `_t3A`) and B (`finish_race` 120, `mi_endgame_bank` 100: `_t3B`), `tail_stat` 1 (`_t3ts`) and the singles |
+| T04-T07 | shared-memory v2, opponent model, plans, draft memory | the same design as the first plan's adaptive layer (sections 2-3: it loses, and its presets lose even when forced against their own target); our session-14 versions (`opp_model`, `dm_plan`) measured below v8 too |
+| T08 | team influence map | our `threat_map` (screened: 44.2%) and `om_sight` (shared sightings, screened) |
+| T09 | fight model: shields, stuns, hidden support, camp-damage calibration | **built**: `fm_buffs` (engine buff data: shield values and stuns of visible enemies and of us; both SDKs have the call), `farm_ema` (learned multiplier on the camp-damage model); hidden support needs the plans (not built) |
+| T10 | carrier interception, altar guard | our `gank` (50.0%) and `deny_altar` (46.2%) |
+| T11 | non-stationary stance bandit | **built**: `bandit_discount` (exploration and reset need the opponent model) |
+| T12 | ward placement by information gain | not built (needs vision simulation per candidate tile; the plans' ward items measured nothing earlier) |
+| T13 | watchdog, guaranteed draft pick, exception report | watchdog: exists (fault test above); **built** `draft_guard` (a pick that throws falls back to a legal pick); exceptions: `EXC_TRACE`, 0 in 72 games |
+| T14 | herding exploit, held spells, seeded tie-breaks, Prism bag, dead knobs | **built** a (`risky_persist`) and b (`near_age_cap`); c (random tie-breaks against opponents who pre-position from our replays) cannot be measured locally; d not applicable (Prism 3%) |
+| T15 | testing workflow | the ledger / abstat / abmargin protocol of this document |
+
 ## 5. Results of the re-screens on our 3.0.4 base
 
 ### 5a. The v9 switches on top of `_m1p3` (head-to-head vs `_m1p3`, tuning half, 312 games each)
@@ -150,7 +182,31 @@ Personas = our 3.0.4 bot (dynamic draft) with a fixed style (`pxs_style`, sessio
 Aggression loses to us; the economy styles (farming at home, taking the heavy groups) are the close match-ups, so the counters worth
 building are economic, not reactive. A milder heavy-group bonus is in the screens (`heavy_value` 1.5 / 2 / 3).
 
-(stage-1 re-screens of the plan's items and the thresholds follow)
+### 5c. Stage 1: single switches on `_m1p3`, head-to-head vs `_m1p3` on `train78a` (78 maps x 2 sides = 156 games each)
+
+A variant at >= 51% goes to stage 2 (the other 78 tuning maps). With 156 games one cell's standard deviation is about 4 points, so
+stage 1 only removes clear losers.
+
+| Variant (switch) | Plan item | Wins of 156 | Maps 2-0 / 1-1 / 0-2 | Deaths ours-theirs |
+|---|---|---|---|---|
+| `_yopD` v9 model, DEFEND only | ADP-2 ablation | 74 (47.4%) | 6 / 62 / 10 | 2,580-2,552 |
+| `_yopP` PUNISH only | ADP-2 | 79 (50.6%) | 6 / 67 / 5 | 2,588-2,573 |
+| `_yopH` HUNT only | ADP-2 | 81 (51.9%) | 9 / 63 / 6 | 2,558-2,561 |
+| `_yopR` RACE only | ADP-2 | 82 (52.6%) | 4 / 74 / 0 | 2,526-2,563 |
+| `_yopE` EVADE only | ADP-2 | 80 (51.3%) | 2 / 76 / 0 | 2,472-2,550 |
+| `_yopN` DENY only | ADP-2 | 82 (52.6%) | 5 / 72 / 1 | 2,529-2,593 |
+| `_yopT` all plans, stricter detector (contact 0.5 x 3 windows, 3 home deaths, depth 0.6, 3 losses) | ADP-1 | 81 (51.9%) | 12 / 57 / 9 | 2,638-2,578 |
+| `_ydr` `deny_ramp` | UPG-4 | 78 (50.0%) | 0 / 78 / 0 | 2,543-2,547 |
+| `_m2` draft weights refitted on 17,004 games | PAT-2 | 84 (53.8%) | 16 / 52 / 10 | 2,605-2,719 |
+| `_m2c` refit + crowded-map terms | PAT-2 | 79 (50.6%) | 12 / 55 / 11 | 2,504-2,549 |
+| `_zgb` `ml2_gb` (boosted trees) | PAT-5 / UPG-5 | 65 (41.7%) | 13 / 39 / 26 | 2,502-2,241 |
+| `_zml15` `ml2_leave` = `ml2_flee` 0.15 | PAT-5 | 77 (49.4%) | 15 / 47 / 16 | 2,337-2,383 |
+| `_zml30` ... 0.30 | PAT-5 | 71 (45.5%) | 13 / 45 / 20 | 2,837-2,415 |
+| `_zma` `ml2_adapt` 0.02 | PAT-5 | 80 (51.3%) | 14 / 52 / 12 | 2,605-2,595 |
+| `_zme` `ml2_enter` 0.4 (fight on P(kill8)) | UPG-5 | 77 (49.4%) | 11 / 55 / 12 | 2,670-2,652 |
+| `_zad` `ally_defend` (new) | coordination audit | 79 (50.6%) | 5 / 69 / 4 | 2,550-2,508 |
+
+(more rows as the queue finishes)
 
 ## 6. Decisions
 

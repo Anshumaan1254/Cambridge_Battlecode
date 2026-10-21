@@ -251,3 +251,17 @@ Base: our dynamic-draft bot `_m1p3`. Stage 1 = head-to-head vs `_m1p3` on `train
 | `enemy_half_penalty` 20 (`_zeh20`, then `_v10e20` on top of v10) | stay home more against the farmer persona | 55 of 96 on the old base (cut); on v10 vs v10 on `train78b` (fresh maps) 83/156 = 53.2% [45.4, 60.9], sign p 0.46, margin -7.8 gems a map [-96, +90] | level: farming the enemy half is not where the farmer beats us |
 | The upload's `enemy_comp_init`, `ring_reach`, `tavi_str` | read enemy kits early; ring by area reach; Tavi on strength | 49.4% / 50.3% / 49.7% | our draft picks Tavi / Prism in 2-3% of games, so they almost never act |
 | Stance bandit with discounting (`bandit_discount`) | the T11 non-stationary learner | not screened | the stance learner is neutral and exploration cost 2 points in session 1; it needs the opponent model to reset on a change |
+
+## Session 14, v11: the user's Prism / anchor / Heart of Ruin / phases / losing / ward requests (21 Oct, engine 3.0.4; `experiments/wip/x_v11_NOTES.md`)
+
+156 games each, h2h vs GOD v10 on `train78a` (78 tuning maps x 2 sides).
+
+| Idea | Why it should help | Result | Verdict |
+|---|---|---|---|
+| Prism instead of Vesper Vale (`pd_sub_from` 1 -> `pd_sub_to` 5) | Prism buffed (1.5 focus per carried gem), a natural carrier / banker | 58/156 = 37.2% (maps 13 / 32 / 33) | the draft model ranks Prism far below Vesper (fitted log-odds .31 vs .97) and the games agree; not shipped |
+| Prism as the safe anchor (home-side groups only, bags x0.38 ~ 20, danger exit 0.1, never the enemy half, hand-off on the reward tile) | one careful banker while the rest take the risk | 58/156 = 37.2% on the Prism draft (level with the swap alone), 64/156 = 41.0% with Vesper as the anchor | a fifth of the team farming small home groups gives away more than the bags it saves |
+| Heart of Ruin as the aggressor (`hor_aggro` 1: enemy half x0.4, deny +0.5, fight margins -0.15) | the strike dash opens fights | 51.3% alone on the Vesper draft (level); 29.5% on the Prism draft (+377 deaths) | level at best |
+| `hor_aggro` 2 (margins only while fresh, strike dash up, an ally within 6) | no lone dives | 48.1% (maps 1 / 73 / 4) | changes little: the strike logic already opens in those states |
+| Three phases (0-666, 666-1332, 1332-2000: mid presses, end banks smaller bags) | the game changes over time | 47.4% (5 / 64 / 9) | the race / endgame logic already reacts to the score, which is what the phase stands for |
+| Change strategy when losing (`lose_adapt`: from r666, 100+ gems behind: press if trades are even, else regroup) | adapt to a lost race | 51.3% (6 / 68 / 4) | level: the existing `race_mode` already does the same once the gap is real |
+| Map-scored wards on our own camps / altars (`ward_smart` 1) | watch what we farm and bank | 60/156 = 38.5%, our deaths +620 | loses v10's forward early warning: a ward watching our camps sees what our bodies already see |

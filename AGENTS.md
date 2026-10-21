@@ -592,6 +592,12 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   (scouting tiles ahead, scored), `hor_aggro` 2 (only fresh, dash up, ally near), phases alone, losing-adapt alone. Branch deletion is
   refused by the git proxy (as before): the user deletes the other branches in the GitHub UI; their content is on main
   (`experiments/archive_branches/`).
+- **19:16 UTC**: q86 / q87 done. `ward_smart` 2 (`_v11Aw2`: the ward goes to the best tile ahead of us on the walk field toward their
+  spawn, scored by bushes, the corridor, contested groups; else v10's rule) **58.3% vs v10 on train78a**, held-out test152 164/304 =
+  53.9% (p 0.11, margin +37 [-12, +89]), train78b 51.9%; all 308 maps 336/616 = 54.5% (69 maps 2-0, 41 0-2). The other refinements
+  are level (`hor_aggro` 2 48.1%, phases alone 47.4%, losing-adapt alone 51.3%). Running: `$S/q88.sh` (Prism + anchor + scouting wards
+  `_v11Pw2`, the user's Prism team) then `$S/q89.sh` = `tools/finalcheck.sh _v11Aw2 _v10b` (v8, 19 outside opponents, pace, fuel).
+  Ship `_v11Aw2` as GOD v11 only if the outside opponents are not worse than v10's 678/798.
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first
 

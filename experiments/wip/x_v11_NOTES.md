@@ -36,3 +36,12 @@ Results (wins of 156 vs GOD v10):
 | `_v11Ah` | hor_aggro 1 alone | 80 | 51.3 | 2621-2672 |
 | `_v11Ap` | phases + lose_adapt alone | 71 | 45.5 | 2773-2607 |
 | `_v11Aa` | anchors (Vesper anchor) + side + bags + hand-off alone | 64 | 41.0 | 2582-2376 |
+| `_v11Aw2` | **ward_smart 2** (scouting: tiles ahead toward their spawn on the walk field, scored; else v10's rule) | **91** | **58.3** | 2357-2784 |
+| `_v11Ah2` | hor_aggro 2 (margins only fresh + dash up + ally within 6) | 75 | 48.1 | 2523-2591 |
+| `_v11Aph` | phases alone | 74 | 47.4 | 2818-2626 |
+| `_v11Alo` | lose_adapt alone | 80 | 51.3 | 2603-2555 |
+
+`_v11Aw2` confirmation: held-out test152 164/304 = 53.9% [48.3, 59.5], maps 30 / 104 / 18, sign p 0.11, margin +37.2 gems a map
+[-12.4, +88.5]; train78b 81/156 = 51.9% (17 / 47 / 14), margin -18.6; all 308 maps 336/616 = 54.5%, maps 69 2-0 / 41 0-2.
+Fuel (release, corners_v3 / nx100x100 / nx60x60 vs v10): 61 lost turns r>3 in 6 games (opponent 59). Builds on SDK 2.2.5.
+

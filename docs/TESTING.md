@@ -1,3 +1,34 @@
+# Testing GOD v10: commands that reproduce every number in docs/strategy_v2/18_V9_AND_PLAN.md
+
+`tools/setup_session.sh` restores the exact sources of every 3.0.4 reference and sparring bot from `experiments/proxies/v304_bots.tar.xz`
+(`_v8k1`, `_m1`, `_m1p3`, `_m2`, `_v10a`, `_v10b` = GOD v10, `_x_v10` = the switch copy with every switch off, `_q_s2v`, `_k_fit`, `_k_ci`,
+the personas `_pn*`, `_v9inv`) and checks their source hashes, so the rows in `experiments/results/ledger_v3_0_4/` count again. **Since
+GOD v10, `bots/god` is v10**: the `SRC=bots/god` recipes in the sections below were run on the dynamic-draft code of that day; rebuild
+those bots from the archive, and make new variants from `bots/_x_v10` (every switch off = v8's play; add `pd_stat=3 pocket_fix=3` for
+the dynamic draft) or from `bots/god`.
+
+```bash
+# stage 1 (screen; one switch on the reference): head-to-head on train78a
+SRC=bots/_x_v10 tools/variant.sh _zX pd_stat=3 pocket_fix=3 SWITCH=VALUE
+python3 tools/ledger.py run _zX _m1p3 --maps "$(cat experiments/pools/train78a.csv)" --jobs 4 --chunk 16
+python3 tools/abstat.py _zX _m1p3 --pool experiments/pools/train78a.csv
+# the held-out test (152 maps no choice used), the gem margin, then all 308 maps
+python3 tools/ledger.py run _v10b _m1p3 --maps "$(cat experiments/pools/test152.csv)" --jobs 4 --chunk 16 --keep KEEP
+python3 tools/abstat.py _v10b _m1p3 --pool experiments/pools/test152.csv
+python3 tools/abmargin.py _v10b _m1p3 --pool experiments/pools/test152.csv
+python3 tools/abmargin.py _v10b _v8k1 --base _m1p3 --pool experiments/pools/test152.csv     # paired design (both vs v8)
+python3 tools/drafts_of.py KEEP/_v10b_vs__m1p3 --by-size                                     # where the refitted draft differs
+# the release checks: vs v8, h2h vs the reference, 19 outside opponents, pace, platform-mode faults and lost turns
+tools/finalcheck.sh _v10b _m1p3 KEEP
+# exceptions (EXC_TRACE copy), the draft refit (experiments/results/draftfit_v10/README.md), the opponent-model traces
+SRC=bots/_v10b tools/variant.sh _yexc10 --define EXC_TRACE
+python3 tools/tracecount.py _yexc10 _v8k1,_pws,_q_s2v 'EXC r=' --maps 'maps/comp30/*.map26a,maps/nyx_new/*.map26a,maps/loss_oct20/*.map26a'
+SRC=bots/_x_v10 tools/variant.sh _yopd pd_stat=3 pocket_fix=3 opp_plan=1 opp_presets=0 --define OPP_TRACE
+python3 tools/opptrace.py _yopd _v8k1,_v9inv --pool experiments/pools/train78a.csv          # debug mode (release drops team stdout)
+# ship: copy into bots/god, clean build, wasm identity check, zip + history (re-run once if the toolchain's 32-byte path variation shows)
+tools/ship_god.sh _v10b v10
+```
+
 # Testing the 3.0.4 GOD (dynamic draft): commands that reproduce every number in docs/strategy_v2/17_PATCH_3_0_4.md
 
 Engine cambc 3.0.4 (`tools/setup_session.sh` installs it; rows land in `experiments/results/ledger_v3_0_4/`). v8 = `_v8k1` (GOD v8 as

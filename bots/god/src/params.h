@@ -262,6 +262,10 @@ struct Params
 	int pd_obj_mid = 2;
 	int ally_kit = 0;		   // patch 3.0.4: 1 = an ally's damage on a camp group from its kit (engine modifiers, dps_on()'s arithmetic) instead of
 							   // the typed 3.4 / 2.0 / 1.5 x focus (Stellar / Cassi / the rest) of ally_dps_on() (ISSUES #39)
+	int pocket_fix = 0;	   // patch 3.0.4 (bits): 1 = a body where no walk leads home (a hole pocket entered by a dash) dashes to the landing tile with
+							   // the shortest walk home when it goes home, else recalls; step_field skips its fallback search from tiles its field cannot
+							   // reach and from such pockets (it burned every turn's fuel there: 149 lost turns for a Vesper on nx100x100); 2 = in such a
+							   // pocket the dash takes us out as soon as it is up, whatever the task (after fights, not on a reward to capture)
 	int build_kit = 0;		   // patch 3.0.4: 1 = the build from the kit (Brain::build_from_kit: damage stat by what a shard pays, melee opens with
 							   // Jungle health, ranged with Monster, the linked pair skips Treasure) instead of the per-champion lists of build_for()
 	int build_stat = 0;	   // patch 3.0.4: 1 = the build list's focus / strength shards in the stat the kit pays most for (engine numbers, brain.cpp

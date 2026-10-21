@@ -32,6 +32,7 @@ struct ScoreParts
 class Brain
 {
 public:
+	void debug_state(unsigned long long fuel_left) const; // FUEL_STATE builds: one line per turn (called inside debug_block)
 	void safe_fallback(); // F6 watchdog (main.cpp)
 	void turn();
 
@@ -287,6 +288,7 @@ private:
 	bool go_group(Group& g, int stop_at, bool avoid);
 	bool go_altar(int id);
 	bool go_home_step(bool avoid);
+	bool pocket_dash(); // P.pocket_fix
 	bool after_move(bool moved);
 	void prebuild_fields();
 	int nearest_altar(int& dist) const;

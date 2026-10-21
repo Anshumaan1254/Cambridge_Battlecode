@@ -40,7 +40,12 @@ int main()
 			const auto left = bc::fuel_remaining();
 			debug_block({
 				if (!bc::is_draft())
+				{
 					std::printf("FL r=%u %llu\n", bc::round_number(), static_cast<unsigned long long>(left));
+#ifdef FUEL_STATE
+					brain().debug_state(static_cast<unsigned long long>(left));
+#endif
+				}
 			});
 		}
 #endif

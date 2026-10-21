@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-21 11:45 UTC (session 14: PATCH 3.0.4 arrived, engine switched to cambc 3.0.4, new GOD for the new balance in progress: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
+- Last updated: **2026-10-21 11:55 UTC (session 14: PATCH 3.0.4 arrived, engine switched to cambc 3.0.4, new GOD for the new balance in progress: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
   Rule from the user: update this file and push at every step. Start with **§S14**, then **§S13-GOD**, **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
@@ -514,10 +514,20 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   Vendetta / Ryth / Heart of Ruin lead, Vesper, + Ryth / HoR / Marcella / Vendetta by the map's packs, spread and team size. Running:
   `tools/abconfirm.sh _m1` (held-out test152, then all308; log `$S/conf_m1.log`) and `$S/q66.sh` (round-robin of 13 draft variants on 39 train
   maps, 78 games a pair: data for the counter weights `pd_cw_*`, which cannot be fitted from v8-only games: leave-maps-out loss 1.64).
-- **11:45 UTC (container clock): CONFIRMED. `_m1` vs v8 on the held-out half (test152, never used for the fit or any choice): 235/304 =
+- **11:24 UTC (container clock): CONFIRMED. `_m1` vs v8 on the held-out half (test152, never used for the fit or any choice): 235/304 =
   77.3% [72.3, 81.7], maps 95 / 45 / 12, sign p < 0.0001; all 308 maps: 491/616 = 79.7% [76.4, 82.7], maps 205 / 81 / 22, deaths 6,989 vs
   12,862; every map folder >= 67%** (comp 28/34, comp30 18/20, nyx_new 17/20, gold3 49/56, var17 81/102). Builds on SDK 2.2.5. Running: q68
   (`_m1` third-party cells + vs `_q_s2v`, `_k_fit`), q66 (round-robin), then q67 (`_m1b`, `_m1k`).
+- **11:55 UTC: third parties and function.** `_m1` on the 21-map pool: `_pws` 40, `_pw` 40, `_pc` 41, `_g4` 39, `_m15` 42, `_mite` 42, `_ifish`
+  41, `_px9` 38 = **323/336 (v8 283, Vesper swap 310)**, pace vs idle 1012.5 (v8 1099.8), 0 faults; vs the adapted drafts `_q_s2v` 24/42, `_k_fit`
+  19/42. Release-mode fuel check (`tools/fueltrace.py`, M6 maps x 2 sides): 0 faults, but **lost turns after round 3: 92 / 295 / 83 vs `_v8k1` /
+  `_pws` / `_q_s2v` (v8 64 / 54 / 49)**. Traced (`FUEL_STATE` build: one line per body-turn, `rollover_who.mjs`): on nx100x100 our Vesper dashed
+  into a hole pocket (gold and gem clusters at (27-28, 21-22), one-wide crossings) and stood there 280 rounds, every turn ending at 0-2k fuel
+  (149 lost turns): `W.home` is built on plain walls, so no step improves and `step_field`'s dynamic fallback search (a walk) expands the
+  whole map every turn and fails. v8 met it with Ren (session 14, `dash_box`); three dash kits in the new drafts meet it more. **Fix
+  `pocket_fix`** (bits, off): 1 = going home from a walk-disconnected tile dashes to the landing tile with the shortest walk home, else
+  recalls; `step_field` skips the fallback search from unreachable tiles and pockets; 2 = in a pocket the dash takes us out as soon as it
+  is up, whatever the task. Running: q71 (fuel check `_m1p1`, `_m1p3`), q66 (31 / 78 pairs).
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

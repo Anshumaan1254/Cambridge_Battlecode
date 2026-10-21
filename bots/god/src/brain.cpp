@@ -592,6 +592,11 @@ std::vector<I> Brain::build_from_kit() const
 	return v;
 }
 
+void Brain::debug_state(unsigned long long fuel_left) const
+{
+	std::printf("FS r=%d t=%d pos=(%d,%d) task=%d g=%d gems=%u left=%llu\n", round, static_cast<int>(type), pos.x, pos.y, task, task_group, gems, fuel_left);
+}
+
 void Brain::init()
 {
 	init_round = static_cast<int>(bc::round_number());
@@ -950,10 +955,21 @@ void Brain::turn()
 	const bool dmg_up0 = kit.dmg >= 0 && cd[static_cast<std::size_t>(kit.dmg)] <= 0, aoe_up0 = kit.aoe >= 0 && cd[static_cast<std::size_t>(kit.aoe)] <= 0;
 #endif
 	bool acted = false;
+#ifdef FUEL_STATE
+#define FSP(tag) debug_block({ std::printf("FP r=%d t=%d %s %llu\n", round, static_cast<int>(type), tag, static_cast<unsigned long long>(bc::fuel_remaining())); })
+#else
+#define FSP(tag) (void)0
+#endif
+	FSP("start");
 	if (P.mono_rg && regroup_active() && (P.mono_rg_fight_r <= 0 || enemies_within(P.mono_rg_fight_r) == 0))
 		acted = go_home(), dbg_path = 9;
 	if (!acted)
 		acted = combat();
+	FSP("combat");
+	// pocket_fix 2: in a pocket no walk leaves (dist_home unreachable) a dash kit dashes out as soon as its dash is up, whatever the task:
+	// the fields route into such pockets over one-wide hole crossings, and staying cost a body hundreds of rounds (nx100x100).
+	if (!acted && (P.pocket_fix & 2) && W.dist_home(pos) >= BIG && !reward_here() && pocket_dash())
+		acted = true, dbg_path = 12;
 	if (acted)
 		dbg_path = task == T_FIGHT ? 1 : 2;
 	if (!acted && (acted = safety()))
@@ -974,8 +990,10 @@ void Brain::turn()
 		dbg_path = 7;
 	if (!acted && P.mono_fort && W.mono_mode && round < P.mono_fort_until)
 		acted = go_home(), dbg_path = 9;
+	FSP("chain");
 	if (!acted)
 		farm(), dbg_path = 8;
+	FSP("farm");
 #ifdef SPELL_TRACE
 	debug_block({
 		auto& WW = world();
@@ -1019,7 +1037,9 @@ void Brain::turn()
 		unstick();
 	if (P.stall_guard > 0 && W.dash_off_until == round) // hole crossings are back: the plain-walls fields are stale
 		nav().reset_fields();
+	FSP("unstick");
 	prebuild_fields();
+	FSP("prebuild");
 	XM(xm_post());
 #ifdef LEGEND_TRACE
 	debug_block({
@@ -1880,9 +1900,53 @@ bool Brain::go_altar(int id)
 	return after_move(Nav::step_to(pos, fallback, &av, mob_dash(), can_move));
 }
 
+// pocket_fix (patch 3.0.4, found with the dynamic draft's dash kits): a body standing where no walk leads home (W.home is built on
+// plain walls: a hole pocket entered by a dash, nx100x100's gold pocket at (28,21)) has no improving step on the home field, and the
+// dynamic fallback search cannot reach home either: it burned the whole turn's fuel every turn (Vesper: 149 lost turns, stuck 280
+// rounds). Dash to the landing tile with the shortest walk home instead.
+bool Brain::pocket_dash()
+{
+	auto& W = world();
+	if (kit.dash < 0 || !ready(kit.dash))
+		return false;
+	const int rng = std::max(1, static_cast<int>(kit.dash_range));
+	const bc::bitboard blocked = Nav::blocked_now(pos);
+	std::array<std::pair<int, vec2>, 25> c{};
+	int n = 0;
+	for (int dy = -rng; dy <= rng; ++dy)
+		for (int dx = -rng; dx <= rng; ++dx)
+		{
+			const vec2 q{ pos.x + dx, pos.y + dy };
+			if ((dx == 0 && dy == 0) || !bc::map::is_in_bounds(q) || blocked.is_set(q) || n >= static_cast<int>(c.size()))
+				continue;
+			const int d = W.dist_home(q);
+			if (d < BIG)
+				c[static_cast<std::size_t>(n++)] = { d, q };
+		}
+	std::sort(c.begin(), c.begin() + n, [](const auto& a, const auto& b) { return a.first < b.first; });
+	for (int i = 0; i < n && i < 4; ++i)
+	{
+		try
+		{
+			if (bc::self().abilities()[static_cast<std::size_t>(kit.dash)].use(c[static_cast<std::size_t>(i)].second))
+			{
+				pos = c[static_cast<std::size_t>(i)].second;
+				cast_done = true;
+				return after_move(true);
+			}
+		}
+		catch (...)
+		{
+		}
+	}
+	return false;
+}
+
 bool Brain::go_home_step(bool avoid)
 {
 	auto& W = world();
+	if (P.pocket_fix && W.dist_home(pos) >= BIG && pocket_dash())
+		return true;
 	const bc::bitboard av = danger | camp_danger | alert_zone;
 	g_exit_first = P.flee_exit && avoid;
 	const bool moved = after_move(Nav::step_field(pos, W.home, 0, avoid ? &av : nullptr, mob_dash(), can_move, W.ally_spawn));
@@ -3687,6 +3751,21 @@ bool Brain::go_home()
 	if (W.ally_spawn.is_set(pos))
 		return true;
 	const int dh = W.dist_home(pos);
+	if (P.pocket_fix && dh >= BIG && !flag(state, bc::champion_state::recalling))
+	{
+		// pocket_fix: no walk leads home from here: dash out, else recall even with an enemy about (a cancelled recall costs a turn,
+		// standing here costs every turn).
+		if (pocket_dash())
+			return true;
+		try
+		{
+			bc::self().recall();
+			return true;
+		}
+		catch (...)
+		{
+		}
+	}
 	if (dh > P.recall_min_dist && safe_to_recall())
 	{
 		if (P.no_split && can_move)

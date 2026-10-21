@@ -435,8 +435,10 @@ bool Nav::step_field(vec2& pos, const Field& field, int stop_at, const bc::bitbo
 			}
 		}
 	}
-	// Units block every improving step: route around them with a dynamic search.
-	if (!fallback_goals.is_empty() && bc::fuel_remaining() > 30000)
+	// Units block every improving step: route around them with a dynamic search. pocket_fix: not from a tile the field cannot reach,
+	// nor from a pocket no walk leaves (the improving step is a hole crossing for the dash): the walking search would expand the map
+	// for nothing every turn.
+	if (!fallback_goals.is_empty() && bc::fuel_remaining() > 30000 && !(P.pocket_fix && (here >= BIG || world().dist_home(pos) >= BIG)))
 	{
 		const int start_v = here;
 		if (step_to(pos, fallback_goals, avoid, -1, true))

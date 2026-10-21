@@ -1,0 +1,267 @@
+diff -ruN god/src/brain.cpp _x_v11/src/brain.cpp
+--- god/src/brain.cpp	2026-10-21 16:36:50.750033608 +0000
++++ _x_v11/src/brain.cpp	2026-10-21 18:36:09.886882036 +0000
+@@ -2402,6 +2402,16 @@
+ 	if (!force && round - ward_round < (wb >= 2 ? std::min(10, P.ward_bush_gap) : 10))
+ 		return;
+ 	auto& W = world();
++	if (P.ward_smart && !wb && !(P.pxs_style && style_now() == 5))
++	{
++		if (round - ward_round >= 10)
++			smart_ward();
++		if (P.ward_smart == 1)
++			return;
++		if (round - ward_round < 10)
++			return; // 2: placed a scouting ward
++		// 2: nothing ahead worth a ward: the usual rule below
++	}
+ 	if (P.ward_plan && (round - ward_round >= 10 || force) && plan_ward(force))
+ 		return;
+ 	vec2 bush{ -1, -1 };
+@@ -2469,6 +2479,115 @@
+ 	ward_round = round; // do not retry every turn
+ }
+ 
++float Brain::ward_score(vec2 t, const WardCtx& c, const bc::bitboard& bush) const
++{
++	// v11 ward value of tile t: what a ward there watches (vision 6) that the team cares about. The group and altar lists are
++	// filtered once per decision (smart_ward): scoring every group for each of the 25 tiles cost ~65k fuel and lost the turn.
++	const auto& W = world();
++	const int dh = W.dist_home(t), da = W.dist_away(t);
++	if (dh >= BIG || da >= BIG)
++		return -1.f;
++	float s = 0;
++	for (const auto& g : c.groups)
++		if (cheb(t, g.c) - g.r <= 6)
++			s += g.v;
++	for (const vec2 a : c.altars)
++		if (cheb(t, a) <= 6)
++			s += 30.f;
++	if (c.D < BIG && dh + da <= c.D + 4)
++		s += 20.f; // on the corridor between the spawns: their approach
++	if (bush.is_set(t))
++		s = s * 1.3f + 10.f; // a ward inside a bush reveals it (ENGINE_FACTS)
++	for (const vec2 o : c.others)
++		if (cheb(o, t) <= 5)
++		{
++			s *= 0.35f; // an ally ward already watches this
++			break;
++		}
++	return s;
++}
++
++bool Brain::smart_ward()
++{
++	// v11 (P.ward_smart): the best scored tile within placement reach (2); our standing ward moves only for a clearly better tile.
++	// Scored at most once per ward_round step (the first version re-scored every turn when it kept its ward: 15k lost turns in 12 games).
++	if (bc::fuel_remaining() < 30000)
++	{
++		ward_round = round - 9; // late in a heavy turn: try again next round
++		return false;
++	}
++	auto& W = world();
++	if (P.ward_smart == 1)
++		ward_round = round - 5; // next look in 5 rounds unless we place now (a placement sets the 10-round cooldown); 2 falls back to the default rule
++	static bc::bitboard bush = bc::map::bushes(); // static map data: fetched once
++	WardCtx c;
++	bool have = false;
++	try
++	{
++		for (const auto& wd : bc::vision::wards(team::ally))
++		{
++			const vec2 p = wd.position();
++			if (p == ward_pos)
++				have = true;
++			else
++				c.others.push_back(p);
++		}
++	}
++	catch (...)
++	{
++	}
++	for (const auto& g : W.groups)
++	{
++		if (g.d_ally >= BIG || g.d_enemy >= BIG || g.d_ally > g.d_enemy + 4)
++			continue; // our half and the contested middle
++		if (cheb(pos, g.center) - g.radius > 8 && !(have && cheb(ward_pos, g.center) - g.radius <= 6))
++			continue;
++		const float contest = 1.f + 4.f / (4.f + static_cast<float>(std::abs(g.d_enemy - g.d_ally)));
++		c.groups.push_back({ g.center, g.radius, (static_cast<float>(g.gems) + gold_v * static_cast<float>(g.gold)) * contest });
++	}
++	for (std::size_t i = 0; i < W.altars.size(); ++i)
++		if ((cheb(pos, W.altars[i]) <= 8 || (have && cheb(ward_pos, W.altars[i]) <= 6)) && altar_ours(i))
++			c.altars.push_back(W.altars[i]);
++	c.D = W.dist_home(W.enemy_spawn_c);
++	const float cur = have && P.ward_smart == 1 ? ward_score(ward_pos, c, bush) : 0.f;
++	vec2 best{ -1, -1 };
++	float bs = 0.f;
++	for (int dy = -2; dy <= 2; ++dy)
++		for (int dx = -2; dx <= 2; ++dx)
++		{
++			const vec2 t = pos + vec2{ dx, dy };
++			if (!bc::map::is_in_bounds(t) || t == ward_pos || W.walls.is_set(t) || W.camp_occ.is_set(t))
++				continue;
++			float s = ward_score(t, c, bush);
++			if (P.ward_smart == 2)
++			{
++				// 2: a scouting ward, as the default rule (2 tiles toward their spawn: early warning measured better than watching our
++				// own camps, 1 lost 38.5% with +620 deaths), placed on the best such tile: ahead of us, a bush or a corridor tile.
++				const int ahead = W.dist_away(pos) - W.dist_away(t);
++				if (ahead <= 0 || s < 0.f)
++					continue;
++				s = s * 0.25f + 15.f * static_cast<float>(ahead);
++			}
++			if (s > bs)
++				bs = s, best = t;
++		}
++	if (best.x < 0 || bs <= 0.f || (P.ward_smart == 1 && have && bs < P.ward_keep * cur + 5.f))
++		return false;
++	try
++	{
++		if (bc::self().place_ward(best))
++		{
++			ward_round = round;
++			ward_pos = best;
++			return true;
++		}
++	}
++	catch (...)
++	{
++	}
++	return false;
++}
++
+ bool Brain::plan_ward(bool force)
+ {
+ 	// F3: a planned spot (draft memory) within placement reach (2) that watches what this body works on, not covered by an ally ward.
+@@ -4178,7 +4297,7 @@
+ 		for (int i = 0; i < static_cast<int>(W.allies.size()); ++i)
+ 		{
+ 			const auto t = W.allies[static_cast<std::size_t>(i)].type;
+-			const float pri = t == CT::vesper_vale ? 3.f : t == CT::marcella ? 2.f : t == CT::prism ? 1.f : 0.f;
++			const float pri = t == CT::prism && P.anchor_prism ? 4.f : t == CT::vesper_vale ? 3.f : t == CT::marcella ? 2.f : t == CT::prism ? 1.f : 0.f;
+ 			const auto ti = static_cast<std::size_t>(t);
+ 			const float bh = ti < bc::champion_designs.size() ? static_cast<float>(bc::champion_designs[ti].base_stats().base_health) : 1000.f;
+ 			r.push_back({ -1e5f * pri + bh + 0.001f * static_cast<float>(i), i });
+@@ -4429,6 +4548,57 @@
+ 			}
+ 		}
+ 	}
++	if (P.phases)
++	{
++		// v11: three phases of the 2,000 rounds (early economy, mid contest, end race).
++		const int ph = round < P.phase_mid ? 0 : round < P.phase_end ? 1 : 2;
++		const float ehp[3] = { P.ph_early_ehp, P.ph_mid_ehp, P.ph_end_ehp };
++		const float den[3] = { P.ph_early_deny, P.ph_mid_deny, P.ph_end_deny };
++		const float trb[3] = { P.ph_early_trib, P.ph_mid_trib, P.ph_end_trib };
++		enemy_half_penalty *= ehp[ph];
++		deny_bonus = std::max(0.f, deny_bonus + den[ph]);
++		tribute_min = std::max(10, static_cast<int>(static_cast<float>(tribute_min) * trb[ph]));
++	}
++	if (P.lose_adapt && round >= P.phase_mid && theirs - ours >= P.lose_gap)
++	{
++		// v11: losing the gem race: if the trades go our way take their gems, else regroup and bank faster.
++		const auto& W = world();
++		if (W.enemy_deaths + 2 >= W.ally_deaths)
++		{
++			enemy_half_penalty *= P.lose_ehp;
++			deny_bonus += P.lose_deny;
++		}
++		else
++		{
++			enemy_half_penalty *= P.lose_regroup;
++			isolated_fight_adv += 0.2f;
++			tribute_min = std::max(10, static_cast<int>(static_cast<float>(tribute_min) * P.lose_trib));
++		}
++	}
++	if (P.hor_aggro && type == CT_HOR)
++	{
++		// v11: Heart of Ruin as the aggressor. 1: always (takes the enemy half's camps and carriers, opens fights); 2: only while it
++		// is fresh (health >= hor_aggro_hp, strike dash up) with an ally within 6 to follow the strike: a lone diver dies (1 cost
++		// 8 points and +377 deaths on the Prism draft).
++		bool on = P.hor_aggro == 1;
++		if (P.hor_aggro == 2 && kit.dash >= 0 && cd[static_cast<std::size_t>(kit.dash)] <= 0 && hp >= P.hor_aggro_hp * max_hp)
++			for (const auto& a : world().allies)
++				if (a.alive && a.visible && !(a.pos == pos) && cheb(a.pos, pos) <= 6)
++				{
++					on = true;
++					break;
++				}
++		if (on)
++		{
++			if (P.hor_aggro == 1)
++			{
++				enemy_half_penalty *= P.hor_aggro_ehp;
++				deny_bonus += P.hor_aggro_deny;
++			}
++			fight_margin = std::max(1.0f, fight_margin - P.hor_aggro_fm);
++			isolated_fight_adv = std::max(1.0f, isolated_fight_adv - P.hor_aggro_fm);
++		}
++	}
+ 	if (type == CT::cassi || type == CT::issac)
+ 	{
+ 		fight_margin += P.pair_caution;
+@@ -5297,6 +5467,9 @@
+ 			follow_g = true;
+ 		}
+ 	}
++	if (P.anchor_side > 0.f && P.anchors && is_anchor && g.d_ally < BIG && g.d_enemy < BIG &&
++		static_cast<float>(g.d_ally) > P.anchor_side * static_cast<float>(g.d_ally + g.d_enemy))
++		{ WHY(20); return -1; } // v11: the anchor farms only groups on the side nearer our spawn
+ 	const int d_tile = d_override >= 0 ? d_override : nav().group_dist(g, pos);
+ 	if (d_tile >= BIG)
+ 		{ WHY(3); return -1; }
+diff -ruN god/src/brain.h _x_v11/src/brain.h
+--- god/src/brain.h	2026-10-21 16:36:50.759722504 +0000
++++ _x_v11/src/brain.h	2026-10-21 18:28:19.349331718 +0000
+@@ -270,6 +270,15 @@
+ 	bool chain_keep(const Group& g, int recall_t, bool bag, bool rich); // F5: a nearby target beats the home trip
+ 	bool body_is_anchor(int i) const { return i >= 0 && i < 8 && anchor_now[static_cast<std::size_t>(i)]; }
+ 	bool plan_ward(bool force); // P.ward_plan
++	bool smart_ward(); // P.ward_smart
++	struct WardCtx
++	{
++		struct G { vec2 c; int r; float v; };
++		std::vector<G> groups; // our-half / contested groups near enough to be watched from a tile in reach
++		std::vector<vec2> altars, others;
++		int D = BIG;
++	};
++	float ward_score(vec2 t, const WardCtx& c, const bc::bitboard& bush) const;
+ 	std::array<vec2, 8> ew_pos{};	 // P.ward_enemy: last seen enemy ward per enemy index (owner)
+ 	std::array<int, 8> ew_round{};
+ 	std::vector<std::pair<vec2, int>> ew_tiles; // ... owner unknown (2.2.x SDK): tile, last seen round
+diff -ruN god/src/params.h _x_v11/src/params.h
+--- god/src/params.h	2026-10-21 16:36:50.809112851 +0000
++++ _x_v11/src/params.h	2026-10-21 18:34:54.053695483 +0000
+@@ -854,6 +854,31 @@
+ 	float handoff_bonus = 1.5f;	// anchor: value x this for a reward an ally holds for it
+ 	int prism_bank = 0;			// 1: our Prism (focus grows with its bag) holds bags: banks only a winning bag, in the endgame or below prism_bank_hp
+ 	float prism_bank_hp = 0.35f;
++	// ---- v11 (the user, Oct 21): Prism as the safe anchor, Heart of Ruin as the aggressor, game phases, losing adaptation, map-scored wards.
++	// Every switch 0 = GOD v10 play.
++	int anchor_prism = 0;		// 1: Prism ranks first in the anchor order (then Vesper, Marcella, the lowest base health)
++	float anchor_side = 0.f;	// > 0: an anchor farms only groups with d_ally <= anchor_side x (d_ally + d_enemy): never the enemy half
++								// (0.5 = our half; 0.4 = the part nearer our spawn), on top of anchor_home_w (cost per tile from its altar)
++	int hor_aggro = 0;			// 1: Heart of Ruin is the aggressor: enemy half x hor_aggro_ehp, deny bonus + hor_aggro_deny, fight margin and
++	float hor_aggro_ehp = 0.4f; // isolated-fight bar - hor_aggro_fm (its strike dash and shield already make it the best opener we have)
++	float hor_aggro_deny = 0.5f;
++	float hor_aggro_fm = 0.15f; float hor_aggro_hp = 0.7f;
++	int phases = 0;				// 1: early (round < phase_mid), mid (< phase_end), end game: enemy half x ph_*_ehp, deny + ph_*_deny,
++	int phase_mid = 666;		// tribute_min x ph_*_trib
++	int phase_end = 1332;
++	float ph_early_ehp = 1.f, ph_mid_ehp = 0.8f, ph_end_ehp = 1.f;
++	float ph_early_deny = 0.f, ph_mid_deny = 0.2f, ph_end_deny = 0.3f;
++	float ph_early_trib = 1.f, ph_mid_trib = 1.f, ph_end_trib = 0.75f;
++	int lose_adapt = 0;			// 1: behind by >= lose_gap banked gems from phase_mid on: trades going well (their deaths + 2 >= ours) -> pressure
++	int lose_gap = 100;			// (enemy half x lose_ehp, deny + lose_deny); trades going badly -> regroup and race (enemy half x lose_regroup,
++	float lose_ehp = 0.6f;		// isolated-fight bar + 0.2, tribute_min x lose_trib)
++	float lose_deny = 0.4f;
++	float lose_regroup = 1.5f;
++	float lose_trib = 0.8f;
++	int ward_smart = 0;			// 1: on maps without bush warding (ward_bush_maps), a ward goes to the best map-scored tile in placement reach: the
++								// value of our-half / contested groups it watches (contested ones x up to 2), our altars, the corridor between
++	float ward_keep = 1.3f;		// the spawns, bush tiles; tiles an ally ward already watches x 0.35. Our standing ward is moved only for a tile
++								// scoring ward_keep x better (one ward per champion: v10 replaced it every 10 rounds wherever the body stood)
+ 
+ 	// ---- Chain farming (F5). 0 = v8's capture-recall triggers (health < cap_recall_hp 0.61, gold after the capture >= 60, a bankable bag).
+ 	int chain_farm = 0;			// 1: after a capture, recall only when hurt, or when the home trip (bank + shop) is worth more per round than the

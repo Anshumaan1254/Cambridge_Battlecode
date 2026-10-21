@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-21 13:50 UTC (session 14: the user's v9 upload measured (worse than v8 and far below our 3.0.4 bot); the plan's items being re-screened on our 3.0.4 base, §S14.8 last bullet; PATCH 3.0.4: the dynamic-draft GOD is built and confirmed (79.4% vs v8 on all 308 maps); ladder pair god-dynamic-draft-on / -off pushed, waiting for the user's pick: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
+- Last updated: **2026-10-21 14:28 UTC (session 14: the user's v9 upload measured (worse than v8 and far below our 3.0.4 bot); the plan's items being re-screened on our 3.0.4 base, §S14.8 last bullet; PATCH 3.0.4: the dynamic-draft GOD is built and confirmed (79.4% vs v8 on all 308 maps); ladder pair god-dynamic-draft-on / -off pushed, waiting for the user's pick: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
   Rule from the user: update this file and push at every step. Start with **§S14**, then **§S13-GOD**, **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
@@ -570,6 +570,14 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   train156), q73 (`_v9op`/`_v9x0` vs `_v9inv`; `_m1p3` vs 8 post-patch personas `_pn*`; 11 plan ablations / refits and 41 `_z*`
   re-screens h2h vs `_m1p3` on `train78a`). Gotcha: never kill a queue by grepping its name from a shell whose own command line
   contains that name (it killed this shell): read the PID with `ps -eo pid,args | awk '$NF ~ /qNN\.sh$/'`.
+- **14:28 UTC**: v9 on our base (h2h vs `_m1p3`, train156): all on 44.9% (margin -65 gems a map, interval below 0), opponent model 45.8%
+  (-66), `safety_range` 50.0% (+19, fewer deaths: candidate), `enemy_comp_init` 49.4%, `ring_reach` 50.3%, `tavi_str` 49.7%. Gate G3 of
+  the plan fails on the switcher pool too: vs the invader persona `_v9inv` model on 29/42, off 32/42. Forced plans for whole games
+  (`opp_force`, ADP-2's culprit search) vs the invader persona `_pnI` (FARM = `_m1p3` 36/42): DEFEND 28, HUNT 30, PUNISH 35, EVADE 35:
+  the counter-plans lose even with a perfect detector. Post-patch personas (`_pn*` = the 3.0.4 bot with a style; 21-map pool = the
+  official ladder pool): `_m1p3` wins farmer 24, invader 36, deathball 41, objective hunter 22, ambush 30, altar denier 28, v9 raider 28,
+  switcher 34 of 42: the economy styles are the close match-ups. New switches (off): `heavy_value` (heavy groups x value), `opp_force`;
+  late screens `_zhv15/2/3`, `_zmf0` (no contest blob), `_zmt1` (`mono_team`) queued in q74 before its stage 2. Doc 18 §3, §5a, §5b.
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

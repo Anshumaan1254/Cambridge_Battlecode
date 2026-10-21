@@ -1,6 +1,6 @@
 diff -ruN god/src/brain.cpp _x_v10/src/brain.cpp
 --- god/src/brain.cpp	2026-10-21 11:53:13.190357600 +0000
-+++ _x_v10/src/brain.cpp	2026-10-21 13:44:55.024898329 +0000
++++ _x_v10/src/brain.cpp	2026-10-21 14:21:45.588874392 +0000
 @@ -4,11 +4,13 @@
  #include "learn.h"
  #include "draft.h"
@@ -310,7 +310,16 @@ diff -ruN god/src/brain.cpp _x_v10/src/brain.cpp
  	return d / 8.f;
  }
  
-@@ -5807,7 +5927,7 @@
+@@ -5467,6 +5587,8 @@
+ 	float value = ((P.no_altar_gold && W.no_altar_now() && !g.unlock ? 0.f : static_cast<float>(g.gems)) + gold_v * static_cast<float>(g.gold)) * share;
+ 	if (P.handoff)
+ 		value *= value_mult_handoff;
++	if (P.heavy_value != 1.f && (g.monolith || g.gems >= P.om_heavy))
++		value *= P.heavy_value; // heavy groups (a monolith, or om_heavy+ gems) worth more: the objective persona (x3) plays us level
+ 	if (P.pxs_style)
+ 	{
+ 		const int s = style_now();
+@@ -5807,7 +5929,7 @@
  	auto& W = world();
  	if (task != T_CAPTURE && cast_en_route())
  		return;
@@ -319,7 +328,7 @@ diff -ruN god/src/brain.cpp _x_v10/src/brain.cpp
  	{
  		int leader = -1;
  		for (int i = 0; i < static_cast<int>(W.allies.size()); ++i)
-@@ -6528,6 +6648,33 @@
+@@ -6528,6 +6650,33 @@
  				return true;
  			}
  	}
@@ -539,8 +548,8 @@ diff -ruN god/src/main.cpp _x_v10/src/main.cpp
  #ifdef LEGEND_TRACE
 diff -ruN god/src/opp9.cpp _x_v10/src/opp9.cpp
 --- god/src/opp9.cpp	1970-01-01 00:00:00.000000000 +0000
-+++ _x_v10/src/opp9.cpp	2026-10-21 13:04:45.358941503 +0000
-@@ -0,0 +1,208 @@
++++ _x_v10/src/opp9.cpp	2026-10-21 14:15:41.411621770 +0000
+@@ -0,0 +1,213 @@
 +#include "opp9.h"
 +
 +#include "comms.h"
@@ -611,6 +620,11 @@ diff -ruN god/src/opp9.cpp _x_v10/src/opp9.cpp
 +{
 +	if (!inited)
 +		init();
++	if (P.opp_force >= 0)
++	{
++		plan = std::clamp(P.opp_force, 0, PL_COUNT - 1); // ADP-2 test: one plan for the whole game (the preset's value with a perfect detector)
++		return;
++	}
 +	if (round == last_round)
 +		return;
 +	last_round = round;
@@ -839,7 +853,7 @@ diff -ruN god/src/opp9.h _x_v10/src/opp9.h
 +Opp9& opp9();
 diff -ruN god/src/params.h _x_v10/src/params.h
 --- god/src/params.h	2026-10-21 12:30:53.634061104 +0000
-+++ _x_v10/src/params.h	2026-10-21 13:43:32.260725460 +0000
++++ _x_v10/src/params.h	2026-10-21 14:21:45.589959432 +0000
 @@ -313,6 +313,8 @@
  	float pd_w_basic_mono = 0.f;
  	float pd_w_spell_mono = 0.f;
@@ -849,7 +863,7 @@ diff -ruN god/src/params.h _x_v10/src/params.h
  	float pd_obj_ring = 0.75f;	   // objective map: + x (the pick's spell damage from 4) / (the best pick's) (v8: Prism / Tavi +0.75)
  	float pd_obj_tank = 0.4f;	   // objective map: a melee pick with an area stun (v8: Ryth +0.4); other melee picks - pd_obj_melee (v8: Ren / Varg -0.6)
  	float pd_obj_melee = 0.6f;
-@@ -659,6 +661,57 @@
+@@ -659,6 +661,59 @@
  	float deny_capture_mult = 1.3f; // value multiplier for contesting an enemy's capture
  
  	// Fight execution (strategy v2, replay audit of 15 top-team games: 74% of the rounds our champions were hit by
@@ -880,6 +894,7 @@ diff -ruN god/src/params.h _x_v10/src/params.h
 +	float opp_even_bal = -0.25f;  // trades count as even (HUNT, not RACE) down to this balance: a net loss decays below it in ~3 windows
 +	int opp_deny_at = 850;		  // their banked gems from which DENY applies when they also finish first
 +	float opp_dive_prior = 0.15f; // initial contact index per enemy diver (melee or dash champion) beyond the second
++	float heavy_value = 1.f;	  // value x this for heavy groups (a monolith or >= om_heavy gems); the sparring objective style uses x pxs_obj_mult
 +	int ally_defend = 0;		  // 1: join a fight at the hit-back bar (fight_back_margin) when a visible ally within the target's reach + 1 took damage since
 +						  // our last turn and we have at least ally_defend_hp of our health (the vetoes below the ladder still apply)
 +	float ally_defend_hp = 0.5f;
@@ -887,6 +902,7 @@ diff -ruN god/src/params.h _x_v10/src/params.h
 +						  // 0.25 between deny_ramp_from and + deny_ramp_span) instead of the step at endgame_alarm (800)
 +	int deny_ramp_from = 600;
 +	int deny_ramp_span = 250;
++	int opp_force = -1;		  // >= 0: that plan for the whole game (test of a preset with a perfect detector; 1 DEFEND, 2 PUNISH, 3 HUNT, 4 RACE, 5 EVADE, 6 DENY)
 +	int opp_mask = 127;		  // bit p: plan p may be entered (ablation of single plans; 127 = all seven)
 +	int contact_bit = 1;		  // with opp_plan: a body that sees an enemy on our half sets the contact bit for the leader
 +	int enemy_comp_init = 0;	  // 1: read the enemy champion types at init (the API: champion_name() reads live champions without vision)

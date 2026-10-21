@@ -62,6 +62,11 @@ in ordinary play (the home-death fast path). The signal itself is real (DEFEND/P
 17% against the mirror), but the presets then play DEFEND (grouped, enemy half x2.5, smaller banks) against an even opponent for a
 fifth of the game. Single-plan ablations (`opp_mask`) and a stricter detector (`_yopT`) are being screened on our 3.0.4 base.
 
+Gate G3 (presets on: non-inferior on the normal pool, superior on the switcher pool) fails on both: normal pool 44.9% vs v8 (above);
+**against the mid-match invader persona `_v9inv` it was built to counter (21-map pool, 42 games), model on `_v9op` 29/42, model off
+`_v9x0` 32/42, paired margin -117.5 gems a map [-262.5, +33.1]**. Plain v8 already beats that invader 76%: in our code family raiding
+is a weak strategy, so a counter-plan has little to gain and its false alarms cost farming.
+
 ### 3b. Code review of the upload (what is right, what is fragile)
 
 - It works: no compile error on the real SDK, no fault or exception in our games, every switch inert at its default (the guards
@@ -112,7 +117,40 @@ fifth of the game. Single-plan ablations (`opp_mask`) and a stricter detector (`
 
 ## 5. Results of the re-screens on our 3.0.4 base
 
-(filled in as the queues finish)
+### 5a. The v9 switches on top of `_m1p3` (head-to-head vs `_m1p3`, tuning half, 312 games each)
+
+| Variant | Wins | 95% interval | Maps 2-0 / 1-1 / 0-2 | Sign p | Margin per map (95%) | Deaths ours-theirs |
+|---|---|---|---|---|---|---|
+| every v9 switch (`_yall`) | 140/312 = 44.9% | [39.4, 50.4] | 18 / 104 / 34 | 0.04 | -65.4 [-123.7, -8.1] | 5,096-4,779 |
+| opponent model + presets (`_yop`) | 143/312 = 45.8% | [40.4, 51.4] | 15 / 113 / 28 | 0.07 | -65.9 [-118.1, -18.8] | 5,324-4,874 |
+| `safety_range` (`_ysr`) | 156/312 = 50.0% | [44.5, 55.5] | 19 / 118 / 19 | 1.00 | +18.8 [-22.6, +60.3] | 4,716-4,973 |
+| `enemy_comp_init` (`_yec`) | 154/312 = 49.4% | [43.9, 54.9] | 3 / 148 / 5 | 0.73 | | 4,859-4,816 |
+| `ring_reach` (`_yrr`) | 157/312 = 50.3% | [44.8, 55.8] | 2 / 153 / 1 | 1.00 | | 4,811-4,824 |
+| `tavi_str` (`_yts`) | 155/312 = 49.7% | [44.2, 55.2] | 0 / 155 / 1 | 1.00 | | 4,840-4,806 |
+
+The opponent model loses on our base as on v8's (about 66 gems a map, the interval below zero). `enemy_comp_init`, `ring_reach` and
+`tavi_str` change almost no game (our draft has Tavi / Prism in 2-3% of games). `safety_range` is level with fewer deaths: a
+candidate for the combined build, judged with the third parties.
+
+### 5b. Our 3.0.4 bot against post-patch personas (the plan's INF-3 / PAT-6 pools; 21-map pool, 42 games each)
+
+Personas = our 3.0.4 bot (dynamic draft) with a fixed style (`pxs_style`, session 14) or v9's `spar_*` raid window:
+
+| Persona | `_m1p3` wins of 42 |
+|---|---|
+| farmer `_pnF` (stays home: enemy half x8, fight margin +0.6) | 24 |
+| invader `_pnI` (raids: enemy-half groups x3) | 36 |
+| deathball `_pnD` (one blob) | 41 |
+| objective hunter `_pnO` (heavy groups and monoliths x3) | **22** |
+| bush ambusher `_pnA` | 30 |
+| altar denier `_pnL` | 28 |
+| v9 mid-match invader `_pnV` (r400-700) | 28 |
+| switcher `_pnS` (farmer, invader at 300, deathball at 800) | 34 |
+
+Aggression loses to us; the economy styles (farming at home, taking the heavy groups) are the close match-ups, so the counters worth
+building are economic, not reactive. A milder heavy-group bonus is in the screens (`heavy_value` 1.5 / 2 / 3).
+
+(stage-1 re-screens of the plan's items and the thresholds follow)
 
 ## 6. Decisions
 

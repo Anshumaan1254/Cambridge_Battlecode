@@ -13,7 +13,33 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Current build: **GOD v8** (`submissions/god.zip`, session 14, Oct 20): the code review's plan, measured on cambc 3.0.2
+## Current build: **GOD v10** (`submissions/god.zip`, session 14, Oct 21): patch 3.0.4, measured on cambc 3.0.4
+
+GOD v10 = GOD v8 + the patch-3.0.4 dynamic draft + what held up from the user's v9 upload and the two improvement plans
+(`docs/strategy_v2/18_V9_AND_PLAN.md` has every measurement; the 3.0.4 draft is `docs/strategy_v2/17_PATCH_3_0_4.md`):
+- **Dynamic draft** (`pd_stat` 3): a pick's value = fitted weights x features read from the engine's champion designs (health, basic and
+  area damage, stuns, dash, range, gold bonus, bodies) and from this map's camps (pack / elk / gold shares, size, spread, monoliths). No
+  per-champion number and no per-map table. **v10 refits the weights on 17,004 games of the 156 tuning maps**: the gold bonus now counts
+  only on gold-heavy maps, area damage more on pack maps, extra bodies cost more on small maps.
+- **Hole-pocket escape** (`pocket_fix` 3): a body that no walk leads home from dashes out (else recalls), instead of burning every turn's fuel.
+- **Fights**: camps are counted at their engine range in `safety()` (elk / golem 4, monolith 5; from the upload), our own ready damaging dash
+  counts in the fight burst (Heart of Ruin's landing), and a lone body starts a fight only at advantage 1.35 (fight margin 1.4).
+- **Insurance**: a watchdog plays a minimal safe turn after 3 throwing turns, and a draft pick that throws falls back to a legal pick.
+- **Not taken from the upload**: its opponent model and plan presets lose (44.9% vs v8 with them on, 19.2% against our 3.0.4 bot).
+
+| Measure (cambc 3.0.4, every map both sides) | GOD v10 | dynamic draft `_m1p3` | GOD v8 |
+|---|---|---|---|
+| Head-to-head vs `_m1p3`, 152 held-out maps | **56.9%** (173/304, p 0.024, +82.5 gems a map) | - | |
+| Head-to-head vs `_m1p3`, all 308 maps | **57.3%** (353/616, p 0.0003) | - | |
+| vs GOD v8, 152 held-out maps | **79.9%** | 76.3% | - |
+| 19 outside opponents (ladder proxies, adapted drafts, personas), 21 official maps | **678/798** | 634/798 | |
+| Unopposed pace (rounds to 1000 gems) | **978.8** | 1030.8 | 1099.8 |
+| Faults (release mode) | 0 | 0 | 0 |
+| Builds on SDK | 3.0.4, 3.0.2, 2.2.5 | 3.0.4, 2.2.5 | 3.0.2, 2.2.5 |
+
+Ladder A/B pair: branches `god-v10-on` (this build) and `god-v10-off` (the dynamic draft alone), each with its own `submissions/god.zip`.
+
+## Previous build: **GOD v8** (session 14, Oct 20): the code review's plan, measured on cambc 3.0.2
 
 GOD v8 implements the review plan (`docs/strategy_v2/GOD_IMPROVEMENT_PLAN.md`; structured plan and every measurement in
 `docs/strategy_v2/16_GOD_V8_PLAN.md`). It runs on cambc 3.0.2, which carries the Heart of Ruin hotfix (focus per shard 15 -> 12, strength 5 -> 4).

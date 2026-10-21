@@ -227,3 +227,27 @@ Ruin prior wins 8-9 more games against legend_m15 (pre-patch tuning: contest, co
 | Vendetta for Ryth | Vendetta buffed (hp 800 -> 1000), beat Varg (58.3%) and Ren (54.8%) in their slots | 49.7% (26 / 27) | Ryth's area stun is worth as much: level |
 | C&I for Heart of Ruin at team size 3 (`pd_hor3` 0) | Heart of Ruin nerfed (str 40 -> 30, dash 1.75 -> 1.5 x focus) | 47.8% (changed maps 3 / 10) | Heart of Ruin keeps the size-3 slot |
 | stat power alone as the prior (no measured values) | follows every patch with no screen | not built: the formula ranks Marcella / Ryth / Varg top and Vesper below Ren, the screens the reverse (Vesper first) | the measured values stay; the stat power only shifts them on a later patch (`pd_stat_k`) |
+
+## Session 14, the v9 upload and the two improvement plans (21 Oct, engine 3.0.4; `docs/strategy_v2/18_V9_AND_PLAN.md`)
+
+Base: our dynamic-draft bot `_m1p3`. Stage 1 = head-to-head vs `_m1p3` on `train78a` (156 games; one cell's SD is about 4 points, so
+45-55% is level); the held-out test (`test152`, 304 games) decided what went into GOD v10.
+
+| Idea | Why it should work | Measured | Why it did not / what would make it work |
+|---|---|---|---|
+| The upload's opponent model with plan presets (`opp_plan` 1) | detect invaders, racers, deathballs from evidence windows and switch to a counter plan | 44.9% vs v8 (312 games), 19.2% vs `_m1p3` with its other switches; on our base 45.8% (`_yop`) | false alarms in 96% of mirror games (real contact against an ordinary farmer is far above its simulated 8% background; camp deaths read as invasions); worse, the presets themselves lose: forcing DEFEND / PUNISH / EVADE / HUNT for a whole game never beats plain farming, even against the invader it was written for. A counter-plan would need presets that measure better than farming against their own target first |
+| One plan at a time (`opp_mask`) / a stricter detector (`_yopT`) | keep only the plans that help, cut false alarms | 47.4-52.6% / 51.9% (stage 1) | level: no plan stands out |
+| Extra fight model inputs: engine shields and stuns (`fm_buffs` 3) | the fight estimate ignored a shielded or stunned enemy | 48.1% | shields are short and stuns rare at decision time; the estimate's error is elsewhere (support timing) |
+| Learned camp-damage multiplier (`farm_ema` 0.05) | the camp model's damage taken is off by map and kit | 50.6% | the session-1 audit already found it calibrated within 15% solo |
+| Defend allies at the hit-back bar (`ally_defend`, `ally_defend_hp` 0.5 / 0.35) | "help that does not come" was 39% of deaths in session 2 | 50.6% / 48.1% | since then `sup_mode` (support by arrival time) answers most of it |
+| Herding guard (`risky_persist` 2), threat age cap (`near_age_cap` 3) | stop a single sighting from pushing bodies off their camps | 51.3% / 49.4% | level |
+| Denial ramp (`deny_ramp`) | answer their tributes more as they near 1000, not in one step | 50.0% (identical games) | the step it replaces rarely decides a game |
+| Threat map (`threat_map`), carrier interception (`gank`), altar wardens (`deny_altar`), fights on P(kill8) (`ml2_enter`), death map (`death_learn`), chain farming | the plans' UPG items | 44.2% / 50.0% / 46.2% / 49.4% / 47.4% / 51.3% | as in sessions 13-14: our bots lose more by leaving their farming than these plays gain |
+| Boosted-tree danger model (`ml2_gb`), other cut-offs (0.15 / 0.30), in-match adaptation (`ml2_adapt`) | the plan's PAT-5 re-calibration | 41.7% / 49.4% / 45.5% / 51.3% | the logistic model at 0.2 stays |
+| T03 group A (`fm_mode` 7, `hor_threat` 3, `mi_learn_burst` 1, `sup_mode` 7, `chan_keep` 2) | five fight switches the task file wanted on together | **37.8% (p 0.005)**, our deaths 3,069 vs 2,074 | together they make every fight look worse: bodies leave fights they win; each was level or worse alone on 3.0.2 |
+| `finish_race` 120 + `mi_endgame_bank` 100, `tail_stat` 1 | endgame banking, build tail stat | 50.0% / 48.1% | level |
+| Heavy-group value (`heavy_value` 1.5 / 2) | the objective-hunter persona is one of our closest match-ups | 48.7% / 48.1% | taking heavy groups earlier costs the cheap ones; the persona wins on economy, not on one group |
+| Threshold re-tunes (PAT-7): fight margin 1.2 / 1.5, fight-back 0.80 / 0.95, isolated 1.10 / 1.50, cornered, tribute size, gold value, burst retreat, retreat health, bag caution | the 3.0.4 balance moved damage and health | 44.9-52.6% | level; the two leaders (`isolated_fight_adv` 1.35, `fight_margin` 1.4) went into v10 but alone on the held-out maps they were level too (`_v10a` 50.3%) |
+| `enemy_half_penalty` 20 (`_zeh20`) | stay home more against the farmer persona | 55 of 96 (cut) | not finished: worth a held-out test on top of v10 |
+| The upload's `enemy_comp_init`, `ring_reach`, `tavi_str` | read enemy kits early; ring by area reach; Tavi on strength | 49.4% / 50.3% / 49.7% | our draft picks Tavi / Prism in 2-3% of games, so they almost never act |
+| Stance bandit with discounting (`bandit_discount`) | the T11 non-stationary learner | not screened | the stance learner is neutral and exploration cost 2 points in session 1; it needs the opponent model to reset on a change |

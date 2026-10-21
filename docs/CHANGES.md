@@ -1,3 +1,26 @@
+# GOD v10 (Oct 21): the dynamic draft refitted, plus what held up from the v9 upload and the two plans
+
+Request: test the user's `god_v9_adaptive.zip`, take its better parts, carry out `GOD_Improvement_Plan.md` and `GOD_v9_Improvement_Tasks.md`
+with measurement, deliver the best bot as GOD v10. Every number and the plan items one by one: `docs/strategy_v2/18_V9_AND_PLAN.md`.
+Engine 3.0.4, every map both sides, ledger `experiments/results/ledger_v3_0_4/`; reference `_m1p3` (the dynamic draft, branch `god-dynamic-draft-on`).
+Code: `experiments/wip/x_v10.patch` on GOD v8 (the upload ported behind switches, renamed `opp9` / `Opp9` / `plan9` / `watchdog9` so it lives
+next to main's own opponent model, plus the task file's switches); every switch off = v8's play.
+
+| Change | Switch (v10 value) | What it does | Result |
+|---|---|---|---|
+| Draft weights refitted | `pd_w_*` | logistic fit on 17,004 games of the 156 tuning maps (none of the held-out maps): the gold bonus counts on gold-heavy maps only, area damage more on pack maps, extra bodies cost more on small maps, a dash counts everywhere | alone 53.3% vs `_m1p3` on the held-out maps; on 95 of 308 maps v10 drafts differently and wins 62% of those games |
+| Camps at their engine range | `safety_range` 1 (from the upload) | `safety()` counts a camp while we stand inside its real attack range (elk / golem 4, monolith 5) instead of 3 | level, fewer deaths |
+| Our dash in the burst | `fix_my_dash` 1 (task T01) | combat()'s burst also counts our own ready damaging dash (Heart of Ruin's landing) | stage 1 53.2%, deaths 2,518 vs 2,667 |
+| Stricter lone fights | `isolated_fight_adv` 1.35, `fight_margin` 1.4 | a body alone starts a fight only at a higher advantage | stage-1 leaders |
+| Crash insurance | `watchdog` 1, `draft_guard` 1 (task T13) | a minimal safe turn after 3 throwing turns; a draft pick that throws falls back to a legal pick | inert in normal play (0 exceptions); a body forced to throw keeps 12-13 of 24 wins (10 without) |
+| **GOD v10 = all of the above** | | | **vs `_m1p3`: held-out 56.9% (p 0.024, +82.5 gems a map, superior), all 308 maps 57.3% (p 0.0003); vs v8 held-out 79.9%; 19 outside opponents 678/798 (634); pace 978.8 (1030.8); 0 faults** |
+| The upload's opponent model and presets | `opp_plan` (0) | evidence windows, CUSUM, seven plans with threshold presets | 44.9% vs v8, 19.2% vs `_m1p3`; false alarms in 96% of mirror games; plans forced for whole games lose to plain farming even against their own target: off |
+| The upload's other switches | `enemy_comp_init`, `ring_reach`, `tavi_str`, `watchdog9` (0) | enemy kits at init, area reach in the ring, Tavi strength, its own watchdog | level (our draft rarely has Tavi / Prism; main's watchdog covers it): off |
+| The task file's other switches | `fm_buffs`, `farm_ema`, `risky_persist`, `near_age_cap`, `bandit_discount`, `ally_defend`, `deny_ramp`, `heavy_value`, `opp_force` (0 / 1.0 / -1) | engine shields and stuns in fights, learned camp damage, herding guard, threat age cap, discounted bandit, defend allies, denial ramp, heavy groups, forced plans | level or worse on stage 1: off (SUGGESTIONS.md) |
+
+Tools: `tools/abmargin.py` (gem margins, paired design, superior / non-inferior), `tools/tracecount.py` (trace-line counts, e.g. exceptions),
+`tools/opptrace.py` (plan timelines), `tools/finalcheck.sh` (the release checks). Pools `experiments/pools/train78a.csv` / `train78b.csv`.
+
 # Patch 3.0.4 GOD: the dynamic draft (Oct 21)
 
 Request: "make the new bot according to these changes [the 3.0.4 balance patch] and compare them on these changes only", then "ensure

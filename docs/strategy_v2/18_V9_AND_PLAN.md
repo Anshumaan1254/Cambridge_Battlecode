@@ -233,14 +233,59 @@ stage 1 only removes clear losers.
 | `_t3ts` `tail_stat` 1 | T03 | 75 | 1 / 73 / 4 | |
 | `_zeh20` `enemy_half_penalty` 20 | PAT-7 | 55 of 96 (cut when the queue moved to the held-out test) | | |
 
-### 5d. The held-out test of the best combination
+### 5d. The held-out test (the 152 maps of `test152`, both sides; no choice today used them)
 
 Stage 1 can only remove losers: with 156 games one cell's standard deviation is about 4 points, and the best of 60 screens sits at
-53-55% by chance alone. The combination of the stage-1 leaders that are principled (watchdog, draft guard, `safety_range`,
-`fix_my_dash`, `isolated_fight_adv` 1.35, `fight_margin` 1.4) as `_v10a`, on the 152 held-out maps no choice today used:
-**153/304 = 50.3% vs `_m1p3` [44.7, 55.9], maps 27 / 99 / 26, margin +5.7 gems a map [-54.5, +65.6]: level.** The stage-1 gains
-were selection noise; none of them is a measurable improvement on new maps against our own best.
+53-55% by chance alone. So every candidate went to the held-out maps against `_m1p3`:
+
+| Build | What it adds to `_m1p3` | vs `_m1p3`, held-out (304 games) | Maps 2-0 / 1-1 / 0-2 | Sign p | Gem margin a map (95%) |
+|---|---|---|---|---|---|
+| `_v10a` | the principled stage-1 leaders: `watchdog` 1, `draft_guard` 1, `safety_range` 1, `fix_my_dash` 1, `isolated_fight_adv` 1.35, `fight_margin` 1.4 | 153 = 50.3% [44.7, 55.9] | 27 / 99 / 26 | 1.00 | +5.7 [-54.5, +65.6] |
+| `_m2` | the draft weights refitted on 17,004 tuning-half games | 162 = 53.3% [47.7, 58.8] | 35 / 92 / 25 | 0.25 | |
+| **`_v10b` = GOD v10** | both | **173 = 56.9% [51.3, 62.4]** | 50 / 73 / 29 | **0.024** | **+82.5 [+11.6, +149.3]: superior** |
+
+The refit (`tools/draftmodel/fit.py` on every kept game of the 156 tuning maps: v8, the dynamic-draft round robins and the screens;
+no held-out map is in it) had a log loss of 0.6233 against 0.6255 for the shipped weights, which is why the weights first stayed (13:17
+checkpoint). Played on new maps the refit alone is +3.3 points (not significant) and with the brain fixes +6.9 (significant). What
+moved: the gold bonus counts only where gold is a large share of the map (gold x gold share 0.19 -> 1.47, gold alone 0.74 -> 0.06), area
+damage counts more on pack maps (0.24 -> 0.51), extra bodies cost more on small maps (-0.23 -> -0.40), a dash counts everywhere (0.06 ->
+0.20) instead of by spawn distance (0.15 -> 0.00). On all 308 maps v10 drafts a different roster from `_m1p3` on 95 maps and wins 118
+of those 190 games (62.1%, sign p 0.003); the swaps: Heart of Ruin for Ryth (40 of 56 games won), Vendetta for Ryth (23 of 32), Stellar
+for Tavi (11 of 14), Varg for Marcella (20 of 40), Marcella or Varg for Ren (16 of 30), Vendetta for Heart of Ruin (3 of 12).
+
+**Release checks of `_v10b`** (`tools/finalcheck.sh`, engine 3.0.4):
+
+| Check | GOD v10 (`_v10b`) | `_m1p3` | v8 (`_v8k1`) |
+|---|---|---|---|
+| vs v8, held-out 152 maps | **243/304 = 79.9% [75.1, 84.1]**, maps 102 / 39 / 11, deaths 3,265-5,888 | 232/304 = 76.3% [71.2, 80.7], maps 92 / 48 / 12 | - |
+| paired margin vs `_m1p3` (both against v8, same maps and sides) | +53.4 gems a map [-26.3, +132.8] (wide: the games against v8 are mostly large wins) | 0 | |
+| head-to-head vs `_m1p3`, tuning 156 maps | 180/312 = 57.7% | - | |
+| **head-to-head vs `_m1p3`, all 308 maps** | **353/616 = 57.3% [53.4, 61.2]**, maps 97 / 159 / 52, sign p 0.0003, gem margin +100.5 [+54.3, +149.3], deaths 8,736-10,517 | - | |
+| 19 outside opponents, 21 official maps, 42 games each | **678/798** | 634/798 | |
+| unopposed pace (rounds to 1,000 gems, 21 maps) | **978.8** | 1,030.8 | 1,099.8 |
+| release mode, 6 heavy maps x 2 sides x 3 opponents | 0 faults; lost turns after round 3: 192 (opponents 166), all on the nx60x60 / nx100x100 mazes (154 / 38; opponents 135 / 31) | 0 faults; 223 | 0 faults; 167 |
+| exceptions (`EXC_TRACE`, `tools/tracecount.py`) | (running: 126 games vs v8, `_pws`, `_q_s2v`) | 0 in 72 games | |
+| SDK builds of the zip | 3.0.4, 3.0.2, 2.2.5 | 3.0.4, 2.2.5 | |
+
+The 19 opponents, wins of 42 (`_v10b` / `_m1p3`): adapted-draft bots `_k_fit` 29 / 19, `_q_s2v` 26 / 22, `_k_ci` 31 / 23; personas farmer
+`_pnF` 25 / 24, objective hunter `_pnO` 30 / 22, invader `_pnI` 38 / 36, deathball `_pnD` 41 / 41, bush ambusher `_pnA` 32 / 30, altar
+denier `_pnL` 33 / 28, mid-match invader `_pnV` 30 / 28, switcher `_pnS` 34 / 34; ladder proxies `_pws` 39 / 40, `_pw` 41 / 41, `_pc` 41 / 41,
+`_g4` 41 / 40, `_m15` 42 / 42, `_mite` 42 / 42, `_ifish` 42 / 41, `_px9` 41 / 40. Worse on one cell (`_pws` -1), level on six, better on twelve.
 
 ## 6. Decisions
 
-(filled in at the end)
+- **GOD v10 = `_v10b`, shipped** (`submissions/god.zip` sha256 245c446c…, `submissions/history/god_v10_20261021.zip`, source hash
+  e322f2410c3c, wasm byte-identical to the measured build): `pd_stat` 3, `pocket_fix` 3, the refitted `pd_w_*`, `watchdog` 1, `draft_guard` 1,
+  `safety_range` 1, `fix_my_dash` 1, `isolated_fight_adv` 1.35, `fight_margin` 1.4. Every other switch of `x_v10.patch` stays at its off value
+  (the code is in the build: the measured wasm contains it).
+- **From the upload**: `safety_range` (FIX-1) is in. Not taken: the opponent model and its presets (every plan, single plans, a stricter
+  detector, plans forced for whole games: all lose or tie, sections 2-3 and 5c), `enemy_comp_init`, `ring_reach`, `tavi_str` (they change
+  almost no game with our draft), `watchdog9` (main's `watchdog` does the same), the sparring personas (kept as sparring tools only).
+- **From the plan and the task file**: T01 (`fix_my_dash`), T13 (`draft_guard`, the watchdog), PAT-7's two fight thresholds and PAT-2's refit
+  are in; everything else in sections 4 and 4b was built or re-screened and measured level or worse (SUGGESTIONS.md lists them).
+- **Not unbeatable**: v10 still loses about a quarter of its games to the economic personas (farmer 25 of 42, objective hunter 30) and the
+  adapted drafts (`_q_s2v` 26, `_k_fit` 29), and on the hooks map (nx31x31_c4) side A loses whichever bot plays it (mirror turn order).
+  The close match-ups are economic, not reactive: no counter-plan measured here helped against them, and the next gains are most likely in
+  the draft model (more opponent rosters in the fit) and in farming speed on the two maze maps, where most lost turns are.
+- **Ladder test**: the branch pair `god-v10-on` (this build) / `god-v10-off` (the dynamic-draft build `_m1p3`, the zip of
+  `god-dynamic-draft-on`), each with its own `submissions/god.zip`.

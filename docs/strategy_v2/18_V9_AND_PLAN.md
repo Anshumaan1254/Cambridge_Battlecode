@@ -231,7 +231,7 @@ stage 1 only removes clear losers.
 | `_t3A` `fm_mode` 7 + `hor_threat` 3 + `mi_learn_burst` 1 + `sup_mode` 7 + `chan_keep` 2 | T03 group A | **59 (37.8%, p 0.005)** | 12 / 35 / 31 | 3,069 (vs 2,074) |
 | `_t3B` `finish_race` 120 + `mi_endgame_bank` 100 | T03 group B | 78 | 1 / 76 / 1 | |
 | `_t3ts` `tail_stat` 1 | T03 | 75 | 1 / 73 / 4 | |
-| `_zeh20` `enemy_half_penalty` 20 | PAT-7 | 55 of 96 (cut when the queue moved to the held-out test) | | |
+| `_zeh20` `enemy_half_penalty` 20 | PAT-7 | 55 of 96 (cut when the queue moved to the held-out test); on top of v10 (`_v10e20` vs `_v10b`, `train78b`): 83/156 = 53.2%, margin -7.8 gems a map [-96, +90]: level | 17 / 49 / 12 | 2,335-2,440 |
 
 ### 5d. The held-out test (the 152 maps of `test152`, both sides; no choice today used them)
 

@@ -38,6 +38,8 @@ def main():
 	else:
 		maps = sorted(set(sum((glob.glob(g) for g in (globs or 'maps/comp/*.map26a').split(',')), [])))
 	maps = [m if os.path.isabs(m) else os.path.join(ROOT, m) for m in maps]
+	for b in [bot] + opps:  # build once before the pool: parallel first games of a fresh bot built it concurrently and 2 of 126 failed
+		subprocess.run(['cambc', 'build', b], cwd=ROOT, capture_output=True, text=True)
 	tmp = tempfile.mkdtemp(prefix='tracecount_')
 	res = collections.defaultdict(list)
 	with ThreadPoolExecutor(jobs) as ex:

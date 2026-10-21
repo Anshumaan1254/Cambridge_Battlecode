@@ -264,7 +264,7 @@ for Tavi (11 of 14), Varg for Marcella (20 of 40), Marcella or Varg for Ren (16 
 | 19 outside opponents, 21 official maps, 42 games each | **678/798** | 634/798 | |
 | unopposed pace (rounds to 1,000 gems, 21 maps) | **978.8** | 1,030.8 | 1,099.8 |
 | release mode, 6 heavy maps x 2 sides x 3 opponents | 0 faults; lost turns after round 3: 192 (opponents 166), all on the nx60x60 / nx100x100 mazes (154 / 38; opponents 135 / 31) | 0 faults; 223 | 0 faults; 167 |
-| exceptions (`EXC_TRACE`, `tools/tracecount.py`) | (running: 126 games vs v8, `_pws`, `_q_s2v`) | 0 in 72 games | |
+| exceptions (`EXC_TRACE`, `tools/tracecount.py`, 21 maps x 2 sides vs v8, `_pws`, `_q_s2v`) | 0 in 126 games | 0 in 72 games | |
 | SDK builds of the zip | 3.0.4, 3.0.2, 2.2.5 | 3.0.4, 2.2.5 | |
 
 The 19 opponents, wins of 42 (`_v10b` / `_m1p3`): adapted-draft bots `_k_fit` 29 / 19, `_q_s2v` 26 / 22, `_k_ci` 31 / 23; personas farmer

@@ -345,27 +345,6 @@ void World::init_units()
 	bc::detail::check(bc::detail::sdk_enemies(handles.data(), count, &count));
 	for (std::uint32_t i = 0; i < count; ++i)
 		enemies.push_back(Enemy{ std::nullopt, handles[i], bc::champion_type::ryth, Kit{} });
-	if (P.enemy_comp_init)
-	{
-		// v9: the enemy composition from round 1 (BotAPICpp: champion_name() "live champions read it without vision"), so the
-		// opponent model and the danger maps know the kits before the first sighting. Perception still refreshes them on sight.
-		try
-		{
-			for (const auto& c : bc::champions(team::enemy))
-			{
-				const auto h = handle_of(c);
-				for (auto& e : enemies)
-					if (e.handle == h)
-					{
-						e.type = c.champion_name();
-						e.kit = kit_of(bc::champion_designs[static_cast<std::size_t>(e.type)]);
-					}
-			}
-		}
-		catch (...)
-		{
-		}
-	}
 }
 
 void Group::update_cluster()
@@ -449,21 +428,6 @@ void World::perceive(vec2 me)
 			std::int32_t c = 0;
 			e.cd[slot] = bc::detail::sdk_champion_cooldown(e.handle, slot, &c) == 0 ? c : 0;
 		}
-		if (P.fm_buffs)
-		{
-			// v9 tasks T09: shields (Varg 2.5 x focus, Heart of Ruin 1.5 x focus) and stuns are invisible in the health number.
-			e.shield = 0.f, e.stunned = false;
-			std::array<bc::detail::buff_data, static_cast<std::size_t>(bc::buff_types::count)> raw{};
-			std::uint32_t n = 0;
-			if (bc::detail::sdk_champion_buff_data(e.handle, raw.data(), static_cast<std::uint32_t>(raw.size()), &n) == 0)
-				for (std::uint32_t k = 0; k < n && k < raw.size(); ++k)
-				{
-					if (raw[k].type == static_cast<std::uint32_t>(bc::buff_types::shield))
-						e.shield = std::max(0.f, raw[k].data.shield.value);
-					else if (raw[k].type == static_cast<std::uint32_t>(bc::buff_types::stun))
-						e.stunned = true;
-				}
-		}
 		e.seen_round = round;
 	}
 	for (auto& a : allies)
@@ -472,8 +436,6 @@ void World::perceive(vec2 me)
 		a.visible = a.alive && read_champion(a.handle, info);
 		if (a.visible)
 		{
-			if (P.ally_defend && a.seen_round == round - 1 && info.health < a.hp - 1.f)
-				a.hit_round = round;
 			a.seen_round = round;
 			a.type = static_cast<bc::champion_type>(info.type);
 			a.pos = { info.x, info.y };

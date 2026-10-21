@@ -4,13 +4,11 @@
 #include "learn.h"
 #include "draft.h"
 #include "ml2_model.h"
-#include "opp9.h"
 #ifdef LEGEND_TRACE
 #include <map>
 #endif
 
 #include <cmath>
-#include <stdexcept>
 #include <cstdio>
 
 // Prediction audit hooks: compiled only into XM_TRACE builds and run inside debug_block (fuel paused).
@@ -69,7 +67,7 @@ std::vector<I> build_for(CT t, int bs)
 		// its no-contact farming maps (rows, expanse: 0 deaths either side) Monster in the damage stat, then Power (style 4).
 		const int om = official_map();
 		const int style = bs == 10 ? (om == OM_ROWS || om == OM_EXPANSE ? 4 : 3) : bs;
-		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || (t == CT::tavi && !P.tavi_str) || t == CT::willow;
+		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
 		const I power = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
 		if (style == 4)
 			rep(v, focus ? I::monster_shard_of_focus : I::monster_shard_of_strength, 5);
@@ -106,7 +104,7 @@ std::vector<I> build_for(CT t, int bs)
 		// ThE, Issac TsE, Varg ThE), then Jungle in the damage stat (casters) or Bruiser health (melee), Durability, then Power in the damage
 		// stat for the rest of the game (1,097 Power-dmg emblems in 20 games: their Stellar ends with 20-27 of them). The patch made gold
 		// plentiful (gold clusters 120 HP for 20 gold, kills 100): damage snowballs into more gold.
-		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || (t == CT::tavi && !P.tavi_str) || t == CT::willow;
+		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
 		const I pw = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
 		switch (t)
 		{
@@ -151,7 +149,7 @@ std::vector<I> build_for(CT t, int bs)
 		// Session 14 hybrids. 13: Treasure first (gold snowball), then our survival emblems (Jungle health on Ren / Ryth, Monster dmg then
 		// Durability health on the carries, as build_style 2), then Power in the damage stat for ever (instead of Bruiser cycles: late
 		// game our bodies reached 7,000 health and 500 damage while Nyx's Stellar one-shot them). 14: the same without Treasure first.
-		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || (t == CT::tavi && !P.tavi_str) || t == CT::willow;
+		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
 		const I pw = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
 		const I tr = focus ? I::treasure_shard_of_focus : I::treasure_shard_of_strength;
 		const I mo = focus ? I::monster_shard_of_focus : I::monster_shard_of_strength;
@@ -196,7 +194,7 @@ std::vector<I> build_for(CT t, int bs)
 		// Intercontinental Fish (ladder #1; emblem order of its bodies in 36 games of Oct 19, experiments/interwin_oct19):
 		// Stellar PfE > HhE > DhE (17 of 36), Ren BhE > DhE > PfE, Cassi PfE > DfE > BhE, Issac PsE > HhE > DhE, Ryth BhE > DhE > PsE,
 		// Varg PsE > HhE; first emblem near r83 (Stellar), r74 (Ren). Power in the damage stat for the rest of the game.
-		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || (t == CT::tavi && !P.tavi_str) || t == CT::willow;
+		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
 		const I pw = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
 		switch (t)
 		{
@@ -231,7 +229,7 @@ std::vector<I> build_for(CT t, int bs)
 		const int om = official_map();
 		const bool str_maps = om == OM_PACKS || om == OM_ROWS || om == OM_RUSHBAIT || om == OM_SWIRL || om == OM_INTERLOCK
 			|| om == OM_COLLISION || om == OM_FRAGMENT || om == OM_EXPANSE;
-		bool focus = t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || (t == CT::tavi && !P.tavi_str) || t == CT::willow;
+		bool focus = t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
 		if (t == CT::ren || t == CT::ryth)
 			focus = !str_maps;
 		const I ju = focus ? I::jungle_shard_of_focus : I::jungle_shard_of_strength;
@@ -290,29 +288,22 @@ std::vector<I> build_for(CT t, int bs)
 		case CT::stellar:
 		case CT::prism:
 		case CT::tavi:
-		{
-			// v9 tavi_str: Tavi takes the same list in strength (her attack resets make strength her best stat: guide, finding 7).
-			const bool str = t == CT::tavi && P.tavi_str;
-			const I monster = str ? I::monster_shard_of_strength : I::monster_shard_of_focus;
-			const I treasure = str ? I::treasure_shard_of_strength : I::treasure_shard_of_focus;
-			const I bruiser = str ? I::bruiser_shard_of_strength : I::bruiser_shard_of_focus;
 			if (P.squishy_hp_first)
 				rep(v, I::durability_shard_of_health, 5);
 			if (P.rich_treasure_first)
 			{
-				rep(v, treasure, 5);
-				rep(v, monster, 5);
+				rep(v, I::treasure_shard_of_focus, 5);
+				rep(v, I::monster_shard_of_focus, 5);
 			}
 			else
 			{
-				rep(v, monster, 5);
-				rep(v, treasure, 5);
+				rep(v, I::monster_shard_of_focus, 5);
+				rep(v, I::treasure_shard_of_focus, 5);
 			}
-			rep(v, bruiser, 5);
+			rep(v, I::bruiser_shard_of_focus, 5);
 			rep(v, I::durability_shard_of_health, 5);
-			cycle(v, { bruiser, bruiser, I::bruiser_shard_of_health }, 8);
+			cycle(v, { I::bruiser_shard_of_focus, I::bruiser_shard_of_focus, I::bruiser_shard_of_health }, 8);
 			break;
-		}
 		case CT::cassi:
 		case CT::willow:
 			if (P.ci_health_first)
@@ -370,7 +361,7 @@ std::vector<I> build_for(CT t, int bs)
 		if (P.build_tail)
 		{
 			// The list must never run out (session 14): Power in the damage stat (1) or the Bruiser mix (2) for the rest of the game.
-			const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || (t == CT::tavi && !P.tavi_str) || t == CT::willow;
+			const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
 			if (t == CT_HOR && P.hor_build >= 2)
 				cycle(v, { I::bruiser_shard_of_health, I::bruiser_shard_of_focus }, 30);
 			else if (P.build_tail == 1)
@@ -787,16 +778,6 @@ void Brain::read_self()
 			c = 99;
 		cd[s] = c;
 	}
-	if (P.fm_buffs & 1)
-	{
-		my_shield = 0.f;
-		std::array<bc::detail::buff_data, static_cast<std::size_t>(bc::buff_types::count)> raw{};
-		std::uint32_t n = 0;
-		if (bc::detail::sdk_champion_buff_data(self, raw.data(), static_cast<std::uint32_t>(raw.size()), &n) == 0)
-			for (std::uint32_t k = 0; k < n && k < raw.size(); ++k)
-				if (raw[k].type == static_cast<std::uint32_t>(bc::buff_types::shield))
-					my_shield = std::max(0.f, raw[k].data.shield.value);
-	}
 	const std::uint32_t before = gems;
 	bc::detail::sdk_champion_gems(self, &gems);
 	bc::detail::sdk_champion_gold(self, &gold);
@@ -814,11 +795,6 @@ void Brain::turn()
 	if (!inited)
 		init();
 	read_self();
-#ifdef FAULT_INJECT
-	// GOD_Improvement_Plan FIX-2 test only: body 1 throws on every turn after round 300 (the watchdogs must keep it useful).
-	if (alive && W.my_index == 1 && round > 300)
-		throw std::runtime_error("FAULT_INJECT");
-#endif
 	if (alive && round < P.start_round)
 	{
 		prebuild_fields();
@@ -850,38 +826,11 @@ void Brain::turn()
 			else
 				C.write_stance(learner().stance);
 		}
-		if (P.opp_plan && !P.opp_model && W.my_index == 0)
-		{
-			// v9: the leader keeps the opponent model running while dead (global score and alive flags need no vision).
-			opp9().tick(round, P.contact_bit && C.take_contact(), C.others_carried());
-			C.write_plan9(opp9().plan);
-		}
 		task = T_NONE;
 		return;
 	}
 	W.perceive(pos);
 	C.read(round);
-	if (P.farm_ema > 0.f && farm_pred > 0.f)
-	{
-		// T09d: last turn we farmed alone inside every live camp's reach; health lost since then vs the model's prediction.
-		if (hp <= last_hp && enemies_within(6) == 0)
-			farm_ema_v = std::clamp(farm_ema_v + P.farm_ema * (std::clamp((last_hp - hp) / farm_pred, 0.f, 3.f) - farm_ema_v), 0.7f, 1.5f);
-		farm_pred = 0.f;
-	}
-	if (P.opp_plan && !P.opp_model)
-	{
-		// v9: shared evidence for the opponent model. Any body that sees an enemy on our half sets the contact bit; the leader
-		// reads and clears it once per round, updates the model and broadcasts the plan (read by every body in Comms::read).
-		const bool contact = P.contact_bit && enemy_on_our_half();
-		if (W.my_index == 0)
-		{
-			const bool shared = P.contact_bit && C.take_contact(); // always clear it: one count per round
-			opp9().tick(round, contact || shared, static_cast<int>(gems) + C.others_carried());
-			C.write_plan9(opp9().plan);
-		}
-		else if (contact)
-			C.set_contact();
-	}
 	if (P.reward_claim_gone)
 	{
 		// Shared memory says who works which group. A living ally whose claim leaves a reward we cannot see has taken it
@@ -1108,25 +1057,6 @@ void Brain::turn()
 			}
 	});
 #endif
-	if (P.farm_ema > 0.f)
-	{
-		// T09d: remember what the camp model predicts for the next round when we farm alone inside every live camp's reach; the next
-		// turn compares it with the health we actually lost (a model that measures its own error).
-		farm_pred = 0.f;
-		if (task == T_FARM && task_group >= 0 && task_group < static_cast<int>(W.groups.size()))
-		{
-			const auto& g = W.groups[static_cast<std::size_t>(task_group)];
-			bool all_in_reach = g.st == ST_ALIVE && g.awake;
-			for (std::size_t i = 0; i < g.camps.size() && all_in_reach; ++i)
-				if (g.hp[i] > 0 && g.camps[i].str > 0)
-					all_in_reach = cheb(g.camps[i].pos, pos) <= g.camps[i].range;
-			for (std::size_t i = 0; i < W.allies.size() && all_in_reach; ++i)
-				if (static_cast<int>(i) != W.my_index && W.allies[i].alive && W.allies[i].visible && cheb(W.allies[i].pos, g.center) <= 5)
-					all_in_reach = false; // a camp hits the nearest champion only
-			if (all_in_reach && enemies_within(6) == 0)
-				farm_pred = incoming_on_raw(g);
-		}
-	}
 	C.write_self(W.my_index, (task == T_FARM || task == T_CAPTURE || task == T_WAIT) ? task_group : -1);
 	last_hp = hp;
 }
@@ -1792,10 +1722,8 @@ void Brain::build_danger()
 			if (!P.bank_ignore_spawn || !W.enemy_spawn.is_set(e.pos))
 				enemy_near_field = true;
 		}
-		enemy_near_d = std::min(enemy_near_d, std::max(0, ed - (P.near_age_cap > 0 ? std::min(age, P.near_age_cap) : age)));
+		enemy_near_d = std::min(enemy_near_d, std::max(0, ed - age));
 	}
-	if (P.risky_persist > 0)
-		enemy_near_rounds = enemy_near_field ? enemy_near_rounds + 1 : 0;
 	mi_camp_in = 0;
 	for (const auto& g : W.groups)
 		if (g.st == ST_ALIVE && g.awake && g.hp_total > 0 && !g.harmless && cheb(g.center, pos) <= 10)
@@ -2370,8 +2298,7 @@ void Brain::use_locks()
 		for (const auto& e : W.enemies)
 			if (e.visible && e.alive && e.tributing && cheb(e.pos, a) <= 1)
 				enemy_tributing = true;
-		// v9 presets HUNT / DENY: contested altars (about as near their spawn as ours) get a lock too.
-		const bool enemy_side = W.dist_away(a) + 2 < W.dist_home(a) || (P.opp_plan && locks_contested && W.contested(static_cast<int>(i)));
+		const bool enemy_side = W.dist_away(a) + 2 < W.dist_home(a);
 		bool has_any_lock = false;
 		try
 		{
@@ -2909,11 +2836,9 @@ bool Brain::combat()
 		if (e->ready(e->kit.cc) || (e->ready(e->kit.aoe) && e->kit.aoe_stuns))
 			++stunners, dps *= 1.15f;
 		const float pm = (P.fm_mode & 1) && e->type == CT_HOR ? 1.f + 0.5f * (1.f - e->hp / std::max(1.f, e->max_hp)) : 1.f;
-		their_hp += w * (e->hp + ((P.fm_buffs & 1) ? e->shield : 0.f));
-		if ((P.fm_buffs & 2) && e->stunned)
-			dps *= 0.7f; // a stunned enemy loses the first round of a ~3-round exchange
+		their_hp += w * e->hp;
 		their_dps += w * dps * pm;
-		if (d <= reach_of(*e) && !((P.fm_buffs & 2) && e->stunned))
+		if (d <= reach_of(*e))
 			incoming += (e->str + e->burst() / 2.f) * pm;
 	}
 	// Our side: self plus visible allies within 6 (with their spells, not just basic attacks).
@@ -2922,9 +2847,7 @@ bool Brain::combat()
 	if (ready(kit.cc)) my_burst = std::max(my_burst, focus * kit.cc_mod);
 	if (ready(kit.aoe)) my_burst = std::max(my_burst, focus * kit.aoe_mod);
 	if (ready(kit.reset)) my_burst = std::max(my_burst, str);
-	if (P.fix_my_dash && ready(kit.dash) && kit.dash_mod > 0.f)
-		my_burst = std::max(my_burst, focus * kit.dash_mod); // T01: Heart of Ruin's landing is its fight spell (burst_vs counts it; this did not)
-	float our_hp = hp + ((P.fm_buffs & 1) ? my_shield : 0.f), our_dps = str + focus * best_mod(kit) / 8.f + my_burst / 3.f;
+	float our_hp = hp, our_dps = str + focus * best_mod(kit) / 8.f + my_burst / 3.f;
 	if ((P.fm_mode & 1) && type == CT_HOR)
 		our_dps *= 1.f + 0.5f * (1.f - hp / std::max(1.f, max_hp)); // Heart of Ruin hits harder the lower it is
 	if ((P.fm_mode & 2) && type == CT::ren)
@@ -3131,7 +3054,7 @@ bool Brain::combat()
 	}
 	const int aoe_r5 = P.aoe_cast5 && ready(kit.aoe) ? static_cast<int>(kit.aoe_range + kit.aoe_radius) : 0;
 	bool killable = d <= std::max(my_reach, (ready(kit.dmg) || ready(kit.cc)) ? 4 : 0) &&
-		tgt->hp + ((P.fm_buffs & 1) ? tgt->shield : 0.f) <= burst_vs(*tgt) + allies_burst;
+		tgt->hp <= burst_vs(*tgt) + allies_burst;
 	if (!killable && aoe_r5 > 0 && d <= aoe_r5)
 		killable = tgt->hp <= (d <= kit.attack_range && can_attack ? str : 0.f) + focus * kit.aoe_mod + allies_burst; // F2: the area from 5
 	const bool in_reach = P.aoe_reach5 == 3 ? danger4.is_set(pos) : danger.is_set(pos);
@@ -3195,9 +3118,6 @@ bool Brain::combat()
 		fight = true;
 	else if (in_reach && !can_escape && adv >= P.cornered_margin)
 		fight = true; // fleeing a same-speed chaser hands it free hits: trade instead
-	else if (P.ally_defend && adv >= fight_back_margin && hp >= P.ally_defend_hp * max_hp && ally_engaged(*tgt))
-		fight = true; // an ally next to this target just took damage: join at the hit-back bar (audit: 49% of our champion deaths had an
-					  // ally within 10 that never hit, most of them healthy and within 6)
 	else if (tgt->channeling && adv >= 0.9f)
 		fight = true;
 	// P.pair_low_hp: Cassi & Issac leave a fight they can walk away from earlier (ladder: 64% of our 59 pair deaths were
@@ -4068,10 +3988,7 @@ bool Brain::safety()
 			for (std::size_t i = 0; i < g.camps.size(); ++i)
 			{
 				const int d = cheb(g.camps[i].pos, pos);
-				// v9 safety_range: patch 3.0 camps reach 4 (elk, golem) and 5 (monolith); the literal 3 left a body at 4-5 tiles
-				// from an elk counting none of its hits (g.near, which gates this loop, already uses the engine range).
-				const int rng = P.safety_range ? std::max(3, g.camps[i].range) : 3;
-				if (g.hp[i] <= 0 || d > rng)
+				if (g.hp[i] <= 0 || d > 3)
 					continue;
 				bool shielded = false;
 				for (const auto& a : W.allies)
@@ -4086,11 +4003,11 @@ bool Brain::safety()
 				if (obj)
 				{
 					obj_in += g.camps[i].str;
-					obj_escape = std::max(obj_escape, rng + 1 - d);
+					obj_escape = std::max(obj_escape, 4 - d);
 					continue;
 				}
 				camp_in += g.camps[i].str;
-				escape = std::max(escape, rng + 1 - d);
+				escape = std::max(escape, 4 - d);
 			}
 		}
 	// P.pair_retreat_hp: Cassi & Issac walk home from camps earlier (a body caught low by an enemy kills both bodies).
@@ -4241,17 +4158,6 @@ void Brain::update_mode()
 		if (plan_now >= PLAN_INVADER)
 			stance = preset_of(plan_now).stance; // a counter plan brings its own stance
 	}
-	if (P.opp_plan && !P.opp_model)
-	{
-		// v9: the team plan (broadcast by the leader) may force the stance; its numeric preset is applied at the end of update_mode().
-		plan9_now = P.opp_presets ? comms().plan9 : PL_FARM;
-		rally_add = opp_add = 0;
-		locks_contested = false;
-		if (plan9_now != PL_FARM && preset9_of(plan9_now).stance >= 0)
-			stance = preset9_of(plan9_now).stance;
-	}
-	if (P.spar_to > P.spar_from && sparring_window())
-		stance = STANCE_PUSH; // v9 sparring persona (test opponents only): an invasion window
 	if (P.mono_grouped_until > 0 && world().mono_mode && round < P.mono_grouped_until)
 		stance = STANCE_GROUPED; // lone-monolith maps: the first contact is a team wipe for whoever arrives piecemeal
 	isolated_fight_adv = P.isolated_fight_adv + dl_val(dl_iso, dl_iso_r);
@@ -4464,63 +4370,6 @@ void Brain::update_mode()
 		else if (s == 4)
 			enemy_half_penalty *= 0.5f;
 	}
-	if (P.opp_plan && !P.opp_model && plan9_now != PL_FARM)
-	{
-		// v9 preset: one coherent set of changes per opponent plan, on top of the stance / scoreboard / race modifiers above.
-		const Preset9& pr = preset9_of(plan9_now);
-		fight_margin = std::max(0.9f, fight_margin + pr.fight_add);
-		fight_back_margin = std::max(0.55f, fight_back_margin + pr.fight_back_add);
-		enemy_half_penalty *= pr.half_mult;
-		deny_bonus = std::max(0.f, deny_bonus + pr.deny_add);
-		isolated_fight_adv = std::max(1.f, isolated_fight_adv + pr.iso_add);
-		tribute_min = std::max(10, static_cast<int>(static_cast<float>(tribute_min) * pr.bank_mult));
-		gold_v *= pr.gold_mult;
-		rally_add = pr.rally_add;
-		opp_add = pr.opp_add;
-		locks_contested = pr.locks_contested != 0;
-	}
-	if (P.spar_to > P.spar_from && sparring_window())
-	{
-		// v9 sparring persona: a copy of the bot with spar_from / spar_to set plays a mid-match switcher for the A/B pool.
-		enemy_half_penalty *= P.spar_half;
-		deny_bonus += P.spar_deny;
-		fight_margin = std::max(0.9f, fight_margin + P.spar_fight);
-	}
-}
-
-bool Brain::ally_engaged(const Enemy& t) const
-{
-	// P.ally_defend: a visible living ally (not us) within the target's reach + 1 whose health we saw drop since our last turn.
-	const auto& W = world();
-	int r = t.kit.attack_range + (t.kit.ranged ? 0 : 1) + (t.ready(t.kit.dash) ? 2 : 0); // combat()'s reach of an enemy next turn
-	if (P.aoe_reach5 && P.aoe_reach5 != 3)
-		r = std::max(r, enemy_spell_reach(t, false));
-	else if (t.ready(t.kit.dmg) || t.ready(t.kit.cc) || t.ready(t.kit.aoe))
-		r = std::max(r, 4);
-	for (std::size_t i = 0; i < W.allies.size(); ++i)
-	{
-		const auto& a = W.allies[i];
-		if (static_cast<int>(i) != W.my_index && a.alive && a.visible && a.hit_round >= round && cheb(a.pos, t.pos) <= r + 1)
-			return true;
-	}
-	return false;
-}
-
-bool Brain::sparring_window() const
-{
-	return P.spar_to > P.spar_from && round >= P.spar_from && round < P.spar_to;
-}
-
-bool Brain::enemy_on_our_half() const
-{
-	// v9 contact evidence: a visible living enemy off its spawn and deep in our half (dist_home + 2 < opp_depth x dist_away; the
-	// midline groups both teams farm stay out of it, which keeps the false-alarm rate down: opp_sim.py).
-	const auto& W = world();
-	for (const auto& e : W.enemies)
-		if (e.alive && e.visible && !W.enemy_spawn.is_set(e.pos) &&
-			static_cast<float>(W.dist_home(e.pos) + 2) < P.opp_depth * static_cast<float>(W.dist_away(e.pos)))
-			return true;
-	return false;
 }
 
 int Brain::style_now() const
@@ -4626,8 +4475,7 @@ bool Brain::tribute(bool force)
 	const bool winning = wins_with(static_cast<int>(gems)) && gems > 0;
 	if (P.prism_bank && type == CT::prism && !force && !endgame && !winning && hp >= P.prism_bank_hp * max_hp)
 		return false; // F4 Prism banker: the bag is focus (+1 per gem); bank it only when it wins, at the end, or when we may lose it
-	const bool risky = enemy_near_field && static_cast<int>(gems) >= P.tribute_risky &&
-		(P.risky_persist <= 0 || enemy_near_rounds >= P.risky_persist || hp < 0.6f * max_hp); // T14a: one flash sighting no longer herds a bag to an altar
+	const bool risky = enemy_near_field && static_cast<int>(gems) >= P.tribute_risky;
 	// Once a bank trip starts, finish it: re-deciding every turn let a passing enemy or the on-the-way test
 	// flip the choice each round and the champion oscillated in place for hundreds of rounds.
 	const bool committed = P.sticky_tribute && task == T_TRIBUTE && static_cast<int>(gems) >= 10;
@@ -4738,16 +4586,8 @@ bool Brain::respond_to_alert()
 	const bool opp = C.alert_kind == AL_OPPORTUNITY;
 	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
 	const bool their_endgame = theirs >= P.endgame_alarm;
-	float hp_gate = opp ? (their_endgame ? 0.25f : 0.4f) : P.rally_hp;
-	int max_d = opp ? (their_endgame ? 16 : 12) + (P.opp_plan ? opp_add : 0) : P.rally_r + (P.opp_plan ? rally_add : 0); // v9 presets widen the answer radius
-	if (P.deny_ramp && opp)
-	{
-		// GOD_Improvement_Plan UPG-4 (dynamic priority): the urgency of a denial grows with their banked total instead of one step at
-		// endgame_alarm: u = clamp((theirs - deny_ramp_from) / deny_ramp_span, 0, 1); radius 12 + 4u, health gate 0.40 - 0.15u.
-		const float u = std::clamp(static_cast<float>(theirs - P.deny_ramp_from) / static_cast<float>(std::max(1, P.deny_ramp_span)), 0.f, 1.f);
-		hp_gate = 0.40f - 0.15f * u;
-		max_d = 12 + static_cast<int>(std::lround(4.f * u)) + (P.opp_plan ? opp_add : 0);
-	}
+	const float hp_gate = opp ? (their_endgame ? 0.25f : 0.4f) : P.rally_hp;
+	const int max_d = opp ? (their_endgame ? 16 : 12) : P.rally_r;
 	if (hp < hp_gate * max_hp || ((task == T_CAPTURE || reward_here()) && !their_endgame))
 		return false;
 	const int d = cheb(C.alert_pos, pos);
@@ -4858,11 +4698,6 @@ float Brain::dps_on(const Group& g) const
 }
 
 float Brain::incoming_on(const Group& g) const
-{
-	return P.farm_ema > 0.f ? incoming_on_raw(g) * farm_ema_v : incoming_on_raw(g);
-}
-
-float Brain::incoming_on_raw(const Group& g) const
 {
 	float in = 0;
 	for (std::size_t i = 0; i < g.camps.size(); ++i)
@@ -5039,11 +4874,8 @@ float Brain::ring_dps(const Kit& k, float foc, const Group& g) const
 		d += foc * k.dmg_mod;
 	if (k.cc >= 0 && k.cc_range >= rd && k.cc_mod > 0)
 		d += foc * k.cc_mod;
-	// v9 ring_reach: an area spell reaches range + radius when aimed at a tile next to the camp (spells_on_camp does that);
-	// from outside, the blast covers fewer camps than one centred on the pack, so count at most 2.
-	const float aoe_reach = k.aoe_range + (P.ring_reach ? k.aoe_radius : 0.f);
-	if (k.aoe >= 0 && aoe_reach >= rd)
-		d += foc * k.aoe_mod * (k.aoe_radius >= 1.f ? std::min(g.cluster, !P.ring_reach || k.aoe_range >= rd ? 4.f : 2.f) : 1.f);
+	if (k.aoe >= 0 && k.aoe_range >= rd)
+		d += foc * k.aoe_mod * (k.aoe_radius >= 1.f ? std::min(g.cluster, 4.f) : 1.f);
 	return d / 8.f;
 }
 
@@ -5635,8 +5467,6 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 	float value = ((P.no_altar_gold && W.no_altar_now() && !g.unlock ? 0.f : static_cast<float>(g.gems)) + gold_v * static_cast<float>(g.gold)) * share;
 	if (P.handoff)
 		value *= value_mult_handoff;
-	if (P.heavy_value != 1.f && (g.monolith || g.gems >= P.om_heavy))
-		value *= P.heavy_value; // heavy groups (a monolith, or om_heavy+ gems) worth more: the objective persona (x3) plays us level
 	if (P.pxs_style)
 	{
 		const int s = style_now();
@@ -5977,7 +5807,7 @@ void Brain::farm()
 	auto& W = world();
 	if (task != T_CAPTURE && cast_en_route())
 		return;
-	if (P.style == 1 || round < P.deathball_until || (P.pxs_style && style_now() == 3) || (P.spar_db && sparring_window()))
+	if (P.style == 1 || round < P.deathball_until || (P.pxs_style && style_now() == 3))
 	{
 		int leader = -1;
 		for (int i = 0; i < static_cast<int>(W.allies.size()); ++i)
@@ -6697,33 +6527,6 @@ bool Brain::spells_on_camp(Group& g, std::size_t idx, bool save_cc)
 				note_dmg(g.id, focus * kit.aoe_mod * static_cast<float>(std::max(1, best_n)));
 				return true;
 			}
-	}
-	if (P.ring_reach && kit.aoe >= 0 && d > static_cast<int>(kit.aoe_range) && d <= static_cast<int>(kit.aoe_range + kit.aoe_radius) &&
-		(!kit.aoe_stuns || !save_cc) && ready(kit.aoe) && (kit.dmg < 0 || !ready(kit.dmg) || d > static_cast<int>(kit.dmg_range)))
-	{
-		// v9 ring_reach: the camp stands beyond the cast range but within range + radius: centre the blast on a tile next to it
-		// (within our cast range) that covers the most live camps.
-		const int r = static_cast<int>(kit.aoe_radius), R = static_cast<int>(kit.aoe_range);
-		const auto& W = world();
-		vec2 best = c.pos;
-		int best_n = 0;
-		for (int dy = -r; dy <= r; ++dy)
-			for (int dx = -r; dx <= r; ++dx)
-			{
-				const vec2 t{ c.pos.x + dx, c.pos.y + dy };
-				if (t.x < 0 || t.y < 0 || t.x >= W.W || t.y >= W.H || cheb(pos, t) > R)
-					continue;
-				int n = 0;
-				for (std::size_t j = 0; j < g.camps.size(); ++j)
-					n += g.hp[j] > 0 && cheb(t, g.camps[j].pos) <= r;
-				if (n > best_n)
-					best_n = n, best = t;
-			}
-		if (best_n >= 1 && cast_ground(kit.aoe, best))
-		{
-			note_dmg(g.id, focus * kit.aoe_mod * static_cast<float>(best_n));
-			return true;
-		}
 	}
 	if (kit.dmg >= 0 && d <= static_cast<int>(kit.dmg_range) && cast_unit_camp(kit.dmg, c.camp))
 	{

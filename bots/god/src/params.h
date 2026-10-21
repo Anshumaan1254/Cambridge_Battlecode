@@ -63,7 +63,7 @@ struct Params
 	float finish_hp_floor = 0.08f;
 	int finish_enemy_d = 8;
 	float camp_hp_reserve = 0.18f;	 // keep this fraction of max health after a camp fight
-	float fight_margin = 1.4f;		 // engage proactively when our kill time beats theirs by this factor
+	float fight_margin = 1.30f;		 // engage proactively when our kill time beats theirs by this factor
 	float fight_back_margin = 0.873f; // when they can already hit us, fight back unless this outmatched (ES: 0.75 -> 0.873)
 	float cornered_margin = 0.7409f;	 // chasers we cannot outrun: hit back unless the advantage is below this (ES: 0.45 -> 0.634)
 	float far_enemy_weight = 1.0f;	 // visible enemies beyond reach+2 count this much in the fight estimate
@@ -71,7 +71,7 @@ struct Params
 	int spawn_heal_bonus = 1;		 // on our spawn, count one more health bar (we heal fully)
 	int bag_caution = 40;			 // carrying this many gems, avoid even fights we can escape
 	int backup_radius = 5;			 // allies (seen, or claiming a camp) this close count as backup
-	float isolated_fight_adv = 1.35f; // alone, start a fight only at this advantage (or a sure kill) (ES: 1.6 -> 1.428)
+	float isolated_fight_adv = 1.2335f; // alone, start a fight only at this advantage (or a sure kill) (ES: 1.6 -> 1.428)
 	float isolated_flee_adv = 1.5000f;	 // alone and weaker than this: walk away as soon as they are in sight
 	int flee_dist = 5;				 // ... when the nearest enemy is this close
 	// Survival vs grouped invaders (agent survive, session 6; experiments/wip/x_survive_NOTES.md). Ladder: 232 deaths vs 50 in
@@ -292,29 +292,23 @@ struct Params
 	// pd_stat 3: the draft-value model (draft.cpp model_value): weights of the logistic fit on 3.0.4 games (tools/draftmodel/fit.py; features:
 	// effective health / 1000, basic damage / 50 a round, Varg's splash, spell damage (+ heal) / 50 a round, area damage / 50, stuns, a dash,
 	// ranged, gold bonus, Ren's retaliation, bodies; interactions with the map's pack / elk / gold shares, team size 3, spread, monoliths)
-	float pd_w_hp = 0.4321f;
-	float pd_w_basic = 0.5442f;
-	float pd_w_splash = 0.0000f;
-	float pd_w_spell = 0.0000f;
-	float pd_w_area = 0.4831f;
-	float pd_w_stun = 0.1242f;
-	float pd_w_dash = 0.1981f;
-	float pd_w_ranged = 0.0000f;
-	float pd_w_gold = 0.0565f;
-	float pd_w_ret = 0.0000f;
-	float pd_w_bodies = -0.8000f;
-	float pd_w_area_pack = 0.5061f;
-	float pd_w_stun_elk = 0.0239f;
-	float pd_w_gold_gold = 1.4666f;
-	float pd_w_bodies_small = -0.4046f;
-	float pd_w_dash_dist = 0.0034f;
-	float pd_w_ranged_mono = 0.0060f;
-	float pd_w_hp_mono = 0.f;	   // monolith-map interactions (0 = the model of the first fit)
-	float pd_w_basic_mono = 0.f;
-	float pd_w_spell_mono = 0.f;
-	float pd_w_area_mono = 0.f;
-	float pd_w_area_close = 0.f;  // crowded maps (tiles per champion below 50 x 50 / 10): area damage and stuns x (close - 1)
-	float pd_w_stun_close = 0.f;
+	float pd_w_hp = 0.514f;
+	float pd_w_basic = 0.531f;
+	float pd_w_splash = 0.f;
+	float pd_w_spell = 0.030f;
+	float pd_w_area = 0.545f;
+	float pd_w_stun = 0.209f;
+	float pd_w_dash = 0.059f;
+	float pd_w_ranged = 0.f;
+	float pd_w_gold = 0.742f;
+	float pd_w_ret = 0.f;
+	float pd_w_bodies = -0.864f;
+	float pd_w_area_pack = 0.237f;
+	float pd_w_stun_elk = 0.009f;
+	float pd_w_gold_gold = 0.185f;
+	float pd_w_bodies_small = -0.225f;
+	float pd_w_dash_dist = 0.153f;
+	float pd_w_ranged_mono = 0.108f;
 	float pd_obj_ring = 0.75f;	   // objective map: + x (the pick's spell damage from 4) / (the best pick's) (v8: Prism / Tavi +0.75)
 	float pd_obj_tank = 0.4f;	   // objective map: a melee pick with an area stun (v8: Ryth +0.4); other melee picks - pd_obj_melee (v8: Ren / Varg -0.6)
 	float pd_obj_melee = 0.6f;
@@ -661,68 +655,6 @@ struct Params
 	float deny_capture_mult = 1.3f; // value multiplier for contesting an enemy's capture
 
 	// Fight execution (strategy v2, replay audit of 15 top-team games: 74% of the rounds our champions were hit by
-
-	// v9 adaptive layer (opp.h / opp.cpp; guide chapters 17-19). Every switch 0 = GOD v8's games, unchanged.
-	// The leader (body 0, which also runs while dead) keeps an opponent model from evidence every body shares, picks a team plan and
-	// broadcasts it in bit 7 of shared-memory bytes 3-5; every body applies that plan's preset at the end of update_mode().
-	int opp_plan = 0;			  // 1: run the opponent model and apply its plan (needs alert_refresh 0: bit 7 of byte 2 becomes the contact bit)
-	int opp_presets = 1;		  // 1: apply the preset of the broadcast plan; 0: compute and broadcast it only (dry run for traces)
-	int opp_window = 30;		  // rounds per evidence window (opp_sim.py: 20-round windows of bursty sightings were too noisy)
-	float opp_ema = 0.5f;		  // weight of the newest window in the running indices
-	int opp_dwell = 2;			  // windows a plan is kept before an ordinary switch (an urgent switch skips the wait)
-	float opp_contact_hi = 0.35f; // share of rounds with an enemy deep in our half (any body): an invading opponent ...
-	int opp_consec = 2;			  // ... for this many consecutive windows (simulated: 9% false alarms per game at a 0.08 share)
-	float opp_contact_stay = 0.20f; // once in DEFEND / PUNISH, stay while the contact index is at least this (tests F, G: one quiet window flipped it)
-	float opp_contact_lo = 0.10f; // ... at most this: a farming opponent
-	float opp_depth = 0.8f;		  // contact = an enemy with dist_home + 2 < opp_depth x dist_away (1.0: anywhere on our half)
-	float opp_cusum_k = 0.2f;	  // change detector on the per-window contact share: drift allowance ...
-	float opp_cusum_h = 0.8f;	  // ... and alarm level (a sudden invasion switches at once, not after opp_dwell windows)
-	int opp_home_deaths = 2;	  // hard evidence: this many of our deaths on our half inside one window switch to DEFEND / PUNISH at once
-	float opp_punish_bal = 0.5f;  // invaded but winning the trades (EMA of their deaths - ours per window >= this): PUNISH, else DEFEND
-	int opp_loss_n = 2;			  // EVADE after this many lost team fights (2+ of our deaths within 4 rounds) ...
-	int opp_loss_h = 100;		  // ... within this many rounds (an EMA over windows forgot the first loss before the second: test E)
-	int opp_race_margin = 60;	  // they finish the gem race this many rounds before us: HUNT (trades even) or RACE (trades lost); once in
-								  // HUNT / RACE we stay while they finish first at all (hysteresis: lumpy bank events made it flip, test B)
-	int opp_race_from = 150;	  // no race plan (HUNT / RACE / DENY) before this round: the first bank events are too lumpy to project
-	float opp_rate_ema = 0.3f;	  // EMA weight of the newest window's banking pace (slower than opp_ema: banks land in lumps)
-	float opp_even_bal = -0.25f;  // trades count as even (HUNT, not RACE) down to this balance: a net loss decays below it in ~3 windows
-	int opp_deny_at = 850;		  // their banked gems from which DENY applies when they also finish first
-	float opp_dive_prior = 0.15f; // initial contact index per enemy diver (melee or dash champion) beyond the second
-	int fix_my_dash = 1;		  // v9 tasks T01: combat()'s my_burst also counts our own ready damaging dash (Heart of Ruin's landing, focus x dash_mod), as
-						  // burst_vs() already does (0 = v8: a Heart of Ruin judged its fights without its main spell)
-	int fm_buffs = 0;		  // T09 (bits): 1 shields (a visible enemy's shield adds to its effective health, ours to ours: engine buff data),
-						  // 2 a stunned enemy deals x0.7 in the exchange and nothing to us this round
-	float farm_ema = 0.f;	  // T09d: > 0: learning rate of a multiplier (0.7-1.5) on incoming_on() from the camp damage we actually took vs predicted
-	int risky_persist = 0;	  // T14a: the "risky" bank needs an enemy within 9 for this many rounds in a row (or health < 60%); 0 = one sighting
-	int near_age_cap = 0;	  // T14b: a sighting's age shortens enemy_near_d by at most this many tiles (hold_spell_dist reads it); 0 = unbounded
-	float bandit_discount = 0.f; // T11: > 0: every stance value x (1 - this) at each window close before the update (0.2: a window 10 windows back weighs 10%)
-	int draft_guard = 1;	  // T13: a draft pick that throws falls back to the first legal pick of a fixed list (else the engine picks at random)
-	float heavy_value = 1.f;	  // value x this for heavy groups (a monolith or >= om_heavy gems); the sparring objective style uses x pxs_obj_mult
-	int ally_defend = 0;		  // 1: join a fight at the hit-back bar (fight_back_margin) when a visible ally within the target's reach + 1 took damage since
-						  // our last turn and we have at least ally_defend_hp of our health (the vetoes below the ladder still apply)
-	float ally_defend_hp = 0.5f;
-	int deny_ramp = 0;		  // 1: OPPORTUNITY answers (their tributes / carriers) ramp with their banked total (UPG-4: radius 12 -> 16, health gate 0.40 ->
-						  // 0.25 between deny_ramp_from and + deny_ramp_span) instead of the step at endgame_alarm (800)
-	int deny_ramp_from = 600;
-	int deny_ramp_span = 250;
-	int opp_force = -1;		  // >= 0: that plan for the whole game (test of a preset with a perfect detector; 1 DEFEND, 2 PUNISH, 3 HUNT, 4 RACE, 5 EVADE, 6 DENY)
-	int opp_mask = 127;		  // bit p: plan p may be entered (ablation of single plans; 127 = all seven)
-	int contact_bit = 1;		  // with opp_plan: a body that sees an enemy on our half sets the contact bit for the leader
-	int enemy_comp_init = 0;	  // 1: read the enemy champion types at init (the API: champion_name() reads live champions without vision)
-	int safety_range = 1;		  // 1: safety() counts a camp while we stand inside its engine range (elk / golem 4, monolith 5) instead of 3
-	int watchdog9 = 0;			  // v9 (> 0): after this many consecutive turns that threw an exception, play a minimal fallback turn (main.cpp)
-	int ring_reach = 0;		  // 1: the objective ring counts an area spell's reach as range + radius and aims it at a tile next to the camp
-							  // (v8 compared the cast range alone with 5, so since patch 3.0 the ring rarely qualified on elk / golem groups)
-	int tavi_str = 0;			  // 1: Tavi builds strength instead of focus (estimate from the kit numbers: ~5.6 vs ~1.75 damage per round per shard);
-							  // the default build style 2 switches her whole list, the proxy styles 3/4/10/12 keep the copied teams' Tavi lists
-	// Sparring personas (for building A/B opponents only; inactive by default): between spar_from and spar_to the bot plays PUSH,
-	// multiplies the enemy-half cost by spar_half, adds spar_deny and spar_fight, and with spar_db follows the leader (deathball).
-	int spar_from = 0;
-	int spar_to = 0;
-	float spar_half = 1.f;
-	float spar_deny = 0.f;
-	float spar_fight = 0.f;
-	int spar_db = 0;
 	// champions they dealt no champion damage back; 636 of those rounds they walked, 278 with an enemy already in reach)
 	int exec_hit_first = 1;		// engage(): the chosen target is out of reach but another enemy is in reach: hit that one now
 								// (ranged: attack/cast and stand; melee: attack, then still step toward the target)
@@ -872,7 +804,7 @@ struct Params
 	int deny_altar = 0;			// 1: when the enemy has >= deny_altar_at banked or the race says they finish first, the lowest-index living non-anchor
 								// body waits within 2 of the altar they use most (tributes we saw; else their spawn's nearest), locking it
 	int deny_altar_at = 850;
-	int watchdog = 1;			// 1: after 3 turns in a row that threw, a minimal safe turn (hit an adjacent enemy, else step toward spawn)
+	int watchdog = 0;			// 1: after 3 turns in a row that threw, a minimal safe turn (hit an adjacent enemy, else step toward spawn)
 
 	// ---- Sparring proxies (testing only, docs/TESTING.md; never on in a submission): a fixed playing style, optionally switching at
 	// set rounds, built from existing GOD mechanisms. 1 farmer (stays home, avoids fights), 2 invader (PUSH: their half free, deny,

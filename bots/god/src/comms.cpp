@@ -21,8 +21,6 @@ void Comms::read(int round)
 	if (!bag_on)
 		bag_tens = 0;
 	stance = ((b[0] >> 7) & 1) | (((b[1] >> 7) & 1) << 1);
-	if (P.opp_plan)
-		plan9 = ((b[3] >> 7) & 1) | (((b[4] >> 7) & 1) << 1) | (((b[5] >> 7) & 1) << 2);
 	if (P.opp_model)
 	{
 		plan = stance | (((b[2] >> 7) & 1) << 2);
@@ -120,37 +118,6 @@ void Comms::post(int kind, vec2 tile, int round)
 	alert_kind = kind;
 	alert_pos = tile;
 	alert_round = round;
-}
-
-void Comms::write_plan9(int p)
-{
-	for (int i = 0; i < 3; ++i)
-	{
-		const auto k = static_cast<std::size_t>(3 + i);
-		const std::uint8_t old = bc::shared_memory[k];
-		bc::shared_memory[k] = static_cast<std::uint8_t>((old & 0x7F) | (((p >> i) & 1) << 7));
-	}
-	plan9 = p;
-}
-
-void Comms::set_contact()
-{
-	if (P.alert_refresh)
-		return; // bit 7 of byte 2 is the alert toggle then
-	const std::uint8_t old = bc::shared_memory[2];
-	if (!(old & 0x80))
-		bc::shared_memory[2] = static_cast<std::uint8_t>(old | 0x80);
-}
-
-bool Comms::take_contact()
-{
-	if (P.alert_refresh)
-		return false;
-	const std::uint8_t old = bc::shared_memory[2];
-	if (!(old & 0x80))
-		return false;
-	bc::shared_memory[2] = static_cast<std::uint8_t>(old & 0x7F);
-	return true;
 }
 
 void Comms::write_bag(int gems)

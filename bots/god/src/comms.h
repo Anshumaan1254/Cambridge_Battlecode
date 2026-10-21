@@ -45,14 +45,6 @@ struct Comms
 	int others_carried() const { return bag_on ? 10 * (bag_tens - my_bag) : 0; }
 	void post(int kind, vec2 tile, int round);
 	bool fresh(int round, int max_age) const { return alert_kind != AL_NONE && round - alert_round <= max_age; }
-
-	// v9 (P.opp_plan): bit 7 of bytes 3-5 = team plan (3 bits, written by the leader); bit 7 of byte 2 = contact bit (any body
-	// that sees an enemy on our half sets it; the leader reads and clears it once per round). Bit 7 of bytes 3-5 is otherwise
-	// unused, and bit 7 of byte 2 is the alert toggle only with P.alert_refresh (then the contact bit stays off).
-	int plan9 = 0;
-	void write_plan9(int p);
-	void set_contact();
-	bool take_contact();
 };
 
 Comms& comms();

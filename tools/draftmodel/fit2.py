@@ -37,7 +37,7 @@ def main():
 	games = [json.loads(l) for l in open(a[0])]
 	ch = FT.parse(a[1])
 	mfs = json.load(open(a[2]))
-	use = FT.FEATS
+	use = [x for x in FT.FEATS if x not in opt('--drop', '').split(',')]
 	X, y, maps = [], [], []
 	for g in games:
 		mf = mfs.get(g['map'])
@@ -94,7 +94,8 @@ def main():
 		pn = {'hp': 'pd_w_hp', 'basic': 'pd_w_basic', 'splash': 'pd_w_splash', 'spell': 'pd_w_spell', 'area': 'pd_w_area', 'stun': 'pd_w_stun',
 			'dash': 'pd_w_dash', 'ranged': 'pd_w_ranged', 'gold': 'pd_w_gold', 'ret': 'pd_w_ret', 'bodies': 'pd_w_bodies', 'area_x_pack': 'pd_w_area_pack',
 			'stun_x_elk': 'pd_w_stun_elk', 'gold_x_gold': 'pd_w_gold_gold', 'bodies_x_small': 'pd_w_bodies_small', 'dash_x_dist': 'pd_w_dash_dist',
-			'ranged_x_mono': 'pd_w_ranged_mono', 'cw_ranged_melee': 'pd_cw_ranged_melee', 'cw_stun_melee': 'pd_cw_stun_melee', 'cw_hp_burst': 'pd_cw_hp_burst',
+			'ranged_x_mono': 'pd_w_ranged_mono', 'hp_x_mono': 'pd_w_hp_mono', 'basic_x_mono': 'pd_w_basic_mono', 'spell_x_mono': 'pd_w_spell_mono',
+			'area_x_mono': 'pd_w_area_mono', 'cw_ranged_melee': 'pd_cw_ranged_melee', 'cw_stun_melee': 'pd_cw_stun_melee', 'cw_hp_burst': 'pd_cw_hp_burst',
 			'cw_dash_ranged': 'pd_cw_dash_ranged'}
 		print(' '.join(f'{pn[k]}={v:.4f}f' for k, v in zip(names, w) if k in pn))
 

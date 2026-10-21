@@ -1,0 +1,830 @@
+diff -ruN god_src/src/brain.cpp god_v9/src/brain.cpp
+--- god_src/src/brain.cpp	1980-01-01 00:00:00.000000000 +0000
++++ god_v9/src/brain.cpp	2026-10-21 04:53:22.965231512 +0000
+@@ -2,6 +2,7 @@
+ #include "learn.h"
+ #include "draft.h"
+ #include "ml2_model.h"
++#include "opp.h"
+ #ifdef LEGEND_TRACE
+ #include <map>
+ #endif
+@@ -65,7 +66,7 @@
+ 		// its no-contact farming maps (rows, expanse: 0 deaths either side) Monster in the damage stat, then Power (style 4).
+ 		const int om = official_map();
+ 		const int style = bs == 10 ? (om == OM_ROWS || om == OM_EXPANSE ? 4 : 3) : bs;
+-		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
++		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || (t == CT::tavi && !P.tavi_str) || t == CT::willow;
+ 		const I power = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
+ 		if (style == 4)
+ 			rep(v, focus ? I::monster_shard_of_focus : I::monster_shard_of_strength, 5);
+@@ -102,7 +103,7 @@
+ 		// ThE, Issac TsE, Varg ThE), then Jungle in the damage stat (casters) or Bruiser health (melee), Durability, then Power in the damage
+ 		// stat for the rest of the game (1,097 Power-dmg emblems in 20 games: their Stellar ends with 20-27 of them). The patch made gold
+ 		// plentiful (gold clusters 120 HP for 20 gold, kills 100): damage snowballs into more gold.
+-		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
++		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || (t == CT::tavi && !P.tavi_str) || t == CT::willow;
+ 		const I pw = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
+ 		switch (t)
+ 		{
+@@ -147,7 +148,7 @@
+ 		// Session 14 hybrids. 13: Treasure first (gold snowball), then our survival emblems (Jungle health on Ren / Ryth, Monster dmg then
+ 		// Durability health on the carries, as build_style 2), then Power in the damage stat for ever (instead of Bruiser cycles: late
+ 		// game our bodies reached 7,000 health and 500 damage while Nyx's Stellar one-shot them). 14: the same without Treasure first.
+-		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
++		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || (t == CT::tavi && !P.tavi_str) || t == CT::willow;
+ 		const I pw = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
+ 		const I tr = focus ? I::treasure_shard_of_focus : I::treasure_shard_of_strength;
+ 		const I mo = focus ? I::monster_shard_of_focus : I::monster_shard_of_strength;
+@@ -192,7 +193,7 @@
+ 		// Intercontinental Fish (ladder #1; emblem order of its bodies in 36 games of Oct 19, experiments/interwin_oct19):
+ 		// Stellar PfE > HhE > DhE (17 of 36), Ren BhE > DhE > PfE, Cassi PfE > DfE > BhE, Issac PsE > HhE > DhE, Ryth BhE > DhE > PsE,
+ 		// Varg PsE > HhE; first emblem near r83 (Stellar), r74 (Ren). Power in the damage stat for the rest of the game.
+-		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
++		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || (t == CT::tavi && !P.tavi_str) || t == CT::willow;
+ 		const I pw = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
+ 		switch (t)
+ 		{
+@@ -227,7 +228,7 @@
+ 		const int om = official_map();
+ 		const bool str_maps = om == OM_PACKS || om == OM_ROWS || om == OM_RUSHBAIT || om == OM_SWIRL || om == OM_INTERLOCK
+ 			|| om == OM_COLLISION || om == OM_FRAGMENT || om == OM_EXPANSE;
+-		bool focus = t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
++		bool focus = t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || (t == CT::tavi && !P.tavi_str) || t == CT::willow;
+ 		if (t == CT::ren || t == CT::ryth)
+ 			focus = !str_maps;
+ 		const I ju = focus ? I::jungle_shard_of_focus : I::jungle_shard_of_strength;
+@@ -286,22 +287,29 @@
+ 		case CT::stellar:
+ 		case CT::prism:
+ 		case CT::tavi:
++		{
++			// v9 tavi_str: Tavi takes the same list in strength (her attack resets make strength her best stat: guide, finding 7).
++			const bool str = t == CT::tavi && P.tavi_str;
++			const I monster = str ? I::monster_shard_of_strength : I::monster_shard_of_focus;
++			const I treasure = str ? I::treasure_shard_of_strength : I::treasure_shard_of_focus;
++			const I bruiser = str ? I::bruiser_shard_of_strength : I::bruiser_shard_of_focus;
+ 			if (P.squishy_hp_first)
+ 				rep(v, I::durability_shard_of_health, 5);
+ 			if (P.rich_treasure_first)
+ 			{
+-				rep(v, I::treasure_shard_of_focus, 5);
+-				rep(v, I::monster_shard_of_focus, 5);
++				rep(v, treasure, 5);
++				rep(v, monster, 5);
+ 			}
+ 			else
+ 			{
+-				rep(v, I::monster_shard_of_focus, 5);
+-				rep(v, I::treasure_shard_of_focus, 5);
++				rep(v, monster, 5);
++				rep(v, treasure, 5);
+ 			}
+-			rep(v, I::bruiser_shard_of_focus, 5);
++			rep(v, bruiser, 5);
+ 			rep(v, I::durability_shard_of_health, 5);
+-			cycle(v, { I::bruiser_shard_of_focus, I::bruiser_shard_of_focus, I::bruiser_shard_of_health }, 8);
++			cycle(v, { bruiser, bruiser, I::bruiser_shard_of_health }, 8);
+ 			break;
++		}
+ 		case CT::cassi:
+ 		case CT::willow:
+ 			if (P.ci_health_first)
+@@ -359,7 +367,7 @@
+ 		if (P.build_tail)
+ 		{
+ 			// The list must never run out (session 14): Power in the damage stat (1) or the Bruiser mix (2) for the rest of the game.
+-			const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || t == CT::tavi || t == CT::willow;
++			const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::cassi || t == CT::prism || (t == CT::tavi && !P.tavi_str) || t == CT::willow;
+ 			if (t == CT_HOR && P.hor_build >= 2)
+ 				cycle(v, { I::bruiser_shard_of_health, I::bruiser_shard_of_focus }, 30);
+ 			else if (P.build_tail == 1)
+@@ -671,11 +679,31 @@
+ 		learner().tick(round, W.my_index == 0, false);
+ 		if (W.my_index == 0)
+ 			C.write_stance(learner().stance);
++		if (P.opp_plan && W.my_index == 0)
++		{
++			// v9: the leader keeps the opponent model running while dead (global score and alive flags need no vision).
++			opp().tick(round, P.contact_bit && C.take_contact(), C.others_carried());
++			C.write_plan(opp().plan);
++		}
+ 		task = T_NONE;
+ 		return;
+ 	}
+ 	W.perceive(pos);
+ 	C.read(round);
++	if (P.opp_plan)
++	{
++		// v9: shared evidence for the opponent model. Any body that sees an enemy on our half sets the contact bit; the leader
++		// reads and clears it once per round, updates the model and broadcasts the plan (read by every body in Comms::read).
++		const bool contact = P.contact_bit && enemy_on_our_half();
++		if (W.my_index == 0)
++		{
++			const bool shared = P.contact_bit && C.take_contact(); // always clear it: one count per round
++			opp().tick(round, contact || shared, static_cast<int>(gems) + C.others_carried());
++			C.write_plan(opp().plan);
++		}
++		else if (contact)
++			C.set_contact();
++	}
+ 	if (P.reward_claim_gone)
+ 	{
+ 		// Shared memory says who works which group. A living ally whose claim leaves a reward we cannot see has taken it
+@@ -1755,7 +1783,8 @@
+ 		for (const auto& e : W.enemies)
+ 			if (e.visible && e.alive && e.tributing && cheb(e.pos, a) <= 1)
+ 				enemy_tributing = true;
+-		const bool enemy_side = W.dist_away(a) + 2 < W.dist_home(a);
++		// v9 presets HUNT / DENY: contested altars (about as near their spawn as ours) get a lock too.
++		const bool enemy_side = W.dist_away(a) + 2 < W.dist_home(a) || (locks_contested && W.contested(static_cast<int>(i)));
+ 		bool has_any_lock = false;
+ 		try
+ 		{
+@@ -3307,7 +3336,10 @@
+ 			for (std::size_t i = 0; i < g.camps.size(); ++i)
+ 			{
+ 				const int d = cheb(g.camps[i].pos, pos);
+-				if (g.hp[i] <= 0 || d > 3)
++				// v9 safety_range: patch 3.0 camps reach 4 (elk, golem) and 5 (monolith); the literal 3 left a body at 4-5 tiles
++				// from an elk counting none of its hits (g.near, which gates this loop, already uses the engine range).
++				const int rng = P.safety_range ? std::max(3, g.camps[i].range) : 3;
++				if (g.hp[i] <= 0 || d > rng)
+ 					continue;
+ 				bool shielded = false;
+ 				for (const auto& a : W.allies)
+@@ -3322,11 +3354,11 @@
+ 				if (obj)
+ 				{
+ 					obj_in += g.camps[i].str;
+-					obj_escape = std::max(obj_escape, 4 - d);
++					obj_escape = std::max(obj_escape, rng + 1 - d);
+ 					continue;
+ 				}
+ 				camp_in += g.camps[i].str;
+-				escape = std::max(escape, 4 - d);
++				escape = std::max(escape, rng + 1 - d);
+ 			}
+ 		}
+ 	// P.pair_retreat_hp: Cassi & Issac walk home from camps earlier (a body caught low by an enemy kills both bodies).
+@@ -3414,6 +3446,14 @@
+ 	if (round < P.early_round)
+ 		tribute_min = std::min(tribute_min, P.early_tribute_min); // bank small and early: gold and safety
+ 	stance = comms().stance;
++	// v9: the team plan (broadcast by the leader) may force the stance; its numeric preset is applied at the end of update_mode().
++	plan_now = P.opp_plan && P.opp_presets ? comms().plan : PL_FARM;
++	rally_add = opp_add = 0;
++	locks_contested = false;
++	if (plan_now != PL_FARM && preset_of(plan_now).stance >= 0)
++		stance = preset_of(plan_now).stance;
++	if (sparring_window())
++		stance = STANCE_PUSH; // v9 sparring persona (test opponents only): an invasion window
+ 	if (P.mono_grouped_until > 0 && world().mono_mode && round < P.mono_grouped_until)
+ 		stance = STANCE_GROUPED; // lone-monolith maps: the first contact is a team wipe for whoever arrives piecemeal
+ 	isolated_fight_adv = P.isolated_fight_adv + dl_val(dl_iso, dl_iso_r);
+@@ -3573,6 +3613,45 @@
+ 		fight_margin += P.pair_caution;
+ 		isolated_fight_adv += P.pair_caution;
+ 	}
++	if (plan_now != PL_FARM)
++	{
++		// v9 preset: one coherent set of changes per opponent plan, on top of the stance / scoreboard / race modifiers above.
++		const Preset& pr = preset_of(plan_now);
++		fight_margin = std::max(0.9f, fight_margin + pr.fight_add);
++		fight_back_margin = std::max(0.55f, fight_back_margin + pr.fight_back_add);
++		enemy_half_penalty *= pr.half_mult;
++		deny_bonus = std::max(0.f, deny_bonus + pr.deny_add);
++		isolated_fight_adv = std::max(1.f, isolated_fight_adv + pr.iso_add);
++		tribute_min = std::max(10, static_cast<int>(static_cast<float>(tribute_min) * pr.bank_mult));
++		gold_v *= pr.gold_mult;
++		rally_add = pr.rally_add;
++		opp_add = pr.opp_add;
++		locks_contested = pr.locks_contested != 0;
++	}
++	if (sparring_window())
++	{
++		// v9 sparring persona: a copy of the bot with spar_from / spar_to set plays a mid-match switcher for the A/B pool.
++		enemy_half_penalty *= P.spar_half;
++		deny_bonus += P.spar_deny;
++		fight_margin = std::max(0.9f, fight_margin + P.spar_fight);
++	}
++}
++
++bool Brain::sparring_window() const
++{
++	return P.spar_to > P.spar_from && round >= P.spar_from && round < P.spar_to;
++}
++
++bool Brain::enemy_on_our_half() const
++{
++	// v9 contact evidence: a visible living enemy off its spawn and deep in our half (dist_home + 2 < opp_depth x dist_away; the
++	// midline groups both teams farm stay out of it, which keeps the false-alarm rate down: opp_sim.py).
++	const auto& W = world();
++	for (const auto& e : W.enemies)
++		if (e.alive && e.visible && !W.enemy_spawn.is_set(e.pos) &&
++			static_cast<float>(W.dist_home(e.pos) + 2) < P.opp_depth * static_cast<float>(W.dist_away(e.pos)))
++			return true;
++	return false;
+ }
+ 
+ bool Brain::on_the_way(int altar) const
+@@ -3750,7 +3829,7 @@
+ 	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
+ 	const bool their_endgame = theirs >= P.endgame_alarm;
+ 	const float hp_gate = opp ? (their_endgame ? 0.25f : 0.4f) : P.rally_hp;
+-	const int max_d = opp ? (their_endgame ? 16 : 12) : P.rally_r;
++	const int max_d = opp ? (their_endgame ? 16 : 12) + opp_add : P.rally_r + rally_add; // v9 presets widen the answer radius
+ 	if (hp < hp_gate * max_hp || ((task == T_CAPTURE || reward_here()) && !their_endgame))
+ 		return false;
+ 	const int d = cheb(C.alert_pos, pos);
+@@ -4015,8 +4094,11 @@
+ 		d += foc * k.dmg_mod;
+ 	if (k.cc >= 0 && k.cc_range >= rd && k.cc_mod > 0)
+ 		d += foc * k.cc_mod;
+-	if (k.aoe >= 0 && k.aoe_range >= rd)
+-		d += foc * k.aoe_mod * (k.aoe_radius >= 1.f ? std::min(g.cluster, 4.f) : 1.f);
++	// v9 ring_reach: an area spell reaches range + radius when aimed at a tile next to the camp (spells_on_camp does that);
++	// from outside, the blast covers fewer camps than one centred on the pack, so count at most 2.
++	const float aoe_reach = k.aoe_range + (P.ring_reach ? k.aoe_radius : 0.f);
++	if (k.aoe >= 0 && aoe_reach >= rd)
++		d += foc * k.aoe_mod * (k.aoe_radius >= 1.f ? std::min(g.cluster, k.aoe_range >= rd ? 4.f : 2.f) : 1.f);
+ 	return d / 8.f;
+ }
+ 
+@@ -4912,7 +4994,7 @@
+ 	auto& W = world();
+ 	if (task != T_CAPTURE && cast_en_route())
+ 		return;
+-	if (P.style == 1 || round < P.deathball_until)
++	if (P.style == 1 || round < P.deathball_until || (P.spar_db && sparring_window()))
+ 	{
+ 		int leader = -1;
+ 		for (int i = 0; i < static_cast<int>(W.allies.size()); ++i)
+@@ -5420,6 +5502,33 @@
+ 				return true;
+ 			}
+ 	}
++	if (P.ring_reach && kit.aoe >= 0 && d > static_cast<int>(kit.aoe_range) && d <= static_cast<int>(kit.aoe_range + kit.aoe_radius) &&
++		(!kit.aoe_stuns || !save_cc) && ready(kit.aoe) && (kit.dmg < 0 || !ready(kit.dmg) || d > static_cast<int>(kit.dmg_range)))
++	{
++		// v9 ring_reach: the camp stands beyond the cast range but within range + radius: centre the blast on a tile next to it
++		// (within our cast range) that covers the most live camps.
++		const int r = static_cast<int>(kit.aoe_radius), R = static_cast<int>(kit.aoe_range);
++		const auto& W = world();
++		vec2 best = c.pos;
++		int best_n = 0;
++		for (int dy = -r; dy <= r; ++dy)
++			for (int dx = -r; dx <= r; ++dx)
++			{
++				const vec2 t{ c.pos.x + dx, c.pos.y + dy };
++				if (t.x < 0 || t.y < 0 || t.x >= W.W || t.y >= W.H || cheb(pos, t) > R)
++					continue;
++				int n = 0;
++				for (std::size_t j = 0; j < g.camps.size(); ++j)
++					n += g.hp[j] > 0 && cheb(t, g.camps[j].pos) <= r;
++				if (n > best_n)
++					best_n = n, best = t;
++			}
++		if (best_n >= 1 && cast_ground(kit.aoe, best))
++		{
++			note_dmg(g.id, focus * kit.aoe_mod * static_cast<float>(best_n));
++			return true;
++		}
++	}
+ 	if (kit.dmg >= 0 && d <= static_cast<int>(kit.dmg_range) && cast_unit_camp(kit.dmg, c.camp))
+ 	{
+ 		note_dmg(g.id, focus * kit.dmg_mod);
+diff -ruN god_src/src/brain.h god_v9/src/brain.h
+--- god_src/src/brain.h	1980-01-01 00:00:00.000000000 +0000
++++ god_v9/src/brain.h	2026-10-21 04:26:34.285440837 +0000
+@@ -283,6 +283,12 @@
+ 	int stance = 0;
+ 	int tribute_min = 34;
+ 	void update_mode();
++	// v9 (P.opp_plan): the team plan in force this turn and the preset knobs update_mode() cannot express through the thresholds above
++	int plan_now = 0;
++	int rally_add = 0, opp_add = 0;
++	bool locks_contested = false;
++	bool enemy_on_our_half() const;
++	bool sparring_window() const; // v9: P.spar_from <= round < P.spar_to (sparring personas only)
+ 
+ 	// memory
+ 	int task = T_NONE, task_group = -1, task_since = 0;
+diff -ruN god_src/src/comms.cpp god_v9/src/comms.cpp
+--- god_src/src/comms.cpp	1980-01-01 00:00:00.000000000 +0000
++++ god_v9/src/comms.cpp	2026-10-20 21:54:10.995283879 +0000
+@@ -21,6 +21,7 @@
+ 	if (!bag_on)
+ 		bag_tens = 0;
+ 	stance = ((b[0] >> 7) & 1) | (((b[1] >> 7) & 1) << 1);
++	plan = P.opp_plan ? ((b[3] >> 7) & 1) | (((b[4] >> 7) & 1) << 1) | (((b[5] >> 7) & 1) << 2) : 0;
+ 	const std::uint16_t raw = static_cast<std::uint16_t>(b[6] | (b[7] << 8));
+ 	// Bit 7 of byte 2 flips on every post: re-posting the same alert (a fight still going on at one tile)
+ 	// refreshes it for the team instead of letting it expire (P.alert_refresh).
+@@ -78,6 +79,37 @@
+ 	alert_round = round;
+ }
+ 
++void Comms::write_plan(int p)
++{
++	for (int i = 0; i < 3; ++i)
++	{
++		const auto k = static_cast<std::size_t>(3 + i);
++		const std::uint8_t old = bc::shared_memory[k];
++		bc::shared_memory[k] = static_cast<std::uint8_t>((old & 0x7F) | (((p >> i) & 1) << 7));
++	}
++	plan = p;
++}
++
++void Comms::set_contact()
++{
++	if (P.alert_refresh)
++		return; // bit 7 of byte 2 is the alert toggle then
++	const std::uint8_t old = bc::shared_memory[2];
++	if (!(old & 0x80))
++		bc::shared_memory[2] = static_cast<std::uint8_t>(old | 0x80);
++}
++
++bool Comms::take_contact()
++{
++	if (P.alert_refresh)
++		return false;
++	const std::uint8_t old = bc::shared_memory[2];
++	if (!(old & 0x80))
++		return false;
++	bc::shared_memory[2] = static_cast<std::uint8_t>(old & 0x7F);
++	return true;
++}
++
+ void Comms::write_bag(int gems)
+ {
+ 	// Turns within a team are sequential, so a read-modify-write of the sum is safe; each body only ever adds the
+diff -ruN god_src/src/comms.h god_v9/src/comms.h
+--- god_src/src/comms.h	1980-01-01 00:00:00.000000000 +0000
++++ god_v9/src/comms.h	2026-10-20 21:54:05.443283549 +0000
+@@ -37,6 +37,14 @@
+ 	int others_carried() const { return bag_on ? 10 * (bag_tens - my_bag) : 0; }
+ 	void post(int kind, vec2 tile, int round);
+ 	bool fresh(int round, int max_age) const { return alert_kind != AL_NONE && round - alert_round <= max_age; }
++
++	// v9 (P.opp_plan): bit 7 of bytes 3-5 = team plan (3 bits, written by the leader); bit 7 of byte 2 = contact bit (any body
++	// that sees an enemy on our half sets it; the leader reads and clears it once per round). Bit 7 of bytes 3-5 is otherwise
++	// unused, and bit 7 of byte 2 is the alert toggle only with P.alert_refresh (then the contact bit stays off).
++	int plan = 0;
++	void write_plan(int p);
++	void set_contact();
++	bool take_contact();
+ };
+ 
+ Comms& comms();
+diff -ruN god_src/src/main.cpp god_v9/src/main.cpp
+--- god_src/src/main.cpp	1980-01-01 00:00:00.000000000 +0000
++++ god_v9/src/main.cpp	2026-10-20 21:56:04.031290599 +0000
+@@ -3,8 +3,43 @@
+ #include "draft.h"
+ #include <cstdio>
+ 
++namespace
++{
++// v9 watchdog (P.watchdog): a turn that keeps throwing (an unexpected map or SDK state) used to idle the body for the rest of the
++// game. After P.watchdog consecutive failures this plays a minimal, defensive turn instead: bank if next to an altar, else hit a
++// visible camp in range, else walk home. Every call is guarded; the next normal turn resets the counter.
++void fallback_turn()
++{
++	auto& me = bc::self();
++	if (!me.is_alive())
++		return;
++	const vec2 p = me.position();
++	if (me.gem_count() > 0)
++		for (const auto a : bc::map::altars().positions())
++			if (cheb(a, p) <= 1)
++			{
++				me.submit_gems(a);
++				return;
++			}
++	if (me.can_attack())
++		for (const auto& c : bc::vision::camps())
++			if (c.is_alive() && cheb(c.position(), p) <= me.attack_range())
++			{
++				me.attack(c);
++				return;
++			}
++	if (me.can_move())
++	{
++		const auto home = bc::map::spawn_region(team::ally).positions();
++		if (!home.empty())
++			me.move_towards(home.front());
++	}
++}
++} // namespace
++
+ int main()
+ {
++	int fails = 0;
+ 	while (true)
+ 	{
+ 		try
+@@ -13,9 +48,21 @@
+ 				play_draft();
+ 			else
+ 				brain().turn();
++			fails = 0;
+ 		}
+ 		catch (...)
+ 		{
++			++fails;
++			if (P.watchdog > 0 && fails >= P.watchdog && !bc::is_draft())
++			{
++				try
++				{
++					fallback_turn();
++				}
++				catch (...)
++				{
++				}
++			}
+ 		}
+ #ifdef LEGEND_TRACE
+ 		debug_block({
+diff -ruN god_src/src/opp.cpp god_v9/src/opp.cpp
+--- god_src/src/opp.cpp	1970-01-01 00:00:00.000000000 +0000
++++ god_v9/src/opp.cpp	2026-10-21 04:53:22.965904217 +0000
+@@ -0,0 +1,206 @@
++#include "opp.h"
++
++#include "comms.h"
++#include "learn.h"
++#include "params.h"
++#include "world.h"
++
++#include <algorithm>
++#include <cmath>
++#include <cstdio>
++
++OppModel& opp()
++{
++	static OppModel m;
++	return m;
++}
++
++namespace
++{
++// Directions are the guide's counter-playbook (chapter 17); magnitudes are starting points for the ES / A-B tuning.
++//                                  fight  fback   half  deny   iso  bank  gold  stance                 rally opp locks
++constexpr std::array<Preset, PL_COUNT> PRESETS{ {
++	/* FARM   */ { 0.00f, 0.00f, 1.0f, 0.00f, 0.0f, 1.0f, 1.0f, -1, 0, 0, 0 },
++	/* DEFEND */ { 0.10f, 0.00f, 2.5f, -0.05f, 0.2f, 0.7f, 1.0f, 1 /* GROUPED */, 3, 0, 0 },
++	/* PUNISH */ { -0.15f, -0.10f, 0.6f, 0.30f, 0.0f, 1.0f, 1.0f, 2 /* PUSH */, 2, 2, 0 },
++	/* HUNT   */ { -0.10f, -0.05f, 0.4f, 0.50f, 0.0f, 1.0f, 0.8f, 2 /* PUSH */, 0, 4, 1 },
++	/* RACE   */ { 0.30f, 0.00f, 1.5f, -0.05f, 0.3f, 1.0f, 0.3f, 0 /* SPREAD */, 0, 0, 0 },
++	/* EVADE  */ { 0.40f, 0.00f, 1.5f, 0.00f, 0.4f, 0.7f, 1.0f, 1 /* GROUPED */, 2, 0, 0 },
++	/* DENY   */ { -0.20f, -0.15f, 0.4f, 0.60f, -0.1f, 0.6f, 0.5f, 2 /* PUSH */, 2, 6, 1 },
++} };
++constexpr const char* NAMES[PL_COUNT] = { "FARM", "DEFEND", "PUNISH", "HUNT", "RACE", "EVADE", "DENY" };
++} // namespace
++
++const Preset& preset_of(int plan) { return PRESETS[static_cast<std::size_t>(std::clamp(plan, 0, PL_COUNT - 1))]; }
++const char* plan_name(int plan) { return NAMES[static_cast<std::size_t>(std::clamp(plan, 0, PL_COUNT - 1))]; }
++
++void OppModel::init()
++{
++	inited = true;
++	auto& W = world();
++	divers = casters = 0;
++	if (P.enemy_comp_init)
++		for (const auto& e : W.enemies)
++		{
++			const bool diver = !e.kit.ranged || e.kit.dash >= 0;
++			divers += diver;
++			casters += !diver;
++		}
++	// A diving composition (4 melee / dash champions, Vendetta, Heart of Ruin...) starts closer to the invasion line, so the first
++	// windows of contact switch the plan sooner. It never sets a plan by itself.
++	contact = P.opp_dive_prior * static_cast<float>(std::max(0, divers - 2));
++	last_ally_deaths = W.ally_deaths;
++}
++
++void OppModel::switch_to(int want, bool urgent)
++{
++	if (want == plan)
++		return;
++	plan = want;
++	plan_since = windows;
++	if (urgent)
++		cusum = 0.f;
++}
++
++void OppModel::tick(int round, bool contact_now, int carried_gems)
++{
++	if (!inited)
++		init();
++	if (round == last_round)
++		return;
++	last_round = round;
++	auto& W = world();
++	const auto& C = comms();
++	const int ours = static_cast<int>(bc::global_submitted_gems(team::ally));
++	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
++	if (win_start < 0)
++	{
++		win_start = round;
++		last_ours = ours, last_theirs = theirs;
++		w_ally_d0 = W.ally_deaths, w_enemy_d0 = W.enemy_deaths, w_home_d0 = learner().ally_deaths_our_half;
++	}
++	carried = carried_gems;
++	// Their bank events: exact size and timing for every body (global score); no vision needed.
++	if (theirs > last_theirs)
++		++w_bank_n, w_bank_gems += theirs - last_theirs;
++	w_our_gems += std::max(0, ours - last_ours);
++	last_theirs = theirs, last_ours = ours;
++	// Lost team fights: a second death of ours within 4 rounds of another.
++	while (last_ally_deaths < W.ally_deaths)
++	{
++		++last_ally_deaths;
++		bool recent = false;
++		for (const int r : death_r)
++			recent |= round - r <= 4;
++		if (recent)
++			loss_r[loss_i++ % loss_r.size()] = round;
++		death_r[death_i++ % death_r.size()] = round;
++	}
++	// Deaths on our half without vision: an ally that dies within 8 rounds of claiming a group on our half died there
++	// (a body clears its claim while it fights, so the last claim it held is the best guess of where it was).
++	for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 6; ++i)
++	{
++		const auto k = static_cast<std::size_t>(i);
++		const auto& a = W.allies[k];
++		if (a.alive && C.claim[k] >= 0)
++			last_claim[k] = C.claim[k], last_claim_r[k] = round;
++		if (!a.alive && a.died_round > seen_died[k])
++		{
++			seen_died[k] = a.died_round;
++			const int g = last_claim[k];
++			if (g >= 0 && g < static_cast<int>(W.groups.size()) && a.died_round - last_claim_r[k] <= 8 && W.groups[static_cast<std::size_t>(g)].ours)
++				++w_home_hard;
++		}
++	}
++	w_contact += contact_now;
++	++w_rounds;
++	if (P.opp_loss_n > 0 && plan == PL_FARM && losses_within(round, P.opp_loss_h) >= P.opp_loss_n)
++		switch_to(PL_EVADE, true);
++	// Hard evidence: they are killing us on our own half. Switch now (DEFEND, or PUNISH when we win the trades anyway).
++	if (P.opp_home_deaths > 0 && w_home_hard >= P.opp_home_deaths && plan != PL_DEFEND && plan != PL_PUNISH && plan != PL_DENY)
++		switch_to(balance >= P.opp_punish_bal ? PL_PUNISH : PL_DEFEND, true);
++	// Endgame: no waiting for the window when they are about to win.
++	if (theirs >= P.opp_deny_at && plan != PL_DENY && decide(round) == PL_DENY)
++		switch_to(PL_DENY, true);
++	if (round - win_start >= P.opp_window)
++		close_window(round);
++}
++
++void OppModel::close_window(int round)
++{
++	auto& W = world();
++	const float n = static_cast<float>(std::max(1, w_rounds));
++	const float a = std::clamp(P.opp_ema, 0.05f, 1.f);
++	const float c = static_cast<float>(w_contact) / n;
++	contact = (1.f - a) * contact + a * c;
++	hi_run = contact >= P.opp_contact_hi ? hi_run + 1 : 0;
++	// CUSUM (Page's test) on the contact share: accumulates only rises beyond the slow mean plus a drift allowance.
++	cusum = std::max(0.f, cusum + (c - contact_mean) - P.opp_cusum_k);
++	contact_mean = 0.85f * contact_mean + 0.15f * c;
++	const int d_ally = W.ally_deaths - w_ally_d0, d_enemy = W.enemy_deaths - w_enemy_d0;
++	const int d_home = std::max(learner().ally_deaths_our_half - w_home_d0, w_home_hard);
++	balance = (1.f - a) * balance + a * static_cast<float>(d_enemy - d_ally);
++	home_deaths = (1.f - a) * home_deaths + a * static_cast<float>(d_home);
++	const float ar = std::clamp(P.opp_rate_ema, 0.05f, 1.f);
++	their_rate = windows == 0 ? static_cast<float>(w_bank_gems) / n : (1.f - ar) * their_rate + ar * static_cast<float>(w_bank_gems) / n;
++	our_rate = windows == 0 ? static_cast<float>(w_our_gems) / n : (1.f - ar) * our_rate + ar * static_cast<float>(w_our_gems) / n;
++	if (w_bank_n > 0)
++		their_bag = (1.f - a) * their_bag + a * static_cast<float>(w_bank_gems) / static_cast<float>(w_bank_n);
++
++	const int want = decide(round);
++	const bool urgent = cusum >= P.opp_cusum_h && (want == PL_DEFEND || want == PL_PUNISH || want == PL_EVADE);
++	// Leaving FARM needs no dwell (the evidence rules already demand persistence); leaving a counter-plan does.
++	if (want != plan && (urgent || plan == PL_FARM || windows - plan_since >= P.opp_dwell))
++		switch_to(want, urgent);
++	++windows;
++#ifdef OPP_TRACE
++	debug_block({
++		std::printf("OPP r=%d plan=%s contact=%.2f run=%d cusum=%.2f bal=%.2f home=%.2f losses=%d their=%.2f/r ours=%.2f/r bag=%.0f divers=%d\n",
++			round, plan_name(plan), contact, hi_run, cusum, balance, home_deaths, losses_within(round, P.opp_loss_h), their_rate, our_rate, their_bag, divers);
++	});
++#endif
++	win_start = round;
++	w_rounds = w_contact = w_bank_n = w_bank_gems = w_our_gems = w_home_hard = 0;
++	w_ally_d0 = W.ally_deaths, w_enemy_d0 = W.enemy_deaths, w_home_d0 = learner().ally_deaths_our_half;
++}
++
++int OppModel::decide(int round) const
++{
++	const int ours = static_cast<int>(bc::global_submitted_gems(team::ally));
++	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
++	const int goal = static_cast<int>(bc::constants::winning_gems);
++	// Paces: the recent windows blended with the whole game so far (bank events are lumpy).
++	const float avg_us = static_cast<float>(ours) / static_cast<float>(std::max(1, round));
++	const float avg_them = static_cast<float>(theirs) / static_cast<float>(std::max(1, round));
++	const float rate_us = std::max(0.05f, 0.5f * our_rate + 0.5f * avg_us);
++	const float rate_them = std::max(0.05f, 0.5f * their_rate + 0.5f * avg_them);
++	const float t_us = static_cast<float>(std::max(0, goal - ours - carried)) / rate_us;
++	const float t_them = static_cast<float>(std::max(0, goal - theirs)) / rate_them;
++	const bool they_finish = static_cast<float>(round) + t_them < static_cast<float>(bc::constants::max_rounds);
++	// Hysteresis: entering the race plans needs a clear deficit, staying in them only that they still finish first.
++	const bool racing = plan == PL_HUNT || plan == PL_RACE || plan == PL_DENY;
++	// Not before opp_race_from (like v8's race_from): one or two early bank events make the projection meaningless.
++	const bool behind = round >= P.opp_race_from && they_finish && t_them + (racing ? 0.f : static_cast<float>(P.opp_race_margin)) < t_us;
++	if (theirs >= P.opp_deny_at && behind)
++		return PL_DENY;
++	if (windows < 1)
++		return PL_FARM; // no closed window yet
++	const bool holding = (plan == PL_DEFEND || plan == PL_PUNISH) && contact >= P.opp_contact_stay;
++	if (hi_run >= P.opp_consec || holding || home_deaths >= 1.f)
++		return balance >= P.opp_punish_bal && home_deaths < 0.5f ? PL_PUNISH : PL_DEFEND;
++	if (P.opp_loss_n > 0 && losses_within(round, P.opp_loss_h) >= P.opp_loss_n)
++		return PL_EVADE;
++	// Hysteresis again: a quiet opponent is one below opp_contact_lo to enter the race plans, below opp_contact_hi to stay in them.
++	const bool quiet = contact <= (racing ? P.opp_contact_hi : P.opp_contact_lo);
++	if (quiet && behind)
++		return balance >= P.opp_even_bal ? PL_HUNT : PL_RACE; // an EMA never returns exactly to 0 after a lost fight
++	return PL_FARM;
++}
++
++int OppModel::losses_within(int round, int horizon) const
++{
++	int n = 0;
++	for (const int r : loss_r)
++		n += round - r <= horizon;
++	return n;
++}
+diff -ruN god_src/src/opp.h god_v9/src/opp.h
+--- god_src/src/opp.h	1970-01-01 00:00:00.000000000 +0000
++++ god_v9/src/opp.h	2026-10-20 22:01:42.461745617 +0000
+@@ -0,0 +1,84 @@
++// v9 adaptive layer: an opponent model and a team plan (strategy state) on top of the v8 cascade.
++//
++// Evidence comes from facts every body can read (global banked gems of both teams, global alive flags, the claims in shared
++// memory) plus one shared "contact" bit (some body saw an enemy deep in our half this round). Every opp_window rounds the
++// leader (body 0) closes a window, updates running indices (EMA) and picks a plan with a small decision tree. Two fast paths
++// skip the waiting: a CUSUM change detector on the contact share, and hard evidence (opp_home_deaths of our deaths on our own
++// half inside one window). The plan id (3 bits) is broadcast in shared memory; update_mode() applies the plan's preset on top
++// of the existing stance / scoreboard / race modifiers. Nothing here acts on its own: it re-tunes thresholds the v8 cascade
++// already uses, so every plan can be A/B tested on its own.
++#pragma once
++#include "common.h"
++
++enum Plan : int
++{
++	PL_FARM = 0,   // default: v8 behaviour
++	PL_DEFEND = 1, // they invade our half and win the trades: group up near home, bank small, answer rallies from farther
++	PL_PUNISH = 2, // they invade but lose the trades: take the fights, deny their captures
++	PL_HUNT = 3,   // they farm quietly and win the race, our trades are even: contest their half, chase their carriers
++	PL_RACE = 4,   // they farm quietly and win the race, our trades are lost: avoid fights, gold worth little, farm fast
++	PL_EVADE = 5,  // we lose team fights (2+ deaths within 4 rounds) wherever they happen: stay grouped, fight only with numbers
++	PL_DENY = 6,   // they are close to 1,000 and finish first: deny tributes (opportunity radius, locks), accept closer fights
++	PL_COUNT = 7
++};
++
++struct Preset
++{
++	float fight_add;	  // added to fight_margin (min 0.9 after the change)
++	float fight_back_add; // added to fight_back_margin (min 0.55)
++	float half_mult;	  // enemy_half_penalty multiplier
++	float deny_add;		  // added to deny_bonus (min 0)
++	float iso_add;		  // added to isolated_fight_adv (min 1.0)
++	float bank_mult;	  // tribute_min multiplier (min 10 gems)
++	float gold_mult;	  // gold_v multiplier
++	int stance;			  // forced team stance (-1: keep the bandit's)
++	int rally_add;		  // extra tiles from which a RALLY is answered
++	int opp_add;		  // extra tiles from which an OPPORTUNITY (enemy tribute / carrier) is answered
++	int locks_contested;  // 1: altar locks also go on contested altars without one (use_locks)
++};
++
++const Preset& preset_of(int plan);
++const char* plan_name(int plan);
++
++struct OppModel
++{
++	// Running indices (exponential moving averages over closed windows).
++	float contact = 0.f;	  // share of rounds with an enemy seen deep in our half
++	float contact_mean = 0.f; // slow mean of the per-window contact share (CUSUM reference)
++	float cusum = 0.f;		  // upward change detector on the contact share
++	int hi_run = 0;			  // consecutive windows with contact >= opp_contact_hi
++	float balance = 0.f;	  // their deaths minus ours per window
++	float home_deaths = 0.f;  // our deaths on our half per window
++	std::array<int, 4> loss_r{ -1000, -1000, -1000, -1000 }; // rounds of our last lost team fights
++	std::size_t loss_i = 0;
++	int losses_within(int round, int horizon) const;
++	float their_rate = 0.f, our_rate = 0.f; // banked gems per round, recent windows
++	float their_bag = 0.f;	  // mean size of their bank events (big bags: carriers worth chasing)
++
++	// Current window.
++	int win_start = -1, w_rounds = 0, w_contact = 0, w_bank_n = 0, w_bank_gems = 0, w_our_gems = 0;
++	int w_ally_d0 = 0, w_enemy_d0 = 0, w_home_d0 = 0, w_home_hard = 0;
++	int last_theirs = 0, last_ours = 0, last_round = -1, last_ally_deaths = 0, carried = 0;
++	std::array<int, 6> death_r{ -1000, -1000, -1000, -1000, -1000, -1000 };
++	std::size_t death_i = 0;
++	// Where each ally was last farming (its last claim in shared memory), to place deaths nobody saw.
++	std::array<int, 6> last_claim{ -1, -1, -1, -1, -1, -1 };
++	std::array<int, 6> last_claim_r{ -1000, -1000, -1000, -1000, -1000, -1000 };
++	std::array<int, 6> seen_died{ -1000, -1000, -1000, -1000, -1000, -1000 };
++
++	int plan = PL_FARM, plan_since = 0, windows = 0;
++	int divers = 0, casters = 0;
++	bool inited = false;
++
++	void init();
++	// Leader only, once per round (alive or dead). `contact_now`: the shared contact bit (or our own sighting) this round;
++	// `carried_gems`: our bag plus the team's other bags (comms team sum).
++	void tick(int round, bool contact_now, int carried_gems);
++	int decide(int round) const;
++
++private:
++	void close_window(int round);
++	void switch_to(int want, bool urgent);
++};
++
++OppModel& opp();
+diff -ruN god_src/src/params.h god_v9/src/params.h
+--- god_src/src/params.h	1980-01-01 00:00:00.000000000 +0000
++++ god_v9/src/params.h	2026-10-21 04:53:22.967069251 +0000
+@@ -659,6 +659,49 @@
+ 	float ml2_adapt_min = -2.f, ml2_adapt_max = 1.f; // ... bounds of the offset
+ 	int ml2_cornered = 1;		// 1: ml2_leave also when combat() thinks we cannot outrun a chaser (the cornered rule would trade)
+ 	int ml2_gb = 0;				// 1: P(die8) from the boosted trees (held-out AUC on our bodies 0.829 vs the logistic's 0.806)
++
++	// v9 adaptive layer (opp.h / opp.cpp; guide chapters 17-19). Every switch 0 = GOD v8's games, unchanged.
++	// The leader (body 0, which also runs while dead) keeps an opponent model from evidence every body shares, picks a team plan and
++	// broadcasts it in bit 7 of shared-memory bytes 3-5; every body applies that plan's preset at the end of update_mode().
++	int opp_plan = 0;			  // 1: run the opponent model and apply its plan (needs alert_refresh 0: bit 7 of byte 2 becomes the contact bit)
++	int opp_presets = 1;		  // 1: apply the preset of the broadcast plan; 0: compute and broadcast it only (dry run for traces)
++	int opp_window = 30;		  // rounds per evidence window (opp_sim.py: 20-round windows of bursty sightings were too noisy)
++	float opp_ema = 0.5f;		  // weight of the newest window in the running indices
++	int opp_dwell = 2;			  // windows a plan is kept before an ordinary switch (an urgent switch skips the wait)
++	float opp_contact_hi = 0.35f; // share of rounds with an enemy deep in our half (any body): an invading opponent ...
++	int opp_consec = 2;			  // ... for this many consecutive windows (simulated: 9% false alarms per game at a 0.08 share)
++	float opp_contact_stay = 0.20f; // once in DEFEND / PUNISH, stay while the contact index is at least this (tests F, G: one quiet window flipped it)
++	float opp_contact_lo = 0.10f; // ... at most this: a farming opponent
++	float opp_depth = 0.8f;		  // contact = an enemy with dist_home + 2 < opp_depth x dist_away (1.0: anywhere on our half)
++	float opp_cusum_k = 0.2f;	  // change detector on the per-window contact share: drift allowance ...
++	float opp_cusum_h = 0.8f;	  // ... and alarm level (a sudden invasion switches at once, not after opp_dwell windows)
++	int opp_home_deaths = 2;	  // hard evidence: this many of our deaths on our half inside one window switch to DEFEND / PUNISH at once
++	float opp_punish_bal = 0.5f;  // invaded but winning the trades (EMA of their deaths - ours per window >= this): PUNISH, else DEFEND
++	int opp_loss_n = 2;			  // EVADE after this many lost team fights (2+ of our deaths within 4 rounds) ...
++	int opp_loss_h = 100;		  // ... within this many rounds (an EMA over windows forgot the first loss before the second: test E)
++	int opp_race_margin = 60;	  // they finish the gem race this many rounds before us: HUNT (trades even) or RACE (trades lost); once in
++								  // HUNT / RACE we stay while they finish first at all (hysteresis: lumpy bank events made it flip, test B)
++	int opp_race_from = 150;	  // no race plan (HUNT / RACE / DENY) before this round: the first bank events are too lumpy to project
++	float opp_rate_ema = 0.3f;	  // EMA weight of the newest window's banking pace (slower than opp_ema: banks land in lumps)
++	float opp_even_bal = -0.25f;  // trades count as even (HUNT, not RACE) down to this balance: a net loss decays below it in ~3 windows
++	int opp_deny_at = 850;		  // their banked gems from which DENY applies when they also finish first
++	float opp_dive_prior = 0.15f; // initial contact index per enemy diver (melee or dash champion) beyond the second
++	int contact_bit = 1;		  // with opp_plan: a body that sees an enemy on our half sets the contact bit for the leader
++	int enemy_comp_init = 0;	  // 1: read the enemy champion types at init (the API: champion_name() reads live champions without vision)
++	int safety_range = 0;		  // 1: safety() counts a camp while we stand inside its engine range (elk / golem 4, monolith 5) instead of 3
++	int watchdog = 0;			  // > 0: after this many consecutive turns that threw an exception, play a minimal fallback turn (main.cpp)
++	int ring_reach = 0;		  // 1: the objective ring counts an area spell's reach as range + radius and aims it at a tile next to the camp
++							  // (v8 compared the cast range alone with 5, so since patch 3.0 the ring rarely qualified on elk / golem groups)
++	int tavi_str = 0;			  // 1: Tavi builds strength instead of focus (estimate from the kit numbers: ~5.6 vs ~1.75 damage per round per shard);
++							  // the default build style 2 switches her whole list, the proxy styles 3/4/10/12 keep the copied teams' Tavi lists
++	// Sparring personas (for building A/B opponents only; inactive by default): between spar_from and spar_to the bot plays PUSH,
++	// multiplies the enemy-half cost by spar_half, adds spar_deny and spar_fight, and with spar_db follows the leader (deathball).
++	int spar_from = 0;
++	int spar_to = 0;
++	float spar_half = 1.f;
++	float spar_deny = 0.f;
++	float spar_fight = 0.f;
++	int spar_db = 0;
+ };
+ 
+ #ifdef LEGEND_RUNTIME_PARAMS
+diff -ruN god_src/src/world.cpp god_v9/src/world.cpp
+--- god_src/src/world.cpp	1980-01-01 00:00:00.000000000 +0000
++++ god_v9/src/world.cpp	2026-10-20 21:55:58.395290264 +0000
+@@ -345,6 +345,27 @@
+ 	bc::detail::check(bc::detail::sdk_enemies(handles.data(), count, &count));
+ 	for (std::uint32_t i = 0; i < count; ++i)
+ 		enemies.push_back(Enemy{ std::nullopt, handles[i], bc::champion_type::ryth, Kit{} });
++	if (P.enemy_comp_init)
++	{
++		// v9: the enemy composition from round 1 (BotAPICpp: champion_name() "live champions read it without vision"), so the
++		// opponent model and the danger maps know the kits before the first sighting. Perception still refreshes them on sight.
++		try
++		{
++			for (const auto& c : bc::champions(team::enemy))
++			{
++				const auto h = handle_of(c);
++				for (auto& e : enemies)
++					if (e.handle == h)
++					{
++						e.type = c.champion_name();
++						e.kit = kit_of(bc::champion_designs[static_cast<std::size_t>(e.type)]);
++					}
++			}
++		}
++		catch (...)
++		{
++		}
++	}
+ }
+ 
+ void Group::update_cluster()

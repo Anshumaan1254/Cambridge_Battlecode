@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-21 12:30 UTC (session 14: PATCH 3.0.4: the dynamic-draft GOD is built and confirmed (79.4% vs v8 on all 308 maps); ladder pair god-dynamic-draft-on / -off pushed, waiting for the user's pick: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
+- Last updated: **2026-10-21 13:17 UTC (session 14: the user's v9 upload and improvement plan under test, §S14.8 last bullet; PATCH 3.0.4: the dynamic-draft GOD is built and confirmed (79.4% vs v8 on all 308 maps); ladder pair god-dynamic-draft-on / -off pushed, waiting for the user's pick: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
   Rule from the user: update this file and push at every step. Start with **§S14**, then **§S13-GOD**, **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
@@ -541,6 +541,20 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   the enemy's play is answered in game by the learners that were already on. **Waiting for the user's ladder decision.** If "on" wins: set
   the two switches on main, ship as GOD v9 (zip, history, BUILDS, README). Running: q66 (round-robin, for a refit of the weights on all
   games), q67 (`_m1b` build stat margin 1.0, `_m1k` ally kit), q70 (`_m1g` builds from the kit).
+- **13:17 UTC: the user uploaded `god_v9_adaptive.zip` + `GOD_Improvement_Plan.md` ("check if the upgraded bot is really better, implement its
+  better parts, carry out the plan's tasks, give the final best GOD v10")**. Archived: `experiments/v9_upload/` (patch, README, test, NOTES),
+  `docs/strategy_v2/GOD_Improvement_Plan_oct21.md`. The upload = the shipped v8 zip + `v9.patch` exactly (reversing the patch gives v8's
+  sources byte for byte); it builds on the real SDK 3.0.4 (`bots/_v9up`). Measured on 3.0.4, tuning half (156 maps x 2 sides) vs `_v8k1`:
+  defaults `_v9x0` 156/312, every map 1-1 (same winners; 4 large maps differ in detail: unguarded instructions shift fuel-floored scoring);
+  **all its switches on (`_v9on`) 140/312 = 44.9% [39.4, 50.4], maps 24 / 92 / 40, sign p 0.06; opponent model + presets alone (`_v9op`)
+  140/312 = 44.9%**: the plan layer is what loses. Rest of q71 (`_v9sr` safety range, `_v9ec` enemy composition, `_v9rr` ring reach,
+  `_v9ts` Tavi strength, then `_v9on` vs `_m1p3`) running. My own leftovers on the dynamic draft (vs v8, train half; `_m1p3` 257): `_m1b`
+  (build stat margin 1.0) 250, `_m1k` (ally kit) 237, `_m1g` (builds from the kit) 249: all off. Draft refit on 17,004 kept train-half
+  games: log loss 0.6233 vs the shipped weights' 0.6255, monolith-map terms no better (0.6298 leave-maps-out): the weights stay.
+  Port of v9 onto main: `bots/_x_v10` = `experiments/wip/x_v10.patch` (names `opp9` / `Opp9` / `Preset9` / `plan9` / `watchdog9`, every line
+  behind its switch, `opp_mask` for single-plan ablations); variants on the dynamic-draft base (`pd_stat` 3 + `pocket_fix` 3): `_y0` control,
+  `_yop`, `_ysr`, `_yec`, `_yrr`, `_yts`, `_yall` h2h vs `_m1p3` (q72). Dry-run traces (`tools/opptrace.py`, `_v9opd` = presets off +
+  OPP_TRACE) vs v8 and the mid-match invader persona `_v9inv` running.
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

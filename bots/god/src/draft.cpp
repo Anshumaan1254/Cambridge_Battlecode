@@ -540,6 +540,8 @@ double model_value(D c)
 	v += P.pd_w_area_pack * (f.area + f.splash) * F.multi / g + P.pd_w_stun_elk * f.stun * F.elk / g + P.pd_w_gold_gold * f.gold * F.gold / g +
 		P.pd_w_bodies_small * f.bodies * (F.team <= 3 ? 1.0 : 0.0) + P.pd_w_dash_dist * f.dash * F.mean_dist / 30.0 +
 		P.pd_w_ranged_mono * f.ranged * (F.mono > 0 ? 1.0 : 0.0);
+	if (F.mono > 0) // monolith maps (20,000 health, range 5): what holds and what deals damage there
+		v += P.pd_w_hp_mono * f.hp + P.pd_w_basic_mono * f.basic + P.pd_w_spell_mono * f.spell + P.pd_w_area_mono * f.area;
 	return v;
 }
 

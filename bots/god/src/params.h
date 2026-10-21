@@ -309,6 +309,10 @@ struct Params
 	float pd_w_bodies_small = -0.225f;
 	float pd_w_dash_dist = 0.153f;
 	float pd_w_ranged_mono = 0.108f;
+	float pd_w_hp_mono = 0.f;	   // monolith-map interactions (0 = the model of the first fit)
+	float pd_w_basic_mono = 0.f;
+	float pd_w_spell_mono = 0.f;
+	float pd_w_area_mono = 0.f;
 	float pd_obj_ring = 0.75f;	   // objective map: + x (the pick's spell damage from 4) / (the best pick's) (v8: Prism / Tavi +0.75)
 	float pd_obj_tank = 0.4f;	   // objective map: a melee pick with an area stun (v8: Ryth +0.4); other melee picks - pd_obj_melee (v8: Ren / Varg -0.6)
 	float pd_obj_melee = 0.6f;

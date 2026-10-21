@@ -5,7 +5,8 @@ import re
 PICK_TYPES = {'Ryth': [0], 'Vesper Vale': [1], 'Vendetta': [2], 'C&I': [3, 4], 'Stellar': [5], 'Prism': [6], 'Marcella': [7],
 	'Willow': [8], 'Ren': [9], 'Varg': [10], 'Tavi': [11], 'Heart of Ruin': [12]}
 BASE = ['hp', 'basic', 'splash', 'spell', 'area', 'stun', 'dash', 'ranged', 'gold', 'ret', 'bodies']
-INTER = ['area_x_pack', 'stun_x_elk', 'gold_x_gold', 'bodies_x_small', 'dash_x_dist', 'ranged_x_mono']
+INTER = ['area_x_pack', 'stun_x_elk', 'gold_x_gold', 'bodies_x_small', 'dash_x_dist', 'ranged_x_mono', 'hp_x_mono', 'basic_x_mono',
+	'spell_x_mono', 'area_x_mono']
 FEATS = BASE + INTER
 
 
@@ -63,7 +64,12 @@ def pick(ch, name, mf=None):
 		f['gold_x_gold'] = f['gold'] * mf['gold'] / g
 		f['bodies_x_small'] = f['bodies'] * (1.0 if mf['team'] <= 3 else 0.0)
 		f['dash_x_dist'] = f['dash'] * mf['mean_dist'] / 30
-		f['ranged_x_mono'] = f['ranged'] * (1.0 if mf['mono'] > 0 else 0.0)
+		mono = 1.0 if mf['mono'] > 0 else 0.0
+		f['ranged_x_mono'] = f['ranged'] * mono
+		f['hp_x_mono'] = f['hp'] * mono
+		f['basic_x_mono'] = f['basic'] * mono
+		f['spell_x_mono'] = f['spell'] * mono
+		f['area_x_mono'] = f['area'] * mono
 	return f
 
 

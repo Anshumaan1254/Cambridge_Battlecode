@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-21 11:55 UTC (session 14: PATCH 3.0.4 arrived, engine switched to cambc 3.0.4, new GOD for the new balance in progress: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
+- Last updated: **2026-10-21 12:10 UTC (session 14: PATCH 3.0.4 arrived, engine switched to cambc 3.0.4, new GOD for the new balance in progress: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
   Rule from the user: update this file and push at every step. Start with **§S14**, then **§S13-GOD**, **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
@@ -528,6 +528,10 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   `pocket_fix`** (bits, off): 1 = going home from a walk-disconnected tile dashes to the landing tile with the shortest walk home, else
   recalls; `step_field` skips the fallback search from unreachable tiles and pockets; 2 = in a pocket the dash takes us out as soon as it
   is up, whatever the task. Running: q71 (fuel check `_m1p1`, `_m1p3`), q66 (31 / 78 pairs).
+- **12:10 UTC**: pocket fix measured. Lost turns after round 3 (M6, 12 games per cell, vs `_v8k1` / `_pws` / `_q_s2v`): `_m1` 92 / 295 / 83, `_m1p1`
+  67 / 139 / 60, **`_m1p3` 63 / 61 / 99** (v8 64 / 54 / 49; what is left is nx60x60's maze, where the opponent loses as many); 0 faults.
+  Strength unchanged: **`_m1p3` 257/312 = 82.4% [77.8, 86.2] vs v8 on the tuning half** (`_m1` 82.1%). Candidate = `_m1p3` (`pd_stat` 3 +
+  `pocket_fix` 3). Running q73: its confirmation (test152, all308) and third-party cells; q66 round-robin 42 / 78.
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

@@ -32,12 +32,15 @@ held-out `test152`, then `all308` and the third-party proxies. Our reference is 
 | **upload, every switch on (`_v9on`)** | **140/312 = 44.9%** | [39.4, 50.4] | 24 / 92 / 40 | 0.06 | 6,630-6,433 |
 | opponent model + presets only (`_v9op`) | 140/312 = 44.9% | [39.4, 50.4] | 24 / 92 / 40 | 0.06 | 6,781-6,633 |
 | `safety_range` only (`_v9sr`) | 160/312 = 51.3% | [45.8, 56.8] | 21 / 118 / 17 | 0.63 | 6,148-6,546 |
-| `enemy_comp_init` only (`_v9ec`) | (running) | | | | |
-| `ring_reach` only (`_v9rr`) | (running) | | | | |
-| `tavi_str` only (`_v9ts`) | (running) | | | | |
+| `enemy_comp_init` only (`_v9ec`) | 156/312 = 50.0% | [44.5, 55.5] | 2 / 152 / 2 | 1.00 | 6,568-6,578 |
+| `ring_reach` only (`_v9rr`) | 153/312 = 49.0% | [43.5, 54.6] | 0 / 153 / 3 | 0.25 | 6,692-6,633 |
+| `tavi_str` only (`_v9ts`) | 157/312 = 50.3% | [44.8, 55.8] | 2 / 153 / 1 | 1.00 | 6,676-6,672 |
 | our dynamic draft `_m1p3` (reference) | 257/312 = 82.4% | [77.8, 86.2] | 111 / 35 / 10 | <0.0001 | 3,472-6,867 |
 
 Gem margin per map (`abmargin.py`): `_v9on` vs v8 -47.7 [-109, +7]; `_m1p3` vs v8 +476 [+409, +543].
+**The upload against our 3.0.4 bot**: `_v9on` vs `_m1p3` 60/312 = 19.2% [15.2, 24.0], maps 9 / 42 / 105, deaths 6,650-3,806.
+The port onto main is exact when off: `_yx0` (all off) vs v8 mirror-identical on 12 of 12 check maps (the 4 where the upload drifted
+included); `_y0` (port + `pd_stat` 3 + `pocket_fix` 3) replays `_m1p3`'s games 24 of 24.
 
 **Verdict: no.** With its features on, the upload loses to v8 (and it carries v8's pre-3.0.4 draft, which our 3.0.4 bot beats 79.4%).
 The loss comes from the opponent model's presets.
@@ -58,6 +61,21 @@ ordinary farmer is far above the simulated 8% (mean 0.11-0.15 per window, 90th p
 in ordinary play (the home-death fast path). The signal itself is real (DEFEND/PUNISH 47% of windows during the persona's raid vs
 17% against the mirror), but the presets then play DEFEND (grouped, enemy half x2.5, smaller banks) against an even opponent for a
 fifth of the game. Single-plan ablations (`opp_mask`) and a stricter detector (`_yopT`) are being screened on our 3.0.4 base.
+
+### 3b. Code review of the upload (what is right, what is fragile)
+
+- It works: no compile error on the real SDK, no fault or exception in our games, every switch inert at its default (the guards
+  reduce to v8's expressions), shared-memory bits consistent with v8's writers (`write_self` and the bag sum keep bit 7).
+- The detector was tuned on synthetic contact streams (8% background); in real games against an ordinary farmer the contact share
+  is 11-15% on average with a 90th percentile of 0.33-0.44 per window, so `hi_run` (>= 0.35 for 2 windows) is common.
+- The home-death evidence counts every death of a body that held a claim on our half within 8 rounds, deaths to camps included
+  (camp deaths are about a fifth of ours): ordinary farming deaths read as an invasion.
+- The race plans stack on v8's own race mode (both add to `deny_bonus`, multiply `enemy_half_penalty`, lower `fight_margin`).
+- Several per-turn additions were not behind their switch in the upload (`plan_now` / `rally_add` / `sparring_window()` in
+  `update_mode()`, the radius sums in `respond_to_alert()`); fuel-floored group scoring then changes 4 of 156 maps' games even
+  with every switch off. The port guards them (`experiments/wip/x_v10.patch`).
+- `fallback_turn()` (the watchdog) uses only plain SDK calls inside `try`; with one body throwing on every turn after round 300 it
+  keeps that body useful: 12/24 wins vs v8 against 10/24 without a watchdog (main's own `watchdog`: 13/24; no fault: 18/24).
 
 ## 4. The plan's work items: where each one stands
 

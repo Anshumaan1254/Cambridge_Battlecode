@@ -45,3 +45,11 @@ Results (wins of 156 vs GOD v10):
 [-12.4, +88.5]; train78b 81/156 = 51.9% (17 / 47 / 14), margin -18.6; all 308 maps 336/616 = 54.5%, maps 69 2-0 / 41 0-2.
 Fuel (release, corners_v3 / nx100x100 / nx60x60 vs v10): 61 lost turns r>3 in 6 games (opponent 59). Builds on SDK 2.2.5.
 
+Release check of `_v11Aw2` (`tools/finalcheck.sh _v11Aw2 _v10b`): vs v8 held-out 246/304 = 80.9% (v10 79.9%), all 308 81.5%; h2h vs v10
+all 308 maps 336/616 = 54.5% [50.6, 58.4], sign p 0.0097, margin +43.3 gems a map [+2.9, +82.7]; **19 outside opponents (21 official maps,
+42 games each) 655/798 vs v10's 678** (`_pnA` ambush persona 20 vs 32, `_k_fit` 21 vs 29, `_k_ci` 26 vs 31, `_pnO` 27 vs 30, `_g4` 38 vs
+41; `_pnV` 34 vs 30, `_q_s2v` 28 vs 26, `_pnS` 36 vs 34); pace 990.0 (v10 978.8); 0 faults, lost turns r>3 60 / 64 / 60 in 12 games each
+vs `_v8k1` / `_pws` / `_q_s2v`. Better head-to-head, worse against the outside opponents (the non-transitive pattern of strike_first):
+not shipped. `_v11Pw2` (Prism + anchor + scouting wards) 38/156 = 24.4%.
+`ward_smart` 3 = 2 + a bush next to our target group first (the ambush persona farms from bushes beside its camps).
+

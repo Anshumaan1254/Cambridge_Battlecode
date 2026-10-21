@@ -1,6 +1,6 @@
 diff -ruN god/src/brain.cpp _x_v11/src/brain.cpp
 --- god/src/brain.cpp	2026-10-21 16:36:50.750033608 +0000
-+++ _x_v11/src/brain.cpp	2026-10-21 18:36:09.886882036 +0000
++++ _x_v11/src/brain.cpp	2026-10-21 19:35:06.956383077 +0000
 @@ -2402,6 +2402,16 @@
  	if (!force && round - ward_round < (wb >= 2 ? std::min(10, P.ward_bush_gap) : 10))
  		return;
@@ -12,13 +12,13 @@ diff -ruN god/src/brain.cpp _x_v11/src/brain.cpp
 +		if (P.ward_smart == 1)
 +			return;
 +		if (round - ward_round < 10)
-+			return; // 2: placed a scouting ward
++			return; // 2, 3: placed a scouting ward
 +		// 2: nothing ahead worth a ward: the usual rule below
 +	}
  	if (P.ward_plan && (round - ward_round >= 10 || force) && plan_ward(force))
  		return;
  	vec2 bush{ -1, -1 };
-@@ -2469,6 +2479,115 @@
+@@ -2469,6 +2479,123 @@
  	ward_round = round; // do not retry every turn
  }
  
@@ -92,6 +92,8 @@ diff -ruN god/src/brain.cpp _x_v11/src/brain.cpp
 +		if ((cheb(pos, W.altars[i]) <= 8 || (have && cheb(ward_pos, W.altars[i]) <= 6)) && altar_ours(i))
 +			c.altars.push_back(W.altars[i]);
 +	c.D = W.dist_home(W.enemy_spawn_c);
++	const Group* tg = P.ward_smart == 3 && task_group >= 0 && static_cast<std::size_t>(task_group) < W.groups.size() ?
++		&W.groups[static_cast<std::size_t>(task_group)] : nullptr;
 +	const float cur = have && P.ward_smart == 1 ? ward_score(ward_pos, c, bush) : 0.f;
 +	vec2 best{ -1, -1 };
 +	float bs = 0.f;
@@ -102,7 +104,13 @@ diff -ruN god/src/brain.cpp _x_v11/src/brain.cpp
 +			if (!bc::map::is_in_bounds(t) || t == ward_pos || W.walls.is_set(t) || W.camp_occ.is_set(t))
 +				continue;
 +			float s = ward_score(t, c, bush);
-+			if (P.ward_smart == 2)
++			if (P.ward_smart == 3 && tg && bush.is_set(t) && cheb(t, tg->center) <= tg->radius + 2 && s > 0.f)
++			{
++				// 3: a bush next to the group we work on comes first (the ambush persona farms and waits there; 2 lost its cell
++				// 20 vs 32 of 42), then the scouting tiles of 2.
++				s = 100.f + s * 0.25f;
++			}
++			else if (P.ward_smart >= 2)
 +			{
 +				// 2: a scouting ward, as the default rule (2 tiles toward their spawn: early warning measured better than watching our
 +				// own camps, 1 lost 38.5% with +620 deaths), placed on the best such tile: ahead of us, a bush or a corridor tile.
@@ -134,7 +142,7 @@ diff -ruN god/src/brain.cpp _x_v11/src/brain.cpp
  bool Brain::plan_ward(bool force)
  {
  	// F3: a planned spot (draft memory) within placement reach (2) that watches what this body works on, not covered by an ally ward.
-@@ -4178,7 +4297,7 @@
+@@ -4178,7 +4305,7 @@
  		for (int i = 0; i < static_cast<int>(W.allies.size()); ++i)
  		{
  			const auto t = W.allies[static_cast<std::size_t>(i)].type;
@@ -143,7 +151,7 @@ diff -ruN god/src/brain.cpp _x_v11/src/brain.cpp
  			const auto ti = static_cast<std::size_t>(t);
  			const float bh = ti < bc::champion_designs.size() ? static_cast<float>(bc::champion_designs[ti].base_stats().base_health) : 1000.f;
  			r.push_back({ -1e5f * pri + bh + 0.001f * static_cast<float>(i), i });
-@@ -4429,6 +4548,57 @@
+@@ -4429,6 +4556,57 @@
  			}
  		}
  	}
@@ -201,7 +209,7 @@ diff -ruN god/src/brain.cpp _x_v11/src/brain.cpp
  	if (type == CT::cassi || type == CT::issac)
  	{
  		fight_margin += P.pair_caution;
-@@ -5297,6 +5467,9 @@
+@@ -5297,6 +5475,9 @@
  			follow_g = true;
  		}
  	}

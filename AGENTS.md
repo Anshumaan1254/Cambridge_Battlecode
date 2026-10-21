@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-21 10:10 UTC (session 14: PATCH 3.0.4 arrived, engine switched to cambc 3.0.4, new GOD for the new balance in progress: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
+- Last updated: **2026-10-21 10:35 UTC (session 14: PATCH 3.0.4 arrived, engine switched to cambc 3.0.4, new GOD for the new balance in progress: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
   Rule from the user: update this file and push at every step. Start with **§S14**, then **§S13-GOD**, **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
@@ -484,6 +484,13 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   `_pw` 40/42, `_pc` 34/42 so far; then `_q_s2t`), `q62` (round 2: `_r_c0`, `_r_v1`, `_r_vt`, `_r_vd`, `_r_v1k`, `_r_t1`, `_r_t1b`, `_r_t1k`,
   `_r_t1d`), `q63` (round 3: `_k_fit2` = fitted values + at most 3 fronts at size 5: Ryth, Vesper, Vendetta, Ren, Tavi; `_k_fit` = fitted values:
   Ryth, Vesper, Vendetta, Ren, Marcella; `_k_ci` = + C&I 0.5; `_r_v1b` = Vesper + `build_stat` margin 1.3: Ren builds strength).
+- **10:35 UTC**: control `_r_c0` (`pd_stat` 1 with v8's priors) plays v8's 312 games exactly (156 maps 1-1, deaths 6,641-6,641). Third-party
+  cells on 3.0.4 (21-map pool, 42 games each: `_pws _pw _pc _g4 _m15 _mite _ifish _px9`): v8 28 40 34 28 37 40 39 37 = 283, pace vs idle
+  1099.8 rounds; Tavi-for-Stellar `_q_s2t` 31 36 34 32 34 38 39 37 = 281 (level), pace 1071.8: **its +11% vs v8 does not show against the other
+  proxies** (8 cells of 42 games: SD of the sum ~7). Every candidate gets the same third-party cells before any ship. `$S/q64.sh` queued
+  (`_q_s2v` third-party cells). Draft roles in `pd_stat` mode now come from the designs' attack range (same split as v8's name lists); the
+  stat anchoring is additive (prior + k x ln(power ratio)). `tools/abconfirm.sh CAND [OPP]` (test152, train156, all308 + by folder).
+  3.0.2 scratch project `$S/p302` (3.0.2 SDK, maps / experiments linked) for a backtest of the final candidate on the old balance.
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

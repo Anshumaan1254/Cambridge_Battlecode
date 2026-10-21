@@ -330,8 +330,25 @@ void derive_params()
 	mp_ready = true;
 }
 
-bool is_caster(D c) { return c == D::stellar || c == D::prism || c == D::tavi || c == D::vesper_vale || c == D::willow; }
-bool is_front(D c) { return c == D::ren || c == D::varg || c == D::ryth || c == D::vendetta || c == D::marcella || c == D_HOR; }
+bc::champion_type type_of(D c, int body);
+int pick_range(D c, int body)
+{
+	const auto ti = static_cast<std::size_t>(type_of(c, body));
+	return ti < bc::champion_designs.size() ? bc::champion_designs[ti].base_stats().base_attack_range : 1;
+}
+// pd_stat: roles from the engine's designs (every body melee = frontliner, one ranged body = caster); the same split as v8's name lists.
+bool is_caster(D c)
+{
+	if (P.pd_stat)
+		return c != D::cassi_and_issac && pick_range(c, 0) > 1;
+	return c == D::stellar || c == D::prism || c == D::tavi || c == D::vesper_vale || c == D::willow;
+}
+bool is_front(D c)
+{
+	if (P.pd_stat)
+		return pick_range(c, 0) <= 1 && (c != D::cassi_and_issac || pick_range(c, 1) <= 1);
+	return c == D::ren || c == D::varg || c == D::ryth || c == D::vendetta || c == D::marcella || c == D_HOR;
+}
 
 // ---- pd_stat (patch 3.0.4): champion priors that follow the engine's numbers ----
 // A pick's stat power from champion_designs (engine data, read at draft time): per body, effective health (base health + one shield)
@@ -415,9 +432,10 @@ double prior(D c);
 // Relative stat power of each pick on engine 3.0.4 (draft ids 0-11; PSTAT_TRACE build of this code), the anchor of stat_prior().
 #define PD_STAT_REF 1.2322, 0.8519, 1.0842, 0.9500, 0.6349, 0.7289, 1.0842, 1.0300, 1.0157, 1.3414, 0.8658, 1.1807
 
-// pd_stat 1: the measured prior x (relative power now / relative power on the engine the prior was measured on)^pd_stat_k. The anchors
-// are the relative powers of engine 3.0.4 (PSTAT_TRACE prints them), the engine of the 3.0.4 priors: on 3.0.4 the scale is 1 exactly;
-// a later balance patch moves every prior by how much the patch moved that champion's power against the field.
+// pd_stat: the measured prior + pd_stat_k x ln(relative power now / relative power on the engine the prior was measured on). The
+// priors are log-odds-like values (pd_stat 2: from substitution screens), so a change of power shifts them additively. The anchors are
+// the relative powers of engine 3.0.4 (PSTAT_TRACE prints them), the engine of the 3.0.4 priors: there the shift is 0 exactly; a later
+// balance patch moves every prior by how much it moved that champion's power against the field (Stellar 3.0.2 -> 3.0.4: -0.26).
 double stat_prior(D c)
 {
 	double v = prior(c);
@@ -428,8 +446,8 @@ double stat_prior(D c)
 		if (i < 12 && REF[i] > 0)
 		{
 			const double r = rel_power(c) / REF[i];
-			if (std::fabs(r - 1.0) > 1e-3) // the anchors are printed to 4 decimals: on their own engine the scale is exactly 1
-				v *= std::pow(r, static_cast<double>(P.pd_stat_k));
+			if (std::fabs(r - 1.0) > 1e-3) // the anchors are printed to 4 decimals: on their own engine the shift is exactly 0
+				v += static_cast<double>(P.pd_stat_k) * std::log(r);
 		}
 	}
 	return v;

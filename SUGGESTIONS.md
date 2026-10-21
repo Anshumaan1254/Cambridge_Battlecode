@@ -217,3 +217,13 @@ Ruin prior wins 8-9 more games against legend_m15 (pre-patch tuning: contest, co
 | `hor_strike` 2 + `strike_dash_hold` 12 | keep the dash for fights from 12 tiles | 31 / 24 / 32 / 28 | 115 | level, not used |
 | `hor_camp` 2 | camp dash only with 2+ camps in the landing radius | 29 / 28 / 37 / 28 | 122 | `hor_camp` 1 (131) shipped |
 | plan P1-6 formula | gold value 0.22 + 0.11 ln(rho / 4) / ln(2.5) | not built | | the 21 maps have rho 4.4-9.6 (median 6.3): it would give 0.23-0.31, the measured-worse 0.22 direction |
+
+## Session 14, patch 3.0.4 (21 Oct): champion swaps that should have helped and did not (312 games each vs GOD v8, tuning half)
+
+| Swap (in v8's draft) | Why it should help | Result | Verdict |
+|---|---|---|---|
+| Tavi for Ren | Tavi buffed (hp 900, focus 110: a 154-damage stun from 4), Ren's stun damage cut 40% | 46.8% (31 maps 2-0 / 41 0-2) | Ren keeps the lead slot: his retaliation, dash and 900 health on the front still count; Tavi wins only in the ranged slot (61.2% for Stellar) |
+| Marcella for Ren | stat power 1.08 vs Ren's 1.02 (1200 health, stun immune, 2 gold per gem banked) | 48.4% (40 / 45), our deaths 7,012 vs 4,589 | our code plays her as a brawler and she dies: not a Ren replacement |
+| Vendetta for Ryth | Vendetta buffed (hp 800 -> 1000), beat Varg (58.3%) and Ren (54.8%) in their slots | 49.7% (26 / 27) | Ryth's area stun is worth as much: level |
+| C&I for Heart of Ruin at team size 3 (`pd_hor3` 0) | Heart of Ruin nerfed (str 40 -> 30, dash 1.75 -> 1.5 x focus) | 47.8% (changed maps 3 / 10) | Heart of Ruin keeps the size-3 slot |
+| stat power alone as the prior (no measured values) | follows every patch with no screen | not built: the formula ranks Marcella / Ryth / Varg top and Vesper below Ren, the screens the reverse (Vesper first) | the measured values stay; the stat power only shifts them on a later patch (`pd_stat_k`) |

@@ -6,3 +6,6 @@
 - `train156.csv` / `test152.csv`: a fixed split of `all308` made before any 3.0.4 game. Every tuning screen uses the train half only;
   a candidate is confirmed on the test half, then on all 308 maps (616 games, both sides).
 - Read a cell with `python3 tools/abstat.py BOT OPP --pool experiments/pools/test152.csv [--by-dir]`.
+
+`train78a.csv` / `train78b.csv` (Oct 21): the even / odd entries of `train156.csv` (78 maps each). Stage-1 screens of single switches
+run on `train78a` (156 games); a candidate that passes is completed on `train78b`, then confirmed on `test152` and `all308`.

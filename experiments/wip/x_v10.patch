@@ -1,6 +1,6 @@
 diff -ruN god/src/brain.cpp _x_v10/src/brain.cpp
 --- god/src/brain.cpp	2026-10-21 11:53:13.190357600 +0000
-+++ _x_v10/src/brain.cpp	2026-10-21 13:04:45.358707188 +0000
++++ _x_v10/src/brain.cpp	2026-10-21 13:22:32.944886678 +0000
 @@ -4,6 +4,7 @@
  #include "learn.h"
  #include "draft.h"
@@ -231,16 +231,26 @@ diff -ruN god/src/brain.cpp _x_v10/src/brain.cpp
  }
  
  int Brain::style_now() const
-@@ -4587,7 +4669,7 @@
+@@ -4586,8 +4668,16 @@
+ 	const bool opp = C.alert_kind == AL_OPPORTUNITY;
  	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
  	const bool their_endgame = theirs >= P.endgame_alarm;
- 	const float hp_gate = opp ? (their_endgame ? 0.25f : 0.4f) : P.rally_hp;
+-	const float hp_gate = opp ? (their_endgame ? 0.25f : 0.4f) : P.rally_hp;
 -	const int max_d = opp ? (their_endgame ? 16 : 12) : P.rally_r;
-+	const int max_d = opp ? (their_endgame ? 16 : 12) + (P.opp_plan ? opp_add : 0) : P.rally_r + (P.opp_plan ? rally_add : 0); // v9 presets widen the answer radius
++	float hp_gate = opp ? (their_endgame ? 0.25f : 0.4f) : P.rally_hp;
++	int max_d = opp ? (their_endgame ? 16 : 12) + (P.opp_plan ? opp_add : 0) : P.rally_r + (P.opp_plan ? rally_add : 0); // v9 presets widen the answer radius
++	if (P.deny_ramp && opp)
++	{
++		// GOD_Improvement_Plan UPG-4 (dynamic priority): the urgency of a denial grows with their banked total instead of one step at
++		// endgame_alarm: u = clamp((theirs - deny_ramp_from) / deny_ramp_span, 0, 1); radius 12 + 4u, health gate 0.40 - 0.15u.
++		const float u = std::clamp(static_cast<float>(theirs - P.deny_ramp_from) / static_cast<float>(std::max(1, P.deny_ramp_span)), 0.f, 1.f);
++		hp_gate = 0.40f - 0.15f * u;
++		max_d = 12 + static_cast<int>(std::lround(4.f * u)) + (P.opp_plan ? opp_add : 0);
++	}
  	if (hp < hp_gate * max_hp || ((task == T_CAPTURE || reward_here()) && !their_endgame))
  		return false;
  	const int d = cheb(C.alert_pos, pos);
-@@ -4874,8 +4956,11 @@
+@@ -4874,8 +4964,11 @@
  		d += foc * k.dmg_mod;
  	if (k.cc >= 0 && k.cc_range >= rd && k.cc_mod > 0)
  		d += foc * k.cc_mod;
@@ -254,7 +264,7 @@ diff -ruN god/src/brain.cpp _x_v10/src/brain.cpp
  	return d / 8.f;
  }
  
-@@ -5807,7 +5892,7 @@
+@@ -5807,7 +5900,7 @@
  	auto& W = world();
  	if (task != T_CAPTURE && cast_en_route())
  		return;
@@ -263,7 +273,7 @@ diff -ruN god/src/brain.cpp _x_v10/src/brain.cpp
  	{
  		int leader = -1;
  		for (int i = 0; i < static_cast<int>(W.allies.size()); ++i)
-@@ -6528,6 +6613,33 @@
+@@ -6528,6 +6621,33 @@
  				return true;
  			}
  	}
@@ -381,13 +391,31 @@ diff -ruN god/src/comms.h _x_v10/src/comms.h
  };
  
  Comms& comms();
+diff -ruN god/src/draft.cpp _x_v10/src/draft.cpp
+--- god/src/draft.cpp	2026-10-21 12:30:53.632763330 +0000
++++ _x_v10/src/draft.cpp	2026-10-21 13:29:00.962110459 +0000
+@@ -542,6 +542,12 @@
+ 		P.pd_w_ranged_mono * f.ranged * (F.mono > 0 ? 1.0 : 0.0);
+ 	if (F.mono > 0) // monolith maps (20,000 health, range 5): what holds and what deals damage there
+ 		v += P.pd_w_hp_mono * f.hp + P.pd_w_basic_mono * f.basic + P.pd_w_spell_mono * f.spell + P.pd_w_area_mono * f.area;
++	if (P.pd_w_area_close != 0.0f || P.pd_w_stun_close != 0.0f)
++	{
++		// crowded maps (few tiles per champion: contact all game) pay for area damage and stuns; close = 1 at 50 x 50 with 5 a side
++		const double close = std::min(4.0, 2500.0 * F.team / 5.0 / std::max(625.0, static_cast<double>(F.area))) - 1.0;
++		v += (P.pd_w_area_close * f.area + P.pd_w_stun_close * f.stun) * close;
++	}
+ 	return v;
+ }
+ 
 diff -ruN god/src/main.cpp _x_v10/src/main.cpp
 --- god/src/main.cpp	2026-10-21 11:47:26.704689840 +0000
-+++ _x_v10/src/main.cpp	2026-10-21 13:04:45.359003676 +0000
-@@ -3,9 +3,43 @@
++++ _x_v10/src/main.cpp	2026-10-21 13:22:32.952726537 +0000
+@@ -2,10 +2,45 @@
+ #include "brain.h"
  #include "draft.h"
  #include <cstdio>
- 
++#include <exception>
++
 +namespace
 +{
 +// v9 watchdog (P.watchdog9): a turn that keeps throwing (an unexpected map or SDK state) used to idle the body for the rest of the
@@ -421,7 +449,7 @@ diff -ruN god/src/main.cpp _x_v10/src/main.cpp
 +	}
 +}
 +} // namespace
-+
+ 
  int main()
  {
 -	int fails = 0; // P.watchdog: turns in a row that threw out of turn()
@@ -429,7 +457,7 @@ diff -ruN god/src/main.cpp _x_v10/src/main.cpp
  	while (true)
  	{
  		try
-@@ -14,11 +48,21 @@
+@@ -14,11 +49,31 @@
  				play_draft();
  			else
  				brain().turn();
@@ -437,8 +465,18 @@ diff -ruN god/src/main.cpp _x_v10/src/main.cpp
 +			if (P.watchdog || P.watchdog9)
  				fails = 0;
  		}
++#ifdef EXC_TRACE
++		catch (const std::exception& e)
++		{
++			// GOD_Improvement_Plan INF-4: count exceptions (any is a bug to fix, not a case for the watchdog); tools/exccount.py.
++			debug_block({ std::printf("EXC r=%u what=%s\n", bc::round_number(), e.what()); });
++		}
++#endif
  		catch (...)
  		{
++#ifdef EXC_TRACE
++			debug_block({ std::printf("EXC r=%u what=unknown\n", bc::round_number()); });
++#endif
 +			if (P.watchdog9 > 0 && !bc::is_draft() && ++fails >= P.watchdog9)
 +			{
 +				try
@@ -754,8 +792,17 @@ diff -ruN god/src/opp9.h _x_v10/src/opp9.h
 +Opp9& opp9();
 diff -ruN god/src/params.h _x_v10/src/params.h
 --- god/src/params.h	2026-10-21 12:30:53.634061104 +0000
-+++ _x_v10/src/params.h	2026-10-21 13:04:45.359505825 +0000
-@@ -659,6 +659,50 @@
++++ _x_v10/src/params.h	2026-10-21 13:29:00.965846228 +0000
+@@ -313,6 +313,8 @@
+ 	float pd_w_basic_mono = 0.f;
+ 	float pd_w_spell_mono = 0.f;
+ 	float pd_w_area_mono = 0.f;
++	float pd_w_area_close = 0.f;  // crowded maps (tiles per champion below 50 x 50 / 10): area damage and stuns x (close - 1)
++	float pd_w_stun_close = 0.f;
+ 	float pd_obj_ring = 0.75f;	   // objective map: + x (the pick's spell damage from 4) / (the best pick's) (v8: Prism / Tavi +0.75)
+ 	float pd_obj_tank = 0.4f;	   // objective map: a melee pick with an area stun (v8: Ryth +0.4); other melee picks - pd_obj_melee (v8: Ren / Varg -0.6)
+ 	float pd_obj_melee = 0.6f;
+@@ -659,6 +661,54 @@
  	float deny_capture_mult = 1.3f; // value multiplier for contesting an enemy's capture
  
  	// Fight execution (strategy v2, replay audit of 15 top-team games: 74% of the rounds our champions were hit by
@@ -786,6 +833,10 @@ diff -ruN god/src/params.h _x_v10/src/params.h
 +	float opp_even_bal = -0.25f;  // trades count as even (HUNT, not RACE) down to this balance: a net loss decays below it in ~3 windows
 +	int opp_deny_at = 850;		  // their banked gems from which DENY applies when they also finish first
 +	float opp_dive_prior = 0.15f; // initial contact index per enemy diver (melee or dash champion) beyond the second
++	int deny_ramp = 0;		  // 1: OPPORTUNITY answers (their tributes / carriers) ramp with their banked total (UPG-4: radius 12 -> 16, health gate 0.40 ->
++						  // 0.25 between deny_ramp_from and + deny_ramp_span) instead of the step at endgame_alarm (800)
++	int deny_ramp_from = 600;
++	int deny_ramp_span = 250;
 +	int opp_mask = 127;		  // bit p: plan p may be entered (ablation of single plans; 127 = all seven)
 +	int contact_bit = 1;		  // with opp_plan: a body that sees an enemy on our half sets the contact bit for the leader
 +	int enemy_comp_init = 0;	  // 1: read the enemy champion types at init (the API: champion_name() reads live champions without vision)

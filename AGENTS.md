@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-21 13:17 UTC (session 14: the user's v9 upload and improvement plan under test, §S14.8 last bullet; PATCH 3.0.4: the dynamic-draft GOD is built and confirmed (79.4% vs v8 on all 308 maps); ladder pair god-dynamic-draft-on / -off pushed, waiting for the user's pick: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
+- Last updated: **2026-10-21 14:10 UTC (session 14: the user's v9 upload measured (worse than v8 and far below our 3.0.4 bot); the plan's items being re-screened on our 3.0.4 base, §S14.8 last bullet; PATCH 3.0.4: the dynamic-draft GOD is built and confirmed (79.4% vs v8 on all 308 maps); ladder pair god-dynamic-draft-on / -off pushed, waiting for the user's pick: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
   Rule from the user: update this file and push at every step. Start with **§S14**, then **§S13-GOD**, **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
@@ -555,6 +555,21 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   behind its switch, `opp_mask` for single-plan ablations); variants on the dynamic-draft base (`pd_stat` 3 + `pocket_fix` 3): `_y0` control,
   `_yop`, `_ysr`, `_yec`, `_yrr`, `_yts`, `_yall` h2h vs `_m1p3` (q72). Dry-run traces (`tools/opptrace.py`, `_v9opd` = presets off +
   OPP_TRACE) vs v8 and the mid-match invader persona `_v9inv` running.
+- **14:10 UTC: the upload, measured** (doc `docs/strategy_v2/18_V9_AND_PLAN.md`): single switches on v8 (312 games each vs v8):
+  `safety_range` 51.3%, `enemy_comp_init` 50.0%, `ring_reach` 49.0%, `tavi_str` 50.3% (our draft picks Tavi / Prism in 2-3% of
+  games, so FIX-4/5 and PAT-4 hardly apply to us), opponent model 44.9%, all on 44.9%; **all on vs our 3.0.4 bot `_m1p3`: 60/312 =
+  19.2%**. Dry run (`opptrace.py`, debug mode: `--release` drops team stdout): the plan leaves FARM in 23 of 24 mirror games (gate
+  G2 wants < 10%), 8.9 plan changes a game; it does see the persona's raid (DEFEND/PUNISH 47% of windows in r400-700 vs 17% vs the
+  mirror). Fault test (FIX-2, `FAULT_INJECT` define, body 1 throws after r300, 24 games vs v8): no watchdog 10, main's `watchdog`
+  13, v9's `watchdog9` 12, no fault 18; `EXC_TRACE` + `tools/tracecount.py`: 0 exceptions in 72 games of `_m1p3`, so a watchdog is
+  inert in normal play. Port checks: `_yx0` mirror-identical to v8 on 12/12, `_y0` = `_m1p3` 24/24. New tools: `abmargin.py`
+  (paired margin), `tracecount.py`, `opptrace.py`; new switches (off): `deny_ramp`, `opp_mask`, `pd_w_area_close` / `pd_w_stun_close`,
+  `ally_defend` (+ `ally_defend_hp`: join at the hit-back bar when a visible ally next to the target just took damage; the 3.0.4
+  coordination audit: 49% of our champion deaths had an ally within 10 that never hit). Draft refits (17,004 games): counters, monolith
+  and crowding terms add nothing out of sample. Running: q72 (`_yall`, `_yop`, `_ysr`, `_yec`, `_yrr`, `_yts` h2h vs `_m1p3`,
+  train156), q73 (`_v9op`/`_v9x0` vs `_v9inv`; `_m1p3` vs 8 post-patch personas `_pn*`; 11 plan ablations / refits and 41 `_z*`
+  re-screens h2h vs `_m1p3` on `train78a`). Gotcha: never kill a queue by grepping its name from a shell whose own command line
+  contains that name (it killed this shell): read the PID with `ps -eo pid,args | awk '$NF ~ /qNN\.sh$/'`.
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

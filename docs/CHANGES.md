@@ -7,7 +7,9 @@ and every number: `docs/strategy_v2/17_PATCH_3_0_4.md`. All games on engine 3.0.
 | Change | Switch (off = v8) | What it does | Result vs v8 (tuning half, 312 games) |
 |---|---|---|---|
 | Draft-value model | `pd_stat` 3, weights `pd_w_*` | a pick's value = fitted weights x features read from the engine's designs (health, basic damage, splash, spells, area damage, stuns, dash, range, gold bonus, retaliation, bodies) and from this map's camps (pack / elk / gold shares, size, spread, monoliths); no per-champion number | **82.1% [77.4, 85.9]**, maps 110 / 36 / 10 |
-| Counters to the enemy's picks | `pd_cw_*` (0) | our range / stuns vs their melee damage, health vs burst, dashes vs range | being fitted on a round-robin of 13 drafts |
+| Hole-pocket escape | `pocket_fix` 3 | a body where no walk leads home dashes out (else recalls when going home); no walking fallback search from such tiles (a Vesper had burned every turn's fuel for 280 rounds) | 82.4% with the draft (lost turns back to v8's level) |
+| **Shipped as the branch pair `god-dynamic-draft-on` / `-off`** | `pd_stat` 3 + `pocket_fix` 3 | | **all 308 maps 79.4% [76.0, 82.4]; held-out half 76.3% [71.2, 80.7]; 8 proxies 327/336 (v8 283)** |
+| Counters to the enemy's picks | `pd_cw_*` (0) | our range / stuns vs their melee damage, health vs burst, dashes vs range | fitted on 12,114 games (82 enemy rosters): no held-out gain, kept 0 |
 | v8's map types in kit terms | `pd_obj_*`, `pd_open_*` | objective ring by range-4 spell damage, open small maps by retaliation / splash | part of the model draft |
 | Measurement switch | `pd_sub_from` / `pd_sub_to` (-1) | v8's draft with one champion swapped, every map rule intact | the 11 screens of doc 17 §2 |
 | Stat-anchored priors | `pd_stat` 1 / 2, `pd_pri_*`, `pd_stat_k` | measured priors shifted by ln(stat power ratio) on a later patch | 72-79% (superseded by `pd_stat` 3) |

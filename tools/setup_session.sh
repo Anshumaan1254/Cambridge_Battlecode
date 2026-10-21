@@ -112,12 +112,23 @@ for p in _pw _pc _ph _pws _pm; do v7 $p && (cd bots/$p && patch -s -p1 --no-back
 [ -d bots/_x_v8/src ] || { v7 _x_v8 && (cd bots/_x_v8 && patch -s -p1 --no-backup-if-mismatch < ../../experiments/wip/x_v8.patch); }
 mkdir -p bots/_m15 && rm -rf bots/_m15/src && cp -r bots/legend/src bots/_m15/ && cp bots/legend/.gitignore bots/_m15/   # _m15 = legend_m15 (bots/legend, ledger name of the v6-v8 cells)
 for b in _g8s _pw _pc _ph _pws _pm _m15 _x_v8; do cambc build $b > /dev/null && echo "built $b"; done
-for b in _pg3 _ch2 _snk _pd2 _pd _fc _fw _m11 _rm _ST _m2 _m3 _x_gp _m4 _m4x _m5a _px9 _xp4 _m7 _fA _fB _fC _mite _ifish _m8 _cS3 _m9 _m10 legend idle; do cambc build $b > /dev/null && echo "built $b"; done
+for b in _pg3 _ch2 _snk _pd2 _pd _fc _fw _m11 _rm _ST _m3 _x_gp _m4 _m4x _m5a _px9 _xp4 _m7 _fA _fB _fC _mite _ifish _m8 _cS3 _m9 _m10 legend idle; do cambc build $b > /dev/null && echo "built $b"; done
+# Session 14 (patch 3.0.4, GOD v10): the reference and sparring bots of docs/strategy_v2/17 and 18, restored from their exact sources
+# (experiments/proxies/v304_bots.tar.xz; the ledger_v3_0_4 rows are keyed to them): _v8k1 = GOD v8 as measured, _m1 / _m1p3 = the dynamic
+# draft, _m2 / _v10a / _v10b = the v10 parts and GOD v10 (= bots/god), _x_v10 = the switch copy (every switch off), the adapted drafts
+# _q_s2v / _k_fit / _k_ci, the personas _pn* and the v9 invader _v9inv. NOTE: _m2 here is the v10 refit variant; the session-7 _m2 above is
+# legend_m2 (2.2.5 ledger only): this block restores the 3.0.4 one when bots/_m2 is missing or is the old one.
+V304="_v8k1 _m1 _m1p3 _m2 _v10a _v10b _x_v10 _q_s2v _k_fit _k_ci _pnF _pnI _pnD _pnO _pnA _pnL _pnV _pnS _v9inv"
+for b in $V304; do if [ ! -d bots/$b/src ] || { [ "$b" = _m2 ] && [ ! -f bots/_m2/src/opp9.h ]; }; then rm -rf bots/$b/src; (cd bots && tar -xJf ../experiments/proxies/v304_bots.tar.xz $b/src) && cp bots/legend/.gitignore bots/$b/; fi; done
+for b in $V304; do cambc build $b > /dev/null && echo "built $b"; done
 python3 - <<'EOF'
 import sys; sys.path.insert(0, 'tools'); import ledger
 want = {'_pm': 'dc55f8d8ba35', '_m15': '7f1fbbaa8fa8', '_g8s': '152375f0f792', '_pw': '827ab7268c47', '_pc': '79a41047e8e1', '_ph': '23077c2e8e95', '_pws': '1bc4daa14baf', '_mlkc40': '8eb9563d0d5b', '_g4': '19a1785457d3', '_rm': '339a961d3427', '_ST': 'ca21cbfe785b', '_eA': '0ee193334b60', '_eB': '654605b27deb', '_eC': '116ccc8b53b1',
-		'_m2': '1684aa2a482c', '_m3': '86c9e8f3de35', '_x_gp': '92e199947185', '_m4': '0dc2a2aac28a',
+'_m3': '86c9e8f3de35', '_x_gp': '92e199947185', '_m4': '0dc2a2aac28a',
 		'_m5a': '5620bb02867a', '_xp4': '6a1a52e4ddb8', '_m7': '61dd9019869d', '_mite': '688b37be81e3', '_ifish': '6fde429be694', '_m8': '540e17bfe5a4', '_cS3': '540e17bfe5a4', '_m9': '0df32fa5ee2d', '_m10': 'a0e6030bf0f4', '_m11': '0dd8010eaf12', '_fw': '104743e4f1d5', '_fc': '531e7331a283', '_pd': '8ede6d7d3aa1', '_pd2': 'c8272a7e1846', '_pg3': 'cdc6dc9027f3', '_ch2': '5f24a1979ddc', '_snk': '70c95c1095f6', '_fA': '25fe5950b034', '_fB': 'f8e472c342f3', '_fC': 'ef5391dcc92b'}
+want.update({'_v8k1': 'e738c51b4e41', '_m1': '46077c5ee659', '_m1p3': '636bd517d53f', '_m2': 'c1cd902ee551', '_v10a': '9592cd65b2dd', '_v10b': '4f4dab2c0fb9',
+		'_q_s2v': '8156332a35e4', '_k_fit': '6239c14efa80', '_k_ci': '40bc26892a69', '_pnF': 'fbc74451866b', '_pnI': 'c673995af56e', '_pnD': '6515cfc558a5', '_pnO': '1b230c5c14e2',
+		'_pnA': '1b5cd9005ce8', '_pnL': '37198e0c1dd5', '_pnV': '5daee6584467', '_pnS': '1cb87fd9f0ec', '_v9inv': 'c624f161f09b'})  # 3.0.4 (GOD v10)
 for b, h in want.items():
 	got = ledger.src_hash(b)
 	print(f'{b:5s} {got} {"ok" if got == h else "MISMATCH (expected " + h + ")"}')

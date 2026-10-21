@@ -482,6 +482,19 @@ std::vector<I> build_for(CT t, int bs)
 	return v;
 }
 
+// The same family's shard in the other damage stat (health shards and consumables unchanged): build_stat.
+I in_stat(I it, bool focus)
+{
+	static const std::pair<I, I> fam[] = { { I::monster_shard_of_focus, I::monster_shard_of_strength }, { I::power_shard_of_focus, I::power_shard_of_strength },
+		{ I::durability_shard_of_focus, I::durability_shard_of_strength }, { I::treasure_shard_of_focus, I::treasure_shard_of_strength },
+		{ I::jungle_shard_of_focus, I::jungle_shard_of_strength }, { I::home_shard_of_focus, I::home_shard_of_strength },
+		{ I::bruiser_shard_of_focus, I::bruiser_shard_of_strength } };
+	for (const auto& f : fam)
+		if (it == f.first || it == f.second)
+			return focus ? f.first : f.second;
+	return it;
+}
+
 float best_mod(const Kit& k)
 {
 	return std::max({ k.dmg >= 0 ? k.dmg_mod : 0.f, k.cc >= 0 ? k.cc_mod : 0.f, k.aoe >= 0 ? k.aoe_mod : 0.f, k.dash >= 0 ? k.dash_mod : 0.f });
@@ -536,6 +549,37 @@ void Brain::init()
 	const auto abl = me.abilities();
 	ab.assign(abl.begin(), abl.end());
 	build = build_for(type, P.build_style);
+	if (P.build_stat)
+	{
+		// build_stat (patch 3.0.4): every focus / strength shard of the list in the stat this kit pays most for, from the engine's numbers:
+		// a focus shard adds focus_growth x the spell modifiers per cooldown (area spells and a damaging dash x build_stat_targets; Ren's
+		// retaliation 0.2 x focus per hit taken, ~build_stat_targets hits a round), a strength shard strength_growth per basic attack
+		// (+1/8 with an attack reset; Varg's splash x targets). The typed lists stay unless one stat pays build_stat_margin x the other:
+		// Tavi (110 focus, one 1.4 x focus spell, a reset): 1.75 vs 5.6 a round per shard, so strength.
+		const float tg = P.build_stat_targets;
+		float sp = 0;
+		if (kit.dmg >= 0)
+			sp += kit.dmg_mod;
+		if (kit.cc >= 0)
+			sp += kit.cc_mod;
+		if (kit.aoe >= 0)
+			sp += kit.aoe_mod * (kit.aoe_radius >= 1.f ? tg : 1.f);
+		if (kit.dash >= 0)
+			sp += kit.dash_mod * (kit.dash_radius >= 1.f ? tg : 1.f);
+		if (kit.heal >= 0)
+			sp += kit.heal_mod; // Willow: health restored counts like damage dealt
+		float vf = focus_growth * sp / 8.f;
+		if (type == CT::ren && !kit.ranged)
+			vf += bc::constants::passive_abilities::ren_retaliation_focus_ratio * focus_growth * tg;
+		const float vs = str_growth * (1.f + (kit.reset >= 0 ? 0.125f : 0.f)) * (type == CT::varg ? tg : 1.f);
+		const int want = vf >= P.build_stat_margin * vs ? 1 : vs >= P.build_stat_margin * vf ? 2 : 0;
+		if (want)
+			for (auto& it : build)
+				it = in_stat(it, want == 1);
+#ifdef GV_TRACE
+		debug_block({ std::printf("BSTAT ch=%d vf=%.2f vs=%.2f want=%d\n", static_cast<int>(type), vf, vs, want); });
+#endif
+	}
 	if (P.tail_stat && P.build_tail == 1 && !build.empty() && (build.back() == I::power_shard_of_focus || build.back() == I::power_shard_of_strength))
 	{
 		const float vf = focus_growth * (kit.dmg_mod + kit.cc_mod + kit.aoe_mod + kit.dash_mod) / 8.f;
@@ -4570,6 +4614,28 @@ float Brain::ally_dps_on(int ally, const Group& g) const
 	const auto mine = bc::champion_designs[static_cast<std::size_t>(type)].base_stats();
 	const float growth = std::max(1.f, str / std::max(1.f, mine.base_strength));
 	float st = a.visible && a.str > 0 ? a.str : s.base_strength * growth;
+	if (P.ally_kit && a.kit_ready)
+	{
+		// ally_kit (patch 3.0.4): the ally's damage from its own kit (engine modifiers), the same arithmetic as dps_on() for our body:
+		// the typed 3.4 / 2.0 / 1.5 x focus below over-counted Ren's helping damage 2x after his stun damage fell to 0.75 x focus.
+		const Kit& k = a.kit;
+		const float fo = a.visible && a.focus > 0 ? a.focus : s.base_focus * growth;
+		const float cl = g.cluster;
+		float v = st * (1.f + (k.reset >= 0 ? 0.125f : 0.f));
+		if (a.type == CT::varg)
+			v *= cl;
+		float sp = 0;
+		if (k.dmg >= 0)
+			sp += fo * k.dmg_mod;
+		if (k.cc >= 0)
+			sp += fo * k.cc_mod;
+		if (k.aoe >= 0)
+			sp += fo * k.aoe_mod * (k.aoe_radius >= 1.f ? cl : 1.f);
+		v += sp / 8.f;
+		if (a.type == CT::ren && !k.ranged)
+			v += bc::constants::passive_abilities::ren_retaliation_focus_ratio * fo * static_cast<float>(std::min(g.attackers, 3));
+		return v;
+	}
 	float v = st * 1.1f;
 	if (a.type == CT::varg)
 		v *= g.cluster;

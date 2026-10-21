@@ -428,11 +428,25 @@ double pd_score(D c, const std::vector<D>& team, const std::vector<D>& enemy)
 	return v;
 }
 
-bool param_pick(const std::vector<D>& mine)
+int g_sub_done = 0; // P.pd_sub_from: our pd_sub_to pick stands for pd_sub_from (the draft instance lives through the whole draft)
+
+bool param_pick(const std::vector<D>& mine_real)
 {
 	if (!mp_ready)
 		derive_params();
 	const std::vector<D> enemy = bc::draft::current_draft(team::enemy);
+	std::vector<D> mine = mine_real;
+	if (P.pd_sub_from >= 0 && g_sub_done)
+		for (auto& c : mine)
+			if (c == static_cast<D>(P.pd_sub_to))
+				c = static_cast<D>(P.pd_sub_from);
+	auto emit = [&](D c, const std::vector<D>& plan) {
+		if (P.pd_sub_from >= 0 && c == static_cast<D>(P.pd_sub_from) && !g_sub_done &&
+			std::find(mine_real.begin(), mine_real.end(), static_cast<D>(P.pd_sub_to)) == mine_real.end() &&
+			std::find(plan.begin(), plan.end(), static_cast<D>(P.pd_sub_to)) == plan.end())
+			c = static_cast<D>(P.pd_sub_to), g_sub_done = 1;
+		note_pick(c);
+	};
 	static const D order_all[] = { D::ren, D::stellar, D::cassi_and_issac, D::varg, D::ryth, D::tavi, D::prism, D::vendetta, D::marcella,
 		D::vesper_vale, D::willow, D_HOR };
 	const std::span<const D> order(order_all, std::size(order_all) - (SDK_HAS_HOR ? 0 : 1)); // Heart of Ruin only when the SDK has it
@@ -467,7 +481,7 @@ bool param_pick(const std::vector<D>& mine)
 				return true;
 			}
 		}
-		note_pick(first);
+		emit(first, {});
 		return true;
 	}
 	// Re-plan the remaining slots greedily, then pick the planned champion that comes first in the fixed order.
@@ -479,7 +493,7 @@ bool param_pick(const std::vector<D>& mine)
 		double bv = -1e9;
 		for (auto c : order)
 		{
-			if (has(team, c))
+			if (has(team, c) || (P.pd_sub_from >= 0 && g_sub_done && c == static_cast<D>(P.pd_sub_to)))
 				continue;
 			const double v = pd_score(c, team, enemy);
 			if (v > bv)
@@ -495,7 +509,7 @@ bool param_pick(const std::vector<D>& mine)
 			std::printf("PD round=%d type=%d pack=%.2f elk=%.2f obj=%d mono=%d open=%d enemy=%d pick=%d\n", static_cast<int>(mine.size()) + 1, pd_type,
 				MP.pack_share, MP.elk_share, (int)MP.objective, (int)MP.monolith_only, (int)MP.open_small, static_cast<int>(enemy.size()), static_cast<int>(c));
 #endif
-			note_pick(c);
+			emit(c, plan);
 			return true;
 		}
 	return false;

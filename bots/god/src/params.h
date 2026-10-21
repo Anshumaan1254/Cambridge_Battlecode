@@ -260,6 +260,16 @@ struct Params
 							   // the caster ring (Prism, Stellar, C&I, Ryth, Tavi) lost it 72-1008 twice on the ladder with 37 deaths: both teams
 							   // meet there every respawn, and the casters die to Power-stacked melee)
 	int pd_obj_mid = 2;
+	int ally_kit = 0;		   // patch 3.0.4: 1 = an ally's damage on a camp group from its kit (engine modifiers, dps_on()'s arithmetic) instead of
+							   // the typed 3.4 / 2.0 / 1.5 x focus (Stellar / Cassi / the rest) of ally_dps_on() (ISSUES #39)
+	int build_stat = 0;	   // patch 3.0.4: 1 = the build list's focus / strength shards in the stat the kit pays most for (engine numbers, brain.cpp
+							   // Brain::init) when one pays >= build_stat_margin x the other; else the typed list
+	float build_stat_margin = 2.f;
+	float build_stat_targets = 1.5f; // camps hit by an area spell / a damaging dash / Varg's splash, hits Ren takes a round
+	int pd_sub_from = -1;	   // measurement only (patch 3.0.4 screen), -1 = off: the parameter draft plans as usual on a virtual roster where our
+	int pd_sub_to = -1;	   // pd_sub_to pick stands for pd_sub_from, and a planned pd_sub_from is picked as pd_sub_to (draft ids: 0 Ryth, 1 Vesper,
+							   // 2 Vendetta, 3 C&I, 4 Stellar, 5 Prism, 6 Marcella, 7 Willow, 8 Ren, 9 Varg, 10 Tavi, 11 Heart of Ruin): "Tavi wherever v8
+							   // drafts Stellar", every map rule intact. A probe of champion value under a new balance, never a shipped draft
 	float build_react = 2.5f;   // > 0: a reactive health emblem (Durability health, then Bruiser health) is inserted at the shop whenever our max
 							   // health is below this x the biggest one-round burst (strength + focus x best spell) any enemy has shown us this game:
 							   // the build answers the enemy's Power stacks (25 ladder games of Oct 20: first-round damage 33% of max health, median)

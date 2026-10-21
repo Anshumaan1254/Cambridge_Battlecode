@@ -73,6 +73,19 @@ or engineering limits.
 | 35 | `brain.cpp` HoR passive 0.5 in `fm_mode` 1 | the engine constant `heart_of_ruin_missing_health_damage_max_bonus` exists only in the 3.0 SDK, so the value is typed (gated by `CT_HOR`, which never matches on 2.2.x) | a patch to the passive | low | `fm_mode` |
 | 36 | `gv_map` reference (`gv_rho_ref` 6.3, `gv_exp` 0.5) | the map-derived gold value is anchored at the median gold / gem rate ratio of the 21-map pool (4.4-9.6, elk-arena 20.5) | a new pool with a different economy | low | `gv_map` |
 
+## Patch 3.0.4 (Oct 21 balance: Stellar, Heart of Ruin, Ren nerfs; Vesper, Vendetta, Tavi, Prism buffs)
+
+The engine probe (`experiments/results/probe_v3_0_4/`) confirms the patch numbers. GOD reads stats and ability modifiers from the
+engine for its own body (`kit_of`, `base_stats()`), so its own fight / kill-time / burst arithmetic follows the patch. These parts do
+not (champion knowledge typed into the code; none is map dependent):
+
+| # | Where | What is typed in | Why it matters after 3.0.4 | Severity |
+|---|---|---|---|---|
+| 37 | `draft.cpp` `prior()` | one constant per champion (Ren 1.0, Stellar 0.95, C&I 0.9, Varg 0.62, Ryth 0.6, Prism 0.36, Tavi 0.33, Vendetta 0.3, Marcella 0.2, Vesper 0.12, Willow 0.1, HoR 0.4); most date from pre-3.0 screens, only HoR / C&I were re-tuned on 3.0.x | the patch nerfs the two top priors (Stellar -22% Lanchester power hp x dps, Ren -9%) and buffs three low ones (Tavi +23%, Vesper +22%, Vendetta +25%): the draft cannot see it | **high** |
+| 38 | `draft.cpp` `pd_score` | Stellar-only "one ranged carry" +0.2, Ren-first opening pick (`first = ... D::ren`), HoR +1.2 at team size 3 (`pd_hor3`), objective ring casters by name (Prism / Tavi +0.75), `is_caster` / `is_front` by name | same: roles and bonuses follow names, not kits | **high** |
+| 39 | `brain.cpp` `ally_dps_on()` | an ally's spell damage = base focus x 3.4 (Stellar), 2.0 (Cassi) or 1.5 (everyone else) per 8 rounds | Ren's stun damage is now 0.75 x focus (1.25 before): his helping damage is over-counted 2x in group scoring; allies' real kits are known (`World` keeps `kit_of` per ally) | medium |
+| 40 | `brain.cpp` `gold_rank_of()`, `ally_melee()`, `build_for()` focus flags | champion lists by name (who converts gold best, who is melee, which stat the build stacks) | `ally_melee` / the focus flag are kit facts (attack range, spell modifiers) and could be read; the gold rank is a measured order | low |
+
 ## Proxy-only hardcoding (off in the shipped bot)
 
 `draft.cpp` `official_map()` (recognises the 17 official maps by size and camp mix) and the per-map tables `MITE`, `IFISH`, `OURS`

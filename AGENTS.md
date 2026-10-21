@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-21 09:15 UTC (session 14: PATCH 3.0.4 arrived, engine switched to cambc 3.0.4, new GOD for the new balance in progress: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
+- Last updated: **2026-10-21 09:30 UTC (session 14: PATCH 3.0.4 arrived, engine switched to cambc 3.0.4, new GOD for the new balance in progress: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
   Rule from the user: update this file and push at every step. Start with **§S14**, then **§S13-GOD**, **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
@@ -455,6 +455,16 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   the Ren-first opening pick), tuned on 3.0.1-3.0.2. Plan: (1) v8 baseline on 3.0.4; (2) a draft whose champion values come from the engine's
   stats (no per-champion constants), screened vs v8 on the tuning half; (3) confirmation on the held-out half and all 616 games + third parties;
   (4) per the user's branch rule, a branch pair if it is clearly better.
+- **09:30 UTC, first 3.0.4 measurements** (tuning half = 156 maps x 2 sides = 312 games per cell vs `_v8k1`; `ledger_v3_0_4/`). Measurement
+  switch `pd_sub_from` / `pd_sub_to` in `bots/god` (draft ids; -1 = off): the parameter draft plans on a virtual roster where our
+  `sub_to` stands for `sub_from` and picks `sub_to` wherever v8 would pick `sub_from` (every map rule intact; a probe, never a shipped
+  draft). Control `_q_0` (= `bots/god`, switches off) replays v8's 12 mirror games exactly on 3.0.4. **Tavi for Stellar (`_q_s2t`) 191/312 =
+  61.2%, 95% [55.7, 66.5], maps 2-0 54 / 0-2 19, sign p 0.0001, deaths 5,704-7,250**; size 5 64.5%, size 3 64.0%, size 4 53.7%; positive in
+  nearly every map folder. Vendetta for Ren (`_q_r2d`) 54.8% [49.3, 60.2], 44 / 29, p 0.10 (size 3 64%, 5 55%, 4 51%; deaths 6,768-5,244).
+  Tools: `tools/drafts_of.py KEEP_DIR [--list] [--by-size]` (rosters of kept games; maps where our roster differs vs same),
+  `tools/draftmodel/statpower.py` (per-champion power from the probe output). New switches (off): `ally_kit` (an ally's damage from its kit:
+  ISSUES #39), `build_stat` (+ `build_stat_margin` 2, `build_stat_targets` 1.5: the build list's damage stat from the kit when one stat pays 2x the
+  other: only Tavi flips, to strength: 1.75 vs 5.6 per shard a round). ISSUES #37-40: champion knowledge typed into the draft / brain.
 
 
 ## S13-GOD. PATCH 3.0 AND THE GOD BOT (2026-10-20 from 08:51 UTC): read this first

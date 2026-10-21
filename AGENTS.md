@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- Last updated: **2026-10-21 11:50 UTC (session 14: PATCH 3.0.4 arrived, engine switched to cambc 3.0.4, new GOD for the new balance in progress: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
+- Last updated: **2026-10-21 11:20 UTC (session 14: PATCH 3.0.4 arrived, engine switched to cambc 3.0.4, new GOD for the new balance in progress: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
   Rule from the user: update this file and push at every step. Start with **§S14**, then **§S13-GOD**, **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,
   §S7, §S7-SV2, then §000000 (resume protocol). **The repository now has a single branch, `main`** (the user merged every branch into it
   on Oct 19 and said "the ccr-a858cd03-q87cpi is no more so do the changes in main branch"): commit and push to `main`; `git pull` (merge,
@@ -491,7 +491,7 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   (`_q_s2v` third-party cells). Draft roles in `pd_stat` mode now come from the designs' attack range (same split as v8's name lists); the
   stat anchoring is additive (prior + k x ln(power ratio)). `tools/abconfirm.sh CAND [OPP]` (test152, train156, all308 + by folder).
   3.0.2 scratch project `$S/p302` (3.0.2 SDK, maps / experiments linked) for a backtest of the final candidate on the old balance.
-- **11:30 UTC: rounds 2-3 done; the user (11:10): "ensure nothing is hardcoded and everything is decided dynamically according to
+- **11:10 UTC (container clock; the 09:30-10:35 labels above ran ~15 min ahead of it): rounds 2-3 done; the user (11:05): "ensure nothing is hardcoded and everything is decided dynamically according to
   the maps and the enemies moves and strategies".** Round 2 (pd_stat 1 priors): `_r_v1` (Vesper .96, Stellar .5) 72.4%, `_r_vt` (+ Tavi) 71.5%,
   `_r_v1b` (+ `build_stat` margin 1.3: Ren builds strength) 74.4%, `_r_v1k` (+ `ally_kit`) 68.9%, `_r_vd` (Vendetta lead) 65.1%, `_r_t1` (Tavi)
   61.5%, `_r_t1b` (+ build_stat) 58.0%, `_r_t1k` (+ ally_kit) 57.4%, `_r_t1d` 61.9%. **Round 3 (pd_stat 2, the fitted values as priors):
@@ -509,7 +509,7 @@ Tools: `tools/strategy_v2/run_all.py` on the 4 group zips (`analyze.py` now has 
   draft turns (100k fuel) ran out and the engine drew the remaining picks at random (GameRules "Missing a pick"); now every pick's features,
   ring value and range are cached in the first draft turn (10x fuel): later turns use 10-24k of 100k (v8 7-21k; pd_stat 2 up to 28k;
   `DRAFT_FUEL` build prints it). The pd_stat 1/2 screens were not affected (their rosters are the planned ones in every kept game).
-- **11:50 UTC: the dynamic draft `_m1` (= `bots/god` + `pd_stat` 3: no per-champion value anywhere) 256/312 = 82.1% [77.4, 85.9] vs v8 on the
+- **11:17 UTC: the dynamic draft `_m1` (= `bots/god` + `pd_stat` 3: no per-champion value anywhere) 256/312 = 82.1% [77.4, 85.9] vs v8 on the
   tuning half, maps 110 / 36 / 10, deaths 3,481-6,856; size 5 83.7%, 4 77.4%, 3 84.0%** (best so far; `_k_fit` 78.8%). Its teams follow the map:
   Vendetta / Ryth / Heart of Ruin lead, Vesper, + Ryth / HoR / Marcella / Vendetta by the map's packs, spread and team size. Running:
   `tools/abconfirm.sh _m1` (held-out test152, then all308; log `$S/conf_m1.log`) and `$S/q66.sh` (round-robin of 13 draft variants on 39 train

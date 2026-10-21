@@ -1,3 +1,19 @@
+# Patch 3.0.4 GOD: the dynamic draft (Oct 21)
+
+Request: "make the new bot according to these changes [the 3.0.4 balance patch] and compare them on these changes only", then "ensure
+nothing is hardcoded and everything is decided dynamically according to the maps and the enemies moves and strategies". Full analysis
+and every number: `docs/strategy_v2/17_PATCH_3_0_4.md`. All games on engine 3.0.4, both sides, ledger `experiments/results/ledger_v3_0_4/`.
+
+| Change | Switch (off = v8) | What it does | Result vs v8 (tuning half, 312 games) |
+|---|---|---|---|
+| Draft-value model | `pd_stat` 3, weights `pd_w_*` | a pick's value = fitted weights x features read from the engine's designs (health, basic damage, splash, spells, area damage, stuns, dash, range, gold bonus, retaliation, bodies) and from this map's camps (pack / elk / gold shares, size, spread, monoliths); no per-champion number | **82.1% [77.4, 85.9]**, maps 110 / 36 / 10 |
+| Counters to the enemy's picks | `pd_cw_*` (0) | our range / stuns vs their melee damage, health vs burst, dashes vs range | being fitted on a round-robin of 13 drafts |
+| v8's map types in kit terms | `pd_obj_*`, `pd_open_*` | objective ring by range-4 spell damage, open small maps by retaliation / splash | part of the model draft |
+| Measurement switch | `pd_sub_from` / `pd_sub_to` (-1) | v8's draft with one champion swapped, every map rule intact | the 11 screens of doc 17 §2 |
+| Stat-anchored priors | `pd_stat` 1 / 2, `pd_pri_*`, `pd_stat_k` | measured priors shifted by ln(stat power ratio) on a later patch | 72-79% (superseded by `pd_stat` 3) |
+| Ally damage from its kit | `ally_kit` (0) | an ally's camp damage from its engine modifiers instead of typed 3.4 / 2.0 / 1.5 x focus | 68.9% vs 72.4% without (on `_r_v1`): off |
+| Build stat from the kit | `build_stat` (0) | the build's focus / strength shards in the stat the kit pays most for | Tavi -3.5, Ren (margin 1.3) +2.0: not adopted yet |
+
 # GOD upgrade (F1-F6): what changed, why, and what was measured
 
 Base: GOD v8 (`bots/god/src` at commit db74b11; line numbers below are from that commit unless marked "now"). Request:

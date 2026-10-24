@@ -114,14 +114,14 @@ Unused entries are zero.
 
 ### 5.2 OWN (64 bytes): soft ownership, one byte per group (G <= 64; groups 64+ have no owner)
 
-- **Low nibble: the owner slot** (15 = none). Computed by `teamplan::assign_groups` (list scheduling; gem-free groups lean to front
-  bodies) for the bodies picked so far.
+- **Low nibble: the owner slot** (15 = none; the library's `kNoOwner` 255 is stored as 15). Computed by `teamplan::assign_groups` (list
+  scheduling; gem-free groups lean to front bodies) for the bodies picked so far.
 - **High nibble: the next owner**, who takes the group while the owner is dead (15 = none). It is the runner-up body of the same
   scheduling step: `assign_groups`'s `runner_up` output, added for this layout, so it costs no extra call.
 - **Fuel**:
   - the library call: up to 56.1k with the next owners (51 groups, 5 bodies; 54k without them);
   - in the GOD v10 test, where the adapter also builds its own group list, the whole write cost 138k on draft turn 1 and 48-65k on
-    turns 2-5. It left at least 24.2k of 100k after v10's pick (section 7).
+    turns 2-5. It left at least 24.2k of 100k after v10's pick (TEAMPLAN.md 10, 16:35).
 - **In the game**: a score bonus for the owner (x 1.25 in the v10 test), never a hard rule.
 - **Prototype**: version 1 of this block, at offset 8 in the v10 test copy. Batteries: TEAMPLAN.md section 11.
 

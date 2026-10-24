@@ -248,12 +248,14 @@ def main():
 	c0 = cell(BASE, FORCED)
 	if c0:
 		L += [f"GOD v10 itself against it: {fmt(c0)}", ""]
-	L += ["| Variant | Result | Paired margin vs v10's games [95%] | Wins variant / v10 on the same games |", "|---|---|---|---|"]
+	L += ["| Variant | Result | Paired margin vs v10's games [95%] | Wins variant / v10 on the same games | Games turned: wins / losses |",
+		  "|---|---|---|---|---|"]
 	for name, sets, what in VARIANTS:
 		c = cell(name, FORCED)
 		if c:
 			pm = paired(name, BASE, FORCED)
-			L.append(f"| `{name}` | {fmt(c)} | {pm['m']:+.1f} [{pm['lo']:+.1f}, {pm['hi']:+.1f}] | {pm['wa']} / {pm['wb']} of {pm['n']} |")
+			L.append(f"| `{name}` | {fmt(c)} | {pm['m']:+.1f} [{pm['lo']:+.1f}, {pm['hi']:+.1f}] | {pm['wa']} / {pm['wb']} of {pm['n']} | "
+					 f"{pm['gain']} / {pm['loss']}, p {sign_p(pm['gain'], pm['loss']):.3f} |")
 	out = os.path.join(ROOT, "experiments", "results", "teamplan", "batteries_v10.md")
 	open(out, "w").write("\n".join(L) + "\n")
 	print("\n".join(L))

@@ -124,6 +124,9 @@ in `tools/teamplan/`, and it does not edit the map-analysis files apart from thi
     512-863.
   - At the end of the team-play work, the agent carrying out this plan gets a prompt to implement it in the mapintel library (dmem v2,
     with Python twins and engine tests).
+  - **Done (Oct 24)**: the layout is final (`docs/DRAFT_MEMORY.md`: a 12-entry table of contents at 4-99, our blocks up to 435, the
+    fuel guard, and the ownership table written in the draft and recomputed once in the game when the last turn has no room). The prompt
+    is `docs/PROMPT_DRAFT_MEMORY_V2.md`, and the results are in TEAMPLAN.md section 11.
 - **Evidence the map model can use** (TEAMPLAN.md section 3, 599 top-team games):
   - every body farms;
   - captures are solo (5.4% shared);

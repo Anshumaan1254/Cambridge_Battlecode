@@ -1,0 +1,764 @@
+{
+ "origin": "LEARNED (decision moments of 599 current-patch top-team replays; tools/mapintel/plan4_learn.py)",
+ "zfeatures": [
+  "f_area",
+  "f_team",
+  "f_walk_share",
+  "f_hole_share",
+  "f_bush_share",
+  "f_gems",
+  "f_gold_per_gem",
+  "f_gem_rate",
+  "f_gems_heavy_share",
+  "f_mono_golem_gem_share",
+  "f_gems_mid_share",
+  "f_spawn_dist",
+  "f_dist_gem_weighted",
+  "f_altars",
+  "f_wide_contested_value_share",
+  "f_groups",
+  "f_max_group_gems",
+  "f_cluster_only_gem_share",
+  "f_safe_area_share"
+ ],
+ "thresholds": {
+  "k": {
+   "index": 0,
+   "use": "constant",
+   "lo": 0,
+   "hi": 120,
+   "intercept": 0.0,
+   "coef": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "p": {
+   "index": 1,
+   "use": "constant",
+   "lo": 25,
+   "hi": 65535,
+   "intercept": 1000.0,
+   "coef": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "d": {
+   "index": 2,
+   "use": "constant",
+   "lo": 4,
+   "hi": 40,
+   "intercept": 6.0,
+   "coef": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "m": {
+   "index": 4,
+   "use": "constant",
+   "lo": 0,
+   "hi": 60,
+   "intercept": 7.0,
+   "coef": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "results": {
+  "k": {
+   "samples": 388873,
+   "positives": 30144,
+   "maps": 40,
+   "held_out_bacc": {
+    "formula": 0.5574077377693499,
+    "constant": 0.6672866315971542,
+    "ridge": 0.6561394076370592
+   },
+   "alpha_folds": [
+    100000.0,
+    100000.0,
+    100000.0,
+    100000.0,
+    100000.0
+   ],
+   "alpha": 100000.0,
+   "use": "constant",
+   "constant": [
+    0,
+    1000
+   ],
+   "per_map_best": {
+    "00ambush": [
+     0,
+     65535
+    ],
+    "00collision": [
+     0,
+     500
+    ],
+    "00contest": [
+     0,
+     65535
+    ],
+    "00corners": [
+     0,
+     1000
+    ],
+    "00eight": [
+     0,
+     1000
+    ],
+    "00elkring": [
+     0,
+     500
+    ],
+    "00expanse": [
+     0,
+     500
+    ],
+    "00fragment": [
+     0,
+     300
+    ],
+    "00gem-fields": [
+     0,
+     1000
+    ],
+    "00gemfight": [
+     0,
+     300
+    ],
+    "00great-wall": [
+     0,
+     65535
+    ],
+    "00interlock": [
+     0,
+     1000
+    ],
+    "00lanes": [
+     0,
+     1000
+    ],
+    "00lost-world": [
+     0,
+     65535
+    ],
+    "00monolith": [
+     0,
+     1000
+    ],
+    "00packs": [
+     0,
+     500
+    ],
+    "00pilgrimage": [
+     2,
+     300
+    ],
+    "00quadrants": [
+     2,
+     65535
+    ],
+    "00reverse-spiral": [
+     0,
+     65535
+    ],
+    "00road-of-riches": [
+     0,
+     1000
+    ],
+    "00rows": [
+     0,
+     1000
+    ],
+    "00rushbait-v2": [
+     0,
+     500
+    ],
+    "00split": [
+     0,
+     65535
+    ],
+    "00stampede": [
+     2,
+     65535
+    ],
+    "00swirl": [
+     0,
+     1000
+    ],
+    "01big-world": [
+     8,
+     300
+    ],
+    "01boss-battle": [
+     0,
+     1000
+    ],
+    "01broken-curve": [
+     0,
+     65535
+    ],
+    "01concentrated-wealth": [
+     0,
+     200
+    ],
+    "01corridors": [
+     0,
+     200
+    ],
+    "01elk-arena": [
+     0,
+     1000
+    ],
+    "01fracture": [
+     0,
+     65535
+    ],
+    "01gold-rush": [
+     0,
+     1000
+    ],
+    "01hooks": [
+     0,
+     1000
+    ],
+    "01islands": [
+     2,
+     65535
+    ],
+    "01shortcut": [
+     0,
+     65535
+    ],
+    "01starfish": [
+     0,
+     500
+    ],
+    "01starvation": [
+     0,
+     65535
+    ],
+    "01the-farm": [
+     2,
+     1000
+    ],
+    "01yellow-brick-road": [
+     0,
+     1000
+    ]
+   }
+  },
+  "d": {
+   "samples": 31086,
+   "positives": 11305,
+   "maps": 40,
+   "held_out_bacc": {
+    "formula": 0.5315615342265834,
+    "constant": 0.5431434915553977,
+    "ridge": 0.5390971272541807
+   },
+   "alpha_folds": [
+    100000.0,
+    100000.0,
+    100000.0,
+    100000.0,
+    100000.0
+   ],
+   "alpha": 100000.0,
+   "use": "constant",
+   "constant": [
+    6
+   ],
+   "per_map_best": {
+    "00ambush": [
+     13
+    ],
+    "00collision": [
+     6
+    ],
+    "00contest": [
+     8
+    ],
+    "00corners": [
+     8
+    ],
+    "00eight": [
+     5
+    ],
+    "00elkring": [
+     10
+    ],
+    "00expanse": [
+     5
+    ],
+    "00fragment": [
+     7
+    ],
+    "00gem-fields": [
+     5
+    ],
+    "00gemfight": [
+     4
+    ],
+    "00great-wall": [
+     14
+    ],
+    "00interlock": [
+     7
+    ],
+    "00lanes": [
+     6
+    ],
+    "00lost-world": [
+     5
+    ],
+    "00monolith": [
+     9
+    ],
+    "00packs": [
+     7
+    ],
+    "00pilgrimage": [
+     18
+    ],
+    "00quadrants": [
+     7
+    ],
+    "00reverse-spiral": [
+     16
+    ],
+    "00road-of-riches": [
+     8
+    ],
+    "00rows": [
+     31
+    ],
+    "00rushbait-v2": [
+     10
+    ],
+    "00split": [
+     9
+    ],
+    "00stampede": [
+     5
+    ],
+    "00swirl": [
+     4
+    ],
+    "01big-world": [
+     29
+    ],
+    "01boss-battle": [
+     11
+    ],
+    "01broken-curve": [
+     10
+    ],
+    "01concentrated-wealth": [
+     5
+    ],
+    "01corridors": [
+     12
+    ],
+    "01elk-arena": [
+     14
+    ],
+    "01fracture": [
+     4
+    ],
+    "01gold-rush": [
+     6
+    ],
+    "01hooks": [
+     5
+    ],
+    "01islands": [
+     6
+    ],
+    "01shortcut": [
+     11
+    ],
+    "01starfish": [
+     5
+    ],
+    "01starvation": [
+     6
+    ],
+    "01the-farm": [
+     5
+    ],
+    "01yellow-brick-road": [
+     5
+    ]
+   }
+  },
+  "m": {
+   "samples": 327615,
+   "positives": 44240,
+   "maps": 40,
+   "held_out_bacc": {
+    "formula": 0.5927819742097282,
+    "constant": 0.6093795196988636,
+    "ridge": 0.5918504912850546
+   },
+   "alpha_folds": [
+    100000.0,
+    100000.0,
+    100000.0,
+    100000.0,
+    100000.0
+   ],
+   "alpha": 100000.0,
+   "use": "constant",
+   "constant": [
+    7
+   ],
+   "per_map_best": {
+    "00ambush": [
+     40
+    ],
+    "00collision": [
+     4
+    ],
+    "00contest": [
+     36
+    ],
+    "00corners": [
+     3
+    ],
+    "00eight": [
+     4
+    ],
+    "00elkring": [
+     7
+    ],
+    "00expanse": [
+     37
+    ],
+    "00fragment": [
+     7
+    ],
+    "00gem-fields": [
+     7
+    ],
+    "00gemfight": [
+     4
+    ],
+    "00great-wall": [
+     8
+    ],
+    "00interlock": [
+     7
+    ],
+    "00lanes": [
+     10
+    ],
+    "00lost-world": [
+     6
+    ],
+    "00monolith": [
+     4
+    ],
+    "00packs": [
+     6
+    ],
+    "00pilgrimage": [
+     44
+    ],
+    "00quadrants": [
+     6
+    ],
+    "00reverse-spiral": [
+     7
+    ],
+    "00road-of-riches": [
+     7
+    ],
+    "00rows": [
+     56
+    ],
+    "00rushbait-v2": [
+     7
+    ],
+    "00split": [
+     5
+    ],
+    "00stampede": [
+     0
+    ],
+    "00swirl": [
+     19
+    ],
+    "01big-world": [
+     8
+    ],
+    "01boss-battle": [
+     40
+    ],
+    "01broken-curve": [
+     8
+    ],
+    "01concentrated-wealth": [
+     22
+    ],
+    "01corridors": [
+     5
+    ],
+    "01elk-arena": [
+     5
+    ],
+    "01fracture": [
+     3
+    ],
+    "01gold-rush": [
+     17
+    ],
+    "01hooks": [
+     3
+    ],
+    "01islands": [
+     1
+    ],
+    "01shortcut": [
+     8
+    ],
+    "01starfish": [
+     5
+    ],
+    "01starvation": [
+     8
+    ],
+    "01the-farm": [
+     4
+    ],
+    "01yellow-brick-road": [
+     8
+    ]
+   }
+  },
+  "w": {
+   "samples": 128452,
+   "positives": 15731,
+   "maps": 40,
+   "held_out_bacc": {
+    "formula": 0.8809930553048613,
+    "constant": 0.8780837288774677,
+    "ridge": 0.8790641561975757
+   },
+   "alpha_folds": [
+    1000.0,
+    100000.0,
+    100000.0,
+    100000.0,
+    100000.0
+   ],
+   "alpha": 100000.0,
+   "use": "formula",
+   "constant": [
+    30
+   ],
+   "per_map_best": {
+    "00ambush": [
+     50
+    ],
+    "00collision": [
+     26
+    ],
+    "00contest": [
+     22
+    ],
+    "00corners": [
+     34
+    ],
+    "00eight": [
+     24
+    ],
+    "00elkring": [
+     22
+    ],
+    "00expanse": [
+     22
+    ],
+    "00fragment": [
+     30
+    ],
+    "00gem-fields": [
+     18
+    ],
+    "00gemfight": [
+     30
+    ],
+    "00great-wall": [
+     22
+    ],
+    "00interlock": [
+     20
+    ],
+    "00lanes": [
+     30
+    ],
+    "00lost-world": [
+     36
+    ],
+    "00monolith": [
+     20
+    ],
+    "00packs": [
+     24
+    ],
+    "00pilgrimage": [
+     20
+    ],
+    "00quadrants": [
+     32
+    ],
+    "00reverse-spiral": [
+     18
+    ],
+    "00road-of-riches": [
+     26
+    ],
+    "00rows": [
+     28
+    ],
+    "00rushbait-v2": [
+     28
+    ],
+    "00split": [
+     24
+    ],
+    "00stampede": [
+     30
+    ],
+    "00swirl": [
+     26
+    ],
+    "01big-world": [
+     50
+    ],
+    "01boss-battle": [
+     36
+    ],
+    "01broken-curve": [
+     28
+    ],
+    "01concentrated-wealth": [
+     32
+    ],
+    "01corridors": [
+     42
+    ],
+    "01elk-arena": [
+     34
+    ],
+    "01fracture": [
+     32
+    ],
+    "01gold-rush": [
+     28
+    ],
+    "01hooks": [
+     36
+    ],
+    "01islands": [
+     58
+    ],
+    "01shortcut": [
+     36
+    ],
+    "01starfish": [
+     20
+    ],
+    "01starvation": [
+     28
+    ],
+    "01the-farm": [
+     24
+    ],
+    "01yellow-brick-road": [
+     36
+    ]
+   }
+  }
+ },
+ "names": {
+  "k": "ETA gap k_abandon (rounds)",
+  "p": "local power p (percent)",
+  "d": "regroup distance d (tiles)",
+  "m": "bank-interception margin (rounds)",
+  "w": "respawn wait w_max (rounds)"
+ }
+}

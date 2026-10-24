@@ -687,6 +687,17 @@ def plan4(ctx, p3):
 		# spawns not connected on foot: use the spawn-to-spawn distance through the map's bounding box
 		d = max(M.W, M.H)
 	contested = [g for g in p3["groups"] if g["contested"]]
+	import features as FT
+	import p4model
+	if p4model.model():
+		# LEARNED (plan4_learn.py) where the fit beat the formula on held-out maps; per team from its runtime features
+		out = {"origin": "LEARNED where plan4_learn.py beat the formula (" + ", ".join(sorted(p4model.model())) + "), else COMPUTED formulas",
+			   "spawn_distance": d, "r_enemies": 8, "contested_groups": len(contested)}
+		base = [max(3, round(0.12 * d)), 80, max(5, round(0.2 * d)), 8, 3, 30, 0, 0]
+		per = [p4model.apply(FT.compute(M, t), base) for t in (0, 1)]
+		out.update(k_abandon=per[0][0], p_power=per[0][1] / 100.0, d_regroup=per[0][2], bank_margin=per[0][4], w_max=per[0][5],
+				   per_team=[{"k_abandon": v[0], "p_power": v[1] / 100.0, "d_regroup": v[2], "bank_margin": v[4], "w_max": v[5]} for v in per])
+		return out
 	return {
 		"origin": "COMPUTED default formulas; values fitted in step 6 (LEARNED, then SIMULATED)",
 		"spawn_distance": d,

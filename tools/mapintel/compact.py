@@ -23,8 +23,8 @@ order from its candidate list by rate from its last group (travel = the Chebyshe
 pass (swap two consecutive targets when the body's finishing round drops). Output per body slot: 4 x (group index, planned arrival).
 Plan 2: per group the bank altar = argmin over altars of min(Chebyshev distance from the group's box to an approach tile, 6 + fc of that
 approach tile); bankable flags from the features' bank modes. Plan 3: contested groups = both reached and |dU - dE| <= band (band =
-max(3, round(0.1 x spawn_dist))); up to 16 by value x exp(-|dU - dE| / band), with (index, dU, dE). Plan 4: the threshold formulas (or
-the fitted model of model_weights.h when it is generated).
+max(3, round(0.1 x spawn_dist))); up to 16 by value x exp(-|dU - dE| / band), with (index, dU, dE). Plan 4: the threshold formulas, with
+the LEARNED ones (plan4_learn.py, p4model.py = model_weights.h p4_thresholds()) written over them where the fit beat the formula.
 Draft memory (dmem.h, block at offset 512, MAPAnalysis 5.8): pack() below = the C++ block byte for byte (checked by test_library.py).
 Not modelled here (the catalog's fight simulation has them): Ryth's health-scaled strength, Heart of Ruin's missing-health bonus, Prism's
 focus per carried gem, shields and heals, allies tanking for each other, shopping."""
@@ -244,11 +244,18 @@ class Compact:
 		them = self.F[FT.NAMES.index("bank_mode_enemy")] < 2
 		return 0 if us and them else 1 if not us and not them else 2 if them else 3
 
-	def thresholds(self):
-		"""Plan 4 defaults (plans.plan4's formulas on the runtime spawn distance); model_weights.h replaces them once fitted."""
+	def formula_thresholds(self):
+		"""Plan 4's formulas on the runtime spawn distance (plans.h p4_formula()): k_abandon, p (percent), d_regroup, r_enemies, bank
+		margin, w_max, 0, 0."""
 		sd = self.F[FT.NAMES.index("spawn_dist")]
 		d = sd if sd > 0 else max(self.M.W, self.M.H)
 		return [max(3, int(math.floor(0.12 * d + 0.5))), 80, max(5, int(math.floor(0.2 * d + 0.5))), 8, 3, 30, 0, 0]  # p in percent
+
+	def thresholds(self):
+		"""Plan 4: the formulas, with the LEARNED thresholds of plan4_learn.py written over them where the fit beat the formula
+		(p4model.py = model_weights.h p4_thresholds())."""
+		import p4model
+		return p4model.apply(self.F, self.formula_thresholds())
 
 
 def r16(x):

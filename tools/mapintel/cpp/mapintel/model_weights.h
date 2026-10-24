@@ -5,7 +5,10 @@
 //   champion_values(z) the draft model's value of each champion on this map, log-odds per champion difference (SIMULATED (GOD v10): roster battery, both rosters forced, M1 of tools/mapintel/draft_learn.py;
 //                      on the ladder no champion model beats team rating alone out of sample, so the values come from a battery)
 //   first_scores(C)    LEARNED score of each group as an opening target (first_targets.py: the top teams' first captures)
+//   p4_thresholds()    plan 4's thresholds: the formulas, with the LEARNED ones (plan4_learn.py) written over them where the fit
+//                      beat the formula on held-out maps (plans.h calls it; p4model.py is the Python twin)
 #pragma once
+#define MAPINTEL_P4_FITTED 1  // before plans.h: plans.h then leaves p4_thresholds() to this file
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -187,6 +190,34 @@ inline std::vector<double> first_scores(const Compact& C, const MapView& m, cons
 	}
 	(void)F;
 	return out;
+}
+
+// plan 4, LEARNED (plan4_learn.py: k constant, p constant, d constant, m constant): t[index] = floor(intercept + coef . z + 0.5),
+// clamped; the other thresholds stay the formulas (p4_formula)
+inline constexpr int P4_N = 4;
+inline constexpr int P4_IDX[P4_N] = { 0, 1, 2, 4 };
+inline constexpr int P4_LO[P4_N] = { 0, 25, 4, 0 };
+inline constexpr int P4_HI[P4_N] = { 120, 65535, 40, 60 };
+inline constexpr double P4_B[P4_N] = { 0.0, 1000.0, 6.0, 7.0 };
+inline constexpr double P4_W[P4_N][MW_NF] = {
+	{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
+	{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
+	{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
+	{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
+};
+inline void p4_thresholds(const Features& F, const MapView& m, int t[8])
+{
+	p4_formula(F, m, t);
+	double z[MW_NF];
+	zfeat(F, z);
+	for (int k = 0; k < P4_N; ++k)
+	{
+		double v = P4_B[k];
+		for (int i = 0; i < MW_NF; ++i)
+			v += P4_W[k][i] * z[i];
+		const double r = std::floor(v + 0.5);
+		t[P4_IDX[k]] = r < P4_LO[k] ? P4_LO[k] : r > P4_HI[k] ? P4_HI[k] : static_cast<int>(r);
+	}
 }
 
 } // namespace mapintel

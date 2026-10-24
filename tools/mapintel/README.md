@@ -136,5 +136,7 @@ is a host call; stdout costs ~90 fuel per byte.
 | `dl/dl_ref.py`, `dl/dl_export.py` | the exported models' Python reference (same evaluation order as the C++) and the header generator | - |
 | `battery_games.py` | a battery archive -> `games.csv` (rosters from the kept statistics) for `draft_learn.py --battery` | SIMULATED |
 | `replays.py` | ladder replays -> per-game summaries (captures, banks, deaths, standing tiles) | LEARNED |
+| `replay_tracks.py` | ladder replays -> per-game tracks (positions, health, bags, gold, camp health per round, events; `mapintel_work/tracks/`) | LEARNED |
+| `plan4_learn.py`, `p4model.py` | plan 4's thresholds from the top teams' decisions (abandon, regroup, bank abort, respawn wait); `p4model.py` = `model_weights.h` `p4_thresholds()` | LEARNED |
 | `cpp/probe/`, `cpp/idle/` | probe bot and idle opponent sources (fresh, from the 3.0.5 starter) | - |
 | `../../experiments/results/mapintel/dump/` | `<map>.txt` runtime dumps and `fingerprints.txt` | COMPUTED |

@@ -117,6 +117,11 @@ Hardcoded on purpose or measured on the current pool / patch; each may need a re
   80, 0.2 d, 8, 3, 30). Not modelled: Ryth's health-scaled strength, Heart of Ruin's missing-health bonus, Prism's focus per gem, shields,
   heals, allies tanking, shopping (the catalog's fight simulation has them). Plan 1's first targets match the top teams' first captures
   no better than "nearest groups" (validate_ladder.py: 0.53 vs 0.54); use `first_scores()` (0.65 held out) for the opening.
+- **Plan 4 thresholds** (`experiments/results/mapintel/plan4/weights.json`, LEARNED from 599 current-patch replays): learned constants
+  (k_abandon 0, p 1000%, d_regroup 6, bank margin 7) replaced the formulas, which they beat on held-out maps; no map feature moved them
+  (the ridge chose the strongest regularization), so they are one value for every map. w_max stays the formula (30), r_enemies 8 is
+  not fitted. The event definitions (30-round abandon window, 12-tile threat radius, 8-tile power radius, the bank-trip and wait rules)
+  are choices of `plan4_learn.py`.
 - **Economy model defaults** (`economy.py`, the catalog): retreat at 30% health, heal under 50% between jobs, bank at a 40-gem bag, shop
   trip at 300 unspent gold, the model build (Monster in the damage stat, Jungle health, Power). Unfitted.
 - **Engine facts typed in after a probe** (re-probe after a patch): crystal hop range 3 (`CRYSTAL_RANGE`), the dash legality rules, the

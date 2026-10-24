@@ -195,6 +195,19 @@ inline std::pair<double, double> body_model(const Kit& k, bool varg, const Group
 inline constexpr int FI_SPAWN_DIST = feature_index("spawn_dist"), FI_BANK_MODE = feature_index("bank_mode"),
 					 FI_BANK_MODE_ENEMY = feature_index("bank_mode_enemy");
 
+// plan 4's thresholds (k_abandon, p percent, d_regroup, r_enemies, bank margin, w_max, 0, 0): the formulas of compact.formula_thresholds()
+inline void p4_formula(const Features& F, const MapView& m, int t[8])
+{
+	const double sd = F.v[FI_SPAWN_DIST];
+	const double d = sd > 0 ? sd : static_cast<double>(std::max(m.W, m.H));
+	const int f[8] = { std::max(3, static_cast<int>(std::floor(0.12 * d + 0.5))), 80, std::max(5, static_cast<int>(std::floor(0.2 * d + 0.5))), 8, 3, 30, 0, 0 };
+	for (int k = 0; k < 8; ++k)
+		t[k] = f[k];
+}
+// the thresholds a bot uses: model_weights.h defines it (the formulas with the LEARNED thresholds of plan4_learn.py written over them,
+// MAPINTEL_P4_FITTED); without a fitted model the end of this file defines it as the formulas
+inline void p4_thresholds(const Features& F, const MapView& m, int t[8]);
+
 class Compact
 {
 public:
@@ -474,12 +487,11 @@ public:
 		}
 	}
 
-	// plan 4: the threshold formulas (compact.thresholds)
+	// plan 4: the formulas, with the learned thresholds over them when model_weights.h has them (compact.thresholds)
 	void thresholds(Plans& P) const
 	{
-		const double sd = F_.v[FI_SPAWN_DIST];
-		const double d = sd > 0 ? sd : static_cast<double>(std::max(m_.W, m_.H));
-		const int t[8] = { std::max(3, static_cast<int>(std::floor(0.12 * d + 0.5))), 80, std::max(5, static_cast<int>(std::floor(0.2 * d + 0.5))), 8, 3, 30, 0, 0 };
+		int t[8];
+		p4_thresholds(F_, m_, t);
 		for (int k = 0; k < 8; ++k)
 			P.thr[k] = t[k];
 	}
@@ -568,3 +580,17 @@ inline std::string describe(const Plans& P)
 	return s;
 }
 } // namespace mapintel
+
+// the learned plan-4 thresholds (model_weights.h defines MAPINTEL_P4_FITTED before it includes this file, so either include order works)
+#if __has_include("model_weights.h")
+#include "model_weights.h"
+#endif
+#ifndef MAPINTEL_P4_FITTED
+namespace mapintel
+{
+inline void p4_thresholds(const Features& F, const MapView& m, int t[8])
+{
+	p4_formula(F, m, t);
+}
+} // namespace mapintel
+#endif

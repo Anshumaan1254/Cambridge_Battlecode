@@ -595,14 +595,18 @@ def main():
 		a.seeds = 1
 	dev = torch.device("cuda" if a.device == "auto" and torch.cuda.is_available() else ("cpu" if a.device == "auto" else a.device))
 	if dev.type == "cuda":
+		if not torch.cuda.is_available():
+			sys.exit(f"ERROR: --device cuda, but this torch ({torch.__version__}, CUDA {torch.version.cuda}) sees no CUDA GPU: run it through run_dl.sh")
 		torch.backends.cudnn.benchmark = True
+		torch.set_float32_matmul_precision("high")
 	torch.set_num_threads(max(1, os.cpu_count() or 1))
 	os.makedirs(a.out, exist_ok=True)
 	t0 = time.time()
 	D = dict(np.load(os.path.join(a.data, "dataset.npz")))
 	meta = json.load(open(os.path.join(a.data, "meta.json")))
 	base = meta["baselines"]
-	log(f"device {dev} ({torch.cuda.get_device_name(0) if dev.type == 'cuda' else platform.processor() or 'cpu'}), torch {torch.__version__}, "
+	gpu = f"{torch.cuda.get_device_name(0)}, {torch.cuda.get_device_properties(0).total_memory / 2 ** 30:.1f} GB" if dev.type == "cuda" else ""
+	log(f"device {dev} ({gpu or platform.processor() or 'cpu'}), torch {torch.__version__}, "
 		f"python {platform.python_version()}, {platform.system()}; sizes {meta['sizes']}")
 	tasks = [t.strip() for t in a.tasks.split(",") if t.strip()]
 	res, weights = {}, {"origin": "LEARNED / SIMULATED, tools/mapintel/dl/dl_train.py", "quick": a.quick, "models": {}}

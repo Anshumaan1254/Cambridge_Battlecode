@@ -52,8 +52,10 @@ git pull --no-rebase origin main
 bash tools/mapintel/dl/run_dl.sh --quick    # ~5 minutes: installs numpy + torch (CUDA 12.8) into mapintel_work/dlvenv, a few epochs
 bash tools/mapintel/dl/run_dl.sh            # the run: 4 tasks x 3 seeds, leave-maps-out (20-60 minutes on an RTX-class GPU)
 ```
-- Needs only Python 3.9+ and pip access (no cambc, no compiler). `--cpu` installs the CPU torch instead (no NVIDIA GPU: hours).
-  NVIDIA driver 570+ for CUDA 12.8 (RTX 50-series need it); the script warns when torch sees no GPU.
+- Needs a 64-bit Python 3.10-3.13 and pip access (no cambc, no compiler), an NVIDIA driver 570 or newer (RTX 50-series need it) and
+  about 6 GB of disk for torch. The script installs a CUDA build of torch (12.8, else 12.9, else 13.0), runs a test computation on the
+  GPU and **stops with an error if the GPU does not work** (it never falls back to the CPU silently). `--cpu` = no GPU (hours).
+  `PYTHON="py -3.12" bash ...` picks the interpreter.
 - Input: `experiments/results/mapintel/dl_data/dataset.npz` (committed; rebuilt by `dl/make_dataset.py` from the ladder summaries,
   the battery's `games.csv` and the map dumps). Output: `mapintel_dl_<UTC stamp>.tar.gz` (report, metrics, weights, out-of-fold heat
   maps; ~2-5 MB). Upload it.
@@ -61,7 +63,7 @@ bash tools/mapintel/dl/run_dl.sh            # the run: 4 tasks x 3 seeds, leave-
   cloning of the top teams), T2 champion values per map (on the roster battery), T3 heat maps (where the top teams farm, fight, capture,
   die: a U-Net, research only). Small MLPs are exported to `cpp/mapintel/dl_weights.h` only when they beat the step-6 bar
   (`dl/dl_export.py`; `test_library.py --dl-weights` checks them in the engine: rankings equal Python exactly, fuel measured).
-- Options: `--tasks t1a,t1b,t2,t3`, `--seeds N`, `--hidden H` (exported MLP width: fuel grows with it), `--device cuda|cpu|mps`.
+- Options: `--tasks t1a,t1b,t2,t3`, `--seeds N`, `--hidden H` (exported MLP width: fuel grows with it), `--cpu`.
 
 ## The C++ library (`cpp/mapintel/`): how a bot uses it
 

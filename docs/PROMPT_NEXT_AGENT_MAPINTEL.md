@@ -59,11 +59,14 @@ Everything else in `AGENTS.md` and the older docs predates the Oct 20-22 patches
      --dl-weights` checks the header in the engine: tested with forced weights on 78 map-teams, rankings and values equal Python exactly;
      fuel: inputs 62k, opening 92k (draft turn), next target 40k a call on 16 candidates (all 64 groups 107k: too much for a game turn),
      values 4k. The forced test header was deleted (no `dl_weights.h` is committed until a real run beats step 6).
-   - A CPU check here (1 seed) is in `MAPAnalysis.md` 7.2 (10:xx checkpoint). The real run is the user's.
+   - Not trained here: a CPU check was stopped at the user's request (only the opening MLP finished: 0.670 held-out share, below the
+     forest's 0.723; one seed, so not a result). The run is the user's, on their RTX 5070 laptop GPU (`run_dl.sh` requires a working
+     CUDA GPU unless `--cpu` is given).
 
 ## What is left (in order)
-1. **The step-7 GPU run** (the user: `bash tools/mapintel/dl/run_dl.sh --quick`, then `bash tools/mapintel/dl/run_dl.sh`; upload
-   `mapintel_dl_<stamp>.tar.gz`). When it arrives: unpack it into `experiments/results/mapintel/dl_model_<stamp>/` (its own directory),
+1. **The step-7 GPU run** (the user, on an RTX 5070 laptop GPU, Windows Git Bash: `bash tools/mapintel/dl/run_dl.sh --quick`, then
+   `bash tools/mapintel/dl/run_dl.sh`; upload `mapintel_dl_<stamp>.tar.gz`). If it stops with the GPU error, the fix is on their side
+   (driver 570+, charger plugged in, high-performance GPU for python.exe, delete `mapintel_work/dlvenv`). When it arrives: unpack it into `experiments/results/mapintel/dl_model_<stamp>/` (its own directory),
    read `report.md`. For each model marked "export": `python3 -I tools/mapintel/dl/dl_export.py --weights <dir>/dl_weights.json`, then
    `python3 -I tools/mapintel/test_library.py --dl-weights <dir>/dl_weights.json` (all checks must pass), commit the header and the
    results, add the README / ISSUES lines. If nothing beats step 6, record that (with the numbers) and leave the step-6 models in use.

@@ -122,7 +122,9 @@ Unused entries are zero.
   - the library call: up to 56.1k with the next owners (51 groups, 5 bodies; 54k without them);
   - in the GOD v10 test, where the adapter also builds its own group list, the whole write cost 138k on draft turn 1 and 48-65k on
     turns 2-5. It left at least 24.2k of 100k after v10's pick (TEAMPLAN.md 10, 16:35).
-- **In the game**: a score bonus for the owner (x 1.25 in the v10 test), never a hard rule.
+- **In the game**: a score bonus for the owner (x 1.25 in the v10 test), never a hard rule. Measured on v10: level over 8 rosters
+  (TEAMPLAN.md 11). The new bot should start with a small bonus and test it, maps with more than 30 groups separately (it lost
+  there on v10).
 - **Prototype**: version 1 of this block, at offset 8 in the v10 test copy. Batteries: TEAMPLAN.md section 11.
 
 ### 5.3 BODY (6 x 16 bytes): what each body cannot cheaply derive

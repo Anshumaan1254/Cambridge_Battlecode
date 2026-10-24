@@ -140,7 +140,7 @@ def threat_at(M, tile, alive):
 	return t
 
 
-def best_tile(M, team, ch, camps, alive, dead, prefer=None, spell_only=False):
+def best_tile(M, team, ch, camps, alive, dead, prefer=None, spell_only=False, taken=()):
 	"""Standing tile for body ch against the group's camps: a tile from which it hits (basic attack range, or range 4 for spell-only
 	casters) the most living camps it can see, with the least camp threat, nearest to `prefer` (a distance field) on ties."""
 	rng = 4 if spell_only else ch.attack_range()
@@ -149,7 +149,7 @@ def best_tile(M, team, ch, camps, alive, dead, prefer=None, spell_only=False):
 		for dy in range(-rng, rng + 1):
 			for dx in range(-rng, rng + 1):
 				t = (cx + dx, cy + dy)
-				if t in cand or not standable(M, team, t[0], t[1], dead):
+				if t in cand or t in taken or not standable(M, team, t[0], t[1], dead):
 					continue
 				hits = sum(1 for c in alive if cheb(t, c) <= rng and sees(M, t, c))
 				if hits == 0:
@@ -173,15 +173,19 @@ class FightResult:
 	cleared: bool
 	tiles: list  # standing tile per body (first)
 	tank: int  # body index that took the most damage
+	hp_end: list = None  # each body's health at the end
+	camp_hp: dict = None  # camps' health at the end (all 0 when cleared)
 
 
-def fight(M, team, champs, group, home_dist, retreat=0.3, max_rounds=1500, tiles=None):
+def fight(M, team, champs, group, home_dist, retreat=0.3, max_rounds=1500, tiles=None, delays=None, hp_left=None, shop_fn=None):
 	"""Simulate champs (list of Champ, full health unless ch.hp >= 0) clearing group (a dict of mapdata). home_dist: walking distance
-	field to our spawn (for heal trips). Bodies start in place at their standing tiles (travel is counted by the caller)."""
+	field to our spawn (for heal trips). Bodies start at their standing tiles; delays[i] = rounds before body i arrives (its travel
+	beyond the first body's); hp_left = {camp tile: health} for a group damaged earlier (camps do not regenerate); shop_fn(i) is called
+	when body i is home on a heal trip (it may buy shards: the body comes back with them)."""
 	camps = [(c[1], c[2]) for c in group["camps"]]
 	hp = {}
 	for c in group["camps"]:
-		hp[(c[1], c[2])] = camp_stats(c[0])[0]
+		hp[(c[1], c[2])] = camp_stats(c[0])[0] if not hp_left or (c[1], c[2]) not in hp_left else hp_left[(c[1], c[2])]
 	str_ = {(c[1], c[2]): camp_stats(c[0])[1] for c in group["camps"]}
 	rng_ = {(c[1], c[2]): camp_stats(c[0])[2] for c in group["camps"]}
 	order = sorted(camps, key=lambda c: (-(str_[c] / hp[c]), c))  # Smith's rule
@@ -190,22 +194,25 @@ def fight(M, team, champs, group, home_dist, retreat=0.3, max_rounds=1500, tiles
 	shield = [0.0] * n
 	shield_t = [0] * n
 	cd = [[0, 0] for _ in champs]  # per ability slot: rounds until ready
-	away = [0] * n  # rounds until back from a heal trip (0 = present)
+	away = list(delays) if delays else [0] * n  # rounds until present (arrival delay, then heal trips)
 	trips = [0] * n
 	taken = [0.0] * n
 	stunned = {}
 	dead = set()
 	pos = [None] * n
 	spell_only = [False] * n
+	occupied = set()
 	for i, ch in enumerate(champs):
-		# a ranged caster whose single-target spells reach 4 stands at 4 only if no basic-attack tile exists; else basic range
-		pos[i] = tiles[i] if tiles and tiles[i] else best_tile(M, team, ch, camps, camps, dead, prefer=home_dist)
+		# distinct tiles (two bodies never share one); a ranged caster stands at spell range 4 only if no basic-attack tile is free
+		pos[i] = tiles[i] if tiles and tiles[i] else best_tile(M, team, ch, camps, camps, dead, prefer=home_dist, taken=occupied)
 		if pos[i] is None:
-			pos[i] = best_tile(M, team, ch, camps, camps, dead, prefer=home_dist, spell_only=True)
+			pos[i] = best_tile(M, team, ch, camps, camps, dead, prefer=home_dist, spell_only=True, taken=occupied)
 			spell_only[i] = True
+		if pos[i] is not None:
+			occupied.add(pos[i])
 	first_tiles = list(pos)
 	if all(p is None for p in pos):
-		return FightResult(0, taken, trips, False, first_tiles, -1)
+		return FightResult(0, taken, trips, False, first_tiles, -1, list(cur), dict(hp))
 	awake_quiet = 99
 	awake = False
 	t = 0
@@ -358,6 +365,8 @@ def fight(M, team, champs, group, home_dist, retreat=0.3, max_rounds=1500, tiles
 				recall = int(settings()["recall_time"]) + 3  # step out of range (~2), recall 5, heal turn
 				away[i] = min(dist, recall) + 1 + dist  # home, heal on spawn, walk back
 				trips[i] += 1
+				if shop_fn is not None:
+					shop_fn(i)
 				cur[i] = champs[i].max_hp()
 				shield[i] = 0
 			elif away[i] > 0:
@@ -370,7 +379,7 @@ def fight(M, team, champs, group, home_dist, retreat=0.3, max_rounds=1500, tiles
 					shield[i] = 0
 	cleared = all(hp[c] <= 0 for c in camps)
 	tank = int(np.argmax(taken)) if any(taken) else -1
-	return FightResult(t, taken, trips, cleared, first_tiles, tank)
+	return FightResult(t, taken, trips, cleared, first_tiles, tank, [cur[i] for i in range(n)], {c: max(0.0, v) for c, v in hp.items()})
 
 
 def tribute_turns(bag):

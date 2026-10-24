@@ -79,6 +79,7 @@ def main():
 	ap.add_argument("--quick", action="store_true", help="function test: 3 maps, 2 roster slots, opponents idle only")
 	ap.add_argument("--work", default=os.path.join(ROOT, "mapintel_work", "battery"))
 	ap.add_argument("--out-dir", default=ROOT)
+	ap.add_argument("--split-mb", type=float, default=20.0, help="also cut the archive into parts of this size for uploading (0 = no parts)")
 	a = ap.parse_args()
 	t0 = time.time()
 	if a.from_bot:
@@ -245,7 +246,14 @@ def main():
 	if games == 0:
 		die("no games were played")
 	print(f"4. ARCHIVE {arc}  {os.path.getsize(arc) / 1e6:.1f} MB  ({games} games, {nrep} replays, {meta['seconds']} s)")
-	print("Upload this one file in the chat.")
+	if a.split_mb and os.path.getsize(arc) / 1e6 > a.split_mb:
+		from ladder_fetch import split_file
+		parts = split_file(arc, a.split_mb)
+		print(f"   too big for one upload: cut into {len(parts)} parts (upload all of them):")
+		for p in parts:
+			print(f"   {p}  {os.path.getsize(p) / 1e6:.1f} MB")
+	else:
+		print("Upload this one file in the chat.")
 
 
 if __name__ == "__main__":

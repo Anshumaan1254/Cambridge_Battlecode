@@ -140,6 +140,21 @@ def fetch_list(team_id, kind, maxn, out):
 	return len(rows), len(allm)
 
 
+def split_file(path, mb):
+	"""Cut path into path.part00, .part01, ... of at most mb megabytes (joined back with `cat path.part* > path`)."""
+	parts, i = [], 0
+	with open(path, "rb") as f:
+		while True:
+			b = f.read(int(mb * 1024 * 1024))
+			if not b:
+				break
+			p = "%s.part%02d" % (path, i)
+			open(p, "wb").write(b)
+			parts.append(p)
+			i += 1
+	return parts
+
+
 def main():
 	ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 	ap.add_argument("lists", nargs="*", help="--dry-run: match-list JSONL files to use instead of fetching")
@@ -156,6 +171,7 @@ def main():
 	ap.add_argument("--ladder", default="", help="use this ladder JSON (a `cambc ladder --json` dump or a list of teams)")
 	ap.add_argument("--dry-run", action="store_true", help="no platform calls: filter and select from the given lists, print the plan")
 	ap.add_argument("--no-fetch", action="store_true", help="reuse WORK/lists from an earlier run")
+	ap.add_argument("--split-mb", type=float, default=20.0, help="also cut the archive into parts of this size for uploading (0 = no parts)")
 	a = ap.parse_args()
 	kinds = set(k.strip() for k in a.kinds.split(",") if k.strip())
 	minv = vtuple(a.min_engine)
@@ -353,7 +369,13 @@ def main():
 			tf.add(p, arcname="ladder/replays/" + os.path.basename(p))
 	mb = os.path.getsize(arc) / 1e6
 	print("7. ARCHIVE %s  %.1f MB  (%d replays, %d current-patch match rows)" % (arc, mb, len(done), len(cur)))
-	print("Upload this one file in the chat.")
+	if a.split_mb and mb > a.split_mb:
+		parts = split_file(arc, a.split_mb)
+		print("   too big for one upload: cut into %d parts (upload all of them; they are joined with `cat`):" % len(parts))
+		for p in parts:
+			print("   %s  %.1f MB" % (p, os.path.getsize(p) / 1e6))
+	else:
+		print("Upload this one file in the chat.")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,108 @@
+{
+ "plan3": {
+  "catalog priority": {
+   "spearman_per_map": 0.42613411283800334,
+   "auc": 0.7719571982406427
+  },
+  "catalog contested flag": {
+   "spearman_per_map": 0.324468800616277,
+   "auc": 0.6799864397350533
+  },
+  "runtime closeness": {
+   "spearman_per_map": 0.3860093317044315,
+   "auc": 0.7188678917264999
+  },
+  "heat: fight": {
+   "spearman_per_map": 0.3318469768804611,
+   "auc": 0.7331757097407903
+  },
+  "heat: death": {
+   "spearman_per_map": 0.3228797136241412,
+   "auc": 0.7284252707706751
+  },
+  "logistic: closeness + value": {
+   "spearman_per_map": 0.4226896509445126,
+   "auc": 0.7436371064480799
+  },
+  "logistic: closeness + value + heat": {
+   "spearman_per_map": 0.4539012967911219,
+   "auc": 0.7691060656108203
+  },
+  "logistic: heat + value": {
+   "spearman_per_map": 0.45246624641551436,
+   "auc": 0.7436805688357295
+  },
+  "logistic: catalog priority": {
+   "spearman_per_map": 0.42613411283800334,
+   "auc": 0.7473574868308964
+  },
+  "logistic: catalog priority + heat": {
+   "spearman_per_map": 0.4523144046079467,
+   "auc": 0.7744258618591471
+  }
+ },
+ "plan3_paired": {
+  "logistic: closeness + value + heat": {
+   "vs": "logistic: closeness + value",
+   "maps": 40,
+   "mean_diff": 0.031211645846609303,
+   "ci95": [
+    -0.05152486627333764,
+    0.10513355578391716
+   ],
+   "maps_better": 24,
+   "maps_worse": 16
+  },
+  "logistic: catalog priority + heat": {
+   "vs": "logistic: catalog priority",
+   "maps": 40,
+   "mean_diff": 0.026180291769943388,
+   "ci95": [
+    -0.05700203349548606,
+    0.11303431420810389
+   ],
+   "maps_better": 20,
+   "maps_worse": 20
+  }
+ },
+ "plan4": {
+  "k": {
+   "constant": 0.6672866315971542,
+   "heat-shifted": 0.6672866315971542,
+   "fit_all": [
+    0,
+    0.0,
+    1000
+   ]
+  },
+  "d": {
+   "constant": 0.5431434915553977,
+   "heat-shifted": 0.5390455004636014,
+   "fit_all": [
+    7,
+    -0.5,
+    null
+   ]
+  },
+  "m": {
+   "constant": 0.6093795196988636,
+   "heat-shifted": 0.6074989526590734,
+   "fit_all": [
+    6,
+    1.0,
+    null
+   ]
+  },
+  "w": {
+   "constant": 0.8780837288774677,
+   "heat-shifted": 0.8830143101544823,
+   "fit_all": [
+    26,
+    4.0,
+    null
+   ]
+  }
+ },
+ "groups_rows": 787,
+ "label_share": 0.24650571791613723
+}

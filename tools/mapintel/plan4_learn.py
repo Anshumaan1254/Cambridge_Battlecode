@@ -85,7 +85,8 @@ def cheb(a, b):
 
 
 def extract(T, X):
-	"""The four sample sets of one game: lists of (team, features..., label)."""
+	"""The four sample sets of one game: rows (team, features..., context..., label): A (team, gap, power, group, y), R (team, distance,
+	x, y, label), K (team, margin feature, x, y, altar, label), W (team, rounds to respawn, group, label)."""
 	M = X.M
 	pos, alive, hp, bag, chp = T["pos"], T["alive"], T["hp"], T["bag"], T["chp"]
 	bteam, btype, cgroup = T["bteam"], T["btype"], T["cgroup"]
@@ -169,7 +170,7 @@ def extract(T, X):
 				et = [max(0.0, at(ef, pos[r, e]) - rng[e]) for e in enemies(t, r) if at(ef, pos[r, e]) >= 0]
 				eta_them = min(et) if et else 300.0
 				y = 1 if kind == "abandon" and r >= r1 - 2 else 0
-				out["A"].append((t, eta_us - eta_them, power(b, r), y))
+				out["A"].append((t, eta_us - eta_them, power(b, r), g, y))
 	# regroup
 	band = X.band
 	for r in range(10, R - 5, 5):
@@ -191,9 +192,9 @@ def extract(T, X):
 				continue
 			after = cheb(pos[r + 5, b], pos[r, a])
 			if after <= D - 3:
-				out["R"].append((t, D, 1))
+				out["R"].append((t, D, int(p[0]), int(p[1]), 1))
 			elif after >= D:
-				out["R"].append((t, D, 0))
+				out["R"].append((t, D, int(p[0]), int(p[1]), 0))
 	# bank
 	banks = defaultdict(list)
 	for r, b, gems, alt in T["ev_bank"]:
@@ -240,7 +241,7 @@ def extract(T, X):
 				ie = [at(X.af[1 - t][k], pos[x, e]) for e in enemies(t, x)]
 				ie = [v for v in ie if v >= 0]
 				inter = min(ie) if ie else 300
-				out["K"].append((t, float(A[x] - inter), 1 if kind == 1 and x >= re - 2 else 0))
+				out["K"].append((t, float(A[x] - inter), int(pos[x, b, 0]), int(pos[x, b, 1]), int(k), 1 if kind == 1 and x >= re - 2 else 0))
 	# wait
 	caps = defaultdict(list)
 	for r, b, g, gems in T["ev_capture"]:
@@ -278,9 +279,9 @@ def extract(T, X):
 					continue
 				ds = fv[start:rsp]
 				if max(ds) <= 4:
-					out["W"].append((t, float(rsp - start), 1))
+					out["W"].append((t, float(rsp - start), g, 1))
 				elif any(d >= 7 for d in ds):
-					out["W"].append((t, float(rsp - start), 0))
+					out["W"].append((t, float(rsp - start), g, 0))
 	return out
 
 
@@ -346,7 +347,7 @@ def main():
 		if (i + 1) % 100 == 0:
 			print(f"{i + 1} / {len(files)} games", flush=True)
 	maps = sorted(S)
-	arr = {mp: {k: np.array(S[mp][k], float).reshape(-1, {"A": 4, "R": 3, "K": 3, "W": 3}[k]) for k in "ARKW"} for mp in maps}
+	arr = {mp: {k: np.array(S[mp][k], float).reshape(-1, {"A": 5, "R": 5, "K": 6, "W": 4}[k]) for k in "ARKW"} for mp in maps}
 	np.savez_compressed(os.path.join(a.out, "samples.npz"), **{f"{mp}__{k}": v for mp, d in arr.items() for k, v in d.items()})
 	src = {"k": "A", "d": "R", "m": "K", "w": "W"}
 	keys_of = {"k": ["k", "p"], "d": ["d"], "m": ["m"], "w": ["w"]}

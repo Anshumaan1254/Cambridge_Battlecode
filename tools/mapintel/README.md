@@ -4,6 +4,22 @@ The plan and the progress log are in `MAPAnalysis.md` (repository root). This fi
 Every output is marked by origin: **COMPUTED** (engine and map alone), **LEARNED** (current-patch real games), **SIMULATED** (games of
 your new bot, from the batteries below).
 
+## Before you start: three limits
+
+- **The repository path must not contain spaces.** `cambc run-batch` (used by `run_battery.sh`) splits its manifest lines on spaces, so
+  a path like `C:\Users\Your Name\Cambridge_Battlecode` breaks it; `battery.py` stops with an error before playing. On Windows, any of:
+  - clone into a path without spaces (Git Bash): `mkdir -p /c/cambc && cd /c/cambc && git clone https://github.com/Akshayg005/Cambridge_Battlecode.git`;
+  - keep your folder and give it a drive letter (Command Prompt, until the next reboot): `subst X: "C:\Users\Your Name\Cambridge_Battlecode"`,
+    then in Git Bash `cd /x/` and run the scripts there (`subst X: /D` removes it);
+  - or a junction (Command Prompt): `mklink /J C:\cb "C:\Users\Your Name\Cambridge_Battlecode"`, then run from `/c/cb` in Git Bash.
+- **Fuel of the first draft turn (1,000,000):** the library takes at most **735,414** on the worst official map (big-world:
+  `load_view`, `fingerprint`, `compute_features`, plans 2-4 and the first pick's rows), plus at most **85,540** if `first_scores()`
+  (the opening ranking) runs on the same turn: **777,699** in all on the worst map (`test_library.py` measures it); leave room for
+  your bot's own first-turn work. Later draft turns (100,000): `row()` <= 13.5k per pick; the plan-1 turn (the remaining picks' rows,
+  `plan1(picks, P, rank)` <= 43k, the block's pack and write) leaves at least 28k.
+- **Your bot's own draft memory must stay below offset 512.** The mapintel block lives at 512-863 (352 bytes, checksummed); a shorter
+  write of your bytes from offset 0 keeps it (tested). Bytes 864-1023 are not used by the library.
+
 ## Laptop scripts (run on your machine; upload the archive they print)
 
 ### 1. Ladder data now: `fetch_ladder.sh`
@@ -44,7 +60,7 @@ bash tools/mapintel/run_battery.sh --bot NAME           # the batteries
 - Runtime on 18 cores: about 10-15 minutes for 2,480 games (depends on your bot's speed). Output:
   `mapintel_battery_<NAME>_<UTC stamp>.tar.gz` (ledger rows, compact statistics, replays; ~25 KB a game, `--no-replays` to drop them).
 - Options: `--opps`, `--maps`, `--jobs` (default: CPUs - 1), `--per-map C`, `--skip-outcome`, `--skip-roster`, `--no-replays`.
-- The repository path must not contain spaces (`cambc run-batch` manifests are split on spaces).
+- The repository path must not contain spaces (`cambc run-batch` manifests are split on spaces): see "Before you start" for the Windows workaround.
 
 ### 3. Deep learning (step 7) on your GPU: `dl/run_dl.sh`
 ```bash

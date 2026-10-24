@@ -77,7 +77,7 @@ tools/mapintel/export_headers.py`; after a battery of your bot (its archive has 
 |---|---|---|
 | `features.h` | `load_view(team_size)` (the map, groups and BFS fields), `compute_features(view)` (47 runtime features), `fingerprint(view)` | COMPUTED |
 | `fingerprint.h` | `fingerprint()`: the exact-match key (FNV-1a 64); prefer `fingerprint(view)` (same value, no second `camp_groups()`) | COMPUTED |
-| `plans.h` | `Compact` (per-group tables), `base_plans()` (plans 2-4), `Compact::row(type)` and `plan1(picks, P)` (plan 1) for unknown maps | COMPUTED |
+| `plans.h` | `Compact` (per-group tables), `base_plans()` (plans 2-4), `Compact::row(type)` and `plan1(picks, P, rank)` (plan 1: the first_scores() ranking's top groups assigned to the bodies by walk + work; held out it matches the top teams' first groups 0.717 vs 0.632 for the old greedy) for unknown maps | COMPUTED + LEARNED |
 | `dmem.h` | `dmem_pack()` / `dmem_put()` (the draft-memory block at offset 512) and `dmem_get()` / `Block` (read it in the game) | - |
 | `known_maps.h` | generated: the table of the 40 official maps, `find_known(fp)`, `known_team(view, entry)` | COMPUTED + LEARNED |
 | `model_weights.h` | generated: `zfeat()`, `archetype_of()`, `champion_values()`, `first_scores()` (opening score: a 20-tree forest, 61k fuel) | COMPUTED + LEARNED + SIMULATED |
@@ -102,8 +102,11 @@ double z[mapintel::MW_NF], value[12];
 mapintel::zfeat(*F, z);
 const int arch = mapintel::archetype_of(z);              // unknown maps: archetype and LEARNED champion values from the features
 mapintel::champion_values(z, value);
+const auto sc = mapintel::first_scores(*C, *view, *F);  // ~61k: the LEARNED opening ranking; keep the 6-16 best groups:
+std::vector<int> rank;                                    // reached groups by score, best first (ties to the lower index)
 // each later draft turn: C->row(type) for the bodies of the champion you just picked (<= 13k each)
-// the turn the roster is complete: C->plan1(our_picks, P) (<= 25k), then write your own bytes and the block together:
+// the turn the roster is complete: C->plan1(our_picks, P, rank) (<= 40k; without rank the older greedy plan 1, <= 25k), then write
+// your own bytes and the block together:
 std::vector<std::uint8_t> mem(1024, 0);                   // your data at 0..511
 mapintel::dmem_put(mem, mapintel::dmem_pack(P, fp, view->team, e >= 0, arch));
 cambc::draft_memory = mem;                                // a later shorter write of your prefix keeps the block (tested)
@@ -138,6 +141,7 @@ is a host call; stdout costs ~90 fuel per byte.
 | `replays.py` | ladder replays -> per-game summaries (captures, banks, deaths, standing tiles) | LEARNED |
 | `replay_tracks.py` | ladder replays -> per-game tracks (positions, health, bags, gold, camp health per round, events; `mapintel_work/tracks/`) | LEARNED |
 | `econ_learn.py` | the economy model's constants (retreat, heal, bank bag, shop gold, gold weight, damage scale, opposition share) measured / fitted on the replays; `economy.econ()` reads `experiments/results/mapintel/economy/constants.json` | LEARNED |
+| `plan1_learn.py` | plan 1 against the top teams' openings per kit class (held out); writes the table's first targets (`experiments/results/mapintel/plan1/table_first.json`) | LEARNED |
 | `heat_features.py` | the U-Net's out-of-fold heat maps -> per-group / per-bank-route fight and death densities; tested on plans 3 and 4 (no gain: not in the table) | LEARNED |
 | `plan4_learn.py`, `p4model.py` | plan 4's thresholds from the top teams' decisions (abandon, regroup, bank abort, respawn wait); `p4model.py` = `model_weights.h` `p4_thresholds()` | LEARNED |
 | `cpp/probe/`, `cpp/idle/` | probe bot and idle opponent sources (fresh, from the 3.0.5 starter) | - |

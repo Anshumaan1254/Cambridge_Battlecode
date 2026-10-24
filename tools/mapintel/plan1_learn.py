@@ -6,12 +6,16 @@
 For every decoded ladder team-game: the team's real roster (its draft), its first-n captured groups (n = bodies) and each body's first
 captured group. Variants of plan 1 (team-relative; the first_scores() forest is refitted per archetype fold, so a map is scored by a
 forest that never saw it: held out):
+  catalog          the catalog's offline plan 1 (plans.plan1: the planner plays the best first-target combinations to round 150),
+                   the source of the table's first targets until now
   compact          the current runtime plan 1 (plans.h = compact.plan1: greedy (body, group) pairs by first-target rate)
   nearest          each body in slot order takes the free group with the shortest walk to attack range
-  fs_compact       the n groups first_scores() ranks highest, assigned to the bodies by the compact economy (Hungarian on eta + work:
+  fs_compact       the n groups first_scores() ranks highest, assigned to the bodies by the compact economy (cheapest assignment on eta + work:
                    walk to attack range + kill + heal trips + capture), the runtime-feasible version
   fs_catalog       the same n groups, assigned by the catalog's economy (economy.fight: solo kill rounds with the fitted constants +
                    the walk; a group a body cannot clear alone costs 10,000)
+  fs_compact_greedy the same as fs_compact with the greedy assignment (repeatedly the cheapest body-group pair): what plans.h runs
+                   (the dynamic program's fuel did not fit draft turn 3 on the largest maps)
   fs_walk          the same n groups, assigned by the walk only
 Scores: set share = |planned first targets & real first-n| / n; body accuracy = the share of bodies whose planned first target is the
 group that body captured first (bodies that captured nothing are left out), overall and per kit class (engine.kit_class).
@@ -20,7 +24,6 @@ import argparse, concurrent.futures as cf, glob, json, math, os, sys
 from collections import defaultdict
 
 import numpy as np
-from scipy.optimize import linear_sum_assignment
 from sklearn.ensemble import HistGradientBoostingClassifier
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -32,16 +35,12 @@ import replay_tracks as RT  # noqa: E402
 from engine import pick_bodies  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
-VARIANTS = ["compact", "nearest", "fs_compact", "fs_catalog", "fs_walk"]
+VARIANTS = ["catalog", "compact", "nearest", "fs_compact", "fs_compact_greedy", "fs_catalog", "fs_walk"]
 
 
 def assign(cost):
-	"""Hungarian on a bodies x groups cost matrix; returns the group column per body (ties: scipy's deterministic order)."""
-	r, c = linear_sum_assignment(np.array(cost, float))
-	out = [None] * len(cost)
-	for i, j in zip(r, c):
-		out[i] = j
-	return out
+	"""The cheapest assignment of the bodies (rows) to distinct groups (columns): compact.assign_dp, the same as plans.h."""
+	return CP.assign_dp(cost)
 
 
 def plans_for(job):
@@ -53,6 +52,7 @@ def plans_for(job):
 	C = [CP.Compact(M, t) for t in (0, 1)]
 	E = EC.engine()
 	solo = {}
+	cat = {}
 	out = {}
 	for key, t, picks in items:
 		bodies = [b for p in picks for b in pick_bodies(p)][:CP.NSLOT]
@@ -61,6 +61,12 @@ def plans_for(job):
 		reach = [g for g in range(len(M.groups)) if c.dU[g] >= 0]
 		eta = lambda b, g: max(0, c.dU[g] - E.attack_range(b))  # noqa: E731
 		res = {}
+		ck = (t, tuple(picks))
+		if ck not in cat:  # the catalog's offline plan 1 (plans.plan1: planner played to R0 = 150; what the table held)
+			gi = {grp["id"]: i for i, grp in enumerate(M.groups)}
+			pl1 = P.plan1(ctx, t, picks)
+			cat[ck] = [gi.get(g) if g is not None else None for g in pl1["first_targets"]]
+		res["catalog"] = cat[ck]
 		_, pl = c.plan1(picks)
 		res["compact"] = [p[0][0] if p else None for p in pl]
 		used, near = set(), []
@@ -73,8 +79,9 @@ def plans_for(job):
 		top = sorted(fs[t], key=lambda g: (-fs[t][g], g))[:n]
 		if len(top) < n:
 			top += [g for g in sorted(reach, key=lambda g: (c.dU[g], g)) if g not in top][:n - len(top)]
-		res["fs_compact"] = [top[j] for j in assign([[eta(b, g) + c.work(b, g) for g in top] for b in bodies])]
-		res["fs_walk"] = [top[j] for j in assign([[eta(b, g) for g in top] for b in bodies])]
+		res["fs_compact"] = [top[j] if j is not None else None for j in assign([[eta(b, g) + c.work(b, g) for g in top] for b in bodies])]
+		res["fs_walk"] = [top[j] if j is not None else None for j in assign([[eta(b, g) for g in top] for b in bodies])]
+		res["fs_compact_greedy"] = [top[j] if j is not None else None for j in CP.assign_greedy([[eta(b, g) + c.work(b, g) for g in top] for b in bodies])]
 		cc = []
 		for b in bodies:
 			row = []
@@ -85,9 +92,36 @@ def plans_for(job):
 					solo[(t, b, g)] = (tr if tr >= 0 else 999) + (r.rounds if r.cleared else 10000)
 				row.append(solo[(t, b, g)])
 			cc.append(row)
-		res["fs_catalog"] = [top[j] for j in assign(cc)]
+		res["fs_catalog"] = [top[j] if j is not None else None for j in assign(cc)]
 		out[(key, t)] = (bodies, res)
 	return mp, out
+
+
+def table_first(variant, out_path):
+	"""The table's first targets (known_maps.h `first`): per official map and team, the catalog's first reference roster planned by
+	`variant` with the first_scores() forest of first_targets.py fitted on all maps (the bot's own ranking on a known map)."""
+	import catalog as CT
+	import export_headers as EH
+	import plans as P
+	ftw = json.load(open(os.path.join(ROOT, "experiments/results/mapintel/first_targets/weights.json")))
+	R = json.load(open(os.path.join(ROOT, "tools/mapintel/data/battery_rosters.json")))
+	E = EC.engine()
+	J = {"origin": f"LEARNED ranking (first_scores) + {variant} assignment (tools/mapintel/plan1_learn.py)", "maps": {}}
+	for mp in mapdata.official_names():
+		M = mapdata.load(mp)
+		refs = CT.reference_rosters(mp, M.team_size, R)
+		if not refs:
+			continue
+		picks = refs[0]["picks"]
+		ctx = P.Ctx(M)
+		teams = []
+		for t in (0, 1):
+			fs = {g: -k for k, g in enumerate(EH.first_rank_py(M, t, ftw, 64))}
+			bodies, rr = plans_for((mp, [("table", t, picks)], [fs, fs]))[1][("table", t)]
+			teams.append([None if g is None else M.groups[g]["id"] for g in rr[variant]])
+		J["maps"][mp] = {"roster": refs[0]["names"], "picks": picks, "first": teams}
+	json.dump(J, open(out_path, "w"), indent=1)
+	return J
 
 
 def main():

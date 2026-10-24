@@ -3,6 +3,11 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
+- **Session 18d (2026-10-24, 20:15 UTC): GOD v12 built at the user's request** ("push a new bot with everything we did today"; then "use all the
+  switches with every new feature on"): `bots/god12`, zip `submissions/god_v12.zip`, doc `docs/strategy_v2/19_GOD_V12.md`. It is GOD v10 + map
+  analysis + draft memory v2 + the DL tables + the live bytes + the teamplan rules, every new switch on. **Measured worse than v10** (h2h 29/80, -160 gems
+  a map vs 8 forced rosters), so `submissions/god.zip` stays GOD v10. The best subset (pick prior + ownership) is level: `submissions/candidates/god_v12_prior_own_20261024.zip`.
+  Screens: `python3 -I tools/god12/screen.py VARIANT --slots 0,...,7`; variants `SRC=bots/god12 tools/variant.sh NAME key=value`.
 - **Session 18 (2026-10-24): MAP ANALYSIS. Read `MAPAnalysis.md` first: it is the only record of the current work** (map analysis,
   map model and exact-match map table for the user's new bot; no bot is built or shipped in this work). **Everything else in this file,
   and the older docs it points to (`docs/strategy_v2/`, `docs/ENGINE_FACTS.md`, `SUGGESTIONS.md`, `ISSUES.md` before its map-analysis

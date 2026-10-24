@@ -60,7 +60,7 @@ struct State
 	mi::OwnResult own;
 	mi::NavWork navw;
 	mi::BankBox BB;
-	bool began = false, core = false, failed = false, kits = false, bank = false, map_put = false, have_own = false, nav_done = false,
+	bool began = false, core_a = false, core = false, failed = false, kits = false, bank = false, map_put = false, have_own = false, nav_done = false,
 		 plan1 = false, body = false, routes = false, have_dl_open = false, dl_tried = false, prior = false;
 	std::uint8_t dl_open[16]{};
 	int dl_source = 0;
@@ -87,71 +87,76 @@ void rows_of(State& s, int pick)
 
 int types_of(const State& s, int out[mi::NSLOT]) { return mi::roster_types(s.picks.data(), static_cast<int>(s.picks.size()), out); }
 
-// The map work of turn 1, stage by stage. Each stage runs only when the fuel left covers it and every later stage at the map's size
-// (costs per tile, the worst official map's: big-world): a map beyond that gets no image, never a lost pick.
-bool run_core(State& s)
-{
-	const long long area = static_cast<long long>(bc::map::width()) * bc::map::height();
-	// Worst costs per stage, measured on the 40 official maps (this bot's MI_TRACE build, after GOD's pick: view 295k (big-world),
-	// fingerprint 71k, features 239k (lanes), plans 256k (big-world), first_scores 96k (road-of-riches, 51 groups)), x 1.15; features
-	// and plans grow with the groups (lanes, 42 groups: 239k / 207k), first_scores ~2k a group. Each stage runs only when the fuel
-	// left covers it and the M block's write: a stage that does not fit ends the map work for this game (no lost pick, no image).
-	const long long c_view = 340000, c_fp = 82000;
-	const long long tail = EST_MAP + EST_WRITE + 5000;
-	auto need = [&](long long c) { return fuel() > c + tail + 15000; };
+// The map work of turn 1, stage by stage, in two phases: A (the view, fingerprint, features, the table lookup, the archetype and the pick
+// prior) and B (the Compact, plans 2-4, the opening ranking). Worst costs per stage, measured on the 40 official maps (this bot's MI_TRACE
+// build: view 295k (big-world), fingerprint 71k, features 239k (lanes), plans 256k (big-world), first_scores 96k (road-of-riches, 51
+// groups)), x 1.15; features and plans grow with the groups (lanes, 42 groups: 239k / 207k), first_scores ~2k a group. Each stage runs
+// only when the fuel left covers it, the M block's write and `reserve` (GOD's own pick when phase A runs before it): a stage that does
+// not fit ends the map work for this game (no lost pick, no image).
+constexpr long long PICK_RESERVE = 200000; // GOD v10's first draft turn: at most 151,785 (big-world), x 1.3
+long long g_ng = 0;
 #ifdef MI_TRACE
-	long long f0 = fuel(), f1 = 0, f2 = 0, f3 = 0, f4 = 0, f5 = 0;
-#define MI_T(v) v = fuel()
+long long g_tf[6]{};
+#define MI_T(k) g_tf[k] = fuel()
 #else
-#define MI_T(v)
+#define MI_T(k)
 #endif
-	if (!need(c_view))
+
+bool core_need(long long c, long long reserve) { return fuel() > c + EST_MAP + EST_WRITE + 5000 + 15000 + reserve; }
+
+bool run_core_a(State& s, long long reserve)
+{
+	MI_T(0);
+	if (!core_need(340000, reserve))
 		return false;
 	s.ts = mi::team_size_now();
 	s.V.emplace(mi::load_view(s.ts));
-	MI_T(f1);
-	const long long ng = static_cast<long long>(s.V->groups.size());
-	const long long c_feat = std::max<long long>(275000, 6000 * ng), c_plans = std::max<long long>(295000, 5000 * ng), c_rank = 15000 + 2400 * ng;
-	if (!need(c_fp))
+	MI_T(1);
+	g_ng = static_cast<long long>(s.V->groups.size());
+	if (!core_need(82000, reserve))
 		return false;
 	s.fp = mi::fingerprint(*s.V);
-	MI_T(f2);
-	if (!need(c_feat))
+	MI_T(2);
+	if (!core_need(std::max<long long>(275000, 6000 * g_ng), reserve))
 		return false;
 	s.F.emplace(mi::compute_features(*s.V));
-	MI_T(f3);
-	if (!need(c_plans))
-		return false;
-	s.C.emplace(*s.V, *s.F);
-	s.Pl = mi::base_plans(*s.C, *s.V, *s.F);
-	MI_T(f4);
+	MI_T(3);
 #ifdef MI_HAS_TABLE
 	s.known = mi::find_known(s.fp);
 	if (s.known >= 0)
 		s.kteam = mi::known_team(*s.V, mi::KNOWN[s.known]);
 #endif
 #ifdef MI_HAS_WEIGHTS
-	{
-		double z[mi::MW_NF];
-		mi::zfeat(*s.F, z);
-		s.arch = mi::archetype_of(z);
-		// the strong teams' pick prior (LEARNED): the map's own rate when known, else predicted from the features
-		double rate[12], first[12];
-		mi::pick_prior(z, rate, first);
+	double z[mi::MW_NF];
+	mi::zfeat(*s.F, z);
+	s.arch = mi::archetype_of(z);
+	// the strong teams' pick prior (LEARNED): the map's own rate when known, else predicted from the features
+	double rate[12], first[12];
+	mi::pick_prior(z, rate, first);
 #ifdef MI_HAS_TABLE
-		if (s.known >= 0)
-			for (int c = 0; c < 12; ++c)
-				rate[c] = mi::KNOWN[s.known].pick_strong[c] / 200.0;
+	if (s.known >= 0)
+		for (int c = 0; c < 12; ++c)
+			rate[c] = mi::KNOWN[s.known].pick_strong[c] / 200.0;
 #endif
-		double m = 0;
-		for (int c = 0; c < 12; ++c)
-			s.prior_v[c] = std::log(std::max(0.0, rate[c]) + 0.05), m += s.prior_v[c] / 12;
-		for (int c = 0; c < 12; ++c)
-			s.prior_v[c] -= m;
-		s.prior = true;
-	}
-#ifdef MAPINTEL_FIRST_SCORES
-	if (need(c_rank))
+	double m = 0;
+	for (int c = 0; c < 12; ++c)
+		s.prior_v[c] = std::log(std::max(0.0, rate[c]) + 0.05), m += s.prior_v[c] / 12;
+	for (int c = 0; c < 12; ++c)
+		s.prior_v[c] -= m;
+	s.prior = true;
+#endif
+	return true;
+}
+
+bool run_core_b(State& s)
+{
+	if (!core_need(std::max<long long>(295000, 5000 * g_ng), 0))
+		return false;
+	s.C.emplace(*s.V, *s.F);
+	s.Pl = mi::base_plans(*s.C, *s.V, *s.F);
+	MI_T(4);
+#if defined(MI_HAS_WEIGHTS) && defined(MAPINTEL_FIRST_SCORES)
+	if (core_need(15000 + 2400 * g_ng, 0))
 	{
 		const auto sc = mi::first_scores(*s.C, *s.V, *s.F);
 		std::vector<int> gs;
@@ -163,16 +168,16 @@ bool run_core(State& s)
 			s.rank[s.nrank++] = gs[static_cast<std::size_t>(k)];
 	}
 #endif
-#endif
-	MI_T(f5);
+	MI_T(5);
 #ifdef MI_TRACE
-	std::printf("MIT core area=%lld groups=%d start=%lld view=%lld fp=%lld feat=%lld plans=%lld rank=%lld left=%lld\n", area,
-				static_cast<int>(s.V->groups.size()), f0, f0 - f1, f1 - f2, f2 - f3, f3 - f4, f4 - f5, f5);
+	std::printf("MIT core area=%d groups=%lld start=%lld view=%lld fp=%lld feat=%lld plans=%lld rank=%lld left=%lld\n",
+				bc::map::width() * bc::map::height(), g_ng, g_tf[0], g_tf[0] - g_tf[1], g_tf[1] - g_tf[2], g_tf[2] - g_tf[3], g_tf[3] - g_tf[4],
+				g_tf[4] - g_tf[5], g_tf[5]);
 	std::fflush(stdout);
 #endif
-#undef MI_T
 	return true;
 }
+#undef MI_T
 
 void put_team(State& s)
 {
@@ -315,21 +320,33 @@ void mi_draft_begin()
 	s.began = true;
 }
 
+// Phase A of the map work (before GOD's pick with P.mi_pick: its fuel is held back), or both phases (after the pick).
+bool core_step(State& s, long long reserve, bool both)
+{
+	try
+	{
+		if (!s.core_a)
+			s.core_a = run_core_a(s, reserve);
+		if (!s.core_a)
+			s.failed = true;
+		else if (both && !s.core)
+		{
+			s.core = run_core_b(s);
+			s.failed = !s.core;
+		}
+	}
+	catch (...)
+	{
+		s.failed = true;
+	}
+	return s.core_a;
+}
+
 bool mi_draft_prepare()
 {
 	auto& s = S();
-	if (!s.core && !s.failed)
-	{
-		try
-		{
-			s.core = run_core(s);
-		}
-		catch (...)
-		{
-			s.core = false;
-		}
-		s.failed = !s.core;
-	}
+	if (!s.failed && !s.core_a && s.D.turn <= 1)
+		core_step(s, PICK_RESERVE, false);
 	return s.prior;
 }
 
@@ -350,16 +367,13 @@ void mi_draft_after_pick(int pick)
 	if (s.failed)
 		return;
 	const int t = s.D.turn;
-	if (t == 1 || !s.core)
+	if (!s.core)
 	{
+		if (t != 1)
+			return; // the map work runs only on the first draft turn
+		core_step(s, 0, true);
 		if (!s.core)
-		{
-			if (t != 1)
-				return; // the map work runs only on the first draft turn
-			mi_draft_prepare();
-			if (!s.core)
-				return;
-		}
+			return;
 	}
 	// the rows of every body picked so far (the turn-1 pick, and each later pick), while they fit
 	while (s.rows_done < static_cast<int>(s.picks.size()) && fits(EST_ROW + EST_WRITE))

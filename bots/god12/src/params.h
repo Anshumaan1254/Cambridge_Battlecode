@@ -875,14 +875,14 @@ struct Params
 	int watchdog = 1;			// 1: after 3 turns in a row that threw, a minimal safe turn (hit an adjacent enemy, else step toward spawn)
 
 	// ---- tools/teamplan (TEAMPLAN.md section 9; the test copy bots/_tp_v10 only, tools/teamplan/prepare_v10.py). 0 = v10.
-	int tp_focus = 0;		 // 1: the fight target's value = teamplan focus.h kill_value (its bag + kill gold + the farming lost while it is dead,
+	int tp_focus = 1;		 // 1: the fight target's value = teamplan focus.h kill_value (its bag + kill gold + the farming lost while it is dead,
 							 // bodies from the SDK's pick structure) over its health, in place of v10's 60 (+ 60 for the pair) + bag
-	int tp_bag = 0;			 // 1: the proactive fight bar rises with our bag (bag.h fight_bar: x (1 + bag / 60))
-	int tp_timing = 0;		 // 1: the edge hold (open_first & 2, ranged) and the melee approach step into an enemy's reach only when we act again
+	int tp_bag = 1;			 // 1: the proactive fight bar rises with our bag (bag.h fight_bar: x (1 + bag / 60))
+	int tp_timing = 1;		 // 1: the edge hold (open_first & 2, ranged) and the melee approach step into an enemy's reach only when we act again
 							 // before it (timing.h; this and next round's priorities of the bodies in sight, team from sdk_my_team())
-	int tp_tiebreak = 0;	 // 1: tiebreak mode (tiebreak.h): when both projected finishes lie beyond the round limit, a bag up to tp_tb_cap is
+	int tp_tiebreak = 1;	 // 1: tiebreak mode (tiebreak.h): when both projected finishes lie beyond the round limit, a bag up to tp_tb_cap is
 							 // kept (no bank trip, no small on-the-way banks) while no enemy is within tb_safe_dist; v10's endgame rule banks it
-	int tp_tb_cap = 60;		 // ... the risk cap
+	int tp_tb_cap = 0;		 // ... the risk cap
 	int tp_own = 0;			 // 1: soft group ownership (assign.h): the draft writes the OWN block (draft memory 8..), a body's own groups score
 							 // x (1 + tp_own_bonus)
 	float tp_own_bonus = 0.25f;
@@ -891,18 +891,18 @@ struct Params
 	// docs/DRAFT_MEMORY.md). The draft side (mi_draft.cpp) writes the 1,024-byte image under the fuel guard; the champion side (mi_game.cpp)
 	// reads it. Every use in play is behind its own switch (0 = GOD v10's play).
 	int mi_dmem = 1;		  // 1: the draft writes draft memory v2 (mapintel's plans, TEAM, OWN, BODY, CONT, CODE, ENEMY, NAV, DEBUG, L)
-	int mi_pick = 0;		  // 1: the pick value adds mi_prior_w x the strong teams' pick prior (LEARNED; ln(rate + 0.05), centred)
+	int mi_pick = 1;		  // 1: the pick value adds mi_prior_w x the strong teams' pick prior (LEARNED; ln(rate + 0.05), centred)
 	float mi_prior_w = 0.3f;
-	float mi_own = 0.f;		  // > 0: groups the OWN block gives this body score x (1 + mi_own) (soft ownership, teamplan assign.h)
+	float mi_own = 0.1f;		  // > 0: groups the OWN block gives this body score x (1 + mi_own) (soft ownership, teamplan assign.h)
 	int mi_own_maxg = 30;	  // ... only on maps with at most this many groups (on v10 the switch lost on maps with more than 30)
-	float mi_next = 0.f;	  // > 0: after a capture, the step-7 next-target model's two best groups score x (1 + mi_next) / (1 + mi_next / 2)
+	float mi_next = 0.1f;	  // > 0: after a capture, the step-7 next-target model's two best groups score x (1 + mi_next) / (1 + mi_next / 2)
 	int mi_next_for = 120;	  // ... for this many rounds after the capture (or until the next one)
-	float mi_open = 0.f;	  // > 0: before our first capture, plan 1's first targets for this body (BODY bytes 9-11) score x (1 + mi_open)
-	int mi_live = 0;		  // 1: the 8 shared bytes in teamplan's live layout (live.h: claims as place codes, the team alert with its place
+	float mi_open = 0.1f;	  // > 0: before our first capture, plan 1's first targets for this body (BODY bytes 9-11) score x (1 + mi_open)
+	int mi_live = 1;		  // 1: the 8 shared bytes in teamplan's live layout (live.h: claims as place codes, the team alert with its place
 							  // vocabulary, beats, bag flags); 0: GOD v10's own layout (comms.h)
 	int live_bag_flag = 25;	  // ... the bag flag: carrying at least this many gems (teamplan bag.h's hunt threshold)
-	int mi_capture = 0;		  // 1: a shared reward goes to a near ally with a gold bonus first (teamplan capture.h mode 1, LEARNED)
-	int mi_body = 0;		  // 1: the BODY block's bank bag and retreat health (econ model, LEARNED) replace tribute_min / retreat_hp
+	int mi_capture = 1;		  // 1: a shared reward goes to a near ally with a gold bonus first (teamplan capture.h mode 1, LEARNED)
+	int mi_body = 1;		  // 1: the BODY block's bank bag and retreat health (econ model, LEARNED) replace tribute_min / retreat_hp
 
 	// ---- Sparring proxies (testing only, docs/TESTING.md; never on in a submission): a fixed playing style, optionally switching at
 	// set rounds, built from existing GOD mechanisms. 1 farmer (stays home, avoids fights), 2 invader (PUSH: their half free, deny,

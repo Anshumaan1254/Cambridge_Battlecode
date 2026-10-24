@@ -221,3 +221,17 @@ changes. No champion name or map identity is in the logic: champions enter throu
 - **Roster battery opponents** (`tools/mapintel/data/battery_rosters.json`, mapintel's): slots 0-3 are real strong-team rosters (LEARNED)
   on all 40 official maps, from one ladder snapshot (Oct 24); slots 4-7 are COMPUTED, balanced over kit classes. A new ladder changes
   them.
+
+## GOD v12 (session 18d, Oct 24; `bots/god12`, `docs/strategy_v2/19_GOD_V12.md`)
+
+- **Fuel constants of the draft writer** (`mi_draft.cpp`): the map work's worst stage costs (view 340k, fingerprint 82k, features
+  max(275k, 6k a group), plans max(295k, 5k a group), ranking 15k + 2.4k a group) are the 40 official maps' worst x 1.15, and v10's first pick is
+  reserved at 200k (its worst 151,785 x 1.3). A larger unknown map skips the map work (no image: the champions play v10), never a pick.
+- **ASSUMED / hand-set values**: the bonus weights `mi_own`, `mi_next`, `mi_open` 0.1 and `mi_prior_w` 0.3 (chosen by the short screen of 19_GOD_V12.md,
+  not fitted); `mi_own_maxg` 30 (TEAMPLAN 11.2's after-the-fact split); `mi_next_for` 120 rounds; `live_bag_flag` 25 (bag.h's hunt threshold);
+  the live alert's count (enemies within 3 of the tile) and its 5-round post rule (live.h's ASSUMED ttl).
+- **The live layout drops two v10 bits**: the exact team bag sum (`team_bank`) becomes a lower bound (bag flags x 25), and an alert names the place
+  nearest the tile instead of the tile; claims on groups past 62 places cannot be named.
+- **Not on**: `tp_own` (its block is overwritten by the v2 image; `mi_own` is the same rule). The ENEMY, CONT and NAV blocks are written but no
+  play code reads them yet.
+- **SDK**: built and measured on cambc 3.0.5 only (the mapintel / teamplan libraries use the 3.0 SDK; the 2.2.5 build of earlier zips was not checked).

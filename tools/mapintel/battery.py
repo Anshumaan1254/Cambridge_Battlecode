@@ -67,6 +67,7 @@ def ledger_run(bot, opp, maps_glob, jobs, keep, env):
 def main():
 	ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 	ap.add_argument("--bot", required=True)
+	ap.add_argument("--from", dest="from_bot", default="", help="first make bots/BOT a battery-ready copy of bots/FROM (prepare_bot.py)")
 	ap.add_argument("--opps", default="self,idle,starter")
 	ap.add_argument("--maps", default="maps/official/*.map26a")
 	ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 1))
@@ -80,6 +81,11 @@ def main():
 	ap.add_argument("--out-dir", default=ROOT)
 	a = ap.parse_args()
 	t0 = time.time()
+	if a.from_bot:
+		r = run([sys.executable, os.path.join(ROOT, "tools/mapintel/prepare_bot.py"), a.from_bot, a.bot])
+		if r.returncode != 0:
+			die(r.stdout + r.stderr)
+		print(r.stdout.strip())
 	if " " in ROOT:
 		die(f"the repository path has a space ({ROOT}); cambc run-batch manifests split on spaces: clone it into a path without spaces")
 	if not os.path.isdir(os.path.join(ROOT, "bots", a.bot, "src")):

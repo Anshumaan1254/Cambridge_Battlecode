@@ -1,0 +1,78 @@
+PR 6 Vendetta dash_over_holes_(a) ok from (8,2) to (10,2)
+PR 6 Ryth melee_attack_d(1,1) ok hp_after 75 group alive
+PR 7 Vendetta after_(a) pos (10,2)
+PR 7 Ryth melee_attack_d(1,1) ok hp_after 30 group alive
+PR 8 Ryth melee_attack_d(1,1) ok hp_after ERR engine error 97: Unit is not in vision. group reward
+PR 10 Ryth move_onto_dead_camp_tile ok group reward
+PR 14 Vendetta dash_onto_hole_(e) ERR engine error 32: Forbidden landing tile. from (10,2) to (9,3)
+PR 16 Stellar los_wall visible no attack ERR engine error 42: Target must be a visible enemy or neutral camp. spell ERR engine error 30: Target must be a visible unit.
+PR 16 Vendetta dash_over_walls_(b) ERR engine error 32: Destination is unreachable within movement range. from (12,2) to (14,2)
+PR 16 Ryth captured gems 7 group respawning 50
+PR 17 Vendetta after_(b) pos (12,2)
+PR 17 Ryth standing_on_dead_tile group respawning 49 pos (2,7)
+PR 22 Vendetta dash_diag_over_hole_(c) ok from (16,1) to (18,3)
+PR 22 Ryth standing_on_dead_tile group respawning 44 pos (2,7)
+PR 23 Vendetta after_(c) pos (18,3)
+PR 24 Stellar attack_d(4,0) ERR engine error 43: Attack target is out of range.
+PR 25 Stellar attack_d(3,3) ok hp_before 90
+PR 26 Stellar attack_d(3,3)_after hp 90
+PR 26 Stellar spell_damage_d(4,4) ok hp_before ERR engine error 97: Unit is not in vision.
+PR 27 Stellar spell_damage_d(4,4)_after hp ERR engine error 97: Unit is not in vision.
+PR 27 Stellar aoe_at_d(0,4) ok before Q+(1,1) 22 Q+(2,0) 120 Q+(-1,-1) 22
+PR 27 Ryth standing_on_dead_tile group respawning 39 pos (2,7)
+PR 28 Stellar aoe_after Q+(1,1) 22 Q+(2,0) 120 Q+(-1,-1) 22
+PR 30 Vendetta dash_knight_wall_or_hole_(d) ok from (16,5) to (18,6)
+PR 31 Vendetta after_(d) pos (18,6)
+PR 32 Ryth standing_on_dead_tile group respawning 34 pos (2,7)
+PR 36 Stellar wolf_attack_d(3,-3) ok myhp 650
+PR 37 Stellar wolf_stand_d(3,-3) myhp 650 wolfhp 1320
+PR 37 Ryth standing_on_dead_tile group respawning 29 pos (2,7)
+PR 38 Stellar wolf_stand_d(3,-3) myhp 650 wolfhp 1290
+PR 38 Vendetta dash_over_camp_(f) ERR engine error 32: Destination is unreachable within movement range. from (14,7) to (16,7)
+PR 39 Stellar wolf_stand_d(3,-3) myhp 650 wolfhp 1260
+PR 39 Vendetta after_(f) pos (14,7)
+PR 40 Stellar wolf_stand_d(3,-3) myhp 650 wolfhp 1230
+PR 42 Stellar wolf_stand_d(4,-3) myhp 630 wolfhp 1200
+PR 42 Ryth standing_on_dead_tile group respawning 24 pos (2,7)
+PR 43 Stellar wolf_stand_d(4,-3) myhp 630 wolfhp 1200
+PR 44 Stellar wolf_stand_d(4,-3) myhp 630 wolfhp 1200
+PR 45 Stellar wolf_stand_d(4,-3) myhp 630 wolfhp 1200
+PR 46 Stellar wolf_stand_d(4,-3) myhp 630 wolfhp 1200
+PR 47 Ryth standing_on_dead_tile group respawning 19 pos (2,7)
+PR 49 Stellar elk_spell_d(-4,4) ok myhp 630
+PR 50 Stellar elk_stand_d(-4,4) myhp 570 elkhp 2260
+PR 51 Stellar elk_stand_d(-4,4) myhp 510 elkhp 2260
+PR 52 Stellar elk_stand_d(-4,4) myhp 450 elkhp 2260
+PR 52 Ryth standing_on_dead_tile group respawning 14 pos (2,7)
+PR 53 Stellar elk_stand_d(-4,4) myhp 390 elkhp 2260
+PR 54 Stellar elk_stand_d(-4,4) myhp 330 elkhp 2260
+PR 57 Ryth standing_on_dead_tile group respawning 9 pos (2,7)
+PR 61 Vendetta gold_captured 20
+PR 62 Ryth standing_on_dead_tile group respawning 4 pos (2,7)
+PR 67 Ryth standing_on_dead_tile group respawning 0 pos (2,7)
+PR 68 Vendetta buy_crystal_1 ok gold 10
+PR 72 Ryth standing_on_dead_tile group respawning 0 pos (2,7)
+PR 77 Ryth standing_on_dead_tile group respawning 0 pos (2,7)
+PR 79 Vendetta crystal_d(4,-1)_(k) ERR engine error 37: Teleport out of range.
+PR 79 Vendetta crystal_onto_hole_(j) ERR engine error 22: Forbidden landing tile.
+PR 79 Vendetta crystal_over_walls_d(3,0)_(h) ok
+PR 80 Vendetta crystal_wait pos (1,12) teleporting
+PR 81 Vendetta crystal_wait pos (1,12) teleporting
+PR 82 Vendetta crystal_wait pos (4,12)
+PR 82 Ryth standing_on_dead_tile group respawning 0 pos (2,7)
+PR 83 Vendetta crystal_wait pos (4,12)
+PR 84 Vendetta crystal_wait pos (4,12)
+PR 87 Ryth standing_on_dead_tile group respawning 0 pos (2,7)
+PR 89 Ryth after_step_off group alive
+PR 94 Vendetta buy_crystal_2 ok gold 0
+PR 96 Ryth tribute_d(2,2) ERR engine error 48: Altar is outside gem submission range.
+PR 98 Ryth tribute_d(1,1) ok bag 7 banked 0
+PR 99 Ryth tribute_wait bag 0 banked 7
+PR 100 Ryth tribute_wait bag 0 banked 7
+PR 101 Ryth tribute_wait bag 0 banked 7
+PR 105 Vendetta crystal_diag_d(3,3)_(i) ok
+PR 106 Vendetta crystal_wait pos (4,12) teleporting
+PR 107 Vendetta crystal_wait pos (4,12) teleporting
+PR 108 Vendetta crystal_wait pos (7,15)
+PR 109 Vendetta crystal_wait pos (7,15)
+PR 110 Vendetta crystal_wait pos (7,15)

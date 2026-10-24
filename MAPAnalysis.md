@@ -90,6 +90,18 @@ Probe and test bots are built fresh from the starter that `cambc init` (3.0.5) w
   LEARNED models, validate, fill the table; (D) later, the user's own bot through the batteries, then the SIMULATED refit.
 - The older prompt `docs/HANDOFF_PROMPT_MAPANALYSIS.md` (built on GOD v10, shipped a bot) is replaced by this one and was deleted.
 
+### 1.8 Fifth addition (Oct 24, chat): GOD v10 may stand in for the user's new bot
+"You can use v10 as a base model but it will go huge changes afterwards; use it as base only and make this like that after changes we can
+also use it directly or by little changes; for many things you can use stats too; also plan and roster will be done by drafting team
+...; but here you can use v10 as base for necessary tasks." Read as:
+- GOD v10 (`bots/god`, read-only) may be used where a bot is necessary: the simulation batteries run now on a battery copy
+  (`bots/_mi_v10` = v10 + the library headers + the forced-roster call, `tools/mapintel/prepare_bot.py god _mi_v10`), and v10's game
+  statistics may serve as labels and checks (marked **SIMULATED (v10)**). They are refitted on the user's own bot when it exists
+  (`run_battery.sh --bot <copy> --from <their bot>`).
+- The library must plug into a v10-derived bot directly or with small changes: its draft-memory block must not collide with v10's
+  (v10 writes 4 bytes `B7 ..` or its 0xC8 `dmplan` layout from offset 0; the mapintel block goes to offset 512, see 5.8 / 7.4).
+- The draft decision (roster and plan) is made by the bot's draft code; the library supplies its inputs (features, table, model, plans).
+
 ---
 
 ## 2. Background: the bots and what the ladder says (as of Oct 24)

@@ -558,3 +558,24 @@ Weights live in one versioned parameter set.
     `tools/mapintel/data/battery_rosters.json`, via mapintel's `force_roster.h`): the forced roster is played in 80 of 80 games; **v10's
     own draft wins 37 of 80 (46.2%) against it**.
   - Running: `tools/teamplan/batteries.py` (7 variants x 2 families x 80 games).
+- **14:55**: offline check of the capturer rule (task 20; commit after this line).
+  - **What was checked**: does the risk-matched capturer pick the body the top teams picked? The data: 25 raw replays,
+    `tools/teamplan/capture_ctx.mjs` (state N rounds before each capture) and `tools/teamplan/capture_check.py`.
+  - **Three rounds before the capture began** (1,166 captures with two or more bodies within 3; agreement, with chance at 41%):
+    - the highest gold multiplier: 65%;
+    - the nearest: 61%;
+    - the risk-matched rule: 42%;
+    - the lowest bag: 46%;
+    - the front or back kit: 44-45%.
+  - **Five rounds before**: nearest 92% (the capturer is already on the tile, so that number is an artefact). **Twelve rounds before**:
+    gold multiplier 54%, nearest 46%, the rule 38%.
+  - **The rule fails** on two counts:
+    - its diminishing gold value per item (ASSUMED) points to the poorest body, and the top teams do not do that: without it the rule
+      reaches 54-58%;
+    - its gem-risk part does not explain their choices.
+  - **Verdict, by the user's "keep what wins against its counterparts" rule**: `capture.h` now defaults to the LEARNED pattern
+    (`capture_mode` 1: the gold-bonus body, then the nearest). The risk-matched gain is kept as mode 0, and `items_half` is 0 (off).
+    The engine test still passes (both modes, 2,080 results bit-equal).
+  - **The answer to "should the frontliner take the gold"**: the strong teams give a shared reward to the gold-bonus body when it is near,
+    else to the nearest body; front bodies take relatively more gold-only groups because they stand at them (TEAMPLAN.md 3).
+  - Outputs: `experiments/results/teamplan/capture_check_lag*.txt`.

@@ -107,6 +107,7 @@ def params_hash(P):
 	for f in ["enhanced_extra", "enhanced_stun", "missing_hp_avg", "hits_taken", "splash_targets", "area_targets", "fight_rounds", "ranged_front", "immune_ehp",
 			  "dash_escape", "reach_escape", "gold_gems", "team_rate", "hazard", "danger_hazard", "items_half"]:
 		h.d(getattr(P, f))
+	h.i(P.capture_mode)
 	h.i(P.bag_fight), h.d(P.bag_fight_scale), h.d(P.hunt_bag), h.d(P.hunt_bonus), h.d(P.kv_ref)
 	for f in ["tb_period", "tb_enter", "tb_leave", "tb_min_round", "tb_defer_cap", "tb_safe_dist", "tb_final_margin", "tb_denial_rounds"]:
 		h.i(getattr(P, f))
@@ -157,10 +158,12 @@ def capture_hash(gs, kits_all, r, team_n, C, P):
 				continue
 			cs.append(capture.Cand(s, (g * 7 + s * 13) % 70, (g + 3 * s) % 15, (g + s) % 4, min(gs[g][3], 60), float((g * (s + 1)) % 3),
 								   kits_all[ROSTER[r][s]]))
-		w, gains = capture.choose_capturer(cs, gs[g][0], gs[g][1], team_n, C, P)
-		h.i(w)
-		for v in gains:
-			h.d(v)
+		for mode in (0, 1):
+			q = params.Params(**{**P.__dict__, "capture_mode": mode, "items_half": 0.0 if mode else 12.0})
+			w, gains = capture.choose_capturer(cs, gs[g][0], gs[g][1], team_n, C, q)
+			h.i(w)
+			for v in gains:
+				h.d(v)
 	return h.str()
 
 

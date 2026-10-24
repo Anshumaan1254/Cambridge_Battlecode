@@ -47,6 +47,14 @@ def choose_capturer(cands, gems, gold, team_n, c, p):
 		dr = x.kit.camp_dps / dmean if dmean > 0 else 1.0
 		v = capture_gain(x, gems, gold, wr, rate, dr, c, p)
 		gains.append(v)
-		if best < 0 or v > bv or (v == bv and x.slot < cands[best].slot):
+		if p.capture_mode == 0 and (best < 0 or v > bv or (v == bv and x.slot < cands[best].slot)):
 			best, bv = i, v
+	if p.capture_mode == 0:
+		return best, gains
+	best = 0
+	for i in range(1, n):
+		x, b = cands[i], cands[best]
+		gx, gb = x.kit.gold_mult, b.kit.gold_mult
+		if gx > gb or (gx == gb and (x.walk_reward < b.walk_reward or (x.walk_reward == b.walk_reward and x.slot < b.slot))):
+			best = i
 	return best, gains

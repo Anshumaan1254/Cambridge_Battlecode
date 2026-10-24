@@ -177,7 +177,7 @@ inline Kit compute_kit(const Design& d, const Consts& c, const Params& p)
 }
 
 // Value of one more gold to a body that owns `items` items (diminishing returns), in relative-power units per gold.
-inline double gold_weight(const Kit& k, int items, const Params& p) { return k.w_gold / (1.0 + items / p.items_half); }
+inline double gold_weight(const Kit& k, int items, const Params& p) { return p.items_half > 0 ? k.w_gold / (1.0 + items / p.items_half) : k.w_gold; }
 
 // The team's front order: body slots sorted by Kit::front, highest first (ties: lower slot). Returns the count written.
 inline int front_order(const Kit* kits, int n, std::uint8_t* out)

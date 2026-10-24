@@ -105,7 +105,7 @@ def compute_kit(d, c, p):
 
 
 def gold_weight(k, items, p):
-	return k.w_gold / (1.0 + items / p.items_half)
+	return k.w_gold / (1.0 + items / p.items_half) if p.items_half > 0 else k.w_gold
 
 
 def front_order(kits):

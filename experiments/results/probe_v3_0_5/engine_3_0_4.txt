@@ -1,0 +1,51 @@
+SET capture_time 5 camp_sleep_time 2 respawn_time 60 recall_time 5
+SET submit_mult 0.1000 submit_base 0 submit_min 1 submit_range 1
+SET max_rounds 2000 winning_gems 1000 kill_gold 100 assist_gold 0 passive_gold 0 spawn_healing 1.0000
+SET active_wards 1 ward_cooldown 10 ward_lifetime -1 ward_vision 6.00 ward_place 2.00 altar_lock_hits 5 tp_crystal_time 3
+SET shared_memory 8 draft_memory 1024 tile_reveal 1
+SET prism_focus_per_gem 1.500 varg_splash 1.00 vesper_gold 33 marcella_gold 2 ryth_ratio 0.0100 ren_ret 0.200 hor_bonus 0.500
+CAMP 0 wolf hp 1350.00 +0.00 str 20.00 +0.00 foc 1.00 +0.00 range 3 vision 8.00 move 1
+CAMP 1 elk hp 2400.00 +0.00 str 60.00 +0.00 foc 1.00 +0.00 range 4 vision 8.00 move 1
+CAMP 2 gem_cluster hp 120.00 +0.00 str 0.00 +0.00 foc 1.00 +0.00 range 3 vision 8.00 move 1
+CAMP 3 gold_cluster hp 120.00 +0.00 str 0.00 +0.00 foc 1.00 +0.00 range 3 vision 8.00 move 1
+CAMP 4 monolith hp 20000.00 +0.00 str 200.00 +0.00 foc 1.00 +0.00 range 5 vision 8.00 move 1
+CAMP 5 golem hp 5000.00 +0.00 str 120.00 +0.00 foc 1.00 +0.00 range 4 vision 8.00 move 1
+CH 0 hp 1200.00 +100.00 str 45.00 +5.00 foc 100.00 +10.00 range 1 vision 8 move 1 campmul 1.000
+  AB slot 0 aoe range 4.00 mod 1.000 radius 1.00 dur 1 cd 8 excl 1
+  AB slot 1 reset enhanced 0 cd 8 excl 0
+CH 1 hp 1000.00 +100.00 str 55.00 +5.00 foc 100.00 +10.00 range 3 vision 8 move 1 campmul 1.000
+  AB slot 0 reset enhanced 0 cd 8 excl 0
+  AB slot 1 dash range 2.00 radius 0.00 mod 0.000 dur 0 cd 8
+CH 2 hp 1000.00 +100.00 str 70.00 +6.00 foc 100.00 +10.00 range 1 vision 8 move 1 campmul 1.000
+  AB slot 0 reset enhanced 0 cd 8 excl 0
+  AB slot 1 dash range 2.00 radius 0.00 mod 0.000 dur 0 cd 8
+CH 3 hp 600.00 +65.00 str 30.00 +3.00 foc 70.00 +13.00 range 3 vision 8 move 1 campmul 1.000
+  AB slot 0 damage range 4.00 mod 2.000 cd 8 excl 1
+  AB slot 1 cc range 4.00 mod 0.000 dur 1 cd 8 excl 0
+CH 4 hp 900.00 +80.00 str 40.00 +3.00 foc 100.00 +10.00 range 1 vision 8 move 1 campmul 1.000
+  AB slot 0 reset enhanced 0 cd 8 excl 0
+  AB slot 1 dash range 2.00 radius 0.00 mod 0.000 dur 0 cd 8
+CH 5 hp 650.00 +65.00 str 30.00 +3.50 foc 70.00 +7.00 range 3 vision 8 move 1 campmul 1.000
+  AB slot 0 damage range 4.00 mod 2.000 cd 8 excl 1
+  AB slot 1 aoe range 4.00 mod 1.400 radius 1.00 dur 0 cd 8 excl 1
+CH 6 hp 700.00 +60.00 str 35.00 +2.50 foc 80.00 +8.00 range 3 vision 8 move 1 campmul 1.000
+  AB slot 0 cc range 4.00 mod 1.500 dur 1 cd 8 excl 1
+  AB slot 1 aoe range 4.00 mod 1.000 radius 1.00 dur 0 cd 8 excl 1
+CH 7 hp 1200.00 +100.00 str 45.00 +5.00 foc 60.00 +15.00 range 1 vision 8 move 1 campmul 1.000
+  AB slot 0 reset enhanced 1 cd 8 excl 0
+  AB slot 1 damage range 4.00 mod 2.000 cd 8 excl 1
+CH 8 hp 700.00 +50.00 str 55.00 +3.00 foc 120.00 +5.00 range 3 vision 8 move 1 campmul 1.000
+  AB slot 0 heal range 4.00 mod 3.000 cd 8
+  AB slot 1 reset enhanced 0 cd 8 excl 0
+CH 9 hp 900.00 +100.00 str 35.00 +5.00 foc 100.00 +9.00 range 1 vision 8 move 1 campmul 1.000
+  AB slot 0 cc range 4.00 mod 0.750 dur 1 cd 8 excl 1
+  AB slot 1 dash range 2.00 radius 0.00 mod 0.000 dur 0 cd 8
+CH 10 hp 1000.00 +100.00 str 40.00 +5.00 foc 100.00 +10.00 range 1 vision 8 move 1 campmul 1.000
+  AB slot 0 reset enhanced 0 cd 8 excl 0
+  AB slot 1 shield range 4.00 mod 2.500 dur 5 cd 8
+CH 11 hp 900.00 +75.00 str 45.00 +5.00 foc 110.00 +10.00 range 3 vision 8 move 1 campmul 1.000
+  AB slot 0 reset enhanced 0 cd 8 excl 0
+  AB slot 1 cc range 4.00 mod 1.400 dur 1 cd 8 excl 1
+CH 12 hp 1000.00 +100.00 str 30.00 +3.50 foc 100.00 +12.00 range 1 vision 8 move 1 campmul 1.000
+  AB slot 0 shield range 4.00 mod 1.500 dur 5 cd 8
+  AB slot 1 dash range 2.00 radius 1.00 mod 1.500 dur 1 cd 8

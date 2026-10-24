@@ -42,7 +42,11 @@ def _engine_ledger():
 		major = int(ENGINE.split('.')[0])
 	except ValueError:
 		major = 2
-	sub = 'ledger' if major < 3 else 'ledger_v3' if ENGINE == '3.0.1' else 'ledger_v' + ENGINE.replace('.', '_')
+	# 3.0.5 (engine v1.0.3, Oct 22) plays exactly as 3.0.4 (engine v1.0.2): the engine probe prints the same game settings, camp
+	# and champion designs, 80 of 80 games (40 official maps x 2 sides) end identically, and the SDK differs only in the comment
+	# on debug drawings (MAPAnalysis.md, step 1). Its rows share 3.0.4's ledger.
+	engine = {'3.0.5': '3.0.4'}.get(ENGINE, ENGINE)
+	sub = 'ledger' if major < 3 else 'ledger_v3' if engine == '3.0.1' else 'ledger_v' + engine.replace('.', '_')
 	return os.path.join(ROOT, 'experiments', 'results', sub)
 
 

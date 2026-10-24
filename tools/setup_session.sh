@@ -6,8 +6,18 @@
 set -e
 cd "$(dirname "$0")/.."
 if [ "$1" != "--bots" ]; then
-	pip install -q cambc==3.0.4   # Oct 21 balance patch (Stellar, Heart of Ruin, Ren nerfs; Vesper, Vendetta, Tavi, Prism buffs); rows per engine: ledger/ (2.2.5), ledger_v3/ (3.0.1), ledger_v3_0_2/, ledger_v3_0_4/
-	cambc init --yes . > /dev/null 2>&1 || true   # map refresh fails in the cloud (platform blocked): fine
+	pip install -q cambc==3.0.5   # = engine v1.0.3 (Oct 22): plays exactly as 3.0.4 (Oct 21 balance patch); rows per engine: ledger/ (2.2.5), ledger_v3/ (3.0.1), ledger_v3_0_2/, ledger_v3_0_4/ (3.0.4 and 3.0.5)
+	# SDK and the official map pool: init in a scratch project (the platform is reachable when the environment allows
+	# 2026a.battlecode.co.uk), copy its sdk/ here and its maps into maps/official/ (never into maps/: ledger names must stay unique)
+	INIT=$(mktemp -d)
+	(cd "$INIT" && cambc init --yes . > /dev/null 2>&1) || true
+	if [ -d "$INIT/sdk/cpp" ]; then rm -rf sdk && cp -r "$INIT/sdk" sdk; else cambc init --yes . > /dev/null 2>&1 || true; fi
+	if ls "$INIT"/maps/*.map26a > /dev/null 2>&1; then
+		mkdir -p maps/official
+		for f in "$INIT"/maps/*.map26a; do cmp -s "$f" "maps/official/$(basename "$f")" || echo "official map new or changed: $(basename "$f")"; cp "$f" maps/official/; done
+	else
+		echo "official map pool not refreshed (platform unreachable): maps/official/ keeps the committed copy"
+	fi
 	C="curl -sSL --cacert /root/.ccr/ca-bundle.crt"
 	mkdir -p /root/.cache/cambc && pushd /root/.cache/cambc > /dev/null
 	if [ ! -d wasi-sdk-33 ]; then

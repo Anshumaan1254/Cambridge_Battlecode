@@ -73,6 +73,7 @@ struct MapView
 	std::vector<int> spawn_tiles[2];
 	Field fc[2], fb[2], fn;
 	cambc::bitboard camps_bb, blocked[2];	  // camp tiles; wall | hole | altar | the other team's spawn (per team)
+	cambc::bitboard reach0;					  // the tiles fc[0] reached (walking from our spawn, camps passable)
 
 	int at(int x, int y) const { return y * W + x; }
 	bool in(int x, int y) const { return x >= 0 && y >= 0 && x < W && y < H; }
@@ -96,7 +97,7 @@ inline Bits pack(const cambc::bitboard& b)
 	return out;
 }
 
-inline Field bfs_field(const cambc::bitboard& walls, const cambc::bitboard& roots, int area)
+inline Field bfs_field(const cambc::bitboard& walls, const cambc::bitboard& roots, int area, cambc::bitboard* reach = nullptr)
 {
 	cambc::distance_field f;
 	cambc::bitboard visited;
@@ -104,6 +105,8 @@ inline Field bfs_field(const cambc::bitboard& walls, const cambc::bitboard& root
 	Field out;
 	out.v.reset(new std::uint16_t[static_cast<std::size_t>(area)]);  // no value-initialisation: the export writes every entry
 	f.export_linear_buffer(std::span<std::uint16_t>(out.v.get(), static_cast<std::size_t>(area)));
+	if (reach)
+		reach->swap(visited);  // the tiles the field reached (hazards.h: the dash-only pockets)
 	return out;
 }
 
@@ -170,7 +173,7 @@ inline MapView load_view(int team_size = -1)
 	for (int t = 0; t < 2; ++t)
 	{
 		m.blocked[t] = base | bc::map::spawn_region(side[1 - t]);
-		m.fc[t] = bfs_field(m.blocked[t], bc::map::spawn_region(side[t]), area);
+		m.fc[t] = bfs_field(m.blocked[t], bc::map::spawn_region(side[t]), area, t == 0 ? &m.reach0 : nullptr);
 		m.fb[t] = bfs_field(m.blocked[t] | m.camps_bb, bc::map::spawn_region(side[t]), area);
 	}
 	m.fn = bfs_field(base, bc::map::spawn_region(bc::team::ally), area);

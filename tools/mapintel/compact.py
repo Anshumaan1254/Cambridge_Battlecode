@@ -273,6 +273,48 @@ class Compact:
 					best[g], out[g] = cost, a
 		return out
 
+	def bank_box(self, g):
+		"""plans.h Compact::bank_box: the box-distance plan 2 for one group (this side): the first approach tile with the least
+		min(box distance, 6 + this side's walk to it); 255 = none."""
+		M, t = self.M, self.t
+		best, out = 1 << 30, 255
+		for a, (ax, ay) in enumerate(M.altar_tiles):
+			for dy in (-1, 0, 1):
+				for dx in (-1, 0, 1):
+					x, y = ax + dx, ay + dy
+					if (dx, dy) == (0, 0) or not (0 <= x < M.W and 0 <= y < M.H) or not self.C[t][y, x]:
+						continue
+					walk = box_dist(self.box[g], (x, y, x, y))
+					f = int(self.fc[t][y, x])
+					c = min(walk, 6 + f) if f >= 0 else walk
+					if c < best:
+						best, out = c, a
+		return out
+
+	def near_tile(self, g):
+		"""plans.h Compact::near_tile: the group's camp tile nearest this side's spawn (ties: lower tile index; none reached: its first
+		camp's tile), as y * W + x."""
+		M, t = self.M, self.t
+		best, bt = -1, -1
+		for c in M.groups[g]["camps"]:
+			ti, v = c[2] * M.W + c[1], int(self.fc[t][c[2], c[1]])
+			if v >= 0 and (best < 0 or v < best or (v == best and ti < bt)):
+				best, bt = v, ti
+		if bt < 0 and M.groups[g]["camps"]:
+			c = M.groups[g]["camps"][0]
+			bt = c[2] * M.W + c[1]
+		return bt
+
+	def first_assign(self, bodies, cand):
+		"""plans.h Compact::first_assign: bodies assigned to distinct candidate groups by walk to attack range + work (assign_dp);
+		[group or None] per body."""
+		E = EC.engine()
+		bodies, cand = list(bodies)[:NSLOT], list(cand)[:NSLOT]
+		rng = [E.attack_range(b) for b in bodies]
+		cost = [[max(0, self.dU[g] - rng[i]) + self.work(b, g) for g in cand] for i, b in enumerate(bodies)]
+		asg = assign_dp(cost) if cand and bodies else [None] * len(bodies)
+		return [cand[j] if j is not None else None for j in asg]
+
 	def bank_altars_box(self):
 		"""Plan 2 by the Chebyshev distance from the group's box (before the user's change 5; Python only since then, for the comparison
 		in fallback_gap.py: ~0.81 of the groups get the catalog's altar, the walk version 0.98)."""

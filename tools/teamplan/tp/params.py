@@ -17,7 +17,7 @@ class Params:
 	immune_ehp: float = 0.15
 	dash_escape: float = 0.2
 	reach_escape: float = 0.05
-	gold_gems: float = 0.02
+	gold_gems: float = 0.167
 	team_rate: float = 0.94
 	hazard: float = 0.0016
 	danger_hazard: float = 0.02

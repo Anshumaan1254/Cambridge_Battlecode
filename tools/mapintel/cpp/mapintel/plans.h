@@ -267,7 +267,9 @@ inline void econ_constants(double& heal_use, double& dmg_mult);
 class Compact
 {
 public:
-	Compact(const MapView& m, const Features& F) : m_(m), F_(F)
+	// side 0 = our team (the view's ally), 1 = the enemy (the same tables seen from their spawn: compact.Compact(M, 1 - team); used
+	// by dmem2.h's ENEMY block: their first targets and bank altars). Plans 3-4 are meaningful for side 0 only.
+	Compact(const MapView& m, const Features& F, int side = 0) : m_(m), F_(F), s_(side == 1 ? 1 : 0)
 	{
 		econ_constants(use_, dm_);
 		G_ = static_cast<int>(m.groups.size());
@@ -276,7 +278,7 @@ public:
 		for (std::size_t g = 0; g < G; ++g)
 		{
 			const auto& grp = m.groups[g];
-			dU[g] = dmin(m.fc[0], grp), dE[g] = dmin(m.fc[1], grp);
+			dU[g] = dmin(m.fc[s_], grp), dE[g] = dmin(m.fc[1 - s_], grp);
 			val[g] = grp.gems + 0.1 * grp.gold;
 			bx[g] = detail::box(grp);
 		}
@@ -286,6 +288,23 @@ public:
 		rows_.reserve(13);
 		rg_.reserve(G);
 		rgi_.assign(std::max<std::size_t>(1, static_cast<std::size_t>(G)), -1);
+		for (std::size_t g = 0; g < G; ++g)
+			if (dU[g] >= 0)
+				rgi_[g] = static_cast<int>(rg_.size()), rg_.push_back({ static_cast<int>(g), dU[g], std::min(dU[g], 6) + 1 + dU[g], 1.0 + prep[g].adj, prep[g].tot, prep[g].S, val[g] });
+	}
+
+	// the same tables seen from the other side, equal to Compact(m, F, side) value for value: dU and dE swap, the side-free tables
+	// (values, boxes, the kill preparation) are copied, not recomputed (dmem2.h's ENEMY block: the constructor's group_prep is most of
+	// its ~60k on the largest maps)
+	Compact(const Compact& o, int side) : m_(o.m_), F_(o.F_), s_(side == 1 ? 1 : 0)
+	{
+		use_ = o.use_, dm_ = o.dm_, G_ = o.G_;
+		const auto G = static_cast<std::size_t>(G_);
+		dU = s_ == o.s_ ? o.dU : o.dE, dE = s_ == o.s_ ? o.dE : o.dU;
+		val = o.val, bx = o.bx, prep = o.prep;
+		rows_.reserve(13);
+		rg_.reserve(G);
+		rgi_.assign(std::max<std::size_t>(1, G), -1);
 		for (std::size_t g = 0; g < G; ++g)
 			if (dU[g] >= 0)
 				rgi_[g] = static_cast<int>(rg_.size()), rg_.push_back({ static_cast<int>(g), dU[g], std::min(dU[g], 6) + 1 + dU[g], 1.0 + prep[g].adj, prep[g].tot, prep[g].S, val[g] });
@@ -518,10 +537,10 @@ public:
 				for (int dx = -1; dx <= 1; ++dx)
 				{
 					const int x = at.x + dx, y = at.y + dy;
-					if ((dx == 0 && dy == 0) || !m_.in(x, y) || !m_.pass(0, x, y))
+					if ((dx == 0 && dy == 0) || !m_.in(x, y) || !m_.pass(s_, x, y))
 						continue;
 					++nroot[static_cast<std::size_t>(a)];
-					const int v = m_.fc[0][m_.at(x, y)];
+					const int v = m_.fc[s_][m_.at(x, y)];
 					if (v >= 0 && 6 + v < rec[static_cast<std::size_t>(a)])
 						rec[static_cast<std::size_t>(a)] = 6 + v;
 				}
@@ -552,12 +571,12 @@ public:
 				for (int dx = -1; dx <= 1; ++dx)
 				{
 					const int x = at.x + dx, y = at.y + dy;
-					if ((dx || dy) && m_.in(x, y) && m_.pass(0, x, y))
+					if ((dx || dy) && m_.in(x, y) && m_.pass(s_, x, y))
 						roots.set({ x, y });
 				}
 			cambc::distance_field df;
 			cambc::bitboard visited;
-			df.compute(m_.blocked[0], roots, visited);
+			df.compute(m_.blocked[s_], roots, visited);
 			if (!f)
 				f.reset(new std::uint16_t[static_cast<std::size_t>(area)]);
 			df.export_linear_buffer(std::span<std::uint16_t>(f.get(), static_cast<std::size_t>(area)));
@@ -578,6 +597,73 @@ public:
 			}
 		}
 		return out;
+	}
+
+	// plan 2 by the box distance for one group (compact.Compact.bank_box: the version before the user's change 5, kept for the enemy
+	// model of dmem2.h, where a BFS per altar costs too much in a later draft turn): the first approach tile (altars in row-major order,
+	// tiles in (dy, dx) order) with the least min(Chebyshev distance from the group's box, 6 + this side's walk to the tile); 255 = none.
+	int bank_box(int g) const
+	{
+		if (g < 0 || g >= G_)
+			return 255;
+		const auto& b = bx[static_cast<std::size_t>(g)];
+		int best = 1 << 30, out = 255;
+		for (int a = 0; a < static_cast<int>(m_.altar_tiles.size()); ++a)
+		{
+			const auto at = m_.altar_tiles[static_cast<std::size_t>(a)];
+			for (int dy = -1; dy <= 1; ++dy)
+				for (int dx = -1; dx <= 1; ++dx)
+				{
+					const int x = at.x + dx, y = at.y + dy;
+					if ((dx == 0 && dy == 0) || !m_.in(x, y) || !m_.pass(s_, x, y))
+						continue;
+					const int walk = std::max(std::max(std::max(b[0] - x, x - b[2]), std::max(b[1] - y, y - b[3])), 0);
+					const int f = m_.fc[s_][m_.at(x, y)];
+					const int c = f >= 0 ? std::min(walk, 6 + f) : walk;
+					if (c < best)
+						best = c, out = a;
+				}
+		}
+		return out;
+	}
+
+	// the group's camp tile nearest this side's spawn by walk (ties: the lower tile index; no camp reached: its first camp's tile):
+	// compact.Compact.near_tile
+	int near_tile(int g) const
+	{
+		if (g < 0 || g >= G_)
+			return -1;
+		const auto& grp = m_.groups[static_cast<std::size_t>(g)];
+		int best = -1, bt = -1;
+		for (const auto& c : grp.camps)
+		{
+			const int t = m_.at(c.x, c.y), v = m_.fc[s_][t];
+			if (v >= 0 && (best < 0 || v < best || (v == best && t < bt)))
+				best = v, bt = t;
+		}
+		if (bt < 0 && !grp.camps.empty())
+			bt = m_.at(grp.camps[0].x, grp.camps[0].y);
+		return bt;
+	}
+
+	// plan 1's first-target step alone (compact.Compact.first_assign): bodies (types) assigned to distinct candidate groups by the
+	// cheapest total of walk to attack range + work (detail::assign_dp, the same costs as plan1 with a ranking); needs no candidate rows.
+	// out[i] = the group of body i, -1 = none. n, m <= NSLOT.
+	void first_assign(const int* bodies, int n, const int* cand, int m, int out[NSLOT]) const
+	{
+		n = std::min(n, NSLOT), m = std::min(m, NSLOT);
+		detail::Kit kt[NSLOT];
+		int rng[NSLOT]{};
+		for (int i = 0; i < n; ++i)
+			kt[i] = detail::kit(bodies[i]), rng[i] = kt[i].range;
+		double cost[NSLOT][NSLOT];
+		for (int i = 0; i < n; ++i)
+			for (int j = 0; j < m; ++j)
+				cost[i][j] = std::max(0, dU[static_cast<std::size_t>(cand[j])] - rng[i]) + work_at(kt[i], bodies[i], cand[j]);
+		int as[NSLOT];
+		detail::assign_dp(cost, n, m, as);
+		for (int i = 0; i < NSLOT; ++i)
+			out[i] = i < n && as[i] >= 0 ? cand[as[i]] : -1;
 	}
 
 	// plan 3: contested groups (compact.contested)
@@ -625,6 +711,7 @@ private:
 
 	const MapView& m_;
 	const Features& F_;
+	int s_ = 0;	 // side: 0 ours, 1 the enemy's
 	int G_ = 0;
 	std::vector<Row> rows_; // candidate rows per body type (reserved: plan1 keeps pointers into it)
 	struct Rg

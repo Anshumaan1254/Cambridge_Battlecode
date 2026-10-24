@@ -25,7 +25,8 @@ struct Params
 	double dash_escape = 0.2;	  // ASSUMED: exposure cut from a dash (escape)
 	double reach_escape = 0.05;	  // ASSUMED: exposure cut per tile of attack range above 1
 	// ---- capture.h, bag.h, focus.h, tiebreak.h: economy
-	double gold_gems = 0.02;	 // LEARNED: gem value of one gold in the top teams' next-group choices (mapintel econ_learn.py gold_w; GOD v10 uses 0.33)
+	double gold_gems = 0.167;	 // LEARNED: gem value of one gold in the top teams' next-group choices (mapintel econ_learn.py gold_w, refit with the
+								 // gold-only captures; 0.02 before the decoder fix of Oct 24; GOD v10 uses 0.33)
 	double team_rate = 0.94;	 // LEARNED: a top team's gems per round (1,000 gems at the median final round 1,064; tools/teamplan/ladder_roles.py)
 	double hazard = 0.0016;		 // LEARNED: deaths per body-round in top-team games (1.4-1.9 per 1,000 for the common picks; roles_ladder.md)
 	double danger_hazard = 0.02; // ASSUMED: extra deaths per round per enemy in reach of the bank route (the caller's danger count)

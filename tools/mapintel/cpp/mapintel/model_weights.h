@@ -14,6 +14,7 @@
 #pragma once
 #define MAPINTEL_P4_FITTED 1  // before plans.h: plans.h then leaves p4_thresholds() to this file
 #define MAPINTEL_ECON_FITTED 1  // before plans.h: plans.h then leaves econ_constants() to this file
+#define MAPINTEL_ECON_BODY 1    // ECON_BANK_BAG / ECON_RETREAT_PCT below (dmem2.h's BODY block)
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -251,6 +252,9 @@ inline void p4_thresholds(const Features& F, const MapView& m, int t[8])
 		t[P4_IDX[k]] = r < P4_LO[k] ? P4_LO[k] : r > P4_HI[k] ? P4_HI[k] : static_cast<int>(r);
 	}
 }
+
+// the BODY block's bank bag (gems) and retreat health (percent): economy.econ()'s bank_bag and retreat line (LEARNED, econ_learn.py)
+inline constexpr int ECON_BANK_BAG = 20, ECON_RETREAT_PCT = 52;
 
 // the compact work's economy constants (compact.econ_constants: 1 - economy.econ()'s retreat line, its dmg_mult; LEARNED)
 inline void econ_constants(double& heal_use, double& dmg_mult)

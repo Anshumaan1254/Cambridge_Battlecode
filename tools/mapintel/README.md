@@ -50,7 +50,9 @@ bash tools/mapintel/run_battery.sh --bot NAME           # the batteries
 
 Header-only C++20 on the SDK alone; copy `cpp/mapintel/` into your bot's `src/` (so `src/mapintel/*.h`) and include what you use.
 Regenerate the data headers after a new ladder download or catalog: `python3 -I tools/mapintel/draft_learn.py && python3 -I
-tools/mapintel/export_headers.py`; then run the tests: `python3 -I tools/mapintel/test_library.py` (all 40 maps x 2 teams in the engine).
+tools/mapintel/export_headers.py`; after a battery of your bot (its archive has `battery/games.csv`), make the draft values yours:
+`python3 -I tools/mapintel/draft_learn.py --battery-only --battery <unpacked archive>/battery/games.csv --battery-label NAME && python3
+-I tools/mapintel/export_headers.py`. Then run the tests: `python3 -I tools/mapintel/test_library.py` (all 40 maps x 2 teams in the engine).
 
 | header | what | origin |
 |---|---|---|
@@ -109,6 +111,7 @@ is a host call; stdout costs ~90 fuel per byte.
 | `first_targets.py` | step 6, opening: which groups the top teams capture first (logistic and boosted forest, leave-maps-out) | LEARNED |
 | `validate_ladder.py` | 3C: the model against the top teams (pace, first targets, bank altars); `maps/catalog/behaviour.json` | LEARNED |
 | `export_headers.py` | generates `known_maps.h` and `model_weights.h` | - |
+| `battery_games.py` | a battery archive -> `games.csv` (rosters from the kept statistics) for `draft_learn.py --battery` | SIMULATED |
 | `replays.py` | ladder replays -> per-game summaries (captures, banks, deaths, standing tiles) | LEARNED |
 | `cpp/probe/`, `cpp/idle/` | probe bot and idle opponent sources (fresh, from the 3.0.5 starter) | - |
 | `../../experiments/results/mapintel/dump/` | `<map>.txt` runtime dumps and `fingerprints.txt` | COMPUTED |

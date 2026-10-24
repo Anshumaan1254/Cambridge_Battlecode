@@ -215,6 +215,11 @@ def main():
 	meta["finished"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 	meta["seconds"] = round(time.time() - t0)
 	json.dump(meta, open(os.path.join(work, "meta.json"), "w"), indent=1)
+	# games.csv for draft_learn.py --battery (rosters from the kept statistics)
+	if os.path.isdir(keep) and os.path.abspath(keep) == os.path.abspath(os.path.join(work, "keep")):
+		r = subprocess.run([sys.executable, "-I", os.path.join(ROOT, "tools/mapintel/battery_games.py"), work, "--out", os.path.join(work, "games.csv")],
+						   capture_output=True, text=True)
+		print("   " + (r.stdout.strip() or r.stderr.strip()[-300:]), flush=True)
 	stamp = time.strftime("%Y%m%d_%H%M", time.gmtime())
 	arc = os.path.join(a.out_dir, f"mapintel_battery_{a.bot}_{stamp}.tar.gz")
 	nrep = 0
@@ -223,6 +228,8 @@ def main():
 		if os.path.exists(os.path.join(work, "rosters.json")):
 			tf.add(os.path.join(work, "rosters.json"), arcname="battery/rosters.json")
 		tf.add(os.path.join(work, "ledger"), arcname="battery/ledger")
+		if os.path.exists(os.path.join(work, "games.csv")):
+			tf.add(os.path.join(work, "games.csv"), arcname="battery/games.csv")
 		if os.path.isdir(keep):
 			for cell in sorted(os.listdir(keep)):
 				for f in sorted(glob.glob(os.path.join(keep, cell, "*"))):

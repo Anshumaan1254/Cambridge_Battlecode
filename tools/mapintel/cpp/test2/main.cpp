@@ -13,7 +13,8 @@
 //   turn's start, after the pick, after mapintel's work, OWN's cost, NAV's (turn 1) or ENEMY's cost, fuel left before the write (all
 //   uint16 in units of 16); 496 bit t-1 = OWN ran in turn t; 497 the enemy picks ENEMY last saw; 498 NAV equals known_maps.h's
 //   (1 equal, 0 differs, 255 not compared); 499 our side; 500 team size; 501 bit 0 = known map; 502 spare; 503 the enemy picks CONT
-//   saw. Bytes 1000-1023 (kept by the prefix write): 1000 the prefix marker, 1002-1015 turn 1's block costs (see part()), 1016-1017 NAV's.
+//   saw. Bytes 1000-1023 (kept by the prefix write): 1000 the prefix marker, 1002-1015 turn 1's block costs (see part()), 1016-1017 NAV's, 1018 the L block's last
+//   write / 16, 1019 BODY + CONT / 64, 1020 a draft write (DEBUG, seal, submit) / 64.
 // Champions (no draft prints: stdout costs ~90 fuel a byte):
 //   game turn 1: MI C1 slot <s> type <t> hash <FNV-1a 64 of the 1024 bytes> v1 <0|1 dmem_get> v1hash <FNV of the 352-byte block>
 //                (the lowest body type only, also: MI IMG <hex of bytes 0-511>)
@@ -35,6 +36,7 @@
 #include "mapintel/features.h"
 #include "mapintel/hazards.h"
 #include "mapintel/plans.h"
+#include "teamplan/live_sdk.h"
 #if __has_include("mapintel/known_maps.h")
 #include "mapintel/known_maps.h"
 #define MI_HAS_TABLE 1
@@ -92,6 +94,7 @@ struct State
 	std::uint8_t dl_open[16]{};
 	bool have_dl_open = false;
 	int dl_source = 0;
+	long long last_write = 0;
 	bool own_rc_done = false;
 	long long own_rc_fuel = 0;
 	int own_rc_turns = 0;
@@ -375,6 +378,7 @@ static void draft_turn(State& S)
 		{
 			int types[mi::NSLOT];
 			const int n = types_of(S, types);
+			const long long bc0 = fuel();
 			int bb, rp;
 			mi::econ_body(bb, rp);
 			S.D.img.put(mi::BK_BODY, mi::build_body(types, n, *S.K, S.P, bb, rp));
@@ -383,6 +387,7 @@ static void draft_turn(State& S)
 				ep.push_back(static_cast<int>(d));
 			S.D.img.put(mi::BK_CONT, mi::build_cont(*S.K, ep.data(), static_cast<int>(ep.size()), types, n));
 			S.D.img.b[503] = static_cast<std::uint8_t>(ep.size()); // test: the enemy picks CONT saw
+			S.D.img.b[1019] = static_cast<std::uint8_t>(std::min<long long>(255, (bc0 - fuel()) / 64)); // test: BODY + CONT / 64
 			put_dl(S, true);
 		}
 		STAGE("rows");
@@ -401,13 +406,59 @@ static void draft_turn(State& S)
 	if (last)
 	{
 		S.D.img.b[1000] = 0xAB;
+		S.D.img.b[1020] = static_cast<std::uint8_t>(std::min<long long>(255, S.last_write / 64)); // test: the previous turn's write / 64
 		S.D.write(true, false);
 		S.D.img.b[1000] = 0;
 		bc::draft_memory = std::span<const std::uint8_t>(S.D.img.b.data(), 1000); // the shorter write
 	}
 	else
+	{
+		const long long w0 = fuel();
 		S.D.write(false, t == 1);
+		S.last_write = w0 - fuel();
+	}
 	STAGE("write");
+}
+
+// The agreement with the live bytes (teamplan/live.h, docs/DRAFT_MEMORY.md 5.1, 5.5, 6): this body's live slot (live_init, from the
+// engine's ally list) and the TEAM block's slot; the places (groups = the M block's count, altars = the map's, rallies = CODE's
+// valid tiles): every CODE rally tile and altar id must have a place code that maps back to it. Prints "<live slot> <team slot>
+// <live n> <TEAM n> <places ok> <groups> <altars> <rallies>".
+static std::string live_check(const std::uint8_t* team)
+{
+	teamplan::LiveState L;
+	teamplan::live_init(L);
+	mi::Reader r;
+	r.load();
+	const std::uint8_t* code = r.block('K', 1);
+	const std::uint8_t* mb = r.block('M', 1);
+	const auto my = static_cast<int>(bc::self().champion_name());
+	teamplan::Places P;
+	P.groups = mb ? mb[13] : 0;
+	P.altars = static_cast<int>(bc::map::altars().count());
+	int ok = code && mb ? 1 : 0;
+	for (int k = 0; code && k < 8; ++k)
+		if ((code[2 * k] | code[2 * k + 1] << 8) != 0xFFFF)
+			P.rallies = k + 1;
+	for (int k = 0; ok && k < P.rallies; ++k)
+	{
+		int idx = -1;
+		const int c = teamplan::place_code(P, teamplan::PLACE_RALLY, k);
+		ok &= c == teamplan::NO_PLACE || (teamplan::place_kind(P, c, &idx) == teamplan::PLACE_RALLY && idx == k);
+	}
+	for (int k = 0; ok && k < 8; ++k)
+		if (code[24 + k] != 255)
+		{
+			int idx = -1;
+			const int c = teamplan::place_code(P, teamplan::PLACE_ALTAR, code[24 + k]);
+			ok &= code[24 + k] < P.altars && (c == teamplan::NO_PLACE || (teamplan::place_kind(P, c, &idx) == teamplan::PLACE_ALTAR && idx == code[24 + k]));
+		}
+	for (int k = 0; ok && k < 8; ++k)
+		if (code[16 + k] != 255)
+			ok &= code[16 + k] < P.groups;
+	return std::to_string(L.slot) + " " + std::to_string(team ? mi::team_slot(team, my) : -1) + " " + std::to_string(L.n) + " " +
+		   std::to_string(team ? mi::team_size_of(team) : -1) + " " + std::to_string(ok) + " " + std::to_string(P.groups) + " " +
+		   std::to_string(P.altars) + " " + std::to_string(P.rallies);
 }
 
 static void champion_turn(State& S, int gt)
@@ -426,7 +477,7 @@ static void champion_turn(State& S, int gt)
 		const int sz = static_cast<int>(bc::draft_memory.size());
 		line("MI C1 slot " + std::to_string(team ? mi::team_slot(team, my) : -1) + " type " + std::to_string(my) + " n " + std::to_string(n) + " hash " +
 			 (sz >= 1024 ? fnv(p, 1024) : std::string("short")) + " v1 " + std::to_string(v1 ? 1 : 0) + " v1hash " + (v1 ? fnv(B.b.data(), mi::DMEM_SIZE) : std::string("none")) +
-			 " hdr " + std::to_string(r.ok ? 1 : 0));
+			 " hdr " + std::to_string(r.ok ? 1 : 0) + " live " + live_check(team));
 		if (lowest && sz >= 1024)
 			line("MI IMG " + hex(p, 512)), line("MI P " + hex(p + 1000, 24));
 	}

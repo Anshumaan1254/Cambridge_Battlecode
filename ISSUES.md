@@ -137,9 +137,29 @@ Hardcoded on purpose or measured on the current pool / patch; each may need a re
 - **Draft-memory layout**: the mapintel block at offsets 512-863 (version 1, magic 0xA7). A bot's own data must stay below 512 (GOD
   v10 writes 4 bytes at 0: tested to coexist). The test bot also uses 8-511 and 864-999 for its own prints (test only).
 - **Step 7 (`tools/mapintel/dl/`)**: `dl_weights.h` exists only when a deep model beat the step-6 model by the margin in `dl_train.py`
-  (`MARGIN`: +0.01 top-n share / top-1, -0.003 log loss) on held-out maps; its weights are fitted on the current pool and ladder
-  (T1a / T1b: 599 ladder games; T2: GOD v10's roster battery, SIMULATED v10). The next-target model is meant for a candidate list
-  (the test uses the 16 groups nearest the previous capture): all 64 groups cost about 107k fuel, more than a game turn.
+  (`MARGIN`: +0.01 top-n share / top-1, -0.003 log loss) on held-out maps, **or when the user forces it** (`dl_export.py --force`); its
+  weights are fitted on the current pool and ladder (T1a / T1b: 599 ladder games; T2: GOD v10's roster battery, SIMULATED v10). The
+  next-target model is meant for a candidate list (the test uses the 16 groups nearest the previous capture): all 64 groups cost about
+  87-107k fuel, more than a game turn.
+- **The 17:22 DL run is applied below the export rule (the user's request, Oct 24)**: the distilled opening MLP (held-out share 0.700
+  vs the shipped logistic `first_scores()` 0.696: level) and next-target MLP (top-1 0.330: above the nearest group to the previous one,
+  0.236, below the step-6 forest, 0.360, which the library does not carry). The next model mostly ignores the previous group on some
+  maps (reverse-spiral: nearly every entry names the same two groups): treat its tables as a soft input, not a route. Its known-map
+  tables (`dl_tables.py`) fix the model's round input at two phases, rounds 329 / 849 split at 571 (the quartiles and the median of the
+  53,830 training samples, LEARNED); the top-1 changes between the two rounds in 35% of the cases. Refresh both after a new DL run
+  (`dl_export.py`, `dl_tables.py`, `export_headers.py`); the values model is not applied (worse than the constant values).
+- **Draft memory v2 (`dmem2.h`, `hazards.h`; spec `docs/DRAFT_MEMORY.md`)**, choices made in the implementation:
+  - ASSUMED thresholds: the burst class = the 4th largest one-round damage of the 13 designs (the top third); NAV keeps hole tiles
+    with a walk saving of at least 3 and pocket entries at least 5 apart (Chebyshev), from the first 128 / 256 candidates in tile
+    order; rally tiles: up to 5 contested groups before the bank altars; the roles (banker by the gold multiplier, else gold per
+    tributed gem; one front, two at 5+ bodies; the carry by damage per round).
+  - The guard's first-run estimates, measured upper bounds on the 40 official maps (`dmem2.h`: OWN 50k, ENEMY 25k + 40k for the enemy
+    tables, the DL opening 160k) and the test bot's floors (NAV 30k on turn 1, 12k later; the in-game OWN recompute 20k): re-measure
+    with `test_dmem2.py` after a patch or a new map pool.
+  - Test inputs only (never in a bot): the three rosters of `test_dmem2.py` (draft ids), the free bytes 436-511 and 1000-1023 the
+    test bot fills with diagnostics.
+  - TEAM bytes 12-13 (the OWN body-type mask), NAV bytes 60-61, DEBUG bytes 12-13 and the L block (5.9) are additions the spec left
+    open; CONT bytes 24-31 and TEAM bytes 0-1 are zero until there are variants.
 
 ## teamplan (session 18c, TEAMPLAN.md; `tools/teamplan/`, library `tools/teamplan/cpp/teamplan/`)
 

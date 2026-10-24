@@ -84,7 +84,10 @@ def parse(text):
 	for l in text.splitlines():
 		t = l.split()
 		if l.startswith("MI C1 "):
-			out["C1"].append(dict(zip(t[2::2], t[3::2])))
+			i = t.index("live")
+			d = dict(zip(t[2:i:2], t[3:i:2]))
+			d["live"] = [int(x) for x in t[i + 1:i + 9]]
+			out["C1"].append(d)
 		elif l.startswith("MI C2 "):
 			out["C2"].append(dict(zip(t[2::2], t[3::2])))
 		elif l.startswith("MI C3 "):
@@ -244,6 +247,17 @@ def check(name, team, r, M, ctx, out, K, own_full_cache, fails, stats, known_nam
 		fails.append(f"{tag}: byte 1000 = {out['P'][0]} after the 1,000-byte write (prefix rule)")
 	if img[2] & D2.DM2_FINAL == 0:
 		fails.append(f"{tag}: the last write is not final")
+	# the live bytes (teamplan/live.h): every body's live slot = its TEAM slot, the same body count, the places round-trip; the place
+	# counts = the map's groups and altars, the rally tiles CODE holds
+	for c in out["C1"]:
+		lv = c["live"]
+		if lv[0] != lv[1] or lv[2] != lv[3] or lv[4] != 1 or lv[5] != len(M.groups) or lv[6] != len(M.altar_tiles):
+			fails.append(f"{tag}: live-bytes agreement {lv} (live slot, TEAM slot, live n, TEAM n, places ok, groups, altars, rallies)")
+			break
+	else:
+		stats["live_ok"] += len(out["C1"])
+		stats["rally_max"] = max(stats.get("rally_max", 0), max(c["live"][7] for c in out["C1"]))
+		stats["place_max"] = max(stats.get("place_max", 0), max(sum(c["live"][5:8]) for c in out["C1"]))
 	# fallback
 	masks, present = expected_masks(want_img)
 	if out["C3"] != masks:
@@ -283,7 +297,7 @@ def main():
 	fps = dict(l.split()[:2] for l in open(os.path.join(ROOT, "experiments/results/mapintel/dump/fingerprints.txt")))
 	known_names = set(fps)
 	K = D2.Kits13()
-	stats = {"blocks": 0, "images": 0, "own_recompute": 0, "own_game_fuel": 0, "nav_computed": 0, "dl_known": 0, "dl_computed": 0}
+	stats = {"blocks": 0, "images": 0, "own_recompute": 0, "own_game_fuel": 0, "nav_computed": 0, "dl_known": 0, "dl_computed": 0, "live_ok": 0}
 	dlj = os.path.join(ROOT, "tools/mapintel/cpp/mapintel/dl_weights.h")
 	dl_open_model = None
 	if os.path.exists(dlj) and "#define MAPINTEL_DL_OPENING 1" in open(dlj).read():
@@ -329,6 +343,9 @@ def main():
 				v = u16(P, 2 + 2 * i) * 16
 				if v > fuel["parts"].get(nm, (0, ""))[0]:
 					fuel["parts"][nm] = (v, name)
+			fuel["dl_put"] = max(fuel.get("dl_put", 0), P[18] * 16)
+			fuel["body_cont"] = max(fuel.get("body_cont", 0), P[19] * 64)
+			fuel["write"] = max(fuel.get("write", 0), P[20] * 64)
 			if nav_always or name not in known_names:
 				fuel["nav_turns"].append(P[16])
 			if team == 0 and r == 1:
@@ -371,6 +388,9 @@ def main():
 		  f"later turns at most {fuel['later_max']} (limit 100,000); the last turn left at least {fuel['last_left_min']} before its write")
 	print("fuel, blocks (max): " + ", ".join(f"{k} {v[0]} ({v[1]})" for k, v in fuel["parts"].items())
 		  + f"; OWN in a draft turn {fuel['own']}, ENEMY {fuel['enemy']}; OWN recompute in the game {stats['own_game_fuel']} in all, over at most {stats.get('own_game_turns', 0)} game turns (floor 20,000 a turn)")
+	print(f"live bytes: {stats['live_ok']} bodies with their live slot = their TEAM slot and the CODE places round-tripping; at most "
+		  f"{stats.get('rally_max', 0)} rally tiles and {stats.get('place_max', 0)} places on a map (codes 0-62)")
+	print(f"fuel, the last turn's blocks (max): BODY + CONT {fuel.get('body_cont', 0)}, the L block {fuel.get('dl_put', 0)}, a write (DEBUG, seal, submit) {fuel.get('write', 0)}")
 	if fuel["nav_turns"]:
 		nt = fuel["nav_turns"]
 		print(f"NAV computed in the draft: complete on turn 1 on {sum(1 for x in nt if x == 1)}, later on {sum(1 for x in nt if x > 1)}, "

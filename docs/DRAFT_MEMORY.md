@@ -9,7 +9,14 @@ given in chat at the end of the team-play session.
   - Its draft fuel is measured (section 7).
   - Its effect is measured on v10: TEAMPLAN.md 11 (SIMULATED (v10)).
 - **mapintel's block** (version 1, at 512) is in use and stays where it is.
-- Fuel numbers are measured where a number is given; the rest are marked "to be measured".
+
+**Status (Oct 24, 18:55 UTC): implemented and engine-tested in the mapintel library** (MAPAnalysis.md 7.2, 18:40 and 18:55):
+- Code: `tools/mapintel/cpp/mapintel/dmem2.h` (the image, the TOC, the reader, the guard, every block builder, the in-game OWN recompute)
+  and `hazards.h` (NAV), with the Python twins `tools/mapintel/dmem2.py` and `hazards.py`; how a draft writes the image and a champion
+  reads it: `tools/mapintel/README.md`; the reference draft integration is the test bot `tools/mapintel/cpp/test2/main.cpp`.
+- Every test of section 8 passes (`python3 -I tools/mapintel/test_dmem2.py`): 40 official + 12 perturbed (unknown) maps x 2 teams x 3
+  rosters, 2,108 blocks and 264 whole images bit-equal to the twins. Every fuel number below is measured by it on the worst map.
+- Where the implementation fixed a detail the layout left open, the section says so ("implementation:").
 
 ## 1. The medium (facts; sources in TEAMPLAN.md section 2)
 
@@ -44,7 +51,8 @@ given in chat at the end of the team-play session.
   2. **decisions that depend on this game**: our roster, the enemy's visible picks, our side;
   3. **one consistent team decision**: every body reads the same bytes, so nothing has to be agreed in the game.
 - **Not stored**, because every body derives it cheaply and identically at startup:
-  - the kits: all 13 designs cost 20k fuel;
+  - the kits: all 13 designs cost 20k fuel (35.2k measured in the draft with the danger features of 5.4 / 5.6; a champion needs only
+    its roster's, ~2.7k a type: `dmem2.h kits_of_types`);
   - the team side: `cambc::detail::sdk_my_team()`.
 - **Data is stored in the form a champion reads it**: fixed offsets and direct indexing, no decode loops. Tiles are `y * W + x` as
   uint16 little-endian.
@@ -65,7 +73,7 @@ given in chat at the end of the team-play session.
 | 420-435 | 16 | DEBUG | draft fuel per turn, builder version (section 5.8) |
 | 436-511 | 76 | free | reserved for later patches |
 | 512-863 | 352 | MAPINTEL | mapintel's block, version 1, unchanged (`tools/mapintel/cpp/mapintel/dmem.h`): fingerprint, flags, archetype, per group the bank altar and both walks, 16 contested groups, 8 thresholds, plan 1, checksum |
-| 864-999 | 136 | MAPINTEL-DL | mapintel's optional DL outputs (`dl_weights.h`): opening ranking, next-target ranking, champion values |
+| 864-999 | 136 | MAPINTEL-DL | mapintel's optional DL outputs: the opening model's ranking and per-slot next-target routes (section 5.9). No champion values: the step-7 values model is worse than the constant values (log loss 0.668 vs 0.622) |
 | 1000-1023 | 24 | free | |
 
 The total in use is 436 + 352 + 136 = 924 bytes, which leaves 100 free.
@@ -110,7 +118,11 @@ Unused entries are zero.
 | 4-9 | body types by slot, in ascending body type: the order of OWN, BODY and the live slots (section 6; 255 = none), so a body finds its slot without reading the roster. Written for the final roster on the last draft turn (cheap). |
 | 10 | groups G covered by OWN |
 | 11 | bodies covered by OWN: the roster size the OWN table was computed for. Below the roster size means recompute in the game (section 7) |
-| 12-15 | reserved |
+| 12-13 | implementation: the body types OWN was computed for (u16 bit mask; its slots are those types in ascending order) |
+| 14-15 | reserved |
+
+Implementation: byte 0 = 0 and byte 1 = 0 (no variants yet); byte 2 from mapintel plan 4's mode; byte 3 = `teamplan::Params::capture_mode`
+(1, LEARNED). TEAM + CODE together cost 0.7k a write.
 
 ### 5.2 OWN (64 bytes): soft ownership, one byte per group (G <= 64; groups 64+ have no owner)
 
@@ -122,6 +134,10 @@ Unused entries are zero.
   - the library call: up to 56.1k with the next owners (51 groups, 5 bodies; 54k without them);
   - in the GOD v10 test, where the adapter also builds its own group list, the whole write cost 138k on draft turn 1 and 48-65k on
     turns 2-5. It left at least 24.2k of 100k after v10's pick (TEAMPLAN.md 10, 16:35).
+  - **measured in the library** (`dmem2.h own_groups` + `build_own`, the groups built from mapintel's view): 42.2k for the first
+    body on draft turn 1, at most 64.0k in a draft turn (5-6 bodies); the guard skips it on the last turn on most maps.
+  - implementation: the group values are gems + `gold_gems` x gold (`teamplan::Params`, 0.167 LEARNED); the walks are the M block's
+    (255 = none), so a champion's recompute has the same inputs.
 - **In the game**: a score bonus for the owner (x 1.25 in the v10 test), never a hard rule. Measured on v10: level over 8 rosters
   (TEAMPLAN.md 11). The new bot should start with a small bonus and test it, maps with more than 30 groups separately (it lost
   there on v10).
@@ -138,7 +154,14 @@ Unused entries are zero.
 | 13 | retreat health (percent of maximum) |
 | 14-15 | reserved |
 
-Fuel: to be measured with the bot's build logic. The route is a copy of mapintel's plan 1 (no new computation).
+Fuel: BODY and CONT together 10.4k on the last draft turn (measured with the default build hook; a bot's own build logic adds its
+cost). The route is a copy of mapintel's plan 1 (no new computation).
+
+Implementation (`dmem2.h build_body`): roles from the kits: the banker = the highest gold multiplier above 1, else the highest gold
+per tributed gem; the front = the first other body of `teamplan::front_order` (two at 5+ bodies); the carry = the remaining body with
+the highest damage per round; the rest farm. Bytes 1-8 come from the bot's `BuildHook` (255 without one). Bytes 9-11: plan 1's first
+three groups of the plan slot with this body type. Bytes 12-13: the economy model's bank bag (20 gems) and retreat health (52%),
+LEARNED (`econ_learn.py`). Empty slots are 0xFF.
 
 ### 5.4 CONT (32 bytes): contingencies
 
@@ -148,6 +171,11 @@ Fuel: to be measured with the bot's build logic. The route is a copy of mapintel
   - Our draft cannot see that pick, so the champions apply the entry when they first see it.
 - **Bytes 24-31**: the early-contact plan: the variant to switch to (plan id) for contact before rounds 50 / 100 / 200 on our half, our
   side of the map, and theirs.
+- Implementation (`dmem2.h build_cont`, written on the last draft turn with the enemy's visible picks as the context): byte 0 from the
+  bot's `SwapHook` (255 without one); the danger class: 1 burst when the pick's one-round damage (strength + modifier x focus of every
+  damaging spell) is at least the 4th largest of the 13 designs; else 2 stun chain when it stuns and another visible enemy pick stuns;
+  else 3 big-bag carrier when its kit takes focus from gems, gold from tributes or a gold bonus; else 0. Bytes 24-31 are zero (no
+  variants yet).
 
 ### 5.5 CODE (32 bytes): the codebook
 
@@ -160,6 +188,17 @@ the rally tiles below (section 6), so a claim or an alert can point at a rally t
 | 16-23 | 8 zone anchors (group ids) |
 | 24-31 | 8 altar ids (index in the altar list: ascending tile index) in bank order |
 
+Implementation (`dmem2.h rally_tiles`, `build_code`):
+- **Rally tiles**, up to 8, so claims and alerts can name them: first the approach of each contested group of mapintel plan 3 (up to
+  5, plan 3's order): from the group's camp tile nearest our spawn, our traced walk towards our spawn to its first tile outside every
+  striking camp's range (Chebyshev > the largest range among the group's camps with strength; a group without one: the first tile
+  that is no camp tile), where a team gathers before it wakes the group; then the approach of each bank altar in bank order (the
+  standable tile within Chebyshev 1, the tribute range, nearest our spawn; no camp tile unless every one is); then the remaining
+  contested groups. Roster-free: computed once on draft turn 1 with the bank order (both 38.2k at most). 0xFFFF = none.
+- **Zone anchors**: per slot, the first group in OWN's schedule order that the slot owns (255 none).
+- **Group and altar indices** are the places' (section 6): mapintel's groups come in `camp_groups()` order and its altars in
+  ascending tile index.
+
 ### 5.6 ENEMY (16 bytes): the enemy model from their visible picks (a soft input)
 
 | Bytes | Content |
@@ -168,6 +207,12 @@ the rally tiles below (section 6), so a claim or an alert can point at a rally t
 | 4-7 | their likely bank altars |
 | 8-11 | their likely big-bag carriers (body types, by passive and kit: gold bonus, gems-to-focus, stun immunity) |
 | 12-15 | danger classes of their picks |
+
+Implementation (`dmem2.h build_enemy`, on every draft turn the guard allows): their bodies' first targets as plan 1 assigns ours
+(`Compact::first_assign`: walk to attack range + work, over their max(4, bodies) <= 6 nearest reached groups), then their nearest
+groups; their bank altar for each = plan 2 by box distance (`BankBox`, equal to `Compact::bank_box`); carriers by the CONT carrier
+score; danger classes as in CONT. The enemy side's tables are our Compact mirrored (`Compact(ours, 1)`: no second group preparation).
+Fuel: 51.7k on its first run (the mirrored tables and the altar table) and 7-19k after.
 
 ### 5.7 NAV (64 bytes): static navigation hazards (for unknown maps; known maps carry them in the binary)
 
@@ -178,9 +223,19 @@ the rally tiles below (section 6), so a claim or an alert can point at a rally t
 | 24-39 | 8 dash-crossable hole-line tiles |
 | 40-55 | 8 field anchors: the tiles worth caching a full field for (spawn, bank altars, top groups) |
 | 56-59 | counts |
-| 60-63 | reserved |
+| 60 | implementation: the parts computed (63 = all; a computed block is written only when complete) |
+| 61 | implementation: the source: 1 computed in this draft, 2 copied from `known_maps.h` |
+| 62-63 | reserved |
 
-- **Fuel**: to be measured. A full host field costs 1.3-31k, so the anchors are chosen in the draft and the fields built at startup.
+- **Definitions** (`hazards.h` header comment): chokepoints are cut tiles (a passable tile whose passable neighbours split into two
+  or more king-connected parts) on the traced spawn-to-spawn walk and the walks to the first three anchor groups; pocket entries are
+  passable tiles our walk does not reach but a dash (range 2) does; hole tiles are holes with passable tiles on both sides in a line,
+  kept when the walk saving is at least 3; anchors: our spawn end of the spawn-to-spawn walk, the first three bank altars, the near
+  tiles of the first four anchor groups (`first_scores()` ranking).
+- **Fuel**: a known map copies the table (free). An unknown map computes it as resumable work (`NavWork`, `nav_resume`): it runs
+  down to a fuel floor each draft turn and continues on the next; measured at most 236k in all (traced walks cost ~300-900 fuel a
+  step); complete on draft turn 1 on 102 of 104 map-teams, on a later turn on the other 2. A full host field costs 1.3-31k, so the
+  anchors are chosen in the draft and the fields built at startup.
 - The local detour (`teamplan/nav_sdk.h`) costs 9k median, 17k max per call.
 
 ### 5.8 DEBUG (16 bytes)
@@ -189,7 +244,31 @@ the rally tiles below (section 6), so a claim or an alert can point at a rally t
 |---|---|
 | 0-9 | fuel used in draft turns 1-5 (uint16, in units of 16) |
 | 10-11 | builder version |
-| 12-15 | reserved |
+| 12 | implementation: the draft turns written |
+| 13 | implementation: the guarded blocks skipped on this write's turn (bit k = TOC entry k) |
+| 14-15 | reserved |
+
+### 5.9 MAPINTEL-DL (136 bytes at 864, TOC id `L`, version 1): the step-7 models (implementation, Oct 24)
+
+The user's GPU run of 17:22 applied at the user's request (MAPAnalysis.md 7.2, 17:55 and 18:55): the distilled opening and
+next-target MLPs (`dl_weights.h`, below the export rule: opening share 0.700 vs 0.696 for `first_scores()`; next target top-1 0.330
+vs 0.236 for the nearest group to the previous one and 0.360 for the step-6 forest, which the library does not carry). LEARNED.
+
+| Bytes | Content |
+|---|---|
+| 0 | flags: bit 0 the opening ranking, bit 1 the routes |
+| 1 | source: 1 computed in this draft (`dl_weights.h`), 2 copied from `known_maps.h`'s tables (`tools/mapintel/dl/dl_tables.py`) |
+| 2-3 | the round the next model's late phase starts (571, the median of its training samples) |
+| 4-7 | the next model's round input per phase: 329 and 849 (the quartiles) |
+| 8-23 | the opening model's ranking: 16 groups, best first (255 none) |
+| 24-59 | per body slot (TEAM order) a route of 6 groups: its plan-1 first target, then each the next model's best group after the previous one at the early phase, skipping groups already on the route (from its two best; 255 none) |
+| 60-135 | zero |
+
+- **Known maps** (zero fuel in the game): `known_maps.h` carries per map and team the opening ranking and, per phase, body type and
+  group, the next model's two best groups (`known_dl_next(entry, team, round, type, group)`), so a champion looks up its next target
+  after any capture; the draft copies the ranking (turn 1) and builds the routes from the table (last turn, 3.7k).
+- **Unknown maps**: the draft computes the opening ranking on turn 1 when the guard allows (`dl_inputs` ~62k + `dl_opening_scores`
+  ~91k; it did on 20 of 24 unknown map-teams in the test); no routes (each step would score every group, ~87k).
 
 ## 6. Live bytes (8 bytes, all game): `teamplan/live.h` + `teamplan/live_sdk.h` (built and engine-tested)
 
@@ -251,6 +330,15 @@ list the bodies in that same order, so OWN's owner nibbles and the live slots ag
 **Dead champions still act** (they get a turn to shop, GameRules), so a dead body keeps beating. It publishes claim 63 (none) while
 dead. Staleness catches lost turns and stopped processes, not deaths.
 
+**Agreement with the draft memory** (checked in the engine by `tools/mapintel/test_dmem2.py`, MAPAnalysis.md 7.2, 18:55): TEAM
+bytes 4-9 hold the body types in ascending order (`dmem2.h roster_types`); on 1,360 of 1,360 bodies the game's `live_init` slot (from
+the engine's ally list) equals the TEAM slot and the body counts agree, so OWN's nibbles, BODY and the CODE zone anchors use the live
+slots. Group indices everywhere are mapintel's, which follow `camp_groups()` (the in-game OWN recompute, which reads `camp_groups()`,
+reproduces the draft's table on 264 of 264 map-teams); altar ids index the ascending-tile altar list; every CODE rally tile and altar
+id round-trips through `place_code` / `place_kind`. **One limit**: a map with groups + altars + 8 rally tiles over 63 places names only
+the first rally tiles: on lanes (42 groups, 18 altars) 3 of its 8 (the contested groups' approaches, which come first); every other
+official map names all of them.
+
 **Removed from the first version**: each body's 2-bit progress code (the input of `swap.h`'s job-swap check). The alert took those 12
 bits (TEAMPLAN.md 11.7).
 
@@ -268,25 +356,44 @@ bits (TEAMPLAN.md 11.7).
 | Turn (fuel) | Work, in order | Fuel |
 |---|---|---|
 | 1 (1,000,000) | the pick | mapintel's draft signal: under 3k |
-| | mapintel's turn-1 work: view, fingerprint, features, plans 2-4, the first pick's rows, `first_scores()` | at most 777.7k |
-| | the `AGroup` list built from mapintel's view (no second scan of the camp groups) | to be measured |
-| | OWN for the first body (or two, for a two-body pick); NAV; TEAM; write with `minimal` set | to be measured |
+| | mapintel's turn-1 work: view, fingerprint, features, plans 2-4, the first pick's rows, `first_scores()` | at most 778.8k |
+| | the kits of the 13 designs; the bank order and the rally tiles; the M block; TEAM; CODE | 35.2k; 38.2k; 7.4k; 0.7k |
+| | NAV: copied (known map) or resumed down to a 30k floor (unknown map) | 0; up to 236k in all, over turns |
+| | OWN for the first body (the `AGroup` list from mapintel's view, no second scan), guarded; ENEMY, guarded; the DL opening, guarded; write with `minimal` set | 42.2k; 51.7k; ~153k; 0.6k |
 | 2 to the last but one (100,000) | the pick; mapintel's `row()` for the champion just picked | at most 13.5k |
-| | OWN for the bodies so far | at most 56.1k |
-| | ENEMY from their visible picks; CODE; write | to be measured |
+| | OWN for the bodies so far, guarded | at most 64.0k |
+| | TEAM, CODE; ENEMY from their visible picks, guarded; NAV resumed down to a 12k floor; write | 0.7k; 7-19k; the rest |
 | last (100,000) | the pick; `row()`; mapintel's `plan1` and its block | mapintel leaves at least 28k |
-| | TEAM with the final roster, BODY and CONT; write with `final` set | to be measured |
-| | OWN for the final roster, only under the guard | 56.1k does not fit in 28k on the largest maps |
+| | BODY and CONT; the L block's routes; TEAM with the final roster; write with `final` set | 10.4k; 3.7k; 0.7k; 0.6k |
+| | OWN for the final roster and ENEMY, only under the guard | skipped on most maps |
+
+Measured with the test bot (the reference integration): draft turn 1 used at most 989,852 of 1,000,000 by the engine's own count
+(big-world, NAV computed; 896,494 with NAV copied), every later draft turn at most 93,024, and the last turn left at least 7,904
+before its write.
+
+**The engine's behaviour when a draft turn runs out** (measured): the turn continues in the next turn's budget (`fuel_remaining()`
+then reads the next turn's), so that next turn's pick is lost; the engine reports "yielded without picking" and draws the rest at
+random. The per-turn counts are in the replay (`team-*.fuel`: 8 limits, then every turn of the team, its draft turns first).
 
 **OWN for the final roster in the game**:
 - When TEAM byte 11 is below the roster size, every body recomputes OWN once for the full roster (TEAM bytes 4-9), on the map's groups,
-  with the same library call. That costs at most 56.1k.
+  with the same library call. The call costs at most 56.1k; reading the map's groups in a game turn (`camp_groups()`, a camp's type
+  and health) costs more on maps with many camps, so the implementation (`dmem2.h OwnRecompute`) is resumable work over game turns
+  down to a fuel floor: measured 154.8k in all, over at most 2 game turns with a 20k floor.
 - **The inputs are identical in every body** (static map data, the engine's designs, the draft's body list), so every body gets the
   same table without a message (P3: XSquare 2020, smite).
 - **The recompute waits for a turn with fuel to spare** (a later 100k turn, not the first one). Until then mapintel's plan 1 gives the
   opening targets (6 bodies x 4 targets).
 
 ## 8. Tests the implementation needs (for the other Claude)
+
+**Status: all six pass** (`python3 -I tools/mapintel/test_dmem2.py`, Oct 24): 1. 2,108 blocks and 264 images bit-equal; 2. every
+champion reads 0xAB at byte 1000 after the 1,000-byte write and the rest unchanged; 3. the numbers of section 7 (lanes, big-world,
+road-of-riches and every other official map; the pick first on every turn, all picks ours); 4. the M block equals `compact.pack`, the
+TOC entry M points at 512 / 352, `dmem_get` (the v1 reader) reads it, and the L block equals the twins; 5. six corrupted copies
+(OWN data, BODY version, header magic, CODE offset past the end, ENEMY not valid, NAV missing): the reader finds exactly the other
+blocks, none with a bad header, no exception; 6. OWN is written for the final roster or left at the earlier version (TEAM byte 11),
+and the in-game recompute gives the same table in every body, equal to the twin's for the full roster (264 of 264).
 
 1. **Round trip**: pack in C++, unpack in Python (and back). Bit-equal on 40 maps x 2 teams x 3 rosters.
 2. **Prefix rule**: a shorter write after the image leaves the tail intact, and every champion reads the final image.

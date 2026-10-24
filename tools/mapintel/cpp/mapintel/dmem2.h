@@ -12,7 +12,7 @@
 // Blocks (origins: COMPUTED unless marked):
 //   TEAM   0 plan id 0; 1 OWN variants 0; 2 bit 0 tiebreak-prone (plan 4's mode != 0), bits 1-2 that mode; 3 capture rule
 //          (teamplan Params::capture_mode, LEARNED); 4-9 body types by slot (255 none); 10 groups OWN covers; 11 bodies OWN covers
-//          (below the roster size: recompute OWN in the game, own_recompute); 12-13 the body-type mask OWN was computed for (u16:
+//          (below the roster size: recompute OWN in the game, OwnRecompute); 12-13 the body-type mask OWN was computed for (u16:
 //          its slots are those types in ascending order); 14-15 zero.
 //   OWN    per group g < 64: low nibble the owner slot, high nibble the next owner (15 none), teamplan::assign_groups on the groups'
 //          value (gems + gold_gems x gold, LEARNED weight), total camp health, our walk (as the M block stores it: 255 = none) and
@@ -31,6 +31,7 @@
 //          bank altar for each (plan 2 by box distance, their side); 8-11 their likely big-bag carriers (body types by passive and kit);
 //          12-15 the danger classes of their visible picks (255 = no pick).
 //   NAV    hazards.h.
+//   L      build_dl(): the step-7 opening ranking and per-slot next-target routes (mapintel's DL outputs at 864; docs/DRAFT_MEMORY.md 5.9).
 //   DEBUG  0-9 fuel used in draft turns 1-5 (u16 in units of 16, up to the write); 10-11 builder version; 12 draft turns written;
 //          13 blocks the guard skipped this turn (bit k = DM2_BLOCKS[k]); 14-15 zero.
 // The fuel guard (spec section 7): a guarded block runs only when the fuel left exceeds 1.25 x its last cost + 10,000 (an estimate before

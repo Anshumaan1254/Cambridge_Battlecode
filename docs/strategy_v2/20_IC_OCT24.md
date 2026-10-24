@@ -64,9 +64,44 @@ girl, rank 1), `_px_wbg` (willow best girl, rank 4), and `_px_ic2` (IC's table +
 play is our code family's. `python3 -I tools/ic/cells.py VARIANT...` pairs each game with GOD v10's own game against the same opponent.
 
 - GOD v10 vs IC's draft: **40/80, +38 gems a map**: IC's draft is as good as ours inside our brain (v10's dynamic draft already picks
-  Vesper Vale, Vendetta, Heart of Ruin on most maps). vs prism best girl's drafts 53/80 (+259), vs willow best girl's 13/16 so far.
-- The results of the GOD v13 candidates are in section 5.
+  Vesper Vale, Vendetta, Heart of Ruin on most maps). vs IC's draft + IC's builds (`_px_ic2`) 48/80 (+146): IC's builds are worse in our
+  brain. vs prism best girl's drafts 53/80 (+259), vs willow best girl's 13/16 in the first cell.
 
-## 5. GOD v13 candidates
+## 5. GOD v13: v10 + v12 + the IC data, measured
 
-(filled in when the cells finish)
+Every candidate is `bots/god13` (= v12's code + `ic_build`) with switches set (`SRC=bots/god13 tools/variant.sh`). Paired = the variant's
+gem margin minus GOD v10's in the same game (opponent, map, side), mean [bootstrap 95%]; turned = games it won where v10 lost / the reverse.
+40 official maps x 2 sides, cambc 3.0.5, release mode.
+
+| Candidate | h2h vs v10 | IC's draft (`_px_ic`) | prism best girl | willow best girl | 8 strong-team roster families | of which the 4 real ones |
+|---|---|---|---|---|---|---|
+| pick prior 0.3 | 45/80, +113 | +45, 13/9 | -59 | +1 | | |
+| pick prior 0.6 | 49/80, **+201 [+61, +335]** | +45, 18/15 | +71 | -22 | +42.9 [-14, +98], 114/94 | +80 [-7, +170] |
+| **pick prior 1.0 = GOD v13** | **47/80, +137 [-5, +272]** | **+120, 22/12** | +43 | -108 | **+55.0 [-8, +115], 135/101** | **+120.6 [+25, +221], 88/51** |
+| pick prior 1.5 | 41/80, +9 | +182, 24/12 | -96 | -173 | | |
+| prior 0.3 + IC's builds | 35/80, -126 | -221 | -245 | -203 | | |
+| prior 0.6 + kill-value targeting | 45/80, +119 | +17 | +57 | -43 | | |
+| prior 0.6 + live bytes | 38/80, -59 | +36 | -103 | -52 | | |
+| prior 0.6 + IC-size bags (38) | 51/80, +204 | +55 | -7 | -42 | | |
+| prior 0.6 + capture rule (IC's carry funnel) | 40/80, -22 | +92, 22/13 | -39 | +35 | | |
+| prior 0.6 + ownership 0.1 | 48/80, +116 | **+214 [+30, +403], 23/11** | -96 | -240 | +22.1 [-39, +84] | +53 [-37, +153] |
+| **prior 1.0 + ownership 0.1 = anti-IC candidate** | 45/80, +93 | **+222 [+42, +401], 25/11** | -171 | -146 | | |
+| prior 0.6 + capture + ownership | 42/80, +27 | +69 | -130 | -158 | | |
+| GOD v12 (everything on) | 29/80, -185 | -106 | -287 | -89 | -160 [-218, -100] | -157 |
+
+Against both IC proxies (IC's draft, and IC's draft + IC's builds) pooled: GOD v13 +97 [-22, +219] (39 / 26 games turned); prior 0.6 + ownership
++174 [+56, +290] (39 / 16).
+
+**Reading**:
+- **Following the strong teams' per-map choices is what helps** (the pick prior: on a known map its own top-20 pick rates, which include IC's
+  table; on an unknown map the rates predicted from the map's features). The more the draft follows it, the better against IC's draft
+  (+45 at 0.3, +120 at 1.0, +182 at 1.5) and against the real strong rosters; past 1.0 it starts losing against the Prism / Willow drafts.
+- **IC's builds, IC-size bags, kill-value targeting and the live bytes do not help** in our brain; the capture rule helps against IC only.
+- **Soft ownership is anti-IC**: with it the bot beats IC's draft by +214 to +222 gems a map (intervals above 0), but it loses that against
+  the Prism / Willow drafts, so it is not in GOD v13; it is the candidate zip for a ladder A/B against IC.
+
+**Shipped**: GOD v13 = `bots/god13` = GOD v10's brain and dynamic draft + v12's map analysis and draft memory v2 (written every draft turn) +
+the strong teams' pick prior at weight 1.0 (`mi_pick` 1, `mi_prior_w` 1.0); every other v12 switch off (measured worse or level),
+`ic_build` off. `submissions/god.zip` sha256 125a87c6…, history `god_v13_20261024.zip`, source hash 4f22e7cba062. Draft fuel: turn 1 at most
+959,773 (lanes), no draft turn ran out, every map got its map analysis; 0 faults in every cell above. Anti-IC candidate:
+`submissions/candidates/god_v13_anti_ic_20261024.zip` (sha256 65b44499…, source hash 7e0de0e2f719).

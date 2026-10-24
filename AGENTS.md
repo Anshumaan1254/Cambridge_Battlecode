@@ -3,6 +3,13 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
+- **Session 18e (2026-10-24, 22:10 UTC): SHIPPED GOD v13** (`submissions/god.zip` sha256 125a87c6…, `bots/god13`, history `god_v13_20261024.zip`; doc
+  `docs/strategy_v2/20_IC_OCT24.md`). The user: "fetch Intercontinental Fish's data, beat them, improve on v12; combine v10, v12 and the IC data". IC
+  (rank 2) analysed from today's ladder archive (300 matches, 73 replays; fetching more needs the user's `cambc login`: `ladder_fetch.py --team ID`).
+  GOD v13 = v10's brain + v12's map analysis / draft memory + the strong teams' per-map pick prior at weight 1.0: vs the 4 real strong rosters
+  +120.6 gems a map [+25, +221], vs IC's draft +120, h2h vs v10 47/80. Proxies `tools/ic/make_team_proxy.py` (`_px_ic`, `_px_ic2`, `_px_pbg`, `_px_wbg`),
+  cells `tools/ic/cells.py`, rosters `tools/god12/screen.py`. Anti-IC candidate (+ ownership 0.1: +222 vs IC's draft, worse vs Prism / Willow teams):
+  `submissions/candidates/god_v13_anti_ic_20261024.zip`. `bots/god12` is again exactly the v12 zip; new variants: `SRC=bots/god13 tools/variant.sh`.
 - **Session 18d (2026-10-24, 20:15 UTC): GOD v12 built at the user's request** ("push a new bot with everything we did today"; then "use all the
   switches with every new feature on"): `bots/god12`, zip `submissions/god_v12.zip`, doc `docs/strategy_v2/19_GOD_V12.md`. It is GOD v10 + map
   analysis + draft memory v2 + the DL tables + the live bytes + the teamplan rules, every new switch on. **Measured worse than v10** (h2h 29/80, -160 gems

@@ -235,3 +235,13 @@ changes. No champion name or map identity is in the logic: champions enter throu
 - **Not on**: `tp_own` (its block is overwritten by the v2 image; `mi_own` is the same rule). The ENEMY, CONT and NAV blocks are written but no
   play code reads them yet.
 - **SDK**: built and measured on cambc 3.0.5 only (the mapintel / teamplan libraries use the 3.0 SDK; the 2.2.5 build of earlier zips was not checked).
+
+## GOD v13 (session 18e, Oct 24; `bots/god13`, `docs/strategy_v2/20_IC_OCT24.md`)
+
+- **The pick prior is LEARNED per known map** (`known_maps.h` `pick_strong`: the top-20 teams' pick rates on that map in one ladder snapshot,
+  Oct 23-24) and predicted from the map's features on unknown maps. A new ladder meta shifts it: re-run `tools/mapintel/ladder_fetch.py` +
+  `draft_learn.py` + `export_headers.py` on fresh data. Its weight 1.0 is chosen by the screen of doc 20 (0.3 / 0.6 / 1.0 / 1.5), not fitted.
+- **The team proxies draft like the ladder teams but play with our brain**: a gain against `_px_ic` is a gain against IC's draft, not against
+  IC's execution. Only the ladder can measure that.
+- `ic_build` (off) names no champion but restricts itself to non-support kits by a type list (Cassi & Issac, Ryth, Marcella, Willow keep the
+  value-model lists).

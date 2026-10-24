@@ -13,11 +13,15 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
+## Current build: **GOD v13** (`submissions/god.zip`, Oct 24): v10 + v12 + the Intercontinental Fish data
+
+GOD v13 (`bots/god13`) = GOD v10's brain and dynamic draft + v12's map analysis and draft memory + **the strong teams' per-map pick prior** (weight 1.0; on a known map the top-20 teams' own pick rates, which include IC's table). Studied: IC's 300 matches and 73 replays (`docs/strategy_v2/20_IC_OCT24.md`). Measured on cambc 3.0.5 (40 official maps x 2 sides, paired with v10's own games): **+120.6 gems a map [+25, +221] against the 4 real strong-team rosters**, +55 over all 8 roster families, **+120 against IC's draft** (22 games turned to wins, 12 to losses), 47/80 head-to-head vs v10 (+137 gems a map). Not in it (measured no better in our brain): IC's builds, IC-size bags, kill-value targeting, the live bytes, the capture rule. Anti-IC option: `submissions/candidates/god_v13_anti_ic_20261024.zip` (+ soft ownership: +222 against IC's draft, but worse against the Prism / Willow teams). Previous build GOD v10: `submissions/history/god_v10_20261021.zip`.
+
 ## New bot: **GOD v12** (`submissions/god_v12.zip`, Oct 24): everything from Oct 24, every new feature on (the user's request)
 
-GOD v12 (`bots/god12`) = GOD v10 + map analysis + draft memory v2 + the step-7 DL tables + the live bytes + the teamplan rules, every new switch on (`docs/strategy_v2/19_GOD_V12.md`). **It measures worse than GOD v10**: head-to-head 29/80, and -160 gems a map against v10's own games versus 8 strong-team rosters (each feature alone is level with v10; together they interfere). So `submissions/god.zip` is still GOD v10. A level alternative with only the two best features: `submissions/candidates/god_v12_prior_own_20261024.zip`.
+GOD v12 (`bots/god12`) = GOD v10 + map analysis + draft memory v2 + the step-7 DL tables + the live bytes + the teamplan rules, every new switch on (`docs/strategy_v2/19_GOD_V12.md`). **It measures worse than GOD v10**: head-to-head 29/80, and -160 gems a map against v10's own games versus 8 strong-team rosters (each feature alone is level with v10; together they interfere). `submissions/god.zip` stayed GOD v10 until GOD v13. A level alternative with only the two best features: `submissions/candidates/god_v12_prior_own_20261024.zip`.
 
-## Current build: **GOD v10** (`submissions/god.zip`, session 14, Oct 21): patch 3.0.4, measured on cambc 3.0.4
+## Previous build: **GOD v10** (session 14, Oct 21): patch 3.0.4, measured on cambc 3.0.4
 
 GOD v10 = GOD v8 + the patch-3.0.4 dynamic draft + what held up from the user's v9 upload and the two improvement plans
 (`docs/strategy_v2/18_V9_AND_PLAN.md` has every measurement; the 3.0.4 draft is `docs/strategy_v2/17_PATCH_3_0_4.md`):

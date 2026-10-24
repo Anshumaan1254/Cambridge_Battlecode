@@ -1,0 +1,198 @@
+diff -ru bots/god2/src/brain.cpp bots/god2_load/src/brain.cpp
+--- bots/god2/src/brain.cpp	2026-10-24 00:04:16.920510200 +0530
++++ bots/god2_load/src/brain.cpp	2026-10-24 00:08:45.775846300 +0530
+@@ -241,6 +241,56 @@
+ 		rep(v, pw, 300);
+ 		return v;
+ 	}
++	if (bs == 20)
++	{
++		// god2 (session 17, experiments/top2/an_items.md C1/C9): health-weighted builds by role. The #1 team puts 46% of its stat points
++		// into health (its opponents 31%) and wins 73% of games when its team max health leads by 10% at r600; its Vesper has 1.5-1.9x the
++		// opponents' Vesper health at the same strength and dies 40% less, while the damage builders die most. Role and damage stat come
++		// from the engine design (no champion names): the damage stat is the one whose growth adds more damage per 8 turns (strength x
++		// basic attacks vs focus x spell modifiers, a shield counting as a spell).
++		const auto& d = bc::champion_designs[static_cast<std::size_t>(t)];
++		const Kit k = kit_of(d);
++		const auto s = d.base_stats();
++		const bool focus = s.focus_growth * (k.dmg_mod + k.aoe_mod + k.dash_mod + k.shield_mod) > s.strength_growth * (k.reset >= 0 ? 9.f : 8.f);
++		const I dj = focus ? I::jungle_shard_of_focus : I::jungle_shard_of_strength;
++		const I db = focus ? I::bruiser_shard_of_focus : I::bruiser_shard_of_strength;
++		const I dp = focus ? I::power_shard_of_focus : I::power_shard_of_strength;
++		if (k.ranged)
++		{
++			// carry (the #1 team's newest builds, 18-7): Jungle in the damage stat (-30% camp damage taken while farming), Bruiser damage,
++			// Bruiser health, Durability health, then Bruiser damage / health
++			rep(v, dj, 5);
++			rep(v, db, 5);
++			rep(v, I::bruiser_shard_of_health, 5);
++			rep(v, I::durability_shard_of_health, 5);
++			cycle(v, { db, I::bruiser_shard_of_health }, 12);
++		}
++		else if (k.shield >= 0 || k.dash_radius > 0.f)
++		{
++			// frontliner (shield / landing stun): Power health, Durability health, Power in the damage stat, then Bruiser health / damage
++			rep(v, I::power_shard_of_health, 5);
++			rep(v, I::durability_shard_of_health, 5);
++			rep(v, dp, 5);
++			cycle(v, { I::bruiser_shard_of_health, db }, 12);
++		}
++		else if (k.aoe_stuns)
++		{
++			// area stunner: Bruiser health, Durability health, Power in the damage stat, then Bruiser damage / health
++			rep(v, I::bruiser_shard_of_health, 5);
++			rep(v, I::durability_shard_of_health, 5);
++			rep(v, dp, 5);
++			cycle(v, { db, I::bruiser_shard_of_health }, 12);
++		}
++		else
++		{
++			// melee damage / banker: Bruiser damage, Bruiser health, Durability health, then Bruiser damage / health
++			rep(v, db, 5);
++			rep(v, I::bruiser_shard_of_health, 5);
++			rep(v, I::durability_shard_of_health, 5);
++			cycle(v, { db, I::bruiser_shard_of_health }, 12);
++		}
++		return v;
++	}
+ 	if (bs == 2)
+ 	{
+ 		// Value-model builds (tools/analysis/item_value.py, calibrated on 36 r2 games). Every shard adds one point
+diff -ru bots/god2/src/draft.cpp bots/god2_load/src/draft.cpp
+--- bots/god2/src/draft.cpp	2026-10-24 00:04:16.926534900 +0530
++++ bots/god2_load/src/draft.cpp	2026-10-24 00:08:28.442819000 +0530
+@@ -527,6 +527,75 @@
+ 		}
+ 	return false;
+ }
++
++// mapdraft 8 (god2, session 17; experiments/top2/an_draft.md D1/D2): every study team drafts a fixed priority list truncated by the team
++// size, and their common core is a ranged gold carry, a durable frontliner with a landing stun, a melee damage dealer, a stun-immune banker
++// and an area stunner. The slots are filled from the engine's champion designs (stats, growths, kit, passive), so a patch moves the picks;
++// nothing names a champion. Pick order = slot order (picks are simultaneous and not exclusive: the order only sets the body indices).
++float role_value(int slot, D c)
++{
++	const auto& d = bc::champion_designs[static_cast<std::size_t>(dm_type_of(c))];
++	const auto s = d.base_stats();
++	const Kit k = kit_of(d);
++	const bool dash = k.dash >= 0, area_stun = k.aoe_stuns || k.dash_radius > 0.f;
++	// D2: no fragile pick (base health below g2l_min_hp without a dash, heal or shield: the 3.0.4 Stellar and the linked pair's Cassi)
++	if (s.base_health < P.g2l_min_hp && !dash && k.heal < 0 && k.shield < 0)
++		return -1.f;
++	const float attacks = k.reset >= 0 ? 9.f : 8.f; // basic attacks per 8 turns (an attack reset adds one per cooldown)
++	const float hp5 = s.base_health + 5.f * s.health_growth, str5 = s.base_strength + 5.f * s.strength_growth; // five shards ahead
++	switch (slot)
++	{
++	case 0: // carry: ranged sustained damage x gold bonus x mobility (the top teams' Vesper banks 24-46% of the gems, takes 27-50% of the gold)
++		if (!k.ranged)
++			return -1.f;
++		return str5 * attacks * (1.f + (d.passive() == bc::passive_type::bonus_gold ? P.g2l_gold_bonus : 0.f)) * (dash ? 1.5f : 1.f);
++	case 1: // front: melee effective health with engage tools (22-32% of the damage taken in every study team)
++		if (k.ranged)
++			return -1.f;
++		return hp5 * (dash ? 1.3f : 1.f) * (area_stun ? 1.3f : 1.f) + (k.shield >= 0 ? k.shield_mod * s.base_focus : 0.f);
++	case 2: // melee damage
++		if (k.ranged)
++			return -1.f;
++		return str5 * attacks * (dash ? 1.3f : 1.f);
++	case 3: // banker: stun immunity (only a death or a new lock stops its tribute; it dives a stunning carrier), then health
++		return (d.passive() == bc::passive_type::stun_immunity ? 1e5f : 0.f) + hp5;
++	default: // utility: an area stun (cancels channels, peels), then health
++		return (area_stun ? 1e5f : 0.f) + hp5;
++	}
++}
++
++bool role_pick(const std::vector<D>& mine)
++{
++	static std::vector<D> plan;
++	if (plan.empty())
++	{
++		static const D all[] = { D::ryth, D::vesper_vale, D::vendetta, D::cassi_and_issac, D::stellar, D::prism, D::marcella, D::willow, D::ren,
++			D::varg, D::tavi, D_HOR };
++		const int size = std::clamp(static_cast<int>(bc::draft::team_size()), 1, 5);
++		for (int slot = 0; slot < size; ++slot)
++		{
++			D best = D::ryth;
++			float bv = -1.f;
++			for (const D c : all)
++			{
++				if ((c == D_HOR && !SDK_HAS_HOR) || std::find(plan.begin(), plan.end(), c) != plan.end())
++					continue;
++				const float v = role_value(slot, c);
++				if (v > bv)
++					bv = v, best = c;
++			}
++			if (bv >= 0.f)
++				plan.push_back(best);
++		}
++	}
++	for (const D c : plan)
++		if (std::find(mine.begin(), mine.end(), c) == mine.end())
++		{
++			note_pick(c);
++			return true;
++		}
++	return false;
++}
+ } // namespace
+ 
+ namespace
+@@ -602,6 +671,17 @@
+ 			F.team, F.groups, F.gem, F.gold, F.wolf, F.elk, F.mono, F.multi, F.harmless, F.gem_groups, F.mean_dist, F.area, F.holes, F.altars);
+ 	}
+ #endif
++	if (P.mapdraft == 8)
++	{
++		try
++		{
++			if (role_pick(mine))
++				return;
++		}
++		catch (...)
++		{
++		}
++	}
+ 	if (P.mapdraft == 6)
+ 	{
+ 		try
+diff -ru bots/god2/src/params.h bots/god2_load/src/params.h
+--- bots/god2/src/params.h	2026-10-24 00:04:16.924525300 +0530
++++ bots/god2_load/src/params.h	2026-10-24 00:13:36.605623900 +0530
+@@ -163,7 +163,7 @@
+ 							   // 100% of the time, we 19%); 2 = also re-ward after ward_bush_gap rounds when a bush is in reach and our ward is not in it
+ 	int ward_bush_gap = 3;	   // ... (ward_bush 2)
+ 	int ward_bush_maps = 1;	   // 0 = ward bushes on every map; 1 = only on lone-monolith (contest-type) maps
+-	int mapdraft = 6;		   // 0 = our composition choice; sparring proxies: 1 = Mite's per-map drafts, 2 = ifish's (draft.cpp)
++	int mapdraft = 8;		   // 0 = our composition choice; sparring proxies: 1 = Mite's per-map drafts, 2 = ifish's (draft.cpp)
+ 							   // 7 = Intercontinental Fish's per-map table (sparring proxy, session 12)
+ 							   // 3 = ours with the top teams' choices where they beat ours (rushbait-v2, interlock, expanse; stampede with md_stampede)
+ 	int md_stampede = 1;	   // mapdraft 3: stampede drafts the 2nd team's casters (Prism, Stellar, C&I, Ryth, Tavi) for the ring plan
+@@ -175,7 +175,7 @@
+ 	float pd_elk = 0.3f; // team size 4: Ryth only with elk share >= pd_elk
+ 	float pd_counter = 1.f;
+ 	int pd_obj_multi = 1;	   // 1: an objective map also needs the lone gem group to be a multi-camp group (draft.cpp derive_params)
+-	int build_style = 2;	   // 0 = old farm builds, 1 = health/durability/treasure builds (ladder-proven),
++	int build_style = 20;	   // 0 = old farm builds, 1 = health/durability/treasure builds (ladder-proven),
+ 							   // sparring proxies: 3 / 4 / 10 = ifish (frontline health then Power / Monster then Power / 3 or 4 by map),
+ 							   //     9 = Mite (Jungle, Durability in the damage stat, Bruiser health, Power)
+ 							   // 2 = value-model builds (tools/analysis/item_value.py): Bruiser over Power, early Treasure
+@@ -774,6 +774,11 @@
+ 	float pxs_obj_mult = 3.f;
+ 	float pxs_raid_mult = 3.f;	// styles 2 / 3: groups on the other team's half are worth this much more (a raid, not just a lower penalty)
+ 	int pxs_deny_bodies = 2;	// style 6: bodies 0 .. n-1 camp the other team's altars
++	// ---- god2 load (session 17): draft and builds from the top-team study (experiments/top2/an_draft.md, an_items.md).
++	// mapdraft 8 = role-slot draft from the engine designs (6 = god.zip's map-parameter draft); build_style 20 = health-weighted builds by
++	// role (2 = god.zip's value-model builds).
++	float g2l_gold_bonus = 0.33f; // the bonus_gold passive's extra gold share (rules: Vesper +33%) in the carry slot's score
++	float g2l_min_hp = 700.f;	  // draft: no champion with base health below this unless it has a dash, a heal or a shield (D2)
+ };
+ 
+ #ifdef LEGEND_RUNTIME_PARAMS
+@@ -781,5 +786,6 @@
+ // candidate recompiles one file instead of the whole bot. Submitted builds use the constexpr defaults above.
+ extern const Params P;
+ #else
+-inline constexpr Params P{};
++inline constexpr Params P{
++};
+ #endif

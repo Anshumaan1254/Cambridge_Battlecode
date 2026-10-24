@@ -1,0 +1,21 @@
+G2A: 240 games, wins 12; refs S0 240
+
+RAW (different maps on / off):
+  bank   on 123 off 117 | win   -0.02  gems  +92.83  margin  +58.29  deaths   -2.59  camp  +96.91
+  deny   on 138 off 102 | win   +0.04  gems  -18.50  margin   -1.93  deaths   +0.22  camp  +64.66
+  fight  on 117 off 123 | win   +0.00  gems  +20.69  margin  +25.81  deaths   -1.44  camp  +39.28
+
+PAIRED vs S0 (240 cells; delta = G2A - S0): mean delta win -0.00  gems -18.55  margin -22.38  deaths -1.90  camp -12.05
+  bank   on 123 off 117 | win   -0.02+- 0.03  gems  +31.15+-34.95  margin   +9.12+-53.70  deaths   +1.60+- 0.76  camp  +33.49+-32.98
+  deny   on 138 off 102 | win   -0.02+- 0.03  gems  -56.17+-34.26  margin  -54.08+-51.50  deaths   +0.52+- 0.77  camp  -29.82+-30.98
+  fight  on 117 off 123 | win   -0.04+- 0.03  gems   -1.95+-35.16  margin  -40.42+-53.55  deaths   +0.05+- 0.76  camp  -23.05+-32.65
+  OLS delta ~ bits (joint):
+    win     const:   +0.05+- 0.04  bank:   -0.03+- 0.03  deny:   -0.03+- 0.04  fight:   -0.05+- 0.03
+    gems    const:   +3.59+-38.64  bank:  +26.81+-35.02  deny:  -55.08+-35.68  fight:   -8.64+-35.18
+    margin  const:  +32.86+-59.21  bank:   +4.45+-53.66  deny:  -59.63+-54.67  fight:  -47.66+-53.90
+    deaths  const:   -3.20+- 0.84  bank:   +1.66+- 0.76  deny:   +0.67+- 0.77  fight:   +0.13+- 0.76
+
+PER OPPONENT (paired vs first ref, margin delta by bit on - off):
+  Claudus Maximus        n= 80 wins 6 vs 7 | bank   +130  deny    -46  fight    -73
+  Intercontinental Fish  n= 80 wins 4 vs 5 | bank    -44  deny   -124  fight    +66
+  prism best girl        n= 80 wins 2 vs 1 | bank    -58  deny     +7  fight   -113

@@ -623,6 +623,30 @@ Weights live in one versioned parameter set.
     cost on the previous turn + 10k).
   - **Running**: the confirmation battery (`tools/teamplan/batteries.py --confirm`): `tp_bag`, `tp_own` and both together, against v10
     and v10 forced to roster slots 0, 1 and 2; v10's own games against each forced roster are the paired base.
+- **17:03**: the confirmation battery is done, and so is step 7 (commit after this line).
+  - **Ran**: `tools/teamplan/batteries.py --confirm --slots 0,1,2,3,4,5,6,7`.
+    - Variants: `tp_bag`, `tp_own` and both together.
+    - Opponents: v10 itself, and v10 forced to 8 roster slots (4 real strong-team rosters, 4 computed kit-balanced ones).
+    - v10's own games against each forced roster are the paired base.
+    - 2,400 new games, 2,800 with the cells cached from 16:30. Table: `experiments/results/teamplan/batteries_v10_confirm.md`.
+  - **Result**: neither lead holds (11.1); the leads of the first three rosters were sampling effects.
+    - Soft ownership: level, 106 games turned into wins and 110 into losses.
+    - The bag rule: no gain, 45 / 45.
+    - Both together: level, 110 / 110.
+  - **Also**:
+    - the bootstrap's pairing order is now fixed (11.5);
+    - `assign.h` has a `runner_up` output, the next owner of the final layout (engine test: 2,080 results bit-equal; 56.1k worst
+      call);
+    - step 6: TinyML not built (11.3, answer 4).
+  - **Docs**:
+    - section 11;
+    - `docs/DRAFT_MEMORY.md` final: a 12-entry table of contents, the fuel guard, and the in-game OWN recompute when the last draft turn
+      has no room;
+    - `tools/teamplan/README.md`;
+    - the teamplan sections of `ISSUES.md` and `SUGGESTIONS.md`;
+    - the implementation prompt `docs/PROMPT_DRAFT_MEMORY_V2.md` (step 8);
+    - pointers in `AGENTS.md` and MAPAnalysis 1.9.
+  - **`PENDING_MEMORY.md` deleted**: every task in it is done.
 
 ---
 
@@ -657,12 +681,117 @@ ladder or in the user's bot):
 
 **Confirmation battery of the two leads** (`experiments/results/teamplan/batteries_v10_confirm.md`, slots 0-7):
 
-_Running (Oct 24, 16:52): this table is filled in when the confirmation battery on slots 0-7 ends. The slots 0-2 part is in `experiments/results/teamplan/batteries_v10_confirm.md`._
+| Variant | Head-to-head vs v10 | Paired, the 4 real rosters (slots 0-3) | Paired, the 4 computed rosters (slots 4-7) | Paired, all 8 |
+|---|---|---|---|---|
+| `tp_bag` | 44/80, +37.5 [-43, +114]; maps 6 won twice / 2 lost twice | +10.6 [-46, +66]; turned 31 / 21 (p 0.21) | -79.7 [-132, -35]; turned 14 / 24 (p 0.14) | -34.6 [-73, +2]; turned 45 / 45 (p 1.00) |
+| `tp_own` | 44/80, +19.0 [-122, +159]; maps 13 won twice / 9 lost twice | +36.8 [-50, +132]; turned 66 / 54 (p 0.32) | -71.8 [-144, -3]; turned 40 / 56 (p 0.13) | -17.5 [-76, +40]; turned 106 / 110 (p 0.84) |
+| both | 39/80, +29.1 [-112, +162]; maps 9 won twice / 10 lost twice | +51.9 [-37, +149]; turned 68 / 54 (p 0.24) | -67.6 [-134, -0]; turned 42 / 56 (p 0.19) | -7.8 [-65, +49]; turned 110 / 110 (p 1.00) |
+
+Paired margins are gems a map [bootstrap 95%]; "turned" counts the games the variant won where v10 lost, and the reverse (sign test).
+v10's own results against the forced rosters: 37, 43, 47, 45 of 80 against the real rosters; 51, 70, 56, 65 against the computed
+ones.
+
+**Reading**:
+- All three lean positive against the real strong-team rosters (+11 to +52 gems a map), but no interval clears 0.
+- All three lose gems against the computed rosters (-68 to -80, intervals at or below 0). v10 already wins most of those games, and
+  the switches give up margin there.
+- Over all eight rosters all three are level: 45 / 45, 106 / 110 and 110 / 110 games turned.
+- The leads of the first battery came from the first rosters tried. Ownership on slots 0-2 was +68.1 with 52 games won and 38 lost;
+  the bag rule on slot 0 was +85.4. Neither repeated on the other rosters.
 
 ### 11.2 Verdicts (the user's rule: keep an idea only if it still wins against its alternatives)
 
-_Written when the confirmation battery ends._
+| Idea (section 4) | Built as | Evidence | Verdict |
+|---|---|---|---|
+| U1: every body farms | v10's behaviour (no switch) | the top teams do; kill gold is 12-24% of a champion's income (section 3). The alternatives measured on 3.0.4 lost: an anchor farming only home groups 37-41%, an aggressor body 51% at best (SUGGESTIONS, v11) | **keep: every body farms** |
+| U2': bag rules | `bag.h`; switch `tp_bag` (the fight bar x (1 + bag / 60)) | head-to-head 44/80 (+37.5 [-43, +114]); paired over the 4 real rosters +10.6 [-46, +66], games turned 31 / 21 (p 0.21); over the 4 computed rosters -79.7 [-132, -35], 14 / 24; all 8: -34.6 [-73, +2], 45 / 45. The slot-0 gain (+85.4) was not repeated | **rejected on v10**: no gain over all eight rosters, and a loss of gems against the computed ones. The rules stay in `bag.h` (off) for a test on the new bot, whose fight logic will differ |
+| U3': who captures a shared reward | `capture.h` mode 1 (LEARNED) | matches the strong teams' choice in 65% of 1,166 shared captures (chance 41%); the risk-matched rule 42%. v10 shares only 1.1% of its captures, so it could not be tested on v10 | **keep mode 1** for the new bot |
+| U4': job swaps when a body lags | `swap.h` (the expected-value check, hysteresis, a TinyML slot with zero weights) | not testable on v10: no live bits for the per-body progress codes | **build on the new bot and test it there** (`live.h` carries the codes). TinyML not built |
+| D1: soft ownership | `assign.h` + the OWN block in draft memory; switch `tp_own` (own groups x 1.25) | head-to-head 44/80 (+19.0; maps 13 won twice / 9 lost twice); paired over the 4 real rosters +36.8 [-50, +132] (games turned 66 / 54, p 0.32), over the 4 computed ones -71.8 [-144, -3] (40 / 56); all 8: -17.5 [-76, +40], 106 / 110 (p 0.84). The lead on slots 0-2 (+68.1, 52 / 38) was not repeated on slots 3-7. Found after the fact, not tested: it lost on the 6 maps with more than 30 groups (-13 net wins) and gained on the 9 with 12 or fewer (+7) | **not confirmed: level on v10.** The OWN block stays in the layout as a soft input: it costs no game turn and carries the next owners. The new bot must test its weight: start small, and test maps with many groups on their own |
+| D2-D8: codebook, briefing, contingencies, enemy model, navigation aids, debug | the blocks of `docs/DRAFT_MEMORY.md` | layout only; the implementation is the handoff (`docs/PROMPT_DRAFT_MEMORY_V2.md`) | **in the final layout** |
+| P1: kill value | `focus.h`; switch `tp_focus` | head-to-head 41/80; paired vs the strong roster +47.5 [-32, +135], 8 / 4 | **level on v10**; the term stays in the library for the new bot's one-currency action score (P5) |
+| P2: live protocol | `live.h` | codec bit-equal in the engine test | **for the new bot** (v10 keeps its own layout) |
+| P4: do not step into reach first | `timing.h`; switch `tp_timing` | head-to-head 38/80; paired -60.7 [-237, +120], 15 / 17 | **rejected as a gate**; `timing.h` stays as the helper that says who acts next |
+| T: tiebreak mode | `tiebreak.h`; switch `tp_tiebreak` (the deferral, caps 60 / 150) | head-to-head 35/80 and 37/80; paired +8.5 and +5.8 | **race to finish**; the detection and the final tribute window stay; deferral cap 0 |
+| All five together | switch set `_tp_all` | head-to-head 39/80; paired -77.9 [-233, +70] | the rules interfere: never switch them on as a package |
+| Navigation | `nav.h`, `nav_sdk.h` | host fields beat a wasm BFS (section 6); the local detour costs 9k median, 17k max | **for the new bot**; the static hazards go to mapintel (the NAV block) |
 
-### 11.3 Answers to the user's questions (1.2 and 1.6)
+### 11.3 Answers to the user's questions (1.2, 1.6 and 1.1)
 
-_Written when the confirmation battery ends._
+1. **"Should we let a body farm?"** Yes: every body farms.
+   - The top teams do. Kill gold is only 12-24% of a champion's income (section 3).
+   - v10 already does, and nothing measured here argues for a body that does not farm.
+   - Who farms which group: the soft ownership plan (`tp_own`) was level on v10 (106 games turned into wins, 110 into losses over
+     eight rosters). v10's live claims already keep two bodies off one group.
+   - The closest alternatives were measured on 3.0.4 (the same balance as 3.0.5) and lost:
+     - a careful anchor farming only home groups: 37-41% (SUGGESTIONS, v11);
+     - an aggressor body: 51% at best.
+2. **"Farm bodies would also get gold, buy emblems, and engage the enemy to slow them down."** Gold, yes. For engaging, the rules
+   tested here did not beat v10's own fight logic.
+   - Gold is never lost on death, so every body should keep earning it.
+   - A death hands the bag to the killer: winners take about 110 gems a game from bags (section 3). So, in principle, fight with a
+     small bag. As rules on v10, neither of these gained:
+     - "be choosier with a bag" (`tp_bag`): no gain over eight rosters (45 games won, 45 lost; it lost gems against the computed
+       rosters);
+     - "aim at the kills worth the most" (`tp_focus`): level.
+   - Emblems alone do not win fights; local numbers do (Cout for Clout's ablation, section 7).
+3. **"Farm bodies let the frontliner take the gold."** No. The strong teams give a shared reward to the body with the gold bonus when it
+   is near, else to the nearest body.
+   - That rule matches 65% of their captures with two or more bodies near (chance 41%).
+   - The front bodies still end up with relatively more gold-only groups (16-26% of their capture gold, against 5-7% for the carries),
+     because they stand at them.
+   - `capture.h` mode 1 is that rule (passive-based, no names), and `assign.h` leans gem-free groups to the front bodies.
+4. **"If a frontliner lags, switch jobs, maybe with TinyML."** Use the expected-value check (`swap.h`), not TinyML.
+   - The check: swap two bodies' plans when one lags and the kits allow it, with hysteresis.
+   - Why not TinyML:
+     - roles are kit-bound;
+     - an ally's gold is unreadable;
+     - one game is too short to learn in (about 25 decision windows);
+     - no top Battlecode team reports ML tuning paying off (section 7).
+   - It could not be tested on v10: v10's live bytes have no room for the per-body progress codes it needs. `live.h` gives the new
+     bot 2 bits per body for them.
+   - The library keeps a TinyML slot with zero weights, for a later test on the new bot if the check fails there.
+5. **"Whenever you sense a tiebreak, only then submit the gems at the end; else race to finish."**
+   - **Race to finish**: kept. v10 already banks a bag that wins the game (`win_bank` + `team_bank`).
+   - **Holding bags back once a tiebreak is sensed**: lost on v10 (cap 60: 35 of 80; cap 150: 37 of 80) and stayed level against v10
+     forced to the strong roster (+8.5 and +5.8 gems a map).
+   - Why: a game reaches round 2000 rarely (2.7% of top-team games), and a held bag is a target.
+   - `tiebreak.h` keeps the detection and the final tribute window. Its deferral cap should be 0 until a test on the new bot says
+     otherwise.
+6. **"Use the 1,024 bytes of draft memory better."** The final layout is `docs/DRAFT_MEMORY.md`:
+   - a header and a 12-entry table of contents;
+   - checksummed blocks: TEAM, OWN, BODY, CONT, CODE, ENEMY, NAV and DEBUG below 512, and mapintel's block unchanged at 512;
+   - the fuel guard;
+   - the ownership table: written in the draft, recomputed once in the game when the last draft turn has no room.
+   - The implementation prompt is `docs/PROMPT_DRAFT_MEMORY_V2.md`.
+
+### 11.4 What the user's new bot should take
+
+- **The library, as tools with tests** (engine-checked, no names; `tools/teamplan/README.md`):
+  - `kit.h`: kit values from the designs;
+  - `capture.h` mode 1;
+  - `assign.h`: OWN and the next owner;
+  - `live.h`;
+  - `timing.h`: who acts next;
+  - `tiebreak.h`: the detection and the final tribute window, deferral cap 0;
+  - `nav.h` and `nav_sdk.h`.
+- **Off until the new bot's own tests say otherwise**:
+  - `bag.h` and `focus.h`: they act inside a fight logic, and the new bot's will differ from v10's;
+  - the timing gate;
+  - `swap.h`: test it once the progress codes are in the live bytes.
+- **The draft-memory layout** (`docs/DRAFT_MEMORY.md`), implemented in the mapintel library by the map-analysis agent
+  (`docs/PROMPT_DRAFT_MEMORY_V2.md`).
+- **No rule from the v10 batteries is a proven gain.** Re-measure each one on the new bot with paired cells against several roster
+  families, real and computed (the method of `tools/teamplan/batteries.py`).
+- **The testing lesson**:
+  - ownership led on three rosters (+68.1, 52 games won and 38 lost), and the bag rule led on one (+85.4);
+  - both vanished on eight;
+  - so judge a change on four or more roster families, including computed ones, before trusting it.
+
+### 11.5 Corrections to earlier checkpoints
+
+- **16:30**: "`tp_bag` is the only switch whose paired interval clears 0" (+85.4 [+1.1, +184.5]).
+  - That interval depended on the order Python iterated a set of map names: the bootstrap resampled them in that order, and the order
+    changes between runs.
+  - With a fixed order (the keys are now sorted) it is [-4.8, +182.2].
+  - Over eight rosters the bag rule shows no gain (11.1).

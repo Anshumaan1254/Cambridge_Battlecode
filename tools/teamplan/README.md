@@ -8,7 +8,8 @@ body with a bag fights, kill value, turn order, tiebreak mode, job swaps, the li
 
 **Status**:
 - Every module has a Python twin and an engine test.
-- The rules were tested on a git-ignored GOD v10 copy (results SIMULATED (v10)).
+- The rules were tested on a git-ignored GOD v10 copy (results SIMULATED (v10)). None beat v10 over all the rosters tried: the timing
+  gate and the tiebreak deferral lost, and the bag rule, soft ownership and kill-value targeting were level (TEAMPLAN.md 11).
 - No bot ships with this library yet. `bots/god` and `submissions/` are untouched.
 
 ## Layout

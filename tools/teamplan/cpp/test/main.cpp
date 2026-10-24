@@ -12,6 +12,9 @@
 //     4: TP S1 timing <hash> bag <hash> focus <hash> fuel <f> <f> <f>     5: TP S2 tiebreak <hash> fuel <f>
 //     6: TP S3 swap <hash> live <hash> nav <hash> fuel <f> <f> <f>        (the fuel of a sweep includes hashing its outputs)
 //     7: TP NAV step <dx> <dy> fuel <f> units <n> (nav_sdk.h local detour toward the enemy spawn around the champions in sight)
+//   every body, every turn from round 8: TP L <round> <slot> <slots> <bytes read, 16 hex> <bytes written, 16 hex> <live mask, 2 hex>
+//   <team-bit writer 0/1> <fuel of read + observe + compose + write> (live.h / live_sdk.h on the 8 shared bytes, synthetic values; slot 1
+//   stops publishing after round 14 and slot 0 after round 18: the others must see them go stale and slot 2 must take the team bits)
 //   every body, rounds 2-7 and every 10th round 20-80: TP O <round> <type> <prio> <prev_prio> (turn order inside a team) and
 //   TP EP <round> <enemy type> dist <d> <prev_prio | err> for the first two enemies listed; from round 8 the other bodies walk to the
 //   enemy spawn so enemies come into sight
@@ -32,6 +35,7 @@
 #include "teamplan/focus.h"
 #include "teamplan/kit.h"
 #include "teamplan/live.h"
+#include "teamplan/live_sdk.h"
 #include "teamplan/nav.h"
 #include "teamplan/nav_sdk.h"
 #include "teamplan/params.h"
@@ -477,6 +481,27 @@ static void game_turn_nav()
 		 std::to_string(units.size()));
 }
 
+static std::string hex64(std::uint64_t v) { return hexn(static_cast<unsigned>(v >> 32), 8) + hexn(static_cast<unsigned>(v), 8); }
+
+// The live protocol on the shared bytes (TP L): every body publishes synthetic values from round 8; slot 1 quits after round 14 and
+// slot 0 after round 18.
+static tp::LiveState LS;
+static void live_turn(int rnd)
+{
+	if ((LS.slot == 1 && rnd > 14) || (LS.slot == 0 && rnd > 18))
+		return;
+	const long long f0 = fuel();
+	const std::uint64_t seen = tp::live_read();
+	tp::live_observe(LS, seen, rnd);
+	bool w = false;
+	const int s = LS.slot;
+	const std::uint64_t v = tp::live_compose(LS, (rnd * 7 + s * 11) % 63, (rnd + s) % 4, (rnd + s) % 2, rnd % 8, (rnd / 3) % 2, &w);
+	tp::live_write(v);
+	const long long f1 = fuel();
+	line("TP L " + std::to_string(rnd) + " " + std::to_string(s) + " " + std::to_string(LS.n) + " " + hex64(seen) + " " + hex64(v) + " " +
+		 hexn(LS.live, 2) + " " + (w ? "1" : "0") + " " + std::to_string(f0 - f1));
+}
+
 int main()
 {
 	int dturn = 0, gturn = 0;
@@ -499,6 +524,10 @@ int main()
 				const auto& self = bc::self();
 				const int my_type = static_cast<int>(self.champion_name());
 				const int rnd = static_cast<int>(bc::round_number());
+				if (gturn == 1)
+					tp::live_init(LS);
+				if (rnd >= 8)
+					live_turn(rnd);
 				if (gturn == 1)
 				{
 					if (!have_kits)

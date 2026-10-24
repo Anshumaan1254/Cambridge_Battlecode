@@ -12,6 +12,8 @@ values' bytes, as the bot prints them):
     capture.h on 16 groups per roster (synthetic bags, items, walks and danger); timing.h, bag.h, focus.h, tiebreak.h, swap.h, live.h
     and nav.h on fixed sweeps;
   * nav_sdk.h's local detour returns a neighbouring tile or the body's own;
+  * live.h / live_sdk.h on the 8 shared bytes, every body from round 8 (live_check: the chain of reads and writes, the twin, stale
+    detection when slots 1 and 0 stop, the team bits moving to slot 2);
   * 0 exceptions; and the fuel of each part (the worst call over maps) is printed.
 Exit status 1 on any failure."""
 import argparse
@@ -260,6 +262,59 @@ def s3_hashes(kits_all, team_n, P):
 	return {"swap": hs, "live": hl, "nav": h.str()}
 
 
+def live_check(rows, tag):
+	"""The TP L lines of one team in stdout order (= the order the bodies acted; a body that lost a turn has no line for that round).
+	Checks against what really happened in the stream:
+	  * each read equals the previous body's write (the memory starts at zero);
+	  * the twin (tp/live.py) gives the same bytes written, live mask and team-bit writer flag;
+	  * no false stale: a slot that published since the reader's previous line is live in the reader's view;
+	  * stale detection: a slot whose last write the reader first saw in round a is not live from round a + 4 on (a + 3, plus the one
+	    round of doubt a reader gets when it lost a turn);
+	  * the stops happen (slot 1 after round 14, slot 0 after round 18) and the team bits change hands: by round 23 slot 2 writes them.
+	Returns (failures, results compared, worst fuel)."""
+	fails, states, prev, n_cmp, worst = [], {}, 0, 0, 0
+	last_pub = {}		 # slot -> stream index of its last line
+	prev_line = {}		 # reader slot -> stream index of its previous line
+	first_seen = {}		 # (reader, slot) -> round of the reader's first line after the slot's last line
+	late_writer = False
+	for k, t in enumerate(rows):
+		rnd, slot, n = int(t[0]), int(t[1]), int(t[2])
+		seen, wrote, livem, w, f = int(t[3], 16), int(t[4], 16), int(t[5], 16), t[6] == "1", int(t[7])
+		worst = max(worst, f)
+		where = f"{tag}: round {rnd} slot {slot}"
+		if seen != prev:
+			fails.append(f"{where} read {t[3]} but the last write was {prev:016x}")
+		L = states.setdefault(slot, live.LiveState(slot, n))
+		live.live_observe(L, seen, rnd)
+		v, ww = live.live_compose(L, (rnd * 7 + slot * 11) % 63, (rnd + slot) % 4, (rnd + slot) % 2, rnd % 8, (rnd // 3) % 2)
+		n_cmp += 1
+		if (v, ww, L.live) != (wrote, w, livem):
+			fails.append(f"{where}: twin {v:016x} writer {int(ww)} live {L.live:02x}, bot {t[4]} {t[6]} {t[5]}")
+		prev = wrote
+		pk = prev_line.get(slot)
+		for o in range(min(n, 6)):
+			if o == slot or o not in last_pub:
+				continue
+			is_live = livem >> o & 1
+			if pk is not None and last_pub[o] > pk and not is_live:
+				fails.append(f"{where}: slot {o} published since this body's last turn but is not live")
+			key = (slot, o)
+			if key not in first_seen or first_seen[key][0] != last_pub[o]:
+				first_seen[key] = (last_pub[o], rnd)
+			if rnd >= first_seen[key][1] + 4 and is_live:
+				fails.append(f"{where}: slot {o} has not published since round {rows[last_pub[o]][0]} but is still live")
+		if (slot == 1 and rnd > 14) or (slot == 0 and rnd > 18):
+			fails.append(f"{where}: published after its stop")
+		late_writer |= rnd >= 23 and slot == 2 and w
+		last_pub[slot] = k
+		prev_line[slot] = k
+	if not rows:
+		fails.append(f"{tag}: no TP L lines")
+	elif max(int(t[0]) for t in rows) >= 23 and not late_writer:
+		fails.append(f"{tag}: slot 2 never took the team bits after slots 0 and 1 stopped")
+	return fails, n_cmp, worst
+
+
 def design_lines(out):
 	return [" ".join(["DES"] + t) for t in out.get("DES", [])] + [" ".join(["CON"] + t) for t in out.get("CON", [])]
 
@@ -287,7 +342,8 @@ def main():
 		des, C = designs.load(stored)
 		kits_all = {t: kit.compute_kit(des[t], C, P) for t in des}
 		ref_lines = [l.strip() for l in open(stored) if l.strip() and not l.startswith("#")]
-	fuel = {"kits": 0, "groups": 0, "assign": 0, "capture": 0, "timing": 0, "bag": 0, "focus": 0, "tiebreak": 0, "swap": 0, "live": 0, "nav": 0}
+	fuel = {"kits": 0, "groups": 0, "assign": 0, "capture": 0, "timing": 0, "bag": 0, "focus": 0, "tiebreak": 0, "swap": 0, "live": 0, "nav": 0,
+			"live_turn": 0}
 	navs = []
 	n_cmp = 0
 	for m in maps:
@@ -359,6 +415,10 @@ def main():
 					if t[2 * j + 1] != want[nm]:
 						fails.append(f"{n} team {team}: {nm} differs")
 					fuel[nm] = max(fuel[nm], int(t[fi + 1 + j]))
+			lf, lc, lw = live_check(out.get("L", []), f"{n} team {team}")
+			fails += lf
+			n_cmp += lc
+			fuel["live_turn"] = max(fuel["live_turn"], lw)
 			for t in out.get("NAV", []):
 				dx, dy, f = int(t[1]), int(t[2]), int(t[4])
 				navs.append(f)
@@ -366,7 +426,8 @@ def main():
 					fails.append(f"{n} team {team}: local detour stepped {dx},{dy}")
 	print(f"maps: {len(maps)} x 2 teams, {n_cmp} hashed results compared with the Python twins")
 	print("fuel, worst over maps: " + ", ".join(f"{k} {v}" for k, v in fuel.items())
-		  + " (kits = all 13 designs in the draft; assign / capture = one call; the sweeps include hashing)")
+		  + " (kits = all 13 designs in the draft; assign / capture = one call; the sweeps include hashing; live_turn = one body's read,"
+		  " observe, compose and write of the shared bytes)")
 	if navs:
 		navs.sort()
 		print(f"local detour (nav_sdk.h, radius 3): median {navs[len(navs) // 2]} fuel, max {navs[-1]} over {len(navs)} calls")

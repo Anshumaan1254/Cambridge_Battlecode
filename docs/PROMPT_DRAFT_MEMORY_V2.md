@@ -51,13 +51,18 @@ tests. Then the user's bot can write and read all 1,024 bytes through one API. Y
   - the DL outputs are reserved at 864-999.
   - **Keep both byte-identical.**
 - **The team-play library** `tools/teamplan/cpp/teamplan/` (header-only C++ with Python twins in `tools/teamplan/tp/`). Its engine test
-  `python3 -I tools/teamplan/test_teamplan.py` checks 2,080 results bit-equal on 40 maps x 2 teams. What you need from it:
+  `python3 -I tools/teamplan/test_teamplan.py` checks 7,939 results bit-equal on 40 maps x 2 teams. What you need from it:
   - `assign.h`: `assign_groups`, the soft ownership plan. Its `runner_up` output is the next owner. 56.1k fuel worst (51 groups, 5
     bodies).
   - `kit.h`: kit values from the designs; `front_order`; passives by tag.
   - `sdk_bridge.h`: `design_of`, `consts_from_sdk`.
   - `capture.h`: mode 1, the LEARNED rule.
-  - `tiebreak.h`, `live.h` (the live protocol the blocks index into), `nav.h` / `nav_sdk.h`.
+  - `tiebreak.h`, `nav.h` / `nav_sdk.h`.
+  - **The 8 shared live bytes are already built**: `live.h` (layout and the per-turn layer: who is live, the team bits to the lowest
+    live slot) and `live_sdk.h` (`live_read` / `live_write` / `live_init`). They are engine-tested (every read equals the previous
+    write, lost turns, stale detection, the hand-over of the team bits) and cost 708 fuel per body-turn. The live slots are the allies'
+    body types in ascending order; your TEAM block must list the bodies in that same order (`docs/DRAFT_MEMORY.md` 5.1 and 6). The
+    claim indices in the live bytes point into your OWN and CODE blocks.
 - **The OWN prototype** (version 1 at offset 8) in the git-ignored GOD v10 test copy (`tools/teamplan/v10_adapter.patch`):
   - draft fuel measured: 138k on turn 1, 48-65k on turns 2-5, at least 24.2k left;
   - rosters equal v10's in 80 of 80 games.
@@ -78,7 +83,7 @@ tests. Then the user's bot can write and read all 1,024 bytes through one API. Y
      - plan id 0;
      - the tiebreak-prone flag from your plan 4's mode;
      - capture mode 1;
-     - the body types by slot, G, and the bodies OWN covers (byte 11).
+     - the body types by slot in ascending body type (the live slots' order), G, and the bodies OWN covers (byte 11).
    - **OWN**:
      - `teamplan::assign_groups` on `AGroup`s built from your view (value = gems + `gold_gems` x gold, the camps' total health, the walk
        from our spawn, gem-free). Reuse your walks: no second scan of the camp groups.

@@ -647,6 +647,13 @@ Weights live in one versioned parameter set.
     - the implementation prompt `docs/PROMPT_DRAFT_MEMORY_V2.md` (step 8);
     - pointers in `AGENTS.md` and MAPAnalysis 1.9.
   - **`PENDING_MEMORY.md` deleted**: every task in it is done.
+- **17:25**: the 8 shared live bytes built (commit after this line).
+  - **Why**: the user asked whether the prompt builds "all the 1024 and shared memory". It builds the 1,024 bytes; the live bytes were
+    only a layout and an encode / decode.
+  - **Added**: `live.h`'s per-turn layer, `live_sdk.h`, the twin, and an engine test with real lost turns. The test found and fixed the
+    1-bit beat aliasing after a reader's lost turn (11.6).
+  - **Result**: 7,939 results bit-equal on 40 maps x 2 teams, every check passed, 708 fuel per body-turn.
+  - **Docs**: `docs/DRAFT_MEMORY.md` 5.1 and 6, the prompt, `tools/teamplan/README.md`, `ISSUES.md`.
 
 ---
 
@@ -663,7 +670,7 @@ ladder or in the user's bot):
 - **Paired**: a variant's game is compared with v10's own game against the same opponent, map and side. Two measures: the gem margin
   difference per map (bootstrap 95% interval), and the games it turned into wins or losses (two-sided sign test).
 - **Offline**: the capturer check on 25 raw top-team replays, the role tables from 599 decoded games, and the engine test of the
-  library (2,080 results bit-equal, fuel per call).
+  library (2,080 results bit-equal; 7,939 since the live-bytes test was added, 11.6).
 
 ### 11.1 The batteries
 
@@ -771,7 +778,7 @@ ones.
   - `kit.h`: kit values from the designs;
   - `capture.h` mode 1;
   - `assign.h`: OWN and the next owner;
-  - `live.h`;
+  - `live.h` + `live_sdk.h`: the 8 shared bytes, every turn (11.6);
   - `timing.h`: who acts next;
   - `tiebreak.h`: the detection and the final tribute window, deferral cap 0;
   - `nav.h` and `nav_sdk.h`.
@@ -795,3 +802,42 @@ ones.
     changes between runs.
   - With a fixed order (the keys are now sorted) it is [-4.8, +182.2].
   - Over eight rosters the bag rule shows no gain (11.1).
+
+### 11.6 The 8 shared live bytes, built (Oct 24, after the user asked whether the prompt builds "all the 1024 and shared memory")
+
+**The answer to that question**:
+- The prompt builds the 1,024 bytes of draft memory, in the mapintel library.
+- The 8 shared bytes were only a layout and an encode / decode until now. They are now built here, because `live.h` is this library's.
+
+**What was added**:
+- `live.h`, the per-turn layer:
+  - `LiveState`;
+  - `live_slot_of`: slots in ascending body type;
+  - `live_observe`: who is live;
+  - `live_compose`: our field with the beat toggled, plus the team bits when no lower slot is live;
+  - `field_stale`.
+- `live_sdk.h`: `live_read`, `live_write`, `live_init`.
+- The Python twin of all of it in `tp/live.py`.
+
+**The engine test** (`test_teamplan.py`, TP L lines): every body publishes synthetic values every turn from round 8, slot 1 stops after
+round 14 and slot 0 after round 18; 40 maps x 2 teams, 5,859 body-turns. The checks:
+- every read equals the previous body's write;
+- the twin gives the same bytes, live mask and writer flag;
+- no publishing slot is ever marked stale;
+- a stopped slot is stale within 4 rounds of the reader first seeing its last write;
+- slot 2 takes the team bits.
+
+All passed. The cost is 708 fuel per body-turn.
+
+**A flaw the test found, fixed**:
+- The test's tester body loses turns, as any body can when a turn runs out of fuel.
+- With the plain 1-bit beat, a reader that skipped a round saw two toggles as none, and marked beating allies stale.
+- The fix:
+  - any changed bit of the field counts as a sign of life;
+  - a field unchanged across exactly one skipped round gets one round of doubt, once in a row.
+
+**A rule the design relies on**: dead champions still act (they get a turn to shop, GameRules), so a dead body keeps beating. It
+publishes claim 63 (none) while dead.
+
+**What is left for the user's bot**: its champion code calls these functions every turn and decides what to publish. That part is the
+bot itself: the claim it works on, its progress code from `swap.h`, the bag flag from `bag.h`, the plan cursor and the tiebreak bit.

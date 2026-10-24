@@ -107,7 +107,7 @@ Unused entries are zero.
 | 1 | number of OWN variants available (0 = only the base table) |
 | 2 | tiebreak-prone map (bit 0, `tiebreak.h` / mapintel plan 4's mode); bits 1-2 the mapintel tiebreak mode copy |
 | 3 | capture rule (`capture.h` capture_mode) |
-| 4-9 | body types by slot, the same order as OWN and BODY (255 = none), so a body finds its slot without reading the roster. Written for the final roster on the last draft turn (cheap). |
+| 4-9 | body types by slot, in ascending body type: the order of OWN, BODY and the live slots (section 6; 255 = none), so a body finds its slot without reading the roster. Written for the final roster on the last draft turn (cheap). |
 | 10 | groups G covered by OWN |
 | 11 | bodies covered by OWN: the roster size the OWN table was computed for. Below the roster size means recompute in the game (section 7) |
 | 12-15 | reserved |
@@ -190,15 +190,40 @@ The live bytes carry 3- to 6-bit indices into these tables instead of raw tiles 
 | 10-11 | builder version |
 | 12-15 | reserved |
 
-## 6. Live bytes (8 bytes, all game): `tools/teamplan/cpp/teamplan/live.h`
+## 6. Live bytes (8 bytes, all game): `teamplan/live.h` + `teamplan/live_sdk.h` (built and engine-tested)
 
+**Layout** (64 bits, little-endian):
 - **Bits 10b..10b+9, body slot b = 0..5, written only by that body**:
   - claim: 6 bits, a group index (63 = none);
   - status: 2 bits, the progress code of `swap.h` or a role state;
-  - beat: 1 bit, toggled each turn the body acts; a field unchanged for 2 rounds is stale;
+  - beat: 1 bit, toggled every turn the body publishes;
   - flag: 1 bit, carrying at least the hunt threshold.
-- **Bits 60-63, written by the lowest alive slot**: the plan cursor (3 bits: the variant in use) and the tiebreak bit (1).
+- **Bits 60-63, written only by the lowest live slot**: the plan cursor (3 bits: the variant in use) and the tiebreak bit (1).
 - **Indices point into OWN, CODE and the variant set**: the draft and the champions computed the same tables.
+
+**Slots**: the allies' body types in ascending order (`live_slot_of`). Every body computes the same order at spawn, and TEAM bytes 4-9
+list the bodies in that same order, so OWN's owner nibbles and the live slots agree.
+
+**Every turn, at its start** (`live_sdk.h`):
+1. `live_observe(L, live_read(), round)`: one host read of the 8 bytes, and which slots are live;
+2. the body decides what to publish;
+3. `live_write(live_compose(L, claim, status, flag, cursor, tiebreak))`: our field with the beat toggled, plus the team bits when no lower
+   slot is live; one host write.
+- **Turns never overlap**, so the read-modify-write is safe: the engine test checked every read against the previous body's write.
+- **Fuel**: 708 at most per body-turn (engine test, 40 maps x 2 teams).
+
+**When a slot is live**:
+- **The slot has published once**: a nonzero field, or a change, was seen. The memory starts at zero.
+- **Its field showed a sign of life within the last 2 rounds**: a beat toggle or any changed bit.
+- **One round of doubt**: a reader that lost its own previous turn cannot tell two toggles from none. A field unchanged across exactly one
+  skipped round gets one round of doubt, once in a row.
+- **The bounds**:
+  - a body that stops publishing is stale in every view within 4 rounds of the reader first seeing its last write (3 without a
+    skipped round);
+  - a body that keeps publishing is never marked stale (engine test, with real lost turns).
+
+**Dead champions still act** (they get a turn to shop, GameRules), so a dead body keeps beating. It publishes claim 63 (none) while
+dead. Staleness catches lost turns and stopped processes, not deaths.
 
 ## 7. Write order across draft turns, and the fuel guard
 

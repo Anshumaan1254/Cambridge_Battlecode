@@ -175,6 +175,13 @@ changes. No champion name or map identity is in the logic: champions enter throu
     - team A starts odd rounds;
     - higher priority acts first, and ties act in body-type order.
   - **The enhanced attack reset stuns for one round** (`enhanced_stun`, COMPUTED from the rules text: the SDK payload has no duration).
+  - **The live bytes (`live.h`, `live_sdk.h`)** rely on three rules:
+    - **Dead champions still act** (GameRules: "they get a turn to shop"), so a dead body keeps beating and must publish claim 63
+      itself. If a patch stops dead champions' turns, a dead body's field goes stale instead (harmless; its claim then expires).
+    - **One ally per body type**: the slots are the allies' types in ascending order, and a two-body pick gives two types.
+    - **A 1-bit beat**: a reader that loses its own turn gets one round of doubt, once in a row. A reader that loses turns in most
+      rounds may see live allies as stale. That is the trade-off of 1 bit per body; the 10-bit field has no spare bit for a longer
+      counter.
   - **The engine test compares against `experiments/results/teamplan/designs_3_0_5.txt`**: after a patch, run `--dump-designs` first.
 - **The v10 test copy** (`v10_adapter.patch`, cut against `bots/god` = GOD v10):
   - if `bots/god` changes, the patch stops applying (`prepare_v10.py` exits with a message);

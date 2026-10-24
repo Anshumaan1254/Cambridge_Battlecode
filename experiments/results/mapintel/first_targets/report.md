@@ -9,6 +9,7 @@
 | learned logistic, C = 0.01 | 0.616 |
 | learned logistic, C = 0.1 | 0.647 |
 | learned logistic, C = 1.0 | 0.653 |
+| boosted forest, depth 2, 20 trees, learning rate 0.3 | 0.717 |
 
 Chosen C = 1.0; coefficients on standardised features (positive = captured earlier):
 - hp: +4.379

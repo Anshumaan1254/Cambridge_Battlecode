@@ -150,12 +150,23 @@ def first_rank_py(M, team, ftw, n=16):
 	mu, sd, w = np.array(ftw["mean"]), np.array(ftw["std"]), np.array(ftw["coef"])
 	sc = {}
 	for g, x in tab.items():
+		if ftw.get("use") == "forest":
+			sc[g] = float(FTG.forest_score(ftw["forest"], np.array([x], dtype=float))[0])
+			continue
 		z = (np.array(x, dtype=float) - mu) / sd
 		v = ftw["intercept"]
 		for j in range(len(z)):
 			v += w[j] * z[j]
 		sc[g] = v
 	return [g for g in sorted(sc, key=lambda g: (-sc[g], g))][:n]
+
+
+def tree_expr(tree, k=0):
+	"""One tree of the forest as a nested C++ conditional (x[f] <= thr goes left): compiled code, no node walk."""
+	f_, thr, l, r, leaf, val = tree[k]
+	if leaf:
+		return repr(val)
+	return f"(x[{f_}] <= {thr!r} ? {tree_expr(tree, l)} : {tree_expr(tree, r)})"
 
 
 def model_weights(arche, weights, ftw=None):
@@ -198,13 +209,19 @@ def model_weights(arche, weights, ftw=None):
 		  "\t\tfor (int j = 0; j < MW_NF; ++j)", "\t\t\tv += MW_V[c][j] * z[j];", "\t\tout[c] = v;", "\t}", "}", ""]
 	if ftw:
 		k = len(ftw["coef"])
-		L += [f"// first_targets.py ({ftw['samples']} team-games; held-out top-n share {ftw['cv_share']} vs nearest {ftw['nearest_share']}): features " + ", ".join(ftw["features"]),
+		forest = ftw.get("use") == "forest"
+		desc = (f"boosted forest, {ftw['forest']['n_trees']} trees of depth {ftw['forest']['depth']}, held-out top-n share {ftw['forest']['cv_share']}"
+				if forest else f"logistic, held-out top-n share {ftw['cv_share']}") + f" vs nearest {ftw['nearest_share']}"
+		L += [f"// first_targets.py ({ftw['samples']} team-games; {desc}): features " + ", ".join(ftw["features"]),
 			  "#define MAPINTEL_FIRST_SCORES 1",
 			  f"inline constexpr int FT_NF = {k};",
 			  f"inline constexpr double FT_MEAN[FT_NF] = {arr(ftw['mean'], '{!r}')};",
 			  f"inline constexpr double FT_STD[FT_NF] = {arr(ftw['std'], '{!r}')};",
 			  f"inline constexpr double FT_COEF[FT_NF] = {arr(ftw['coef'], '{!r}')};",
-			  f"inline constexpr double FT_B = {ftw['intercept']!r};", "",
+			  f"inline constexpr double FT_B = {ftw['intercept']!r};", ""]
+		if forest:
+			L += [f"inline constexpr double FT_GB = {ftw['forest']['baseline']!r};  // forest baseline; the trees are the conditionals in first_scores()", ""]
+		L += [
 			  "// LEARNED opening score of every group (higher = the top teams capture it earlier); unreached groups get -1e300.",
 			  "// The features in first_targets.group_table's order, from the Compact's tables (the same values as compact.py).",
 			  "inline std::vector<double> first_scores(const Compact& C, const MapView& m, const Features& F)", "{",
@@ -221,7 +238,8 @@ def model_weights(arche, weights, ftw=None):
 			  "\t\tconst double x[FT_NF] = { dU, dE, dU - dE, static_cast<double>(r), static_cast<double>(grp.gems), static_cast<double>(grp.gold), C.val[g],",
 			  "\t\t\tC.prep[g].tot, C.prep[g].S, static_cast<double>(grp.camps.size()), heavy,",
 			  "\t\t\tC.dE[g] >= 0 && std::abs(C.dU[g] - C.dE[g]) <= P.band ? 1.0 : 0.0, C.val[g] / total, std::log1p(dU) };",
-			  "\t\tdouble v = FT_B;", "\t\tfor (int j = 0; j < FT_NF; ++j)", "\t\t\tv += FT_COEF[j] * ((x[j] - FT_MEAN[j]) / FT_STD[j]);",
+			  ] + (["\t\tdouble v = FT_GB;"] + ["\t\tv += " + tree_expr(tree) + ";" for tree in ftw["forest"]["trees"]]
+				   if forest else ["\t\tdouble v = FT_B;", "\t\tfor (int j = 0; j < FT_NF; ++j)", "\t\t\tv += FT_COEF[j] * ((x[j] - FT_MEAN[j]) / FT_STD[j]);"]) + [
 			  "\t\tout[g] = v;", "\t}", "\t(void)F;", "\treturn out;", "}", ""]
 	L += ["} // namespace mapintel", ""]
 	return "\n".join(L)

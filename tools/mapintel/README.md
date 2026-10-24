@@ -59,7 +59,7 @@ tools/mapintel/export_headers.py`; then run the tests: `python3 -I tools/mapinte
 | `plans.h` | `Compact` (per-group tables), `base_plans()` (plans 2-4), `Compact::row(type)` and `plan1(picks, P)` (plan 1) for unknown maps | COMPUTED |
 | `dmem.h` | `dmem_pack()` / `dmem_put()` (the draft-memory block at offset 512) and `dmem_get()` / `Block` (read it in the game) | - |
 | `known_maps.h` | generated: the table of the 40 official maps, `find_known(fp)`, `known_team(view, entry)` | COMPUTED + LEARNED |
-| `model_weights.h` | generated: `zfeat()`, `archetype_of()`, `champion_values()` (the fallback for unknown maps) | COMPUTED + LEARNED |
+| `model_weights.h` | generated: `zfeat()`, `archetype_of()`, `champion_values()`, `first_scores()` (opening score: a 20-tree forest, 61k fuel) | COMPUTED + LEARNED + SIMULATED |
 | `force_roster.h` | `forced_pick()` for the roster battery only (inert without a generated `mi_roster.h`) | - |
 
 A draft that uses it (fuel measured by `test_library.py`, worst map; keep `view`, `F`, `C` alive across draft turns):
@@ -105,7 +105,9 @@ is a host call; stdout costs ~90 fuel per byte.
 | `cpp/test/main.cpp`, `test_library.py` | the library's test bot and test driver (features, plans, block, table, weights, fuel) | - |
 | `compact.py` | Python twin of `plans.h` and `dmem.h` (bit-equal) | COMPUTED |
 | `features.py` | Python twin of `features.h` | COMPUTED |
-| `draft_learn.py` | step 6, draft: per-map prior (`maps/catalog/draft_prior.json`) and the draft win models (leave-maps-out) | LEARNED |
+| `draft_learn.py` | step 6, draft: per-map prior (`maps/catalog/draft_prior.json`), the draft win models on the ladder (no signal over rating) and on a roster battery (`--battery`) | LEARNED / SIMULATED |
+| `first_targets.py` | step 6, opening: which groups the top teams capture first (logistic and boosted forest, leave-maps-out) | LEARNED |
+| `validate_ladder.py` | 3C: the model against the top teams (pace, first targets, bank altars); `maps/catalog/behaviour.json` | LEARNED |
 | `export_headers.py` | generates `known_maps.h` and `model_weights.h` | - |
 | `replays.py` | ladder replays -> per-game summaries (captures, banks, deaths, standing tiles) | LEARNED |
 | `cpp/probe/`, `cpp/idle/` | probe bot and idle opponent sources (fresh, from the 3.0.5 starter) | - |

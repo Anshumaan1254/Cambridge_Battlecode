@@ -111,12 +111,18 @@ Hardcoded on purpose or measured on the current pool / patch; each may need a re
   NAME`), the opening score `first_scores()` (599 ladder games of the current patch), the strong-team pick rates (top 20 ratings on Oct 24).
 - **The ladder draft model has no signal**: on 8,455 ranked games no champion model beats team rating alone out of sample, so the
   table's `value` comes from the battery; the ladder pick rates are an imitation prior, not a measured value.
-- **Compact plan constants** (`compact.py` = `plans.h`): capture 6 rounds, heal-trip rule (a trip per 0.7 x health of damage taken
-  solo), recall 5 + 1 rounds, value = gems + 0.1 x gold, the candidate row of 12 groups, the attack-reset bonus 1 / 8, Varg's splash as
-  the only basic-attack splash (`champion_type::varg`), contested band max(3, 0.1 x spawn distance), plan-4 threshold formulas (0.12 d,
-  80, 0.2 d, 8, 3, 30). Not modelled: Ryth's health-scaled strength, Heart of Ruin's missing-health bonus, Prism's focus per gem, shields,
-  heals, allies tanking, shopping (the catalog's fight simulation has them). Plan 1's first targets match the top teams' first captures
-  no better than "nearest groups" (validate_ladder.py: 0.53 vs 0.54); use `first_scores()` (0.65 held out) for the opening.
+- **Compact plan constants** (`compact.py` = `plans.h`): capture 6 rounds, heal-trip rule (a trip per heal_use x health of damage taken
+  solo; heal_use = 1 - the fitted retreat line = 0.48 and the camp damage scale 1.3 are LEARNED (`econ_learn.py`, through
+  `model_weights.h` `econ_constants()`; 0.7 and 1.0 without it), since the user's change 5), recall 5 + 1 rounds, value = gems + 0.1 x
+  gold, the candidate row of 12 groups, the attack-reset bonus 1 / 8, Varg's splash as the only basic-attack splash
+  (`champion_type::varg`), contested band max(3, 0.1 x spawn distance), plan-4 threshold formulas (0.12 d, 80, 0.2 d, 8, 3, 30). Not modelled: Ryth's health-scaled strength, Heart of Ruin's missing-health bonus, Prism's focus per gem, shields,
+  heals, allies tanking, shopping (the catalog's fight simulation has them). Change 5 (`fallback_gap.py`) measured the missing
+  mechanics one at a time against the catalog's plan 1 (bodies with the catalog's first target, 0.408 before): the fitted economy
+  constants 0.454 on 34 changed map-teams (adopted); shields 0.386, Heart of Ruin's bonus 0.314, stuns 0.408 on 18 changed map-teams,
+  Ren's retaliation changed none: not added. Plan 2 is now by the walk (one BFS per candidate altar: 0.98 of the groups get the
+  catalog's altar, 0.81 by the box distance), at up to ~95k more fuel on the first draft turn. Plan 1's first targets match the top
+  teams' first captures no better than "nearest groups" (validate_ladder.py: 0.53 vs 0.54); use `first_scores()` (0.65 held out) for
+  the opening.
 - **Plan 4 thresholds** (`experiments/results/mapintel/plan4/weights.json`, LEARNED from 599 current-patch replays): learned constants
   (k_abandon 0, p 1000%, d_regroup 6, bank margin 7) replaced the formulas, which they beat on held-out maps; no map feature moved them
   (the ridge chose the strongest regularization), so they are one value for every map. w_max stays the formula (30), r_enemies 8 is

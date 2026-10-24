@@ -320,6 +320,10 @@ def main():
 				worst[k_] = max(worst[k_], int(T.get("fuel_" + k_, 0)))
 			ft = sum(int(T.get("fuel_" + k_, 0)) for k_ in parts)
 			worst["first_turn"] = max(worst["first_turn"], ft)
+			fs_ = int(T.get("fuel_fs", 0))
+			worst["fs"] = max(worst.get("fs", 0), fs_)
+			worst["mw"] = max(worst.get("mw", 0), int(T.get("fuel_mw", 0)))
+			worst["first_turn_fs"] = max(worst.get("first_turn_fs", 0), ft + int(T.get("fuel_mw", 0)) + fs_)
 			for o in other:
 				if o.startswith("MI R2 "):
 					worst["row2"] = max(worst.get("row2", 0), int(o.split()[3]))
@@ -344,7 +348,8 @@ def main():
 	print(f"official maps: {len(maps)} x 2 teams, {nfeat} feature values and {nplan} plan lines compared, {ngame} champion read-backs"
 		  + (f", table lookups {'checked' if table is not None else 'not generated'}, model_weights checked on {nmw}" if weights is not None else ""))
 	print(f"fuel, first draft turn (limit 1,000,000): max view {worst['view']}, fingerprint {worst['fp']}, features {worst['feat']}, "
-		  f"plans 2-4 {worst['base']}, first pick's rows {worst['row']}; worst total {worst['first_turn']}")
+		  f"plans 2-4 {worst['base']}, first pick's rows {worst['row']}; worst total {worst['first_turn']}; with model_weights.h on the same turn "
+		  f"(zfeat, archetype_of, champion_values {worst.get('mw', 0)}; first_scores {worst.get('fs', 0)}) {worst.get('first_turn_fs', 0)}")
 	print(f"fuel, turn 2 (limit 100,000): second pick's rows {worst.get('row2', 0)}")
 	print(f"fuel, the plan-1 turn (turn 3; turn 4 for 5-champion teams, limit 100,000): rows of the remaining picks {worst['rows']}, plan 1 {worst['plan1']}, "
 		  f"pack + write {worst.get('pack', 0)}, least left {worst['turn3_left_min']}; 5-champion teams' turn 3 (pick 3's rows) {worst.get('rows3', 0)}; "
@@ -360,7 +365,7 @@ def main():
 			fails.append("dl_next_scores on 16 candidates needs more than 50,000 fuel a call (half a game turn)")
 	per_map.sort(reverse=True)
 	print("heaviest first turns: " + "; ".join(f"{n} {ft} ({', '.join(f'{k} {v}' for k, v in d.items())})" for ft, n, d, _ in per_map[:5]))
-	if worst["first_turn"] > 1_000_000:
+	if max(worst["first_turn"], worst.get("first_turn_fs", 0)) > 1_000_000:
 		fails.append("first draft turn over 1M fuel")
 	# unknown maps: perturbed copies
 	if a.perturbed:

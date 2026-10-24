@@ -7,12 +7,14 @@ Inputs: the runtime map view (features.fields: fc / fb per team, the groups and 
 to bodies: Cassi & Issac = 2), the engine's champion designs.
 Model (per body type b and group g; all in rounds, doubles, the same operation order in both implementations):
   dps_b(g)   = basic + spells: strength x (1 + 1/8 if it has an attack reset) x (1 + adj(g) for Varg's splash)
-               + sum of damaging abilities' mod x focus / cooldown (an area spell or a damaging dash landing x (1 + adj(g)))
+               + sum of damaging abilities' mod x focus / cooldown (an area spell or a damaging dash landing x (1 + adj(g))),
+               all x dmg_mult (econ_constants(): the fitted camp damage scale, LEARNED; 1.0 without model_weights.h)
                adj(g) = mean over g's camps of the number of other camps of g within Chebyshev 1
   kill_b(g)  = sum hp / dps;  damage_b(g) = S(g) / dps, S(g) = sum over the camps in kill order (strength / hp descending) of
                strength x (cumulative hp killed up to and including it)   (a solo body tanks every striking camp; S, adj and the total
                health are computed once per group)
-  trips_b(g) = max(0, ceil(damage / (0.7 x hp)) - 1);  trip = min(dU(g), recall 5 + 1) + 1 + dU(g)
+  trips_b(g) = max(0, ceil(damage / (heal_use x hp)) - 1);  trip = min(dU(g), recall 5 + 1) + 1 + dU(g)
+               (heal_use = 1 - the fitted retreat line, econ_constants(); 0.7 without model_weights.h)
   eta_b(g)   = max(0, dU(g) - attack range)   (dU = our fc distance to the group's nearest camp tile)
   work       = kill + trips x trip + capture 6 (computed once per body and group); cycle = travel + work;
                rate = value / cycle, value = gems + 0.1 x gold
@@ -23,8 +25,9 @@ ranking (plan1(picks, rank)), the first n ranked reached groups assigned to the 
 index; equal to a scan of all groups since at most 5 groups are taken before any body's turn), then 3 more targets per body in slot
 order from its candidate list by rate from its last group (travel = the Chebyshev distance between the groups' bounding boxes), then one 2-opt
 pass (swap two consecutive targets when the body's finishing round drops). Output per body slot: 4 x (group index, planned arrival).
-Plan 2: per group the bank altar = argmin over altars of min(Chebyshev distance from the group's box to an approach tile, 6 + fc of that
-approach tile); bankable flags from the features' bank modes. Plan 3: contested groups = both reached and |dU - dE| <= band (band =
+Plan 2: per group the bank altar = the first altar with the least min(walk from its approach tiles to the group's nearest camp tile,
+6 + the least fc of its approach tiles), one BFS per altar (bank_altars; the Chebyshev box version before change 5: bank_altars_box);
+bankable flags from the features' bank modes. Plan 3: contested groups = both reached and |dU - dE| <= band (band =
 max(3, round(0.1 x spawn_dist))); up to 16 by value x exp(-|dU - dE| / band), with (index, dU, dE). Plan 4: the threshold formulas, with
 the LEARNED ones (plan4_learn.py, p4model.py = model_weights.h p4_thresholds()) written over them where the fit beat the formula.
 Draft memory (dmem.h, block at offset 512, MAPAnalysis 5.8): pack() below = the C++ block byte for byte (checked by test_library.py).
@@ -34,9 +37,12 @@ import math
 import os
 import sys
 
+import numpy as np
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import economy as EC  # noqa: E402
 import features as FT  # noqa: E402
+import geometry as G  # noqa: E402
 from engine import pick_bodies  # noqa: E402
 
 NSLOT, NTGT, NCON, NGRP, NTOP = 6, 4, 16, 64, 12
@@ -80,6 +86,14 @@ def group_prep(g):
 	return adjacency(g), cum, S
 
 
+def econ_constants():
+	"""(heal_use, dmg_mult): the fitted economy constants (economy.econ(), LEARNED by econ_learn.py; the user's change 5 of Oct 24):
+	a heal trip uses the health down to the retreat line (1 - retreat; 0.7 before the fit) and the camp damage scale. model_weights.h's
+	econ_constants() holds the same two doubles (export_headers.py); without model_weights.h plans.h uses 0.7 and 1.0."""
+	e = EC.econ()
+	return 1.0 - e["retreat"], e["dmg_mult"]
+
+
 def body_model(b, g, prep=None):
 	"""(kill rounds, damage taken) for one body of type b solo on group g (the closed form above): (total health / dps, S / dps)."""
 	E = EC.engine()
@@ -96,7 +110,7 @@ def body_model(b, g, prep=None):
 			single += m * d["foc"] / a["cd"]
 		elif a["kind"] in ("aoe", "dash"):
 			area += m * d["foc"] / a["cd"]
-	dps = basic + single + area * (1.0 + adj)
+	dps = (basic + single + area * (1.0 + adj)) * econ_constants()[1]
 	return tot / dps, S / dps
 
 
@@ -128,7 +142,7 @@ class Compact:
 		if (b, g) not in self._bm:
 			kill, dmg = body_model(b, self.M.groups[g], self.prep[g])
 			hp = E.champs[b]["hp"]
-			trips = max(0, math.ceil(dmg / (0.7 * hp)) - 1)
+			trips = max(0, math.ceil(dmg / (econ_constants()[0] * hp)) - 1)
 			d = self.dU[g]
 			trip = min(d, 6) + 1 + d
 			self._bm[b, g] = kill + trips * trip + 6.0
@@ -226,6 +240,42 @@ class Compact:
 		return out
 
 	def bank_altars(self):
+		"""Plan 2 by the walk (plans.h bank_altars; the user's change 5: 0.98 of the groups get the catalog's altar, 0.81 by the box
+		distance below): per altar, in altar order, one BFS from its approach tiles through our passable tiles; a group's cost there =
+		min(the walk to its nearest camp tile, 6 + the least fc of the approach tiles = recall and walk); per group the first altar with
+		the least cost, 255 when no altar is reachable either way."""
+		M, t = self.M, self.t
+		INF = 1 << 29
+		best, out = [INF] * len(M.groups), [255] * len(M.groups)
+		for a, (ax, ay) in enumerate(M.altar_tiles):
+			roots = np.zeros_like(self.C[t])
+			rec = INF
+			for dy in (-1, 0, 1):
+				for dx in (-1, 0, 1):
+					x, y = ax + dx, ay + dy
+					if (dx, dy) == (0, 0) or not (0 <= x < M.W and 0 <= y < M.H) or not self.C[t][y, x]:
+						continue
+					roots[y, x] = True
+					f = int(self.fc[t][y, x])
+					if f >= 0 and 6 + f < rec:
+						rec = 6 + f
+			if not roots.any():
+				continue
+			fa = G.bfs(self.C[t], roots)
+			for g, grp in enumerate(M.groups):
+				w = INF
+				for c in grp["camps"]:
+					v = int(fa[c[2], c[1]])
+					if 0 <= v < w:
+						w = v
+				cost = min(w, rec)
+				if cost < best[g]:
+					best[g], out[g] = cost, a
+		return out
+
+	def bank_altars_box(self):
+		"""Plan 2 by the Chebyshev distance from the group's box (before the user's change 5; Python only since then, for the comparison
+		in fallback_gap.py: ~0.81 of the groups get the catalog's altar, the walk version 0.98)."""
 		M, t = self.M, self.t
 		out = []
 		for g in range(len(M.groups)):

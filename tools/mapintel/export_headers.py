@@ -198,7 +198,9 @@ def model_weights(arche, weights, ftw=None, p4=None, pp=None):
 		 "//   first_scores(C)    LEARNED score of each group as an opening target (first_targets.py: the top teams' first captures)",
 		 "//   p4_thresholds()    plan 4's thresholds: the formulas, with the LEARNED ones (plan4_learn.py) written over them where the fit",
 		 "//                      beat the formula on held-out maps (plans.h calls it; p4model.py is the Python twin)",
+		 "//   econ_constants()   the compact work's heal-trip share and camp damage scale (LEARNED, econ_learn.py; compact.econ_constants)",
 		 "#pragma once"] + (["#define MAPINTEL_P4_FITTED 1  // before plans.h: plans.h then leaves p4_thresholds() to this file"] if p4 else []) + [
+		 "#define MAPINTEL_ECON_FITTED 1  // before plans.h: plans.h then leaves econ_constants() to this file"] + [
 		 "#include <algorithm>", "#include <array>", "#include <cmath>", "#include <vector>", '#include "features.h"', '#include "plans.h"', "",
 		 "namespace mapintel", "{",
 		 f"inline constexpr int MW_NF = {nf};",
@@ -297,6 +299,10 @@ def model_weights(arche, weights, ftw=None, p4=None, pp=None):
 			  "\tzfeat(F, z);", "\tfor (int k = 0; k < P4_N; ++k)", "\t{", "\t\tdouble v = P4_B[k];", "\t\tfor (int i = 0; i < MW_NF; ++i)",
 			  "\t\t\tv += P4_W[k][i] * z[i];", "\t\tconst double r = std::floor(v + 0.5);",
 			  "\t\tt[P4_IDX[k]] = r < P4_LO[k] ? P4_LO[k] : r > P4_HI[k] ? P4_HI[k] : static_cast<int>(r);", "\t}", "}", ""]
+	import compact as CP
+	hu, dm = CP.econ_constants()
+	L += ["// the compact work's economy constants (compact.econ_constants: 1 - economy.econ()'s retreat line, its dmg_mult; LEARNED)",
+		  "inline void econ_constants(double& heal_use, double& dmg_mult)", "{", f"\theal_use = {hu!r}, dmg_mult = {dm!r};", "}", ""]
 	L += ["} // namespace mapintel", ""]
 	return "\n".join(L)
 

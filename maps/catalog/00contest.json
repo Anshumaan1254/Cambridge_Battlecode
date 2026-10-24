@@ -692,7 +692,7 @@
    "middle_band": true,
    "contested": true,
    "deny_value": 8.0,
-   "priority": 4.85,
+   "priority": 2.29,
    "race_winner": "B",
    "camps": [
     [
@@ -761,7 +761,7 @@
    "middle_band": true,
    "contested": true,
    "deny_value": 8.0,
-   "priority": 4.85,
+   "priority": 2.29,
    "race_winner": "A",
    "camps": [
     [
@@ -830,7 +830,7 @@
    "middle_band": true,
    "contested": true,
    "deny_value": 8.0,
-   "priority": 4.85,
+   "priority": 2.29,
    "race_winner": "A",
    "camps": [
     [
@@ -899,7 +899,7 @@
    "middle_band": true,
    "contested": true,
    "deny_value": 8.0,
-   "priority": 4.85,
+   "priority": 2.29,
    "race_winner": "B",
    "camps": [
     [
@@ -968,7 +968,7 @@
    "middle_band": false,
    "contested": false,
    "deny_value": 4.0,
-   "priority": 0.3,
+   "priority": 0.01,
    "race_winner": "A",
    "camps": [
     [
@@ -1027,7 +1027,7 @@
    "middle_band": false,
    "contested": false,
    "deny_value": 4.0,
-   "priority": 0.3,
+   "priority": 0.01,
    "race_winner": "B",
    "camps": [
     [
@@ -1086,7 +1086,7 @@
    "middle_band": false,
    "contested": false,
    "deny_value": 4.0,
-   "priority": 1.33,
+   "priority": 0.26,
    "race_winner": "A",
    "camps": [
     [
@@ -1145,7 +1145,7 @@
    "middle_band": false,
    "contested": false,
    "deny_value": 4.0,
-   "priority": 1.33,
+   "priority": 0.26,
    "race_winner": "B",
    "camps": [
     [
@@ -1204,7 +1204,7 @@
    "middle_band": true,
    "contested": true,
    "deny_value": 4.0,
-   "priority": 2.68,
+   "priority": 1.47,
    "race_winner": "A",
    "camps": [
     [
@@ -1263,7 +1263,7 @@
    "middle_band": true,
    "contested": true,
    "deny_value": 4.0,
-   "priority": 2.68,
+   "priority": 1.47,
    "race_winner": "B",
    "camps": [
     [
@@ -1322,7 +1322,7 @@
    "middle_band": false,
    "contested": false,
    "deny_value": 4.0,
-   "priority": 0.33,
+   "priority": 0.01,
    "race_winner": "A",
    "camps": [
     [
@@ -1381,7 +1381,7 @@
    "middle_band": false,
    "contested": false,
    "deny_value": 4.0,
-   "priority": 0.33,
+   "priority": 0.01,
    "race_winner": "B",
    "camps": [
     [
@@ -1404,6 +1404,10 @@
    22,
    22
   ]
+ },
+ "contested_rule": {
+  "k_contest": 4,
+  "band": 4
  },
  "objectives": [
   {
@@ -1523,7 +1527,285 @@
     "Marcella"
    ],
    "origin": "LEARNED",
-   "plan1": null
+   "plan1": {
+    "R0": 150,
+    "value": 200.0,
+    "banked": 0,
+    "carried": 400,
+    "first_targets": [
+     2,
+     12,
+     4,
+     3,
+     5
+    ],
+    "bodies": [
+     12,
+     6,
+     0,
+     1,
+     7
+    ],
+    "plan": [
+     [
+      {
+       "do": "farm",
+       "group": 2,
+       "arrive": 25,
+       "start": 25,
+       "cleared": 30,
+       "captured": 36,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 11,
+       "arrive": 47,
+       "start": 47,
+       "cleared": 48,
+       "captured": 54,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 2,
+       "arrive": 65,
+       "start": 86,
+       "cleared": 91,
+       "captured": 97,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 11,
+       "arrive": 108,
+       "start": 108,
+       "cleared": 109,
+       "captured": 115,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 8,
+       "arrive": 121,
+       "start": 121,
+       "cleared": 122,
+       "captured": 128,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 139,
+       "start": 142,
+       "cleared": 147,
+       "captured": 153,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 12,
+       "arrive": 11,
+       "start": 11,
+       "cleared": 13,
+       "captured": 19,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 6,
+       "arrive": 30,
+       "start": 30,
+       "cleared": 32,
+       "captured": 38,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 57,
+       "start": 80,
+       "cleared": 86,
+       "captured": 92,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 12,
+       "arrive": 100,
+       "start": 100,
+       "cleared": 102,
+       "captured": 108,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 6,
+       "arrive": 119,
+       "start": 119,
+       "cleared": 121,
+       "captured": 127,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 137,
+       "start": 144,
+       "cleared": 150,
+       "captured": 156,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 21,
+       "start": 21,
+       "cleared": 24,
+       "captured": 30,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 8,
+       "arrive": 41,
+       "start": 41,
+       "cleared": 43,
+       "captured": 49,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 69,
+       "start": 85,
+       "cleared": 88,
+       "captured": 94,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 10,
+       "arrive": 105,
+       "start": 105,
+       "cleared": 107,
+       "captured": 113,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 9,
+       "arrive": 119,
+       "start": 120,
+       "cleared": 122,
+       "captured": 128,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 2,
+       "arrive": 148,
+       "start": 148,
+       "cleared": 151,
+       "captured": 157,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 19,
+       "start": 19,
+       "cleared": 29,
+       "captured": 35,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 10,
+       "arrive": 44,
+       "start": 44,
+       "cleared": 49,
+       "captured": 55,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 9,
+       "arrive": 59,
+       "start": 59,
+       "cleared": 64,
+       "captured": 70,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 79,
+       "start": 89,
+       "cleared": 99,
+       "captured": 105,
+       "with": []
+      },
+      {
+       "do": "shop",
+       "round": 111
+      },
+      {
+       "do": "farm",
+       "group": 1,
+       "arrive": 138,
+       "start": 138,
+       "cleared": 1265,
+       "captured": 1271,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 25,
+       "start": 25,
+       "cleared": 33,
+       "captured": 39,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 13,
+       "arrive": 49,
+       "start": 49,
+       "cleared": 51,
+       "captured": 57,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 7,
+       "arrive": 70,
+       "start": 70,
+       "cleared": 72,
+       "captured": 78,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 0,
+       "arrive": 93,
+       "start": 93,
+       "cleared": 1590,
+       "captured": 1596,
+       "with": []
+      }
+     ]
+    ]
+   }
   },
   {
    "team": 1,
@@ -1535,7 +1817,286 @@
     "Marcella"
    ],
    "origin": "LEARNED",
-   "plan1": null
+   "plan1": {
+    "R0": 150,
+    "value": 200.0,
+    "banked": 0,
+    "carried": 400,
+    "first_targets": [
+     3,
+     13,
+     5,
+     2,
+     4
+    ],
+    "bodies": [
+     12,
+     6,
+     0,
+     1,
+     7
+    ],
+    "plan": [
+     [
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 25,
+       "start": 25,
+       "cleared": 30,
+       "captured": 36,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 10,
+       "arrive": 47,
+       "start": 47,
+       "cleared": 48,
+       "captured": 54,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 65,
+       "start": 86,
+       "cleared": 91,
+       "captured": 97,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 10,
+       "arrive": 108,
+       "start": 108,
+       "cleared": 109,
+       "captured": 115,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 9,
+       "arrive": 121,
+       "start": 121,
+       "cleared": 122,
+       "captured": 128,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 139,
+       "start": 142,
+       "cleared": 147,
+       "captured": 153,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 13,
+       "arrive": 11,
+       "start": 11,
+       "cleared": 13,
+       "captured": 19,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 7,
+       "arrive": 30,
+       "start": 30,
+       "cleared": 32,
+       "captured": 38,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 57,
+       "start": 80,
+       "cleared": 86,
+       "captured": 92,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 13,
+       "arrive": 100,
+       "start": 100,
+       "cleared": 102,
+       "captured": 108,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 7,
+       "arrive": 119,
+       "start": 119,
+       "cleared": 121,
+       "captured": 127,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 2,
+       "arrive": 137,
+       "start": 144,
+       "cleared": 150,
+       "captured": 156,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 21,
+       "start": 21,
+       "cleared": 24,
+       "captured": 30,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 9,
+       "arrive": 41,
+       "start": 41,
+       "cleared": 43,
+       "captured": 49,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 2,
+       "arrive": 69,
+       "start": 85,
+       "cleared": 88,
+       "captured": 94,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 11,
+       "arrive": 105,
+       "start": 105,
+       "cleared": 107,
+       "captured": 113,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 8,
+       "arrive": 119,
+       "start": 120,
+       "cleared": 122,
+       "captured": 128,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 148,
+       "start": 148,
+       "cleared": 151,
+       "captured": 157,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 2,
+       "arrive": 19,
+       "start": 19,
+       "cleared": 29,
+       "captured": 35,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 11,
+       "arrive": 44,
+       "start": 44,
+       "cleared": 49,
+       "captured": 55,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 8,
+       "arrive": 59,
+       "start": 59,
+       "cleared": 64,
+       "captured": 70,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 79,
+       "start": 89,
+       "cleared": 99,
+       "captured": 105,
+       "with": []
+      },
+      {
+       "do": "shop",
+       "round": 111
+      },
+      {
+       "do": "farm",
+       "group": 0,
+       "arrive": 138,
+       "start": 138,
+       "cleared": 1265,
+       "captured": 1271,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 25,
+       "start": 25,
+       "cleared": 33,
+       "captured": 39,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 12,
+       "arrive": 49,
+       "start": 49,
+       "cleared": 51,
+       "captured": 57,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 6,
+       "arrive": 70,
+       "start": 70,
+       "cleared": 72,
+       "captured": 78,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 1,
+       "arrive": 93,
+       "start": 93,
+       "cleared": 1590,
+       "captured": 1596,
+       "with": []
+      }
+     ]
+    ],
+    "mirrored_from": "A"
+   }
   },
   {
    "team": 0,
@@ -1547,7 +2108,271 @@
     "Vendetta"
    ],
    "origin": "LEARNED",
-   "plan1": null
+   "plan1": {
+    "R0": 150,
+    "value": 200.0,
+    "banked": 0,
+    "carried": 400,
+    "first_targets": [
+     5,
+     12,
+     2,
+     3,
+     4
+    ],
+    "bodies": [
+     12,
+     1,
+     7,
+     0,
+     2
+    ],
+    "plan": [
+     [
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 25,
+       "start": 25,
+       "cleared": 30,
+       "captured": 36,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 13,
+       "arrive": 46,
+       "start": 46,
+       "cleared": 47,
+       "captured": 53,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 7,
+       "arrive": 66,
+       "start": 66,
+       "cleared": 67,
+       "captured": 73,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 1,
+       "arrive": 103,
+       "start": 103,
+       "cleared": 782,
+       "captured": 788,
+       "with": [
+        1
+       ]
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 12,
+       "arrive": 11,
+       "start": 11,
+       "cleared": 16,
+       "captured": 22,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 6,
+       "arrive": 33,
+       "start": 33,
+       "cleared": 38,
+       "captured": 44,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 54,
+       "start": 80,
+       "cleared": 90,
+       "captured": 96,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 1,
+       "arrive": 103,
+       "start": 103,
+       "cleared": 782,
+       "captured": 788,
+       "with": [
+        0
+       ]
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 2,
+       "arrive": 25,
+       "start": 25,
+       "cleared": 33,
+       "captured": 39,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 11,
+       "arrive": 50,
+       "start": 50,
+       "cleared": 52,
+       "captured": 58,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 78,
+       "start": 86,
+       "cleared": 94,
+       "captured": 100,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 13,
+       "arrive": 110,
+       "start": 110,
+       "cleared": 112,
+       "captured": 118,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 135,
+       "start": 146,
+       "cleared": 154,
+       "captured": 160,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 21,
+       "start": 21,
+       "cleared": 24,
+       "captured": 30,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 10,
+       "arrive": 41,
+       "start": 41,
+       "cleared": 43,
+       "captured": 49,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 9,
+       "arrive": 55,
+       "start": 55,
+       "cleared": 57,
+       "captured": 63,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 2,
+       "arrive": 83,
+       "start": 89,
+       "cleared": 92,
+       "captured": 98,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 11,
+       "arrive": 109,
+       "start": 109,
+       "cleared": 111,
+       "captured": 117,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 8,
+       "arrive": 123,
+       "start": 123,
+       "cleared": 125,
+       "captured": 131,
+       "with": []
+      },
+      {
+       "do": "shop",
+       "round": 137
+      },
+      {
+       "do": "farm",
+       "group": 0,
+       "arrive": 166,
+       "start": 166,
+       "cleared": 922,
+       "captured": 928,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 21,
+       "start": 21,
+       "cleared": 25,
+       "captured": 31,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 8,
+       "arrive": 42,
+       "start": 42,
+       "cleared": 44,
+       "captured": 50,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 61,
+       "start": 81,
+       "cleared": 85,
+       "captured": 91,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 12,
+       "arrive": 101,
+       "start": 101,
+       "cleared": 103,
+       "captured": 109,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 119,
+       "start": 141,
+       "cleared": 145,
+       "captured": 151,
+       "with": []
+      }
+     ]
+    ]
+   }
   },
   {
    "team": 1,
@@ -1559,7 +2384,272 @@
     "Vendetta"
    ],
    "origin": "LEARNED",
-   "plan1": null
+   "plan1": {
+    "R0": 150,
+    "value": 200.0,
+    "banked": 0,
+    "carried": 400,
+    "first_targets": [
+     4,
+     13,
+     3,
+     2,
+     5
+    ],
+    "bodies": [
+     12,
+     1,
+     7,
+     0,
+     2
+    ],
+    "plan": [
+     [
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 25,
+       "start": 25,
+       "cleared": 30,
+       "captured": 36,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 12,
+       "arrive": 46,
+       "start": 46,
+       "cleared": 47,
+       "captured": 53,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 6,
+       "arrive": 66,
+       "start": 66,
+       "cleared": 67,
+       "captured": 73,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 0,
+       "arrive": 103,
+       "start": 103,
+       "cleared": 782,
+       "captured": 788,
+       "with": [
+        1
+       ]
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 13,
+       "arrive": 11,
+       "start": 11,
+       "cleared": 16,
+       "captured": 22,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 7,
+       "arrive": 33,
+       "start": 33,
+       "cleared": 38,
+       "captured": 44,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 2,
+       "arrive": 54,
+       "start": 80,
+       "cleared": 90,
+       "captured": 96,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 0,
+       "arrive": 103,
+       "start": 103,
+       "cleared": 782,
+       "captured": 788,
+       "with": [
+        0
+       ]
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 25,
+       "start": 25,
+       "cleared": 33,
+       "captured": 39,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 10,
+       "arrive": 50,
+       "start": 50,
+       "cleared": 52,
+       "captured": 58,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 78,
+       "start": 86,
+       "cleared": 94,
+       "captured": 100,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 12,
+       "arrive": 110,
+       "start": 110,
+       "cleared": 112,
+       "captured": 118,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 2,
+       "arrive": 135,
+       "start": 146,
+       "cleared": 154,
+       "captured": 160,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 2,
+       "arrive": 21,
+       "start": 21,
+       "cleared": 24,
+       "captured": 30,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 11,
+       "arrive": 41,
+       "start": 41,
+       "cleared": 43,
+       "captured": 49,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 8,
+       "arrive": 55,
+       "start": 55,
+       "cleared": 57,
+       "captured": 63,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 83,
+       "start": 89,
+       "cleared": 92,
+       "captured": 98,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 10,
+       "arrive": 109,
+       "start": 109,
+       "cleared": 111,
+       "captured": 117,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 9,
+       "arrive": 123,
+       "start": 123,
+       "cleared": 125,
+       "captured": 131,
+       "with": []
+      },
+      {
+       "do": "shop",
+       "round": 137
+      },
+      {
+       "do": "farm",
+       "group": 1,
+       "arrive": 166,
+       "start": 166,
+       "cleared": 922,
+       "captured": 928,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 21,
+       "start": 21,
+       "cleared": 25,
+       "captured": 31,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 9,
+       "arrive": 42,
+       "start": 42,
+       "cleared": 44,
+       "captured": 50,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 61,
+       "start": 81,
+       "cleared": 85,
+       "captured": 91,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 13,
+       "arrive": 101,
+       "start": 101,
+       "cleared": 103,
+       "captured": 109,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 119,
+       "start": 141,
+       "cleared": 145,
+       "captured": 151,
+       "with": []
+      }
+     ]
+    ],
+    "mirrored_from": "A"
+   }
   },
   {
    "team": 0,
@@ -1571,7 +2661,293 @@
     "Stellar"
    ],
    "origin": "COMPUTED",
-   "plan1": null
+   "plan1": {
+    "R0": 150,
+    "value": 200.0,
+    "banked": 0,
+    "carried": 400,
+    "first_targets": [
+     2,
+     3,
+     5,
+     12,
+     6,
+     4
+    ],
+    "bodies": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "plan": [
+     [
+      {
+       "do": "farm",
+       "group": 2,
+       "arrive": 25,
+       "start": 25,
+       "cleared": 28,
+       "captured": 34,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 7,
+       "arrive": 46,
+       "start": 46,
+       "cleared": 48,
+       "captured": 54,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 75,
+       "start": 85,
+       "cleared": 88,
+       "captured": 94,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 9,
+       "arrive": 105,
+       "start": 105,
+       "cleared": 107,
+       "captured": 113,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 1,
+       "arrive": 137,
+       "start": 137,
+       "cleared": 663,
+       "captured": 669,
+       "with": [
+        3
+       ]
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 19,
+       "start": 19,
+       "cleared": 29,
+       "captured": 35,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 13,
+       "arrive": 50,
+       "start": 50,
+       "cleared": 55,
+       "captured": 61,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 0,
+       "arrive": 83,
+       "start": 83,
+       "cleared": 864,
+       "captured": 870,
+       "with": [
+        2
+       ]
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 25,
+       "start": 25,
+       "cleared": 29,
+       "captured": 35,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 9,
+       "arrive": 46,
+       "start": 46,
+       "cleared": 48,
+       "captured": 54,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 0,
+       "arrive": 83,
+       "start": 83,
+       "cleared": 864,
+       "captured": 870,
+       "with": [
+        1
+       ]
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 12,
+       "arrive": 11,
+       "start": 11,
+       "cleared": 15,
+       "captured": 21,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 8,
+       "arrive": 33,
+       "start": 33,
+       "cleared": 37,
+       "captured": 43,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 52,
+       "start": 78,
+       "cleared": 87,
+       "captured": 93,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 12,
+       "arrive": 101,
+       "start": 101,
+       "cleared": 105,
+       "captured": 111,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 1,
+       "arrive": 137,
+       "start": 137,
+       "cleared": 663,
+       "captured": 669,
+       "with": [
+        0
+       ]
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 6,
+       "arrive": 14,
+       "start": 14,
+       "cleared": 19,
+       "captured": 25,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 10,
+       "arrive": 41,
+       "start": 41,
+       "cleared": 46,
+       "captured": 52,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 63,
+       "start": 85,
+       "cleared": 95,
+       "captured": 101,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 10,
+       "arrive": 112,
+       "start": 112,
+       "cleared": 117,
+       "captured": 123,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 143,
+       "start": 143,
+       "cleared": 153,
+       "captured": 159,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 19,
+       "start": 19,
+       "cleared": 22,
+       "captured": 28,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 11,
+       "arrive": 42,
+       "start": 42,
+       "cleared": 44,
+       "captured": 50,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 2,
+       "arrive": 59,
+       "start": 84,
+       "cleared": 87,
+       "captured": 93,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 11,
+       "arrive": 102,
+       "start": 102,
+       "cleared": 104,
+       "captured": 110,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 8,
+       "arrive": 114,
+       "start": 114,
+       "cleared": 116,
+       "captured": 122,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 2,
+       "arrive": 139,
+       "start": 143,
+       "cleared": 146,
+       "captured": 152,
+       "with": []
+      }
+     ]
+    ]
+   }
   },
   {
    "team": 1,
@@ -1583,7 +2959,294 @@
     "Stellar"
    ],
    "origin": "COMPUTED",
-   "plan1": null
+   "plan1": {
+    "R0": 150,
+    "value": 200.0,
+    "banked": 0,
+    "carried": 400,
+    "first_targets": [
+     3,
+     2,
+     4,
+     13,
+     7,
+     5
+    ],
+    "bodies": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "plan": [
+     [
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 25,
+       "start": 25,
+       "cleared": 28,
+       "captured": 34,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 6,
+       "arrive": 46,
+       "start": 46,
+       "cleared": 48,
+       "captured": 54,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 75,
+       "start": 85,
+       "cleared": 88,
+       "captured": 94,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 8,
+       "arrive": 105,
+       "start": 105,
+       "cleared": 107,
+       "captured": 113,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 0,
+       "arrive": 137,
+       "start": 137,
+       "cleared": 663,
+       "captured": 669,
+       "with": [
+        3
+       ]
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 2,
+       "arrive": 19,
+       "start": 19,
+       "cleared": 29,
+       "captured": 35,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 12,
+       "arrive": 50,
+       "start": 50,
+       "cleared": 55,
+       "captured": 61,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 1,
+       "arrive": 83,
+       "start": 83,
+       "cleared": 864,
+       "captured": 870,
+       "with": [
+        2
+       ]
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 25,
+       "start": 25,
+       "cleared": 29,
+       "captured": 35,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 8,
+       "arrive": 46,
+       "start": 46,
+       "cleared": 48,
+       "captured": 54,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 1,
+       "arrive": 83,
+       "start": 83,
+       "cleared": 864,
+       "captured": 870,
+       "with": [
+        1
+       ]
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 13,
+       "arrive": 11,
+       "start": 11,
+       "cleared": 15,
+       "captured": 21,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 9,
+       "arrive": 33,
+       "start": 33,
+       "cleared": 37,
+       "captured": 43,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 52,
+       "start": 78,
+       "cleared": 87,
+       "captured": 93,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 13,
+       "arrive": 101,
+       "start": 101,
+       "cleared": 105,
+       "captured": 111,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 0,
+       "arrive": 137,
+       "start": 137,
+       "cleared": 663,
+       "captured": 669,
+       "with": [
+        0
+       ]
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 7,
+       "arrive": 14,
+       "start": 14,
+       "cleared": 19,
+       "captured": 25,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 11,
+       "arrive": 41,
+       "start": 41,
+       "cleared": 46,
+       "captured": 52,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 2,
+       "arrive": 63,
+       "start": 85,
+       "cleared": 95,
+       "captured": 101,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 11,
+       "arrive": 112,
+       "start": 112,
+       "cleared": 117,
+       "captured": 123,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 143,
+       "start": 143,
+       "cleared": 153,
+       "captured": 159,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 19,
+       "start": 19,
+       "cleared": 22,
+       "captured": 28,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 10,
+       "arrive": 42,
+       "start": 42,
+       "cleared": 44,
+       "captured": 50,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 59,
+       "start": 84,
+       "cleared": 87,
+       "captured": 93,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 10,
+       "arrive": 102,
+       "start": 102,
+       "cleared": 104,
+       "captured": 110,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 9,
+       "arrive": 114,
+       "start": 114,
+       "cleared": 116,
+       "captured": 122,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 139,
+       "start": 143,
+       "cleared": 146,
+       "captured": 152,
+       "with": []
+      }
+     ]
+    ],
+    "mirrored_from": "A"
+   }
   }
  ],
  "pace": [
@@ -1602,35 +3265,7 @@
    "gold_earned": 1800
   },
   {
-   "team": 1,
-   "roster": [
-    "Heart of Ruin",
-    "Prism",
-    "Ryth",
-    "Vesper Vale",
-    "Marcella"
-   ],
-   "origin": "LEARNED",
-   "pace": 1426,
-   "banked": 1000,
-   "gold_earned": 1800
-  },
-  {
    "team": 0,
-   "roster": [
-    "Heart of Ruin",
-    "Vesper Vale",
-    "Marcella",
-    "Ryth",
-    "Vendetta"
-   ],
-   "origin": "LEARNED",
-   "pace": 1398,
-   "banked": 1000,
-   "gold_earned": 1998
-  },
-  {
-   "team": 1,
    "roster": [
     "Heart of Ruin",
     "Vesper Vale",
@@ -1656,20 +3291,6 @@
    "pace": 1251,
    "banked": 1000,
    "gold_earned": 5028
-  },
-  {
-   "team": 1,
-   "roster": [
-    "Ryth",
-    "Vesper Vale",
-    "Vendetta",
-    "Cassi & Issac",
-    "Stellar"
-   ],
-   "origin": "COMPUTED",
-   "pace": 1283,
-   "banked": 1000,
-   "gold_earned": 5255
   }
  ],
  "per_champion_group": [

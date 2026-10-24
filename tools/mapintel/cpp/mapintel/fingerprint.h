@@ -5,8 +5,9 @@
 //   bitboard::linear_buffer_size() bytes each);
 //   the runtime camps (every camp of every group, both halves) as int32 (type, x, y) triples, sorted lexicographically.
 // Nothing team-relative goes in, so both teams compute the same value. The table in known_maps.h is produced by this same function
-// run inside the engine (tools/mapintel/cpp/probe), never by a re-implementation. Cost: about 4 exports + hashing ~4 x W*H/8 bytes
-// + one camp_groups() call (~20-60k fuel on a 100x100 map); call it once, on the first draft turn.
+// run inside the engine (tools/mapintel/cpp/probe), never by a re-implementation. Cost: fingerprint() = 4 exports + hashing ~4 x W*H/8
+// bytes + one camp_groups() call (camp_groups() builds every camp object: ~80-140k fuel on the large official maps); features.h's
+// fingerprint(const MapView&) gives the same value from the view's own exports (hashing only, ~5-11k): use that one in a bot.
 #pragma once
 #include <cambc.h>
 #include <algorithm>

@@ -18,6 +18,7 @@
 #include <memory>
 #include <span>
 #include <vector>
+#include "fingerprint.h"
 
 namespace mapintel
 {
@@ -132,14 +133,26 @@ inline MapView load_view(int team_size = -1)
 	m.altar = pack(bc::map::altars());
 	m.spawn[0] = pack(bc::map::spawn_region(bc::team::ally));
 	m.spawn[1] = pack(bc::map::spawn_region(bc::team::enemy));
+	// camp stats come from the camp's design (one host call per camp type, not per camp: camp::base_stats() queries the design)
+	bc::camp_stats design[8]{};
+	bool have[8]{};
 	for (const auto& g : bc::map::camp_groups())
 	{
 		Group G{ static_cast<int>(g.gem_value()), static_cast<int>(g.gold_value()), g.max_respawn_timer(), 0.0, {} };
 		for (const auto& c : g.camps())
 		{
-			const auto s = c.base_stats();
+			const int k = static_cast<int>(c.kind());
+			if (k < 0 || k >= 8 || !have[k])
+			{
+				const auto st = c.base_stats();
+				if (k < 0 || k >= 8)
+					design[0] = st;
+				else
+					design[k] = st, have[k] = true;
+			}
+			const auto& s = design[k < 0 || k >= 8 ? 0 : k];
 			const auto p = c.spawn_position();
-			G.camps.push_back({ static_cast<int>(c.kind()), p.x, p.y, s.base_health, s.base_strength, s.base_attack_range });
+			G.camps.push_back({ k, p.x, p.y, s.base_health, s.base_strength, s.base_attack_range });
 			G.hp += static_cast<double>(s.base_health);
 			m.camp_at.push_back({ m.at(p.x, p.y), static_cast<int>(c.kind()) });
 			m.camps_bb.set(p);
@@ -162,6 +175,35 @@ inline MapView load_view(int team_size = -1)
 	}
 	m.fn = bfs_field(base, bc::map::spawn_region(bc::team::ally), area);
 	return m;
+}
+
+// The map fingerprint (fingerprint.h's definition and value) from the view's exports: no second camp_groups() call.
+inline std::uint64_t fingerprint(const MapView& m)
+{
+	Fnv64 f;
+	f.i32(m.W);
+	f.i32(m.H);
+	f.i32(m.team);
+	f.bytes(m.wall.b);
+	f.bytes(m.hole.b);
+	f.bytes(m.bush.b);
+	f.bytes(m.altar.b);
+	// (type, x, y) in lexicographic order = sorted 64-bit keys type << 42 | x << 21 | y (coordinates are below 2^21)
+	std::vector<std::uint64_t> keys;
+	keys.reserve(m.camp_at.size());
+	for (const auto& c : m.camp_at)
+	{
+		const auto x = static_cast<std::uint64_t>(c.first % m.W), y = static_cast<std::uint64_t>(c.first / m.W);
+		keys.push_back((static_cast<std::uint64_t>(c.second) << 42) | (x << 21) | y);
+	}
+	std::sort(keys.begin(), keys.end());
+	for (const auto k : keys)
+	{
+		f.i32(static_cast<std::int32_t>(k >> 42));
+		f.i32(static_cast<std::int32_t>((k >> 21) & 0x1FFFFF));
+		f.i32(static_cast<std::int32_t>(k & 0x1FFFFF));
+	}
+	return f.h;
 }
 
 struct Features

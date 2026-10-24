@@ -837,7 +837,7 @@
    "middle_band": true,
    "contested": true,
    "deny_value": 4.0,
-   "priority": 0.0,
+   "priority": 0.08,
    "race_winner": "A",
    "camps": [
     [
@@ -896,7 +896,7 @@
    "middle_band": true,
    "contested": true,
    "deny_value": 4.0,
-   "priority": 0.0,
+   "priority": 0.08,
    "race_winner": "B",
    "camps": [
     [
@@ -1024,7 +1024,7 @@
    "middle_band": true,
    "contested": true,
    "deny_value": 8.0,
-   "priority": 5.93,
+   "priority": 6.77,
    "race_winner": "A",
    "camps": [
     [
@@ -1078,7 +1078,7 @@
    "middle_band": true,
    "contested": true,
    "deny_value": 8.0,
-   "priority": 5.93,
+   "priority": 6.77,
    "race_winner": "B",
    "camps": [
     [
@@ -1260,7 +1260,7 @@
    "middle_band": false,
    "contested": false,
    "deny_value": 230.0,
-   "priority": 28.16,
+   "priority": 71.62,
    "race_winner": "A",
    "camps": [
     [
@@ -1314,7 +1314,7 @@
    "middle_band": false,
    "contested": false,
    "deny_value": 230.0,
-   "priority": 28.16,
+   "priority": 71.62,
    "race_winner": "B",
    "camps": [
     [
@@ -1368,7 +1368,7 @@
    "middle_band": false,
    "contested": false,
    "deny_value": 4.0,
-   "priority": 0.04,
+   "priority": 0.33,
    "race_winner": "A",
    "camps": [
     [
@@ -1427,7 +1427,7 @@
    "middle_band": false,
    "contested": false,
    "deny_value": 4.0,
-   "priority": 0.04,
+   "priority": 0.33,
    "race_winner": "B",
    "camps": [
     [
@@ -1450,6 +1450,10 @@
    37,
    0
   ]
+ },
+ "contested_rule": {
+  "k_contest": 18,
+  "band": 18
  },
  "objectives": [
   {
@@ -1569,7 +1573,146 @@
     "Vendetta"
    ],
    "origin": "LEARNED",
-   "plan1": null
+   "plan1": {
+    "R0": 150,
+    "value": 58.0,
+    "banked": 36,
+    "carried": 44,
+    "first_targets": [
+     9,
+     3,
+     7,
+     5,
+     6
+    ],
+    "bodies": [
+     12,
+     1,
+     7,
+     0,
+     2
+    ],
+    "plan": [
+     [
+      {
+       "do": "farm",
+       "group": 9,
+       "arrive": 178,
+       "start": 178,
+       "cleared": 203,
+       "captured": 209,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 44,
+       "start": 44,
+       "cleared": 49,
+       "captured": 55,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 8,
+       "arrive": 140,
+       "start": 140,
+       "cleared": 167,
+       "captured": 173,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 7,
+       "arrive": 105,
+       "start": 105,
+       "cleared": 124,
+       "captured": 130,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 1,
+       "gems": 4,
+       "round": 143
+      },
+      {
+       "do": "farm",
+       "group": 7,
+       "arrive": 154,
+       "start": 170,
+       "cleared": 189,
+       "captured": 195,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 95,
+       "start": 95,
+       "cleared": 99,
+       "captured": 105,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 28,
+       "round": 111
+      },
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 133,
+       "start": 133,
+       "cleared": 135,
+       "captured": 141,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 6,
+       "arrive": 151,
+       "start": 165,
+       "cleared": 186,
+       "captured": 192,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 6,
+       "arrive": 102,
+       "start": 102,
+       "cleared": 119,
+       "captured": 125,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 4,
+       "round": 138
+      },
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 140,
+       "start": 155,
+       "cleared": 159,
+       "captured": 165,
+       "with": []
+      }
+     ]
+    ]
+   }
   },
   {
    "team": 1,
@@ -1581,7 +1724,147 @@
     "Vendetta"
    ],
    "origin": "LEARNED",
-   "plan1": null
+   "plan1": {
+    "R0": 150,
+    "value": 58.0,
+    "banked": 36,
+    "carried": 44,
+    "first_targets": [
+     8,
+     4,
+     6,
+     5,
+     7
+    ],
+    "bodies": [
+     12,
+     1,
+     7,
+     0,
+     2
+    ],
+    "plan": [
+     [
+      {
+       "do": "farm",
+       "group": 8,
+       "arrive": 178,
+       "start": 178,
+       "cleared": 203,
+       "captured": 209,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 44,
+       "start": 44,
+       "cleared": 49,
+       "captured": 55,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 9,
+       "arrive": 140,
+       "start": 140,
+       "cleared": 167,
+       "captured": 173,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 6,
+       "arrive": 105,
+       "start": 105,
+       "cleared": 124,
+       "captured": 130,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 1,
+       "gems": 4,
+       "round": 143
+      },
+      {
+       "do": "farm",
+       "group": 6,
+       "arrive": 154,
+       "start": 170,
+       "cleared": 189,
+       "captured": 195,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 95,
+       "start": 95,
+       "cleared": 99,
+       "captured": 105,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 28,
+       "round": 111
+      },
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 133,
+       "start": 133,
+       "cleared": 135,
+       "captured": 141,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 7,
+       "arrive": 151,
+       "start": 165,
+       "cleared": 186,
+       "captured": 192,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 7,
+       "arrive": 102,
+       "start": 102,
+       "cleared": 119,
+       "captured": 125,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 4,
+       "round": 138
+      },
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 140,
+       "start": 155,
+       "cleared": 159,
+       "captured": 165,
+       "with": []
+      }
+     ]
+    ],
+    "mirrored_from": "A"
+   }
   },
   {
    "team": 0,
@@ -1593,7 +1876,146 @@
     "Heart of Ruin"
    ],
    "origin": "LEARNED",
-   "plan1": null
+   "plan1": {
+    "R0": 150,
+    "value": 58.0,
+    "banked": 36,
+    "carried": 44,
+    "first_targets": [
+     3,
+     6,
+     7,
+     5,
+     9
+    ],
+    "bodies": [
+     6,
+     1,
+     7,
+     0,
+     12
+    ],
+    "plan": [
+     [
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 44,
+       "start": 44,
+       "cleared": 46,
+       "captured": 52,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 8,
+       "arrive": 137,
+       "start": 137,
+       "cleared": 159,
+       "captured": 165,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 6,
+       "arrive": 100,
+       "start": 100,
+       "cleared": 122,
+       "captured": 128,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 4,
+       "round": 141
+      },
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 142,
+       "start": 155,
+       "cleared": 165,
+       "captured": 171,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 7,
+       "arrive": 105,
+       "start": 105,
+       "cleared": 124,
+       "captured": 130,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 1,
+       "gems": 4,
+       "round": 143
+      },
+      {
+       "do": "farm",
+       "group": 7,
+       "arrive": 154,
+       "start": 170,
+       "cleared": 189,
+       "captured": 195,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 95,
+       "start": 95,
+       "cleared": 99,
+       "captured": 105,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 28,
+       "round": 111
+      },
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 133,
+       "start": 133,
+       "cleared": 135,
+       "captured": 141,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 6,
+       "arrive": 151,
+       "start": 168,
+       "cleared": 189,
+       "captured": 195,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 9,
+       "arrive": 178,
+       "start": 178,
+       "cleared": 203,
+       "captured": 209,
+       "with": []
+      }
+     ]
+    ]
+   }
   },
   {
    "team": 1,
@@ -1605,7 +2027,147 @@
     "Heart of Ruin"
    ],
    "origin": "LEARNED",
-   "plan1": null
+   "plan1": {
+    "R0": 150,
+    "value": 58.0,
+    "banked": 36,
+    "carried": 44,
+    "first_targets": [
+     4,
+     7,
+     6,
+     5,
+     8
+    ],
+    "bodies": [
+     6,
+     1,
+     7,
+     0,
+     12
+    ],
+    "plan": [
+     [
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 44,
+       "start": 44,
+       "cleared": 46,
+       "captured": 52,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 9,
+       "arrive": 137,
+       "start": 137,
+       "cleared": 159,
+       "captured": 165,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 7,
+       "arrive": 100,
+       "start": 100,
+       "cleared": 122,
+       "captured": 128,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 4,
+       "round": 141
+      },
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 142,
+       "start": 155,
+       "cleared": 165,
+       "captured": 171,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 6,
+       "arrive": 105,
+       "start": 105,
+       "cleared": 124,
+       "captured": 130,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 1,
+       "gems": 4,
+       "round": 143
+      },
+      {
+       "do": "farm",
+       "group": 6,
+       "arrive": 154,
+       "start": 170,
+       "cleared": 189,
+       "captured": 195,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 95,
+       "start": 95,
+       "cleared": 99,
+       "captured": 105,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 28,
+       "round": 111
+      },
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 133,
+       "start": 133,
+       "cleared": 135,
+       "captured": 141,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 7,
+       "arrive": 151,
+       "start": 168,
+       "cleared": 189,
+       "captured": 195,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 8,
+       "arrive": 178,
+       "start": 178,
+       "cleared": 203,
+       "captured": 209,
+       "with": []
+      }
+     ]
+    ],
+    "mirrored_from": "A"
+   }
   },
   {
    "team": 0,
@@ -1617,7 +2179,168 @@
     "Stellar"
    ],
    "origin": "COMPUTED",
-   "plan1": null
+   "plan1": {
+    "R0": 150,
+    "value": 58.0,
+    "banked": 36,
+    "carried": 44,
+    "first_targets": [
+     9,
+     7,
+     6,
+     3,
+     8,
+     5
+    ],
+    "bodies": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "plan": [
+     [
+      {
+       "do": "farm",
+       "group": 9,
+       "arrive": 178,
+       "start": 178,
+       "cleared": 199,
+       "captured": 205,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 7,
+       "arrive": 103,
+       "start": 103,
+       "cleared": 125,
+       "captured": 131,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 1,
+       "gems": 4,
+       "round": 144
+      },
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 164,
+       "start": 164,
+       "cleared": 169,
+       "captured": 175,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 6,
+       "arrive": 102,
+       "start": 102,
+       "cleared": 119,
+       "captured": 125,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 4,
+       "round": 138
+      },
+      {
+       "do": "farm",
+       "group": 7,
+       "arrive": 154,
+       "start": 171,
+       "cleared": 188,
+       "captured": 194,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 44,
+       "start": 44,
+       "cleared": 48,
+       "captured": 54,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 0,
+       "arrive": 121,
+       "start": 121,
+       "cleared": 129,
+       "captured": 135,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 201,
+       "start": 201,
+       "cleared": 210,
+       "captured": 216,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 8,
+       "arrive": 178,
+       "start": 178,
+       "cleared": 213,
+       "captured": 219,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 93,
+       "start": 93,
+       "cleared": 96,
+       "captured": 102,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 28,
+       "round": 108
+      },
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 128,
+       "start": 128,
+       "cleared": 130,
+       "captured": 136,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 6,
+       "arrive": 144,
+       "start": 165,
+       "cleared": 187,
+       "captured": 193,
+       "with": []
+      }
+     ]
+    ]
+   }
   },
   {
    "team": 1,
@@ -1629,7 +2352,169 @@
     "Stellar"
    ],
    "origin": "COMPUTED",
-   "plan1": null
+   "plan1": {
+    "R0": 150,
+    "value": 58.0,
+    "banked": 36,
+    "carried": 44,
+    "first_targets": [
+     8,
+     6,
+     7,
+     4,
+     9,
+     5
+    ],
+    "bodies": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "plan": [
+     [
+      {
+       "do": "farm",
+       "group": 8,
+       "arrive": 178,
+       "start": 178,
+       "cleared": 199,
+       "captured": 205,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 6,
+       "arrive": 103,
+       "start": 103,
+       "cleared": 125,
+       "captured": 131,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 1,
+       "gems": 4,
+       "round": 144
+      },
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 164,
+       "start": 164,
+       "cleared": 169,
+       "captured": 175,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 7,
+       "arrive": 102,
+       "start": 102,
+       "cleared": 119,
+       "captured": 125,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 4,
+       "round": 138
+      },
+      {
+       "do": "farm",
+       "group": 6,
+       "arrive": 154,
+       "start": 171,
+       "cleared": 188,
+       "captured": 194,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 44,
+       "start": 44,
+       "cleared": 48,
+       "captured": 54,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 1,
+       "arrive": 121,
+       "start": 121,
+       "cleared": 129,
+       "captured": 135,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 201,
+       "start": 201,
+       "cleared": 210,
+       "captured": 216,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 9,
+       "arrive": 178,
+       "start": 178,
+       "cleared": 213,
+       "captured": 219,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 5,
+       "arrive": 93,
+       "start": 93,
+       "cleared": 96,
+       "captured": 102,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 28,
+       "round": 108
+      },
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 128,
+       "start": 128,
+       "cleared": 130,
+       "captured": 136,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 7,
+       "arrive": 144,
+       "start": 165,
+       "cleared": 187,
+       "captured": 193,
+       "with": []
+      }
+     ]
+    ],
+    "mirrored_from": "A"
+   }
   }
  ],
  "pace": [
@@ -1648,20 +2533,6 @@
    "gold_earned": 3364
   },
   {
-   "team": 1,
-   "roster": [
-    "Heart of Ruin",
-    "Vesper Vale",
-    "Marcella",
-    "Ryth",
-    "Vendetta"
-   ],
-   "origin": "LEARNED",
-   "pace": 1748,
-   "banked": 1144,
-   "gold_earned": 3171
-  },
-  {
    "team": 0,
    "roster": [
     "Prism",
@@ -1676,20 +2547,6 @@
    "gold_earned": 3450
   },
   {
-   "team": 1,
-   "roster": [
-    "Prism",
-    "Vesper Vale",
-    "Marcella",
-    "Ryth",
-    "Heart of Ruin"
-   ],
-   "origin": "LEARNED",
-   "pace": null,
-   "banked": 804,
-   "gold_earned": 2704
-  },
-  {
    "team": 0,
    "roster": [
     "Ryth",
@@ -1702,20 +2559,6 @@
    "pace": 1533,
    "banked": 1104,
    "gold_earned": 3285
-  },
-  {
-   "team": 1,
-   "roster": [
-    "Ryth",
-    "Vesper Vale",
-    "Vendetta",
-    "Cassi & Issac",
-    "Stellar"
-   ],
-   "origin": "COMPUTED",
-   "pace": 2087,
-   "banked": 1020,
-   "gold_earned": 3884
   }
  ],
  "per_champion_group": [

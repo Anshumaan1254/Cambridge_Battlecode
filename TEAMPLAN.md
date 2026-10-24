@@ -579,3 +579,27 @@ Weights live in one versioned parameter set.
   - **The answer to "should the frontliner take the gold"**: the strong teams give a shared reward to the gold-bonus body when it is near,
     else to the nearest body; front bodies take relatively more gold-only groups because they stand at them (TEAMPLAN.md 3).
   - Outputs: `experiments/results/teamplan/capture_check_lag*.txt`.
+- **16:30**: step 5, batteries done (commit after this line; the worker restarted at the usage limit after they finished, nothing lost).
+  `tools/teamplan/batteries.py` on the 40 official maps x 2 sides, 80 games per cell, release mode; table
+  `experiments/results/teamplan/batteries_v10.md`. SIMULATED (v10).
+  - Family 1 is head-to-head against v10. Family 2 is against v10 forced to the strong rosters, with the paired margin against v10's
+    own games on the same map and side; v10 itself wins 37 of 80 there.
+
+    | Switch | Family 1 wins | Family 1 margin [95%] | Family 2 wins | Family 2 paired margin [95%] |
+    |---|---|---|---|---|
+    | `tp_bag` | 44/80 (55.0%) | +37.5 [-43, +114] | 43/80 | **+85.4 [+1.1, +184.5]** |
+    | `tp_own` | 44/80 (55.0%; maps 13 / 18 / 9) | +19.0 [-122, +159] | 43/80 | +120.8 [-59, +313] |
+    | `tp_focus` | 41/80 | +16.7 [-66, +99] | 41/80 | +47.5 [-39, +134] |
+    | `tp_timing` | 38/80 | -7.7 [-101, +94] | 35/80 | -60.7 [-233, +125] |
+    | `tp_tiebreak`, cap 60 | 35/80 | -45.8 [-121, +24] | 38/80 | +8.5 [-69, +85] |
+    | `tp_tiebreak`, cap 150 | 37/80 | -18.9 [-101, +65] | 40/80 | +5.8 [-103, +108] |
+    | all five | 39/80 | -3.5 [-109, +111] | 34/80 | -77.9 [-238, +77] |
+
+  - **Reading**:
+    - `tp_bag` is the only switch whose paired interval clears 0, and only in family 2;
+    - `tp_own` changes the most games (22 of 40 maps not split), positive in both families but wide;
+    - the timing gate and tiebreak deferral lose or tie;
+    - the five together lose ground to the best two alone.
+  - **Next**:
+    - check that `tp_own`'s draft writes never cost a pick (fuel);
+    - confirm `tp_bag`, `tp_own` and both together against two more forced rosters (slots 1 and 2).

@@ -123,8 +123,8 @@ Hardcoded on purpose or measured on the current pool / patch; each may need a re
   not fitted. The event definitions (30-round abandon window, 12-tile threat radius, 8-tile power radius, the bank-trip and wait rules)
   are choices of `plan4_learn.py`.
 - **Economy model constants** (`economy.econ()`, `experiments/results/mapintel/economy/constants.json`, LEARNED from 599 replays):
-  retreat 0.52 and shop gold 115 and gold weight 0.02 measured, bank bag 20, heal threshold 0.9 and damage scale 1.3 fitted to the
-  real bank sizes, the pace and kill times; the opposition share logistic (slope 0.624 per band of walk gap). Still unfitted: the model
+  retreat 0.52 and shop gold 115 and gold weight 0.167 (gold per gem, with the gold-only captures) measured, bank bag 20, heal threshold 0.9 and damage scale 1.3 fitted to the
+  real bank sizes, the pace and kill times; the opposition share logistic (slope about 0.62 per band of walk gap). Still unfitted: the model
   build (Monster in the damage stat, Jungle health, Power). Plan 3 keeps the gold weight 0.1 (not refitted, the user's choice).
 - **Engine facts typed in after a probe** (re-probe after a patch): crystal hop range 3 (`CRYSTAL_RANGE`), the dash legality rules, the
   pick -> body mapping (picks 0-2 = bodies 0-2, pick 3 = bodies 3 and 4, picks 4-11 = bodies 5-12, the SDK enum order).

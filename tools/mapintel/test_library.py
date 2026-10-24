@@ -304,9 +304,12 @@ def main():
 			for o in other:
 				if o.startswith("MI R2 "):
 					worst["row2"] = max(worst.get("row2", 0), int(o.split()[3]))
+			for o in other:
+				if o.startswith("MI R3 "):  # 5-champion teams: pick 3's rows on turn 3, plan 1 on turn 4
+					worst["rows3"] = max(worst.get("rows3", 0), int(o.split()[3]))
 			r3 = [o.split() for o in other if o.startswith("MI R ")]
 			if not r3:
-				fails.append(f"{n} team {team}: no turn-3 line (plan 1)")
+				fails.append(f"{n} team {team}: no plan-1 turn line (MI R)")
 			for t_ in r3:
 				worst["rows"] = max(worst["rows"], int(t_[3]))
 				worst["plan1"] = max(worst["plan1"], int(t_[5]))
@@ -324,7 +327,8 @@ def main():
 	print(f"fuel, first draft turn (limit 1,000,000): max view {worst['view']}, fingerprint {worst['fp']}, features {worst['feat']}, "
 		  f"plans 2-4 {worst['base']}, first pick's rows {worst['row']}; worst total {worst['first_turn']}")
 	print(f"fuel, turn 2 (limit 100,000): second pick's rows {worst.get('row2', 0)}")
-	print(f"fuel, turn 3 (limit 100,000): rows of the remaining picks {worst['rows']}, plan 1 {worst['plan1']}, pack + write {worst.get('pack', 0)}, least left {worst['turn3_left_min']}; "
+	print(f"fuel, the plan-1 turn (turn 3; turn 4 for 5-champion teams, limit 100,000): rows of the remaining picks {worst['rows']}, plan 1 {worst['plan1']}, "
+		  f"pack + write {worst.get('pack', 0)}, least left {worst['turn3_left_min']}; 5-champion teams' turn 3 (pick 3's rows) {worst.get('rows3', 0)}; "
 		  f"later turns: plan 1 from cached rows {worst['later_plan']}, least left {worst['later_left_min']}")
 	if dlw is not None:
 		print(f"dl_weights.h ({', '.join(dlw)}): checked on {ndl} map-teams; max fuel (measured in the first draft turn): inputs {dlfuel['inputs']}, "

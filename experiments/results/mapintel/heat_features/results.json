@@ -1,68 +1,68 @@
 {
  "plan3": {
   "catalog priority": {
-   "spearman_per_map": 0.42613411283800334,
-   "auc": 0.7719571982406427
+   "spearman_per_map": 0.4241948744639279,
+   "auc": 0.7380264741275571
   },
   "catalog contested flag": {
-   "spearman_per_map": 0.324468800616277,
-   "auc": 0.6799864397350533
+   "spearman_per_map": 0.42929375551360593,
+   "auc": 0.71548099384158
   },
   "runtime closeness": {
-   "spearman_per_map": 0.3860093317044315,
-   "auc": 0.7188678917264999
+   "spearman_per_map": 0.5086152171832398,
+   "auc": 0.7718765484533163
   },
   "heat: fight": {
-   "spearman_per_map": 0.3318469768804611,
-   "auc": 0.7331757097407903
+   "spearman_per_map": 0.40490954420482855,
+   "auc": 0.7520067954979827
   },
   "heat: death": {
-   "spearman_per_map": 0.3228797136241412,
-   "auc": 0.7284252707706751
+   "spearman_per_map": 0.36744003629447153,
+   "auc": 0.7400545055567354
   },
   "logistic: closeness + value": {
-   "spearman_per_map": 0.4226896509445126,
-   "auc": 0.7436371064480799
+   "spearman_per_map": 0.402721614103442,
+   "auc": 0.7464075883060806
   },
   "logistic: closeness + value + heat": {
-   "spearman_per_map": 0.4539012967911219,
-   "auc": 0.7691060656108203
+   "spearman_per_map": 0.4374623723238799,
+   "auc": 0.7975472499469101
   },
   "logistic: heat + value": {
-   "spearman_per_map": 0.45246624641551436,
-   "auc": 0.7436805688357295
+   "spearman_per_map": 0.3643195696138478,
+   "auc": 0.7463120266157004
   },
   "logistic: catalog priority": {
-   "spearman_per_map": 0.42613411283800334,
-   "auc": 0.7473574868308964
+   "spearman_per_map": 0.4241948744639279,
+   "auc": 0.6991010122460536
   },
   "logistic: catalog priority + heat": {
-   "spearman_per_map": 0.4523144046079467,
-   "auc": 0.7744258618591471
+   "spearman_per_map": 0.45950633535567365,
+   "auc": 0.7585085297656968
   }
  },
  "plan3_paired": {
   "logistic: closeness + value + heat": {
    "vs": "logistic: closeness + value",
    "maps": 40,
-   "mean_diff": 0.031211645846609303,
+   "mean_diff": 0.03474075822043802,
    "ci95": [
-    -0.05152486627333764,
-    0.10513355578391716
+    -0.05486003497278347,
+    0.11755873488762254
    ],
-   "maps_better": 24,
-   "maps_worse": 16
+   "maps_better": 23,
+   "maps_worse": 17
   },
   "logistic: catalog priority + heat": {
    "vs": "logistic: catalog priority",
    "maps": 40,
-   "mean_diff": 0.026180291769943388,
+   "mean_diff": 0.03531146089174572,
    "ci95": [
-    -0.05700203349548606,
-    0.11303431420810389
+    -0.06315005028939848,
+    0.13599857628806025
    ],
-   "maps_better": 20,
-   "maps_worse": 20
+   "maps_better": 21,
+   "maps_worse": 19
   }
  },
  "plan4": {
@@ -94,8 +94,8 @@
    ]
   },
   "w": {
-   "constant": 0.8780837288774677,
-   "heat-shifted": 0.8830143101544823,
+   "constant": 0.8779015367094865,
+   "heat-shifted": 0.8829164292705827,
    "fit_all": [
     26,
     4.0,
@@ -104,5 +104,5 @@
   }
  },
  "groups_rows": 787,
- "label_share": 0.24650571791613723
+ "label_share": 0.3519695044472681
 }

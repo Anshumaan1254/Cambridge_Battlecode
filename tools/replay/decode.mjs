@@ -196,7 +196,9 @@ async function decodeWith(wasmPath, buf, opts) {
         events.push({ r: n.step.round, k: 'Death', who: c.index, team: c.team, champ: CHAMP[c.type], at: [o.x, o.y], bag: o.gems,
           by: st.actor.kind === 1 ? st.actor.index : (st.actor.kind === 2 ? 'camp' : st.actor.kind), step: STEP[st.kind] });
       }
-      if (o && c.gems > o.gems && st.kind === 2) events.push({ r: n.step.round, k: 'CaptureGems', who: c.index, team: c.team, champ: CHAMP[c.type], gems: c.gems - o.gems, gold: c.gold - o.gold, at: [c.x, c.y] });
+      // a capture pays gems and / or gold: gold-only groups (gold clusters) raise only the gold, so both count (the event keeps its
+      // name: gems may be 0)
+      if (o && (c.gems > o.gems || c.gold > o.gold) && st.kind === 2) events.push({ r: n.step.round, k: 'CaptureGems', who: c.index, team: c.team, champ: CHAMP[c.type], gems: c.gems - o.gems, gold: c.gold - o.gold, at: [c.x, c.y] });
       if (o && c.gems < o.gems && c.alive && st.kind === 18) events.push({ r: n.step.round, k: 'Banked', who: c.index, team: c.team, champ: CHAMP[c.type], gems: o.gems - c.gems, at: [c.x, c.y] });
     }
     if (n.step.round !== lastRound && n.phase !== 12) {

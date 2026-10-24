@@ -112,6 +112,7 @@ class Ctx:
 		self.bank_ord = D2.bank_order_py(self.C)
 		self.band, self.con = self.C.contested()
 		self.anchors = D2.nav_anchor_groups(self.C, self.rank)
+		self.arche = arche
 		self.nav = None
 
 	def nav_block(self):
@@ -130,7 +131,7 @@ def expected_masks(base):
 	return [0 if d is None else present & ~(1 << d) for d in drop], present
 
 
-def check(name, team, r, M, ctx, out, K, own_full_cache, fails, stats, known_names, fp_hex, nav_always, table_nav):
+def check(name, team, r, M, ctx, out, K, own_full_cache, fails, stats, known_names, fp_hex, nav_always, table_nav, table_dl, dl_open_model):
 	tag = f"{name} team {team} r{r}"
 	if out["E"]:
 		fails.append(f"{tag}: exceptions {out['E'][:2]}")
@@ -183,6 +184,22 @@ def check(name, team, r, M, ctx, out, K, own_full_cache, fails, stats, known_nam
 			stats["nav_computed"] += 1
 	elif img[1017] != 0 or (ctx.M.name in known_names and r != 0):
 		fails.append(f"{tag}: NAV missing (complete on turn {img[1016]}, source {img[1017]})")
+	# L: the DL outputs (known maps: the catalog's tables, dl_tables.py; unknown maps: dl_ref's opening ranking when the draft computed it)
+	dlc = table_dl
+	if dlc and dlc.get("open"):
+		G = len(M.groups)
+		nexte = bytes.fromhex(dlc["next"][str(team)])[:13 * G * 2] if dlc.get("next") else None
+		blocks["L"] = D2.build_dl(bytes.fromhex(dlc["open"][str(team)]), 2, nexte, G, types, bodies, plan, dlc["split"], dlc["rounds"][0], dlc["rounds"][1])
+		stats["dl_known"] += 1
+	elif R.block("L", 1) is not None or (D2.BK["L"] < D2.DM2_NTOC and img[D2.DM2_TOC + 8 * D2.BK["L"]] == ord("L")):
+		if dl_open_model is None:
+			fails.append(f"{tag}: an L block without dl_weights.h's opening model")
+		else:
+			sys.path.insert(0, os.path.join(HERE, "dl"))
+			import dl_ref as DLR
+			r16 = DLR.rank(DLR.opening_scores(M, team, ctx.arche, dl_open_model), 16)
+			blocks["L"] = D2.build_dl(bytes(r16 + [255] * (16 - len(r16))), 1, None, 0, types, bodies, plan, 571, 329, 849)
+			stats["dl_computed"] += 1
 	blocks["D"] = R.block("D", 1)
 	if blocks["D"] is None:
 		fails.append(f"{tag}: DEBUG missing")
@@ -191,6 +208,8 @@ def check(name, team, r, M, ctx, out, K, own_full_cache, fails, stats, known_nam
 	mblk = CP.pack(ctx.C, int(fp_hex, 16), picks, known, ctx.arch, ctx.rank or None)
 	# per block
 	for idc, want in blocks.items():
+		if idc == "L":
+			continue  # at 864, past the printed 0-511: the whole-image hash below covers it (and its TOC entry is compared)
 		gotb = R.block(idc, 1) if idc != "D" else blocks["D"]
 		if gotb is None:
 			fails.append(f"{tag}: block {idc} missing")
@@ -264,12 +283,20 @@ def main():
 	fps = dict(l.split()[:2] for l in open(os.path.join(ROOT, "experiments/results/mapintel/dump/fingerprints.txt")))
 	known_names = set(fps)
 	K = D2.Kits13()
-	stats = {"blocks": 0, "images": 0, "own_recompute": 0, "own_game_fuel": 0, "nav_computed": 0}
+	stats = {"blocks": 0, "images": 0, "own_recompute": 0, "own_game_fuel": 0, "nav_computed": 0, "dl_known": 0, "dl_computed": 0}
+	dlj = os.path.join(ROOT, "tools/mapintel/cpp/mapintel/dl_weights.h")
+	dl_open_model = None
+	if os.path.exists(dlj) and "#define MAPINTEL_DL_OPENING 1" in open(dlj).read():
+		sha = next((l.split()[3] for l in open(dlj) if l.startswith("// json sha256 ")), "")
+		for f in sorted(glob.glob(os.path.join(ROOT, "experiments/results/mapintel/dl_model*/dl_weights.json"))):
+			import hashlib
+			if hashlib.sha256(open(f, "rb").read()).hexdigest() == sha:
+				dl_open_model = json.load(open(f))["models"]["opening"]
 	fuel = {"turn1": [], "later_max": 0, "last_left_min": 10 ** 9, "parts": {}, "own": 0, "enemy": 0, "nav_turns": []}
 	own_cache = {}
 	per_map = []
 
-	def one(name, M, ctxs, bot, r, rp, nav_always, table_nav, fp_hex):
+	def one(name, M, ctxs, bot, r, rp, nav_always, table_nav, fp_hex, table_dl=None):
 		if not os.path.exists(rp):
 			fails.append(f"{name} r{r}: no replay")
 			return
@@ -278,7 +305,7 @@ def main():
 			out = parse(member(z, f + ".stdout"))
 			if team not in ctxs:
 				ctxs[team] = Ctx(name, M, team, arche, ftw)
-			check(name, team, r, M, ctxs[team], out, K, own_cache, fails, stats, known_names, fp_hex, nav_always, table_nav)
+			check(name, team, r, M, ctxs[team], out, K, own_cache, fails, stats, known_names, fp_hex, nav_always, table_nav, table_dl, dl_open_model)
 			d = z.read(f + ".fuel")
 			k = (len(d) - 12) // 8
 			img, P = out["IMG"], out["P"]
@@ -313,7 +340,7 @@ def main():
 		cat = json.load(open(os.path.join(ROOT, "maps/catalog", name + ".json")))
 		ctxs = {}
 		for r, b in enumerate(bots):
-			one(name, M, ctxs, b, r, os.path.join(tmp, f"{b}_{os.path.basename(m)}.repl26a"), r == 0, cat.get("nav"), fps[name])
+			one(name, M, ctxs, b, r, os.path.join(tmp, f"{b}_{os.path.basename(m)}.repl26a"), r == 0, cat.get("nav"), fps[name], cat.get("dl"))
 	if a.perturbed:
 		pdir = tempfile.mkdtemp(prefix="mi_dm2_pert_")
 		pm = []
@@ -338,7 +365,8 @@ def main():
 	t1 = sorted(fuel["turn1"], reverse=True)
 	print(f"maps: {len(maps)} official x 2 teams x 3 builds" + (f" + {stats.get('perturbed', 0)} perturbed (unknown) x 2 teams" if a.perturbed else "")
 		  + f": {stats['blocks']} blocks bit-equal to the twins, {stats['images']} whole images equal (every champion), "
-		  f"{stats['own_recompute']} in-game OWN recomputes equal, NAV computed and equal on {stats['nav_computed']} map-teams")
+		  f"{stats['own_recompute']} in-game OWN recomputes equal, NAV computed and equal on {stats['nav_computed']} map-teams, "
+		  f"the L block (DL) from the known-map tables on {stats['dl_known']} and computed in the draft on {stats['dl_computed']}")
 	print(f"fuel, draft turn 1 (limit 1,000,000, the engine's count): worst {t1[0][0] if t1 else 0} ({t1[0][1] if t1 else ''}); "
 		  f"later turns at most {fuel['later_max']} (limit 100,000); the last turn left at least {fuel['last_left_min']} before its write")
 	print("fuel, blocks (max): " + ", ".join(f"{k} {v[0]} ({v[1]})" for k, v in fuel["parts"].items())

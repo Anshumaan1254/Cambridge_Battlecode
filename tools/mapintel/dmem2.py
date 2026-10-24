@@ -292,6 +292,37 @@ def build_enemy(CE, K, enemy_picks):
 	return bytes(b)
 
 
+# ---- L (dmem2.h build_dl)
+def build_dl(open16, source, next_early, G, types, plan_bodies, plan, split, r_early, r_late):
+	"""next_early: bytes [13][G][2] of our team at the early phase (catalog dl.next[team][:13 * G * 2]) or None; plan_bodies / plan:
+	compact.Compact.plan1's output."""
+	b = bytearray(136)
+	b[1] = source
+	b[2], b[3], b[4], b[5], b[6], b[7] = split & 0xFF, split >> 8, r_early & 0xFF, r_early >> 8, r_late & 0xFF, r_late >> 8
+	for k in range(16):
+		b[8 + k] = open16[k] if open16 is not None else 255
+	if open16 is not None:
+		b[0] |= 1
+	for k in range(24, 60):
+		b[k] = 255
+	if next_early is not None and plan_bodies:
+		b[0] |= 2
+		for s, t in enumerate(types[:NSLOT]):
+			ps = max((i for i, x in enumerate(plan_bodies) if x == t), default=-1)
+			first = plan[ps][0][0] if ps >= 0 and plan[ps] and plan[ps][0][0] is not None else -1
+			if first is None or first < 0 or first >= G:
+				continue
+			r = [first]
+			for k in range(1, 6):
+				o = 2 * (t * G + r[-1])
+				c = [x for x in next_early[o:o + 2] if x != 255 and x not in r]
+				if not c:
+					break
+				r.append(c[0])
+			b[24 + 6 * s:24 + 6 * s + len(r)] = bytes(r)
+	return bytes(b)
+
+
 # ---- NAV inputs
 def nav_anchor_groups(C, rank):
 	G = len(C.dU)

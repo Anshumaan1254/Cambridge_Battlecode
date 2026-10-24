@@ -620,6 +620,67 @@ inline std::array<std::uint8_t, 16> build_enemy(const Compact& CE, const BankBox
 	return b;
 }
 
+// ---- L (mapintel's DL outputs at 864, 136 bytes, version 1; docs/DRAFT_MEMORY.md 5.9): the step-7 models the bot carries (dl_weights.h)
+//   0 flags: bit 0 the opening ranking, bit 1 the routes; 1 source: 1 computed in this draft (dl_weights.h), 2 copied from known_maps.h's
+//   tables (dl_tables.py); 2-3 the round the late phase of the next model starts (u16); 4-5, 6-7 the next model's round input per phase;
+//   8-23 the opening model's ranking (16 groups, best first, 255 none); 24-59 per body slot (TEAM order) a route of 6 groups: the
+//   body's plan-1 first target (the M block), then each next the next model's best group after the previous one at the early phase,
+//   skipping groups already on the route (from its two best; the route ends when both are on it; 255 none); 60-135 zero.
+// The routes need the next model's best two groups after every group: known maps carry them (zero fuel); an unknown map's draft would
+// score every group per step (~87k), so there the routes are left out and only the opening ranking is computed (dl_inputs ~62k +
+// dl_opening_scores ~91k, on draft turn 1 when the guard allows). Champions of a known map read the same table in the game
+// (known_maps.h known_dl_next) after any capture.
+inline constexpr int DL_SIZE = 136;
+// next_early: the table of our team at the early phase, [13 body types][G][2] (KnownMap::dl_next + 2 * (team * 2 * 13 * G)), or null
+inline std::array<std::uint8_t, DL_SIZE> build_dl(const std::uint8_t* open16, int source, const std::uint8_t* next_early, int G, const int* types,
+												  int n, const Plans* P, int split, int r_early, int r_late)
+{
+	std::array<std::uint8_t, DL_SIZE> b{};
+	b[1] = static_cast<std::uint8_t>(source);
+	b[2] = static_cast<std::uint8_t>(split & 0xFF), b[3] = static_cast<std::uint8_t>(split >> 8);
+	b[4] = static_cast<std::uint8_t>(r_early & 0xFF), b[5] = static_cast<std::uint8_t>(r_early >> 8);
+	b[6] = static_cast<std::uint8_t>(r_late & 0xFF), b[7] = static_cast<std::uint8_t>(r_late >> 8);
+	for (int k = 0; k < 16; ++k)
+		b[static_cast<std::size_t>(8 + k)] = open16 ? open16[k] : 255;
+	if (open16)
+		b[0] |= 1;
+	for (int k = 24; k < 60; ++k)
+		b[static_cast<std::size_t>(k)] = 255;
+	if (next_early && P && P->nbody > 0)
+	{
+		b[0] |= 2;
+		for (int s = 0; s < n && s < NSLOT; ++s)
+		{
+			std::uint8_t* r = b.data() + 24 + 6 * s;
+			int ps = -1;
+			for (int i = 0; i < P->nbody; ++i)
+				if (P->body[i] == types[s])
+					ps = i;
+			const int first = ps >= 0 && P->ntgt[ps] > 0 ? P->tgt[ps][0].g : -1;
+			if (first < 0 || first >= G)
+				continue;
+			r[0] = static_cast<std::uint8_t>(first);
+			for (int k = 1; k < 6; ++k)
+			{
+				const std::uint8_t* c = next_early + 2 * (types[s] * G + r[k - 1]);
+				int pick = 255;
+				for (int j = 0; j < 2 && pick == 255; ++j)
+				{
+					bool on = c[j] == 255;
+					for (int i = 0; i < k && !on; ++i)
+						on = r[i] == c[j];
+					if (!on)
+						pick = c[j];
+				}
+				if (pick == 255)
+					break;
+				r[k] = static_cast<std::uint8_t>(pick);
+			}
+		}
+	}
+	return b;
+}
+
 // ---- NAV inputs: anchor groups = the first_scores() ranking when given, else the reached groups nearest our spawn
 inline void nav_anchor_groups(const Compact& C, std::span<const int> rank, int out[4])
 {

@@ -39,6 +39,9 @@
 #include "mapintel/known_maps.h"
 #define MI_HAS_TABLE 1
 #endif
+#if __has_include("mapintel/dl_weights.h")
+#include "mapintel/dl_weights.h"
+#endif
 #if __has_include("mapintel/model_weights.h")
 #include "mapintel/model_weights.h"
 #define MI_HAS_WEIGHTS 1
@@ -86,6 +89,9 @@ struct State
 	mi::NavWork navw;
 	mi::BankBox BB;
 	mi::OwnRecompute orc;
+	std::uint8_t dl_open[16]{};
+	bool have_dl_open = false;
+	int dl_source = 0;
 	bool own_rc_done = false;
 	long long own_rc_fuel = 0;
 	int own_rc_turns = 0;
@@ -201,6 +207,58 @@ static void run_nav(State& S, long long floor)
 	S.D.img.b[498] = eq;
 }
 
+// L (mapintel's DL outputs): turn 1 the opening ranking (a known map copies known_maps.h's; an unknown map computes it with dl_weights.h
+// when the guard allows: the inputs and the scores, ~150k); the last turn the routes (known maps: the table). Byte 1018: the L block's
+// fuel on its last write / 16 (test).
+static void dl_opening(State& S)
+{
+#if defined(MI_HAS_TABLE) && defined(MAPINTEL_DL_TABLES)
+	if (S.known >= 0 && mi::KNOWN[S.known].dl_open)
+	{
+		std::memcpy(S.dl_open, mi::KNOWN[S.known].dl_open + 16 * S.kteam, 16);
+		S.have_dl_open = true, S.dl_source = 2;
+		return;
+	}
+#endif
+#ifdef MAPINTEL_DL_OPENING
+	if (S.known >= 0)
+		return; // a known map without the table: nothing to copy (the bot computes nothing a table should hold)
+	S.D.run(mi::BK_DL, [&] {
+		const auto I = mi::dl_inputs(*S.C, *S.V, *S.F);
+		const auto sc = mi::dl_opening_scores(I);
+		std::vector<int> gs;
+		for (int g = 0; g < static_cast<int>(sc.size()); ++g)
+			if (sc[static_cast<std::size_t>(g)] > -1e299)
+				gs.push_back(g);
+		std::sort(gs.begin(), gs.end(), [&](int a, int b) { return sc[static_cast<std::size_t>(a)] != sc[static_cast<std::size_t>(b)] ? sc[static_cast<std::size_t>(a)] > sc[static_cast<std::size_t>(b)] : a < b; });
+		for (int k = 0; k < 16; ++k)
+			S.dl_open[k] = k < static_cast<int>(gs.size()) ? static_cast<std::uint8_t>(gs[static_cast<std::size_t>(k)]) : 255;
+		S.have_dl_open = true, S.dl_source = 1;
+	}, 160000);
+#endif
+}
+
+static void put_dl(State& S, bool routes)
+{
+	const long long a = fuel();
+	const std::uint8_t* nx = nullptr;
+	int G = 0, split = 0, r0 = 0, r1 = 0;
+#if defined(MI_HAS_TABLE) && defined(MAPINTEL_DL_TABLES)
+	split = mi::DL_TABLE_SPLIT, r0 = mi::DL_TABLE_ROUNDS[0], r1 = mi::DL_TABLE_ROUNDS[1];
+	if (routes && S.known >= 0 && mi::KNOWN[S.known].dl_next)
+		G = mi::KNOWN[S.known].ngroups, nx = mi::KNOWN[S.known].dl_next + 2 * (S.kteam * 2 * 13 * G);
+#endif
+	if (!S.have_dl_open && !nx)
+		return;
+	int types[mi::NSLOT];
+	const int n = types_of(S, types);
+	if (nx && S.dl_source == 0)
+		S.dl_source = 2;
+	S.D.img.put(mi::BK_DL, mi::build_dl(S.have_dl_open ? S.dl_open : nullptr, S.dl_source, nx, G, types, n, &S.P, split, r0, r1));
+	const long long u = std::min<long long>(255, (a - fuel()) / 16);
+	S.D.img.b[1018] = static_cast<std::uint8_t>(u);
+}
+
 static long long run_enemy(State& S)
 {
 	std::vector<int> ep;
@@ -301,6 +359,8 @@ static void draft_turn(State& S)
 		put_code(S);
 		other = run_enemy(S);
 		part(S, 6, other);
+		dl_opening(S);
+		put_dl(S, false);
 	}
 	else
 	{
@@ -323,6 +383,7 @@ static void draft_turn(State& S)
 				ep.push_back(static_cast<int>(d));
 			S.D.img.put(mi::BK_CONT, mi::build_cont(*S.K, ep.data(), static_cast<int>(ep.size()), types, n));
 			S.D.img.b[503] = static_cast<std::uint8_t>(ep.size()); // test: the enemy picks CONT saw
+			put_dl(S, true);
 		}
 		STAGE("rows");
 		run_own(S, own_cost);

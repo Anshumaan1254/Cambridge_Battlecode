@@ -230,7 +230,8 @@ def main():
 		sha = next((l.split()[3] for l in open(dlh) if l.startswith("// json sha256 ")), "")
 		if not os.path.exists(wp) or hashlib.sha256(open(wp, "rb").read()).hexdigest() != sha:
 			sys.exit(f"dl_weights.h was generated from another json than {wp} (sha256 {sha[:12]}): pass --dl-weights")
-		dlw = {k: m for k, m in json.load(open(wp))["models"].items() if m.get("export")}
+		hdr = open(dlh).read()
+		dlw = {k: m for k, m in json.load(open(wp))["models"].items() if f"#define MAPINTEL_DL_{ {'opening': 'OPENING', 'next': 'NEXT', 'values': 'VALUES'}[k]} 1" in hdr}
 	ndl, dlfuel = 0, {"inputs": 0, "open": 0, "next": 0, "val": 0, "nextall": 0, "skipped": []}
 	maps = sorted(glob.glob(os.path.join(ROOT, a.maps)))
 	tmp = tempfile.mkdtemp(prefix="mi_test_")

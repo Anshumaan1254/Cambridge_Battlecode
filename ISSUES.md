@@ -181,8 +181,9 @@ changes. No champion name or map identity is in the logic: champions enter throu
   - the OWN prototype sits at draft memory offset 8 (magic 0x54, version 1). Its writer rewrites v10's bytes 0-3 as `B7 02 00 00`: v10's
     team and plan-choice bytes become 0. Nothing in v10 reads them while `dm_plan` is off (the default), and with every switch off the
     copy plays v10's games 80 of 80;
-  - the final layout (`docs/DRAFT_MEMORY.md`) moves OWN to 84-147.
+  - the final layout (`docs/DRAFT_MEMORY.md`) moves OWN to 116-179.
 - **No fuel guard on the OWN write in the v10 test**. It leaves 24.2k of 100k at worst on the 40 official maps (road-of-riches, 5 bodies).
   A map with a longer group list could run out after the pick. The final layout adds the guard (`docs/DRAFT_MEMORY.md` 7).
-- **Roster battery opponents** (`tools/mapintel/data/battery_rosters.json`, mapintel's): slots 0-2 are real strong-team rosters (LEARNED)
-  on all 40 official maps, from one ladder snapshot (Oct 24). A new ladder changes them.
+- **Roster battery opponents** (`tools/mapintel/data/battery_rosters.json`, mapintel's): slots 0-3 are real strong-team rosters (LEARNED)
+  on all 40 official maps, from one ladder snapshot (Oct 24); slots 4-7 are COMPUTED, balanced over kit classes. A new ladder changes
+  them.

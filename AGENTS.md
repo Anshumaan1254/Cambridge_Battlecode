@@ -3,10 +3,11 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- **Session 18 (2026-10-24): MAP ANALYSIS. Read `MAPAnalysis.md` first** (the prompt for the next agent: `docs/HANDOFF_PROMPT_MAPANALYSIS.md`): the user's map-analysis requests and corrections, the patch
-  timeline (cambc 3.0.5 = engine v1.0.3 plays exactly as 3.0.4: probe identical, 80/80 games identical; ledger shared), the 40 official
-  maps now in `maps/official/` (downloaded with `cambc init`, no login; 21 equal our replay copies, 19 new), the engine's camp and
-  champion tables, the full plan (steps 3-9) and where it stopped. Session 17's ladder study is in `god2_session17/README.md`.
+- **Session 18 (2026-10-24): MAP ANALYSIS. Read `MAPAnalysis.md` first: it is the only record of the current work** (map analysis,
+  map model and exact-match map table for the user's new bot; no bot is built or shipped in this work). **Everything else in this file,
+  and the older docs it points to (`docs/strategy_v2/`, `docs/ENGINE_FACTS.md`, `SUGGESTIONS.md`, `ISSUES.md` before its map-analysis
+  section, the bots in `bots/`, the ledgers and test pools), predates the Oct 20-22 patches and is NOT an input to the map-analysis
+  work** (the user's source rule, `MAPAnalysis.md` section 1.7). Session 17's ladder study is in `god2_session17/README.md` (context only).
 
 - Last updated: **2026-10-21 19:55 UTC (session 14: v11 requests measured, none shipped: GOD v10 stays, two candidate zips, §S14.8 last bullet; before that: **SHIPPED GOD v10** = `_v10b` (`submissions/god.zip` sha256 245c446c…, `bots/god/src`; §S14.8 last bullet, doc 18 §5d-6); before that: the user's v9 upload measured (worse than v8 and far below our 3.0.4 bot); the plan's items being re-screened on our 3.0.4 base, §S14.8 last bullet; PATCH 3.0.4: the dynamic-draft GOD is built and confirmed (79.4% vs v8 on all 308 maps); ladder pair god-dynamic-draft-on / -off pushed, waiting for the user's pick: §S14.8 last bullets; before that: opponent-model upgrade built, all off on main; ladder pair god-opponent-model-on / -off pushed, waiting for the user's pick, §S14.8 last bullets; SHIPPED GOD v8 on cambc 3.0.2, plan and log docs/strategy_v2/16_GOD_V8_PLAN.md; SHIPPED GOD v7 = v6 + Heart of Ruin strike dash; read §S14.8's last checkpoint, then §S15, §S14, §S13-GOD, §S13)**.
   Rule from the user: update this file and push at every step. Start with **§S14**, then **§S13-GOD**, **§S13**, then **§S12**, then §S7R (m11-m14), §S11, §S10, §S9, §S8,

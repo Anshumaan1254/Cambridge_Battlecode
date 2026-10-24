@@ -76,7 +76,7 @@ def summarise(d, name, index_row=None):
 	camp_tiles = set(M.camp_group)
 	for e in d["events"]:
 		k = e["k"]
-		if k == "CaptureGems":
+		if k in ("CaptureGems", "CaptureGold"):  # CaptureGold: a gold-only group (decode.mjs --gold-captures)
 			g = M.camp_group.get(tuple(e["at"]))
 			caps.append([e["r"], e["team"], e["champ"], g, e["gems"], e["gold"], e["at"]])
 			if g is not None:
@@ -114,7 +114,7 @@ def decode_one(path, index_row, out_dir):
 		return json.load(open(dst))
 	with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tf:
 		tmp = tf.name
-	r = subprocess.run(["node", os.path.join(ROOT, "tools/replay/decode.mjs"), path, "--out", tmp], capture_output=True, text=True)
+	r = subprocess.run(["node", os.path.join(ROOT, "tools/replay/decode.mjs"), path, "--out", tmp, "--gold-captures"], capture_output=True, text=True)
 	if r.returncode != 0:
 		os.unlink(tmp)
 		return {"replay": name, "error": (r.stderr or r.stdout)[-400:]}

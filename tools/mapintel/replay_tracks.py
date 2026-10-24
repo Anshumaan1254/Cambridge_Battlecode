@@ -78,7 +78,7 @@ def tracks(d, mp):
 			evs["recall"].append((e["r"], b))
 		elif k == "Shop":
 			evs["shop"].append((e["r"], b))
-		elif k == "CaptureGems":
+		elif k in ("CaptureGems", "CaptureGold"):  # CaptureGold: a gold-only group (decode.mjs --gold-captures)
 			g = M.camp_group.get(tuple(e["at"]), -1)
 			evs["capture"].append((e["r"], b, g, e["gems"]))
 		elif k == "Banked":
@@ -106,7 +106,7 @@ def one(path, out_dir):
 		return name, "kept"
 	with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tf:
 		tmp = tf.name
-	r = subprocess.run(["node", os.path.join(ROOT, "tools/replay/decode.mjs"), path, "--out", tmp], capture_output=True, text=True)
+	r = subprocess.run(["node", os.path.join(ROOT, "tools/replay/decode.mjs"), path, "--out", tmp, "--gold-captures"], capture_output=True, text=True)
 	if r.returncode != 0:
 		os.unlink(tmp)
 		return name, "decode failed: " + (r.stderr or r.stdout)[-200:]

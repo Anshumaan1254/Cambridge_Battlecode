@@ -4,8 +4,8 @@
     python3 -I tools/mapintel/plan1_learn.py [--summaries experiments/results/mapintel/ladder_20261024] [--out .../plan1] [--jobs 4]
 
 For every decoded ladder team-game: the team's real roster (its draft), its first-n captured groups (n = bodies) and each body's first
-captured group. Variants of plan 1 (team-relative; the first_scores() forest is refitted per archetype fold, so a map is scored by a
-forest that never saw it: held out):
+captured group. Variants of plan 1 (team-relative; the first_scores() model (first_targets.py's choice: forest or logistic) is refitted
+per archetype fold, so a map is scored by a model that never saw it: held out):
   catalog          the catalog's offline plan 1 (plans.plan1: the planner plays the best first-target combinations to round 150),
                    the source of the table's first targets until now
   compact          the current runtime plan 1 (plans.h = compact.plan1: greedy (body, group) pairs by first-target rate)
@@ -160,6 +160,8 @@ def main():
 	for (key, t), (mp, picks, fset, _) in truth.items():
 		samples[mp].append((t, fset))
 	fs = {}
+	ftw = json.load(open(os.path.join(ROOT, "experiments/results/mapintel/first_targets/weights.json")))
+	use = ftw.get("use", "forest")  # the model first_scores() ships (first_targets.py: the better of the two held out)
 	for k in range(5):
 		trm = [m for m in games if fold_of[m] != k]
 		X, y = [], []
@@ -168,14 +170,23 @@ def main():
 				for g, x in tables[m][t].items():
 					X.append(x)
 					y.append(1 if g in fset else 0)
-		gm = HistGradientBoostingClassifier(max_depth=FTG.GBM_DEPTH, learning_rate=FTG.GBM_LR, max_iter=FTG.GBM_TREES, early_stopping=False,
-											random_state=0).fit(np.array(X, float), np.array(y))
+		X, y = np.array(X, float), np.array(y)
+		if use == "forest":
+			gm = HistGradientBoostingClassifier(max_depth=FTG.GBM_DEPTH, learning_rate=FTG.GBM_LR, max_iter=FTG.GBM_TREES, early_stopping=False,
+												random_state=0).fit(X, y)
+			score = gm.decision_function
+		else:
+			from sklearn.linear_model import LogisticRegression
+			mu, sd = X.mean(0), X.std(0)
+			sd[sd == 0] = 1
+			lm = LogisticRegression(C=ftw["C"], max_iter=3000).fit((X - mu) / sd, y)
+			score = lambda Z, lm=lm, mu=mu, sd=sd: lm.decision_function((Z - mu) / sd)  # noqa: E731
 		for m in games:
 			if fold_of[m] == k:
 				fs[m] = []
 				for t in (0, 1):
 					gs_ = list(tables[m][t])
-					sc = gm.decision_function(np.array([tables[m][t][g] for g in gs_], float)) if gs_ else []
+					sc = score(np.array([tables[m][t][g] for g in gs_], float)) if gs_ else []
 					fs[m].append({g: float(s) for g, s in zip(gs_, sc)})
 	jobs = []
 	for mp in sorted(games):

@@ -28,8 +28,9 @@ struct KnownMap
 	std::uint16_t thr[8];                 // plan 4: k_abandon, p_power x 100, d_regroup, r_enemies, bank_margin, contested groups,
 	                                      //         spawn distance, first contact round (k, p, d, margin: LEARNED where
 	                                      //         plan4_learn.py beat the formula, for team A's features; w_max: the block)
-	std::uint8_t pick_strong[12];         // LEARNED: strong teams' pick rate x 200, draft-pick order (champion_draft ids)
-	std::int16_t value[12];               // draft model value x 1000 (log-odds; model_weights.h names its origin)
+	std::uint8_t pick_strong[12];         // DEFAULT draft signal, LEARNED: strong teams' pick rate x 200 on this map (champion_draft ids)
+	std::int16_t value[12];               // SECONDARY draft signal: champion value x 1000 (log-odds; SIMULATED v10 until your bot's
+	                                      // battery replaces it; model_weights.h names its origin)
 	std::uint8_t ref_roster[5];           // the most frequent strong-team roster (draft ids; 255 = none)
 	std::uint8_t ref_first[2][6];         // its plan-1 first target group per body slot, per team: the first_scores() ranking's top
 	                                      // groups assigned by the catalog economy (plan1_learn.py fs_catalog; 255 = none)

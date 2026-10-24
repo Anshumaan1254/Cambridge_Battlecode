@@ -3,7 +3,8 @@
 // each turn, and prints the results on turns where printing does not hide the measurement:
 //   turn 1: load_view, fingerprint(view), compute_features, Compact, base_plans (plans 2-4), row() of the first test pick's bodies
 //           MI T fp <hex> ts <n> fuel_view <f> fuel_fp <f> fuel_feat <f> fuel_base <f> fuel_row <f> table <0|1> turn_fuel_left <f>
-//   turn 2: row() of the second test pick (MI R2 fuel_row <f>)
+//   turn 2: row() of the second test pick (MI R2 fuel_row <f>); with model_weights.h's pick_prior(): MI PP <12 pick rates and 12
+//           first-pick shares as uint16 x 10000, little endian> fuel <f>
 //   turn 3 (turn 4 for 5-champion teams, whose turn 3 computes pick 3's rows: MI R3 fuel_rows <f>): rows of the remaining test picks
 //           + plan 1 (measured; with turn 1's first_scores() ranking when model_weights.h has it), the draft-memory block packed and written to the engine whole, then a
 //           4-byte write from offset 0 as GOD v10 makes: MI R fuel_rows <f> fuel_plan1 <f> turn_fuel_left <f> fuel_pack_write <f>
@@ -248,6 +249,23 @@ static void turn2(State& S)
 	}
 	const auto g1 = bc::fuel_remaining();
 	line("MI R2 fuel_row " + std::to_string(g0 - g1));
+#ifdef MAPINTEL_PICK_PRIOR
+	{
+		double z[mapintel::MW_NF], rate[12], first[12];
+		mapintel::zfeat(*S.F, z);
+		const auto a = bc::fuel_remaining();
+		mapintel::pick_prior(z, rate, first);
+		const auto fu = a - bc::fuel_remaining();
+		std::uint8_t b[48];
+		for (int c = 0; c < 12; ++c)
+		{
+			const auto r = static_cast<std::uint16_t>(std::floor(rate[c] * 10000.0 + 0.5)), f = static_cast<std::uint16_t>(std::floor(first[c] * 10000.0 + 0.5));
+			b[2 * c] = static_cast<std::uint8_t>(r & 255), b[2 * c + 1] = static_cast<std::uint8_t>(r >> 8);
+			b[24 + 2 * c] = static_cast<std::uint8_t>(f & 255), b[25 + 2 * c] = static_cast<std::uint8_t>(f >> 8);
+		}
+		line("MI PP " + hex(b, 48) + " fuel " + std::to_string(fu));
+	}
+#endif
 }
 
 // rows of test picks [from, to) only (5-champion teams, turn 3: a real bot computes each pick's rows on that pick's turn)

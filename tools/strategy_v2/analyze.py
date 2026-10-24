@@ -365,7 +365,7 @@ def analyze(path, geo):
                 group_kills.append(dict(match=name, group=gi, r=r, start=start if start is not None else r,
                                         dur=r - (start if start is not None else r) + 1, killer=killer,
                                         dmg0=round(tdmg[0]), dmg1=round(tdmg[1]), maxhp=maxhp,
-                                        types='+'.join(f'{v}{k}' for k, v in sorted(types.items())),
+                                        types='+'.join(f'{v}{k}' for k, v in sorted(types.items(), key=lambda kv: str(kv[0]))),  # a camp type can be a number (engine 1.0.3)
                                         n=len(members), side_for_killer=side_of(killer, cpos), x=cpos[0], y=cpos[1]))
                 start = None
             if not alive_prev and alive:

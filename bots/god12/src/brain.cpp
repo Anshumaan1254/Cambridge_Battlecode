@@ -244,6 +244,21 @@ std::vector<I> build_for(CT t, int bs)
 		rep(v, pw, 300);
 		return v;
 	}
+	if (bs == 2 && P.ic_build && t != CT::cassi && t != CT::issac && t != CT::ryth && t != CT::marcella && t != CT::willow)
+	{
+		// GOD v13 ic_build (Intercontinental Fish, 73 current-patch replays, experiments/ic_oct24): the gold goes to the carries early and
+		// into their damage stat: a kit with a gold-bonus passive buys Treasure first (IC's Vesper Vale: TsE at rounds 29-84), then Monster,
+		// Jungle on health, then Power in the damage stat for the rest of the game (Vendetta / Varg / Heart of Ruin: Monster, Jungle health,
+		// Power). The supports (Cassi & Issac, Ryth, Marcella, Willow) keep the value-model lists (IC buys little for them).
+		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::prism || (t == CT::tavi && !P.tavi_str);
+		const bool gold_kit = tpa::kit_of(static_cast<int>(t)).gold_mult > 1.0;
+		if (gold_kit)
+			rep(v, focus ? I::treasure_shard_of_focus : I::treasure_shard_of_strength, 5);
+		rep(v, focus ? I::monster_shard_of_focus : I::monster_shard_of_strength, 5);
+		rep(v, I::jungle_shard_of_health, 5);
+		rep(v, focus ? I::power_shard_of_focus : I::power_shard_of_strength, 300);
+		return v;
+	}
 	if (bs == 2)
 	{
 		// Value-model builds (tools/analysis/item_value.py, calibrated on 36 r2 games). Every shard adds one point

@@ -171,6 +171,8 @@ def main():
 	ap.add_argument("--ladder", default="", help="use this ladder JSON (a `cambc ladder --json` dump or a list of teams)")
 	ap.add_argument("--dry-run", action="store_true", help="no platform calls: filter and select from the given lists, print the plan")
 	ap.add_argument("--no-fetch", action="store_true", help="reuse WORK/lists from an earlier run")
+	ap.add_argument("--team", default="", help="one-team mode: comma list of team ids; fetch only their match lists and download every one of "
+					"their kept matches, newest first, up to --max-mb (e.g. --team 1890540d-1ffc-4847-adbf-d0d08772f268 for Intercontinental Fish)")
 	ap.add_argument("--split-mb", type=float, default=20.0, help="also cut the archive into parts of this size for uploading (0 = no parts)")
 	a = ap.parse_args()
 	kinds = set(k.strip() for k in a.kinds.split(",") if k.strip())
@@ -202,6 +204,11 @@ def main():
 		die("the ladder has no teams")
 	json.dump(lad, open(os.path.join(a.work, "ladder.json"), "w", encoding="utf-8"), indent=1, ensure_ascii=False)
 	print("1. ladder: %d teams taken (rank %d-%d)" % (len(teams), teams[0]["rank"], teams[-1]["rank"]))
+	focus = [x.strip() for x in a.team.split(",") if x.strip()]
+	if focus:
+		known = {t["teamId"]: t for t in lad.get("teams", [])}
+		teams = [known.get(i, {"teamId": i, "name": i[:8], "rank": None}) for i in focus]
+		print("1. one-team mode: " + ", ".join("%s (rank %s)" % (t.get("name", "?"), t.get("rank")) for t in teams))
 
 	# 2. match lists
 	list_files = []
@@ -219,7 +226,7 @@ def main():
 			for kind in sorted(kinds):
 				n, tot = fetch_list(t["teamId"], kind, a.max_per_team, out)
 				got += n
-			print("2. [%2d] %-30s %4d fetched" % (t["rank"], t["name"][:30], got), flush=True)
+			print("2. [%2s] %-30s %4d fetched" % (t.get("rank"), t.get("name", "?")[:30], got), flush=True)
 	rows, seen = [], set()
 	for f in list_files:
 		for line in open(f, encoding="utf-8"):
@@ -287,7 +294,10 @@ def main():
 	for v in by_map.values():
 		v.sort(key=lambda m: -tier(m))  # stable sort: within a tier newest first (cur is newest first)
 	order, k = [], 0
-	while True:
+	if focus:
+		order = [m for m in cur if any(t["teamId"] in focus for t in m["teams"])]  # every match of the team(s), newest first
+		by_map = {}
+	while not focus:
 		added = False
 		for mp in sorted(by_map):
 			if k < min(a.per_map, len(by_map[mp])):
@@ -297,7 +307,10 @@ def main():
 			break
 		k += 1
 	both = sum(tier(m) == 2 for m in order)
-	print("5. selected %d replays over %d maps (%d strong vs strong, %d strong vs other); maps with none: %s" % (
+	if focus:
+		print("5. one-team mode: %d matches of the team(s), newest first" % len(order))
+	else:
+	  print("5. selected %d replays over %d maps (%d strong vs strong, %d strong vs other); maps with none: %s" % (
 		len(order), len(by_map), both, len(order) - both, ", ".join(sorted(set(offi.values()) - set(by_map))) or "-"))
 	if not order:
 		die("no match with a strong team to download")

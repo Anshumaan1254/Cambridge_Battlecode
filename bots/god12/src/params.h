@@ -902,6 +902,8 @@ struct Params
 							  // vocabulary, beats, bag flags); 0: GOD v10's own layout (comms.h)
 	int live_bag_flag = 25;	  // ... the bag flag: carrying at least this many gems (teamplan bag.h's hunt threshold)
 	int mi_capture = 1;		  // 1: a shared reward goes to a near ally with a gold bonus first (teamplan capture.h mode 1, LEARNED)
+	int ic_build = 0;		  // GOD v13: Intercontinental Fish's builds on the carries (brain.cpp build_for): Treasure first on a gold-bonus kit,
+							  // Monster, Jungle health, then Power in the damage stat for ever; supports keep the value-model lists
 	int mi_body = 1;		  // 1: the BODY block's bank bag and retreat health (econ model, LEARNED) replace tribute_min / retreat_hp
 
 	// ---- Sparring proxies (testing only, docs/TESTING.md; never on in a submission): a fixed playing style, optionally switching at

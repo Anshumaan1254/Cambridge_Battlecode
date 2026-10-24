@@ -17,9 +17,12 @@ bot (both teams' prints are checked), and checks:
   * fuel: the first draft turn's work stays under 1,000,000 and every later draft turn under 100,000 (the turn's fuel left is printed,
     and the later turns re-plan with the roster: plan_fuel);
   * 0 exceptions;
+  * with dl_weights.h (tools/mapintel/dl/dl_export.py): its three functions equal tools/mapintel/dl/dl_ref.py (rankings exactly,
+    champion values relative 1e-9) and their fuel (measured in draft turn 2) fits a later draft turn; --dl-weights names the json the
+    header was generated from (checked by its sha256);
   * --sdk DIR builds the same sources against another SDK (e.g. a 3.0.4 `cambc init` sdk/) to check they compile there.
 Exit status 1 on any failure."""
-import argparse, glob, json, os, shutil, struct, subprocess, sys, tempfile, zipfile
+import argparse, glob, hashlib, json, os, shutil, struct, subprocess, sys, tempfile, zipfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import compact as CP  # noqa: E402
@@ -71,6 +74,49 @@ def parse(text):
 		elif l.startswith("MI "):
 			other.append(l)
 	return T, F, other
+
+
+def check_dl(n, team, M, other, dl, dlw, arche, fails, fuel):
+	"""MI DL (offsets 864-999) and the fuel fields of MI R2 against tools/mapintel/dl/dl_ref.py."""
+	d = [o for o in other if o.startswith("MI DL ")]
+	if not d:
+		fails.append(f"{n} team {team}: no MI DL line")
+		return 0
+	b = bytes.fromhex(d[0].split()[2])
+	td = [o.split() for o in other if o.startswith("MI TD ")]
+	if not td:
+		fails.append(f"{n} team {team}: no MI TD line")
+		return 0
+	t = td[0]
+	if t[3] == "1":
+		fuel["skipped"].append(n)
+		return 0
+	for k in ("inputs", "open", "next", "val", "nextall"):
+		fuel[k] = max(fuel[k], int(t[t.index(f"fuel_dl_{k}") + 1]))
+	prev, ct = struct.unpack("<ii", b[128:136])
+	got = {"opening": [x for x in b[:16] if x != 255], "next": [x for x in b[16:32] if x != 255]}
+	if "opening" in dlw:
+		want = dl.rank(dl.opening_scores(M, team, arche, dlw["opening"]), 16)
+		if got["opening"] != want:
+			fails.append(f"{n} team {team}: dl opening ranking C++ {got['opening'][:6]} != Python {want[:6]}")
+	if "next" in dlw:
+		C = CP.Compact(M, team)
+		reach = [g for g in range(len(M.groups)) if C.dU[g] >= 0]
+		want_prev = min(reach, key=lambda g: (C.dU[g], g))
+		if prev != want_prev or ct != CP.pick_bodies(CP.TEST_PICKS[0])[0]:
+			fails.append(f"{n} team {team}: dl next from group {prev} body {ct}, expected {want_prev}")
+		else:
+			bx = [CP.group_box(g) for g in M.groups]
+			cand = sorted(reach, key=lambda g: (CP.box_dist(bx[prev], bx[g]), g))[:16]
+			want = dl.rank(dl.next_scores(M, team, arche, dlw["next"], prev, ct, 100, [g in cand for g in range(len(M.groups))]), 16)
+			if got["next"] != want:
+				fails.append(f"{n} team {team}: dl next ranking C++ {got['next'][:6]} != Python {want[:6]}")
+	if "values" in dlw:
+		gv = struct.unpack("<12d", b[32:128])
+		wv = dl.champion_values(M, team, arche, dlw["values"])
+		if any(abs(x - y) > 1e-9 * max(1.0, abs(y)) for x, y in zip(gv, wv)):
+			fails.append(f"{n} team {team}: dl champion values C++ {gv[:3]} != Python {wv[:3]}")
+	return 1
 
 
 def run_maps(bot, maps, jobs, tmp):
@@ -132,6 +178,7 @@ def main():
 	ap.add_argument("--perturbed", type=int, default=12)
 	ap.add_argument("--jobs", type=int, default=4)
 	ap.add_argument("--sdk", default="")
+	ap.add_argument("--dl-weights", default="experiments/results/mapintel/dl_model/dl_weights.json")
 	a = ap.parse_args()
 	fails = []
 	if a.sdk:
@@ -166,6 +213,17 @@ def main():
 		weights = json.load(open(wp)) if wp else {}
 		fp_ = os.path.join(ROOT, "experiments/results/mapintel/first_targets/weights.json")
 		ftw = json.load(open(fp_)) if os.path.exists(fp_) and "MAPINTEL_FIRST_SCORES" in open(os.path.join(ROOT, "tools/mapintel/cpp/mapintel/model_weights.h")).read() else None
+	dl, dlw = None, None
+	dlh = os.path.join(ROOT, "tools/mapintel/cpp/mapintel/dl_weights.h")
+	if os.path.exists(dlh):
+		sys.path.insert(0, os.path.join(ROOT, "tools/mapintel/dl"))
+		import dl_ref as dl  # noqa: E402
+		wp = os.path.join(ROOT, a.dl_weights)
+		sha = next((l.split()[3] for l in open(dlh) if l.startswith("// json sha256 ")), "")
+		if not os.path.exists(wp) or hashlib.sha256(open(wp, "rb").read()).hexdigest() != sha:
+			sys.exit(f"dl_weights.h was generated from another json than {wp} (sha256 {sha[:12]}): pass --dl-weights")
+		dlw = {k: m for k, m in json.load(open(wp))["models"].items() if m.get("export")}
+	ndl, dlfuel = 0, {"inputs": 0, "open": 0, "next": 0, "val": 0, "nextall": 0, "skipped": []}
 	maps = sorted(glob.glob(os.path.join(ROOT, a.maps)))
 	tmp = tempfile.mkdtemp(prefix="mi_test_")
 	run_maps(bot, maps, a.jobs, tmp)
@@ -218,6 +276,8 @@ def main():
 						if rk != want_r:
 							fails.append(f"{n} team {team}: first_scores ranking C++ {rk[:6]} != Python {want_r[:6]}")
 					nmw += 1
+			if dlw is not None:
+				ndl += check_dl(n, team, M, other, dl, dlw, arche, fails, dlfuel)
 			py = FT.compute(M, team)
 			for i, name in enumerate(FT.NAMES):
 				c = F.get(name)
@@ -264,6 +324,13 @@ def main():
 	print(f"fuel, turn 2 (limit 100,000): second pick's rows {worst.get('row2', 0)}")
 	print(f"fuel, turn 3 (limit 100,000): rows of the remaining picks {worst['rows']}, plan 1 {worst['plan1']}, pack + write {worst.get('pack', 0)}, least left {worst['turn3_left_min']}; "
 		  f"later turns: plan 1 from cached rows {worst['later_plan']}, least left {worst['later_left_min']}")
+	if dlw is not None:
+		print(f"dl_weights.h ({', '.join(dlw)}): checked on {ndl} map-teams; max fuel (measured in the first draft turn): inputs {dlfuel['inputs']}, "
+			  f"opening {dlfuel['open']}, next target (one call on 16 candidates, cached inputs: a game turn has 100,000) {dlfuel['next']} "
+			  f"(all groups {dlfuel['nextall']}), champion values {dlfuel['val']}"
+			  + (f"; not measured on {sorted(set(dlfuel['skipped']))} (under 350,000 left in turn 1)" if dlfuel["skipped"] else ""))
+		if dlfuel["next"] > 50_000:
+			fails.append("dl_next_scores on 16 candidates needs more than 50,000 fuel a call (half a game turn)")
 	per_map.sort(reverse=True)
 	print("heaviest first turns: " + "; ".join(f"{n} {ft} ({', '.join(f'{k} {v}' for k, v in d.items())})" for ft, n, d, _ in per_map[:5]))
 	if worst["first_turn"] > 1_000_000:

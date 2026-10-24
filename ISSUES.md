@@ -122,4 +122,8 @@ Hardcoded on purpose or measured on the current pool / patch; each may need a re
 - **Engine facts typed in after a probe** (re-probe after a patch): crystal hop range 3 (`CRYSTAL_RANGE`), the dash legality rules, the
   pick -> body mapping (picks 0-2 = bodies 0-2, pick 3 = bodies 3 and 4, picks 4-11 = bodies 5-12, the SDK enum order).
 - **Draft-memory layout**: the mapintel block at offsets 512-863 (version 1, magic 0xA7). A bot's own data must stay below 512 (GOD
-  v10 writes 4 bytes at 0: tested to coexist). The test bot also uses 8-511 for its own prints (test only).
+  v10 writes 4 bytes at 0: tested to coexist). The test bot also uses 8-511 and 864-999 for its own prints (test only).
+- **Step 7 (`tools/mapintel/dl/`)**: `dl_weights.h` exists only when a deep model beat the step-6 model by the margin in `dl_train.py`
+  (`MARGIN`: +0.01 top-n share / top-1, -0.003 log loss) on held-out maps; its weights are fitted on the current pool and ladder
+  (T1a / T1b: 599 ladder games; T2: GOD v10's roster battery, SIMULATED v10). The next-target model is meant for a candidate list
+  (the test uses the 16 groups nearest the previous capture): all 64 groups cost about 107k fuel, more than a game turn.

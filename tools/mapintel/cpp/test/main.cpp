@@ -11,6 +11,9 @@
 //   each champion's first game turn: MI G <hex|none> prefix <byte> (the block read back; the test compares it with compact.pack) and
 //           MI FX <47 doubles' bits, FEATURE_NAMES order> known <int32 hex> kteam <int32 hex> (written by turn 3 at offsets 128-511),
 //           MI MW <archetype int32, 12 champion values: model_weights.h> (offsets 24-123) rank <16 groups by first_scores()> (8-23)
+//           MI DL <offsets 864-999: 16 groups by dl_opening_scores(), the 16 groups nearest the nearest group ranked by dl_next_scores()
+//           for the first test pick's first body at round 100, 12 dl_champion_values(), that group and body as int32> (only with dl_weights.h; turn 1
+//           measures their fuel last: MI TD skip <0|1: less than 350,000 left> fuel_dl_inputs <f> fuel_dl_open <f> fuel_dl_next <f> fuel_dl_val <f> fuel_dl_nextall <f>)
 // stdout costs fuel per byte in this engine, so each turn prints little and after its measurements.
 //   MI E <what> on any exception. Test roster: TEST_PICKS cut to the team size.
 #include <cambc.h>
@@ -35,6 +38,10 @@
 #endif
 #ifdef MAPINTEL_FIRST_SCORES
 #define MI_HAS_FIRST 1
+#endif
+#if __has_include("mapintel/dl_weights.h")
+#include "mapintel/dl_weights.h"
+#define MI_HAS_DL 1
 #endif
 namespace bc = cambc;
 
@@ -101,7 +108,25 @@ struct State
 	double vals[12]{};
 	unsigned long long fuel_mw = 0, fuel_fs = 0;
 	std::uint8_t rank[16] = { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 };
+	std::uint8_t dl_open[16] = { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 };
+	std::uint8_t dl_next[16] = { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 };
+	double dl_vals[12]{};
+	std::int32_t dl_prev = -1, dl_ct = -1;
+	unsigned long long fuel_dl[5]{}; // inputs, opening, next (16 candidates), values, next (all groups)
+	int dl_skip = 0;
 };
+
+// the 16 best groups of a score vector (unreached groups score -1e300), ties to the lower index, as the Python references rank them
+[[maybe_unused]] static void top16(const std::vector<double>& sc, std::uint8_t out[16])
+{
+	std::vector<int> gs;
+	for (int g = 0; g < static_cast<int>(sc.size()); ++g)
+		if (sc[static_cast<std::size_t>(g)] > -1e299)
+			gs.push_back(g);
+	std::sort(gs.begin(), gs.end(), [&](int a, int b) { return sc[static_cast<std::size_t>(a)] != sc[static_cast<std::size_t>(b)] ? sc[static_cast<std::size_t>(a)] > sc[static_cast<std::size_t>(b)] : a < b; });
+	for (int k = 0; k < 16 && k < static_cast<int>(gs.size()); ++k)
+		out[k] = static_cast<std::uint8_t>(gs[static_cast<std::size_t>(k)]);
+}
 
 static void turn1(State& S)
 {
@@ -139,23 +164,63 @@ static void turn1(State& S)
 #ifdef MI_HAS_FIRST
 	{
 		const auto m0 = bc::fuel_remaining();
-		const auto sc = mapintel::first_scores(*S.C, *S.V, *S.F);
-		std::vector<int> gs;
-		for (int g = 0; g < static_cast<int>(sc.size()); ++g)
-			if (sc[static_cast<std::size_t>(g)] > -1e299)
-				gs.push_back(g);
-		std::sort(gs.begin(), gs.end(), [&](int a, int b) { return sc[static_cast<std::size_t>(a)] != sc[static_cast<std::size_t>(b)] ? sc[static_cast<std::size_t>(a)] > sc[static_cast<std::size_t>(b)] : a < b; });
-		for (int k = 0; k < 16 && k < static_cast<int>(gs.size()); ++k)
-			S.rank[k] = static_cast<std::uint8_t>(gs[static_cast<std::size_t>(k)]);
+		top16(mapintel::first_scores(*S.C, *S.V, *S.F), S.rank);
 		S.fuel_fs = m0 - bc::fuel_remaining();
 	}
 #endif
+#endif
+#ifdef MI_HAS_DL
+	// dl_weights.h, measured last in the first draft turn (its 1M fuel); skipped (dl_skip 1) when less than 350,000 is left
+	if (bc::fuel_remaining() < 350000)
+		S.dl_skip = 1;
+	else
+	{
+		auto a = bc::fuel_remaining();
+		const auto I = mapintel::dl_inputs(*S.C, *S.V, *S.F);
+		S.fuel_dl[0] = a - bc::fuel_remaining();
+#ifdef MAPINTEL_DL_OPENING
+		a = bc::fuel_remaining();
+		top16(mapintel::dl_opening_scores(I), S.dl_open);
+		S.fuel_dl[1] = a - bc::fuel_remaining();
+#endif
+#ifdef MAPINTEL_DL_NEXT
+		for (int g = 0; g < static_cast<int>(S.C->dU.size()); ++g)
+			if (S.C->dU[static_cast<std::size_t>(g)] >= 0 && (S.dl_prev < 0 || S.C->dU[static_cast<std::size_t>(g)] < S.C->dU[static_cast<std::size_t>(S.dl_prev)]))
+				S.dl_prev = g;
+		int b[2];
+		S.dl_ct = mapintel::pick_bodies(mapintel::TEST_PICKS[0], b) > 0 ? b[0] : 0;
+		// what a bot scores in a game turn: the 16 reached groups nearest the previous capture (box distance, ties to the lower index)
+		std::vector<int> cand;
+		for (int g = 0; g < static_cast<int>(S.C->dU.size()); ++g)
+			if (S.C->dU[static_cast<std::size_t>(g)] >= 0)
+				cand.push_back(g);
+		const auto bd = [&](int g) { return mapintel::detail::box_dist(S.C->bx[static_cast<std::size_t>(S.dl_prev)], S.C->bx[static_cast<std::size_t>(g)]); };
+		std::sort(cand.begin(), cand.end(), [&](int x, int y) { return bd(x) != bd(y) ? bd(x) < bd(y) : x < y; });
+		if (cand.size() > 16)
+			cand.resize(16);
+		a = bc::fuel_remaining();
+		top16(mapintel::dl_next_scores(*S.C, I, S.dl_prev, S.dl_ct, 100, &cand), S.dl_next);
+		S.fuel_dl[2] = a - bc::fuel_remaining();
+		a = bc::fuel_remaining();
+		(void)mapintel::dl_next_scores(*S.C, I, S.dl_prev, S.dl_ct, 100);
+		S.fuel_dl[4] = a - bc::fuel_remaining();
+#endif
+#ifdef MAPINTEL_DL_VALUES
+		a = bc::fuel_remaining();
+		mapintel::dl_champion_values(*S.F, S.dl_vals);
+		S.fuel_dl[3] = a - bc::fuel_remaining();
+#endif
+	}
 #endif
 	char buf[360];
 	auto u = [](auto v) { return static_cast<unsigned long long>(v); };
 	std::snprintf(buf, sizeof buf, "MI T fp %016llx ts %d fuel_view %llu fuel_fp %llu fuel_feat %llu fuel_base %llu fuel_row %llu table %d fuel_mw %llu fuel_fs %llu turn_fuel_left %llu",
 				  u(S.fp), S.ts, u(f0 - f1), u(f1 - f2), u(f2 - f3), u(f3 - f4), u(f4 - f5), S.known >= 0 ? 1 : 0, S.fuel_mw, S.fuel_fs, u(bc::fuel_remaining()));
 	line(buf);
+#ifdef MI_HAS_DL
+	line("MI TD skip " + std::to_string(S.dl_skip) + " fuel_dl_inputs " + std::to_string(S.fuel_dl[0]) + " fuel_dl_open " + std::to_string(S.fuel_dl[1]) +
+		 " fuel_dl_next " + std::to_string(S.fuel_dl[2]) + " fuel_dl_val " + std::to_string(S.fuel_dl[3]) + " fuel_dl_nextall " + std::to_string(S.fuel_dl[4]));
+#endif
 }
 
 static void turn2(State& S)
@@ -199,6 +264,11 @@ static void turn3(State& S)
 	std::memcpy(&mem[8], S.rank, 16);
 	std::memcpy(&mem[24], &S.arch, 4);
 	std::memcpy(&mem[28], S.vals, 96);
+	std::memcpy(&mem[864], S.dl_open, 16);
+	std::memcpy(&mem[880], S.dl_next, 16);
+	std::memcpy(&mem[896], S.dl_vals, 96);
+	std::memcpy(&mem[992], &S.dl_prev, 4);
+	std::memcpy(&mem[996], &S.dl_ct, 4);
 	bc::draft_memory = mem;
 	const std::array<std::uint8_t, 4> v10{ 0xB7, 2, 0, 0 }; // a shorter write from offset 0, as GOD v10 makes it
 	bc::draft_memory = v10;
@@ -259,6 +329,15 @@ int main()
 					line("MI FX " + hex(raw, 8 * mapintel::NF) + " known " + hex(raw + 376, 4) + " kteam " + hex(raw + 380, 4));
 					line("MI MW " + hex(mw + 16, 100) + " rank " + hex(mw, 16));
 				}
+#ifdef MI_HAS_DL
+				if (bc::draft_memory.size() >= 1000)
+				{
+					std::uint8_t d[136];
+					for (int k = 0; k < 136; ++k)
+						d[k] = std::to_integer<std::uint8_t>(bc::draft_memory[static_cast<std::size_t>(864 + k)]);
+					line("MI DL " + hex(d, 136));
+				}
+#endif
 			}
 		}
 		catch (const std::exception& e)

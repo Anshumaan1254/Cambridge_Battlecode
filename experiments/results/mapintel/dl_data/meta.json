@@ -1,0 +1,129 @@
+{
+ "origin": {
+  "grid, z, gfeat, gdist": "COMPUTED (runtime dumps, catalog)",
+  "t1a, t1b, heat": "LEARNED (599 current-patch ladder games)",
+  "t2": "SIMULATED (GOD v10 roster battery, both rosters forced)"
+ },
+ "channels": [
+  "valid",
+  "wall",
+  "hole",
+  "bush",
+  "altar",
+  "own_spawn",
+  "enemy_spawn",
+  "wolf",
+  "elk",
+  "gem_cluster",
+  "gold_cluster",
+  "monolith",
+  "golem",
+  "gems",
+  "gold",
+  "camp_hp",
+  "walk_us",
+  "walk_them"
+ ],
+ "gfeats": [
+  "dU",
+  "dE",
+  "dU_minus_dE",
+  "rank_dU",
+  "gems",
+  "gold",
+  "value",
+  "hp",
+  "S",
+  "ncamps",
+  "heavy",
+  "contested",
+  "value_share",
+  "log_dU",
+  "n_wolf",
+  "n_elk",
+  "n_gem",
+  "n_gold",
+  "n_mono",
+  "n_golem",
+  "respawn",
+  "max_str"
+ ],
+ "zfeats": [
+  "f_area",
+  "f_team",
+  "f_walk_share",
+  "f_hole_share",
+  "f_bush_share",
+  "f_gems",
+  "f_gold_per_gem",
+  "f_gem_rate",
+  "f_gems_heavy_share",
+  "f_mono_golem_gem_share",
+  "f_gems_mid_share",
+  "f_spawn_dist",
+  "f_dist_gem_weighted",
+  "f_altars",
+  "f_wide_contested_value_share",
+  "f_groups",
+  "f_max_group_gems",
+  "f_cluster_only_gem_share",
+  "f_safe_area_share"
+ ],
+ "body_names": [
+  "Ryth",
+  "Vesper Vale",
+  "Vendetta",
+  "Cassi",
+  "Issac",
+  "Stellar",
+  "Prism",
+  "Marcella",
+  "Willow",
+  "Ren",
+  "Varg",
+  "Tavi",
+  "Heart of Ruin"
+ ],
+ "pick_names": [
+  "Ryth",
+  "Vesper Vale",
+  "Vendetta",
+  "Cassi & Issac",
+  "Stellar",
+  "Prism",
+  "Marcella",
+  "Willow",
+  "Ren",
+  "Varg",
+  "Tavi",
+  "Heart of Ruin"
+ ],
+ "sizes": {
+  "maps": 40,
+  "t1a": 911,
+  "t1b": 34883,
+  "t2": 2240,
+  "games": 599
+ },
+ "baselines": {
+  "t1a_topn_share": {
+   "nearest": 0.6157,
+   "forest": 0.7228
+  },
+  "t1b_top1_top3": {
+   "nearest_prev": [
+    0.1856,
+    0.4669
+   ],
+   "forest": [
+    0.4066,
+    0.724
+   ]
+  },
+  "t2_logloss": {
+   "side_only": 0.6619,
+   "M1_constant_values": 0.622
+  },
+  "t3_camp_blur_pearson": 0.221
+ }
+}

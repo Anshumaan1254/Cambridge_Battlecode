@@ -6,6 +6,8 @@
 //                      on the ladder no champion model beats team rating alone out of sample, so the values come from a battery)
 //   first_scores(C)    LEARNED score of each group as an opening target (first_targets.py: the top teams' first captures)
 #pragma once
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <vector>
 #include "features.h"
@@ -105,12 +107,15 @@ inline constexpr double FT_B = -2.4376730867487315;
 
 inline constexpr double FT_GB = -1.2989399530182635;  // forest baseline; the trees are the conditionals in first_scores()
 
-// LEARNED opening score of every group (higher = the top teams capture it earlier); unreached groups get -1e300.
-// The features in first_targets.group_table's order, from the Compact's tables (the same values as compact.py).
-inline std::vector<double> first_scores(const Compact& C, const MapView& m, const Features& F)
+// The group features of the step-6 / step-7 models, in the order of first_targets.FEATS then make_dataset.GFEATS' extras:
+// dU, dE (999 = not reached), dU - dE, rank of dU, gems, gold, value, total health, S, camps, heavy, contested, value share,
+// log1p(dU), then the camp counts per type (wolf, elk, gem, gold, monolith, golem), respawn / 100, max camp strength / 100.
+inline constexpr int GF_N = 22;
+inline std::vector<std::array<double, GF_N>> group_features(const Compact& C, const MapView& m, std::vector<char>& reached)
 {
 	const int G = static_cast<int>(C.dU.size());
-	std::vector<double> out(static_cast<std::size_t>(G), -1e300);
+	std::vector<std::array<double, GF_N>> out(static_cast<std::size_t>(G));
+	reached.assign(static_cast<std::size_t>(G), 0);
 	Plans P;
 	C.contested(P);
 	std::vector<int> order;
@@ -126,13 +131,37 @@ inline std::vector<double> first_scores(const Compact& C, const MapView& m, cons
 		const auto g = static_cast<std::size_t>(order[static_cast<std::size_t>(r)]);
 		const auto& grp = m.groups[g];
 		const double dU = C.dU[g], dE = C.dE[g] >= 0 ? C.dE[g] : 999;
-		double heavy = 0;
+		double heavy = 0, mx = 0;
+		int cnt[6]{};
 		for (const auto& c : grp.camps)
+		{
 			if (c.type == 4 || c.type == 5)
 				heavy = 1;
-		const double x[FT_NF] = { dU, dE, dU - dE, static_cast<double>(r), static_cast<double>(grp.gems), static_cast<double>(grp.gold), C.val[g],
+			if (c.type >= 0 && c.type < 6)
+				++cnt[c.type];
+			mx = std::max(mx, static_cast<double>(c.str));
+		}
+		out[g] = { dU, dE, dU - dE, static_cast<double>(r), static_cast<double>(grp.gems), static_cast<double>(grp.gold), C.val[g],
 			C.prep[g].tot, C.prep[g].S, static_cast<double>(grp.camps.size()), heavy,
-			C.dE[g] >= 0 && std::abs(C.dU[g] - C.dE[g]) <= P.band ? 1.0 : 0.0, C.val[g] / total, std::log1p(dU) };
+			C.dE[g] >= 0 && std::abs(C.dU[g] - C.dE[g]) <= P.band ? 1.0 : 0.0, C.val[g] / total, std::log1p(dU),
+			static_cast<double>(cnt[0]), static_cast<double>(cnt[1]), static_cast<double>(cnt[2]), static_cast<double>(cnt[3]),
+			static_cast<double>(cnt[4]), static_cast<double>(cnt[5]), grp.respawn / 100.0, mx / 100.0 };
+		reached[g] = 1;
+	}
+	return out;
+}
+
+// LEARNED opening score of every group (higher = the top teams capture it earlier); unreached groups get -1e300.
+inline std::vector<double> first_scores(const Compact& C, const MapView& m, const Features& F)
+{
+	std::vector<char> reached;
+	const auto gf = group_features(C, m, reached);
+	std::vector<double> out(gf.size(), -1e300);
+	for (std::size_t g = 0; g < gf.size(); ++g)
+	{
+		if (!reached[g])
+			continue;
+		const double* x = gf[g].data();
 		double v = FT_GB;
 		v += (x[3] <= 4.5 ? (x[4] <= 2.0 ? -0.38184625537422895 : 0.8223722207558984) : (x[3] <= 7.5 ? 0.0913662759378993 : -0.27149496409378127));
 		v += (x[3] <= 6.5 ? (x[4] <= 2.0 ? -0.36702953402930544 : 0.3290352196186739) : (x[2] <= 1.5 ? -0.06330087767030844 : -0.31385662342429826));

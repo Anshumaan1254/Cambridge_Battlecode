@@ -6,13 +6,15 @@
 // Usage (draft, after load_view / compute_features of features.h; keep view, F and C alive across draft turns):
 //     mapintel::Compact C(view, F);                           // first draft turn: per-group tables (dU, dE, values, kill-order sums)
 //     auto P = mapintel::base_plans(C, view, F);              // plans 2-4 (roster-free)
-//     C.plan1(picks, P);                                      // plan 1, on the turn the roster is complete (picks = champion_draft ids)
+//     C.plan1(picks, P, rank);                                // plan 1, on the turn the roster is complete (picks = champion_draft ids;
+//                                                             // rank = groups by model_weights.h first_scores(), from an earlier turn)
 // or all at once: mapintel::make_plans(view, F, picks). dmem.h packs a Plans into the draft-memory block that the champions read in
 // the game. Fuel (test bot, 40 official maps): see tools/mapintel/README.md.
 #pragma once
 #include <cambc.h>
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -190,6 +192,56 @@ inline std::pair<double, double> body_model(const Kit& k, bool varg, const Group
 	const double dps = basic + k.single + k.area * (1.0 + p.adj);
 	return { p.tot / dps, p.S / dps };
 }
+// compact.assign_dp: the cheapest assignment of n rows (bodies, slot order) to distinct columns of the first m of cost (n, m <= NSLOT);
+// a dynamic program over the sets of used columns, masks and columns in increasing order, a strictly cheaper sum wins. out[i] = column
+// or -1 (rows beyond m).
+inline void assign_dp(const double cost[NSLOT][NSLOT], int n, int m, int out[NSLOT])
+{
+	const int k = std::min(n, m);
+	constexpr double INF = 1e300;
+	double dp[1 << NSLOT];
+	int par[1 << NSLOT];
+	for (int s = 0; s < (1 << m); ++s)
+		dp[s] = INF, par[s] = -1;
+	dp[0] = 0.0;
+	const unsigned full = (1u << m) - 1u;
+	for (int mask = 0; mask < (1 << m); ++mask)
+	{
+		const int i = std::popcount(static_cast<unsigned>(mask));
+		if (i >= k || dp[mask] >= INF)
+			continue;
+		const double base = dp[mask];
+		const double* ci = cost[i];
+		// the free columns in increasing order (lowest set bit first): compact.assign_dp's j loop
+		for (unsigned fr = full & ~static_cast<unsigned>(mask); fr; fr &= fr - 1u)
+		{
+			const int j = std::countr_zero(fr);
+			const int nm = mask | 1 << j;
+			const double v = base + ci[j];
+			if (v < dp[nm])
+				dp[nm] = v, par[nm] = j;
+		}
+	}
+	int best = -1;
+	if (k == m)
+		best = static_cast<int>(full); // every column used: the one mask with k bits
+	else
+		for (int mask = 0; mask < (1 << m); ++mask)
+			if (std::popcount(static_cast<unsigned>(mask)) == k && dp[mask] < INF && (best < 0 || dp[mask] < dp[best]))
+				best = mask;
+	if (best >= 0 && dp[best] >= INF)
+		best = -1;
+	for (int i = 0; i < n; ++i)
+		out[i] = -1;
+	int mask = best < 0 ? 0 : best, i = k - 1;
+	while (mask)
+	{
+		const int j = par[mask];
+		out[i] = j;
+		mask ^= 1 << j;
+		--i;
+	}
+}
 } // namespace detail
 
 inline constexpr int FI_SPAWN_DIST = feature_index("spawn_dist"), FI_BANK_MODE = feature_index("bank_mode"),
@@ -228,9 +280,10 @@ public:
 			prep[g] = detail::group_prep(m.groups[g]);
 		rows_.reserve(13);
 		rg_.reserve(G);
+		rgi_.assign(std::max<std::size_t>(1, static_cast<std::size_t>(G)), -1);
 		for (std::size_t g = 0; g < G; ++g)
 			if (dU[g] >= 0)
-				rg_.push_back({ static_cast<int>(g), dU[g], std::min(dU[g], 6) + 1 + dU[g], 1.0 + prep[g].adj, prep[g].tot, prep[g].S, val[g] });
+				rgi_[g] = static_cast<int>(rg_.size()), rg_.push_back({ static_cast<int>(g), dU[g], std::min(dU[g], 6) + 1 + dU[g], 1.0 + prep[g].adj, prep[g].tot, prep[g].S, val[g] });
 	}
 
 	std::vector<int> dU, dE;
@@ -289,8 +342,27 @@ public:
 		return rows_.back();
 	}
 
-	// plan 1: compact.plan1 (candidate rows, greedy first targets, 3 more per body from its row, one 2-opt pass)
-	void plan1(std::span<const int> picks, Plans& P)
+	// the work of a body with kit k (detail::kit: read it once, it reads the engine's designs) at group g (compact.work): the same
+	// operations as row()
+	double work_at(const detail::Kit& k, int type, int g) const
+	{
+		const bool varg = type == static_cast<int>(cambc::champion_type::varg);
+		const double basic0 = k.str * (1.0 + (k.reset ? 1.0 / 8.0 : 0.0)), hp7 = 0.7 * k.hp;
+		if (g < 0 || g >= static_cast<int>(rgi_.size()) || rgi_[static_cast<std::size_t>(g)] < 0)
+			return 0.0;
+		const Rg& e = rg_[static_cast<std::size_t>(rgi_[static_cast<std::size_t>(g)])];
+		const double basic = varg ? basic0 * e.adj1 : basic0 * 1.0;
+		const double dps = basic + k.single + k.area * e.adj1;
+		const double kill = e.tot / dps, dmg = e.S / dps;
+		const double trips = std::max(0.0, std::ceil(dmg / hp7) - 1.0);
+		return kill + trips * e.trip + 6.0;
+	}
+
+	// plan 1: compact.plan1. First targets: with rank (the groups by first_scores() of model_weights.h, best first, computed on an
+	// earlier draft turn: it costs ~61k), the first n reached groups of it assigned to the n bodies by the cheapest total of walk to
+	// attack range + work (detail::assign_dp); without rank, the greedy (body, group) pairs by first-target rate. Then 3 more per body
+	// from its candidate row, one 2-opt pass.
+	void plan1(std::span<const int> picks, Plans& P, std::span<const int> rank = {})
 	{
 		P.nbody = 0;
 		for (const int p : picks)
@@ -303,6 +375,7 @@ public:
 		const int nb = P.nbody;
 		const Row* rw[NSLOT]{};
 		int rng[NSLOT]{};
+		detail::Kit kt[NSLOT];
 		for (int i = 0; i < nb; ++i)
 			row(P.body[i]);
 		for (int i = 0; i < nb; ++i)
@@ -310,13 +383,40 @@ public:
 			for (const auto& r : rows_)
 				if (r.type == P.body[i])
 					rw[i] = &r;
-			rng[i] = detail::kit(P.body[i]).range;
+			kt[i] = detail::kit(P.body[i]);
+			rng[i] = kt[i].range;
 		}
 		std::vector<char> used(static_cast<std::size_t>(std::max(1, G_)), 0);
 		bool done[NSLOT]{};
-		int pos[NSLOT][NTGT]{}; // plan 1 targets as positions in the body's row
+		int tg[NSLOT][NTGT]{};	   // plan 1 targets (groups) and their work, per body
+		double tw[NSLOT][NTGT]{};
 		for (int s = 0; s < NSLOT; ++s)
 			P.ntgt[s] = 0;
+		if (!rank.empty())
+		{
+			int top[NSLOT], m = 0;
+			for (const int g : rank)
+				if (m < nb && g >= 0 && g < G_ && dU[static_cast<std::size_t>(g)] >= 0)
+					top[m++] = g;
+			double cost[NSLOT][NSLOT];
+			for (int i = 0; i < nb; ++i)
+				for (int j = 0; j < m; ++j)
+					cost[i][j] = std::max(0, dU[static_cast<std::size_t>(top[j])] - rng[i]) + work_at(kt[i], P.body[i], top[j]);
+			int as[NSLOT];
+			detail::assign_dp(cost, nb, m, as);
+			for (int i = 0; i < nb; ++i)
+			{
+				done[i] = true;
+				if (as[i] < 0)
+					continue;
+				const int g = top[as[i]];
+				const int eta = std::max(0, dU[static_cast<std::size_t>(g)] - rng[i]);
+				const double w = work_at(kt[i], P.body[i], g);
+				P.tgt[i][0] = { g, static_cast<double>(eta), eta + w };
+				P.ntgt[i] = 1, tg[i][0] = g, tw[i][0] = w;
+				used[static_cast<std::size_t>(g)] = 1;
+			}
+		}
 		while (true)
 		{
 			double br = 0.0;
@@ -338,7 +438,7 @@ public:
 			const int g = R.g[bj];
 			const int eta = std::max(0, dU[static_cast<std::size_t>(g)] - rng[bi]);
 			P.tgt[bi][0] = { g, static_cast<double>(eta), eta + R.w[bj] };
-			P.ntgt[bi] = 1, pos[bi][0] = bj;
+			P.ntgt[bi] = 1, tg[bi][0] = g, tw[bi][0] = R.w[bj];
 			used[static_cast<std::size_t>(g)] = 1, done[bi] = true;
 		}
 		for (int round = 0; round < NTGT - 1; ++round)
@@ -362,7 +462,7 @@ public:
 				}
 				if (bj >= 0)
 				{
-					pos[i][P.ntgt[i]] = bj;
+					tg[i][P.ntgt[i]] = R.g[bj], tw[i][P.ntgt[i]] = R.w[bj];
 					P.tgt[i][P.ntgt[i]++] = { R.g[bj], last.end + btr, last.end + (btr + R.w[bj]) };
 					used[static_cast<std::size_t>(R.g[bj])] = 1;
 				}
@@ -370,26 +470,26 @@ public:
 		for (int i = 0; i < nb; ++i)
 			for (int k = 1; k < P.ntgt[i] - 1; ++k)
 			{
-				const Row& R = *rw[i];
 				const int n = P.ntgt[i];
-				int alt[NTGT];
+				int ag[NTGT];
+				double aw[NTGT];
 				for (int j = 0; j < n; ++j)
-					alt[j] = pos[i][j];
-				std::swap(alt[k], alt[k + 1]);
+					ag[j] = tg[i][j], aw[j] = tw[i][j];
+				std::swap(ag[k], ag[k + 1]), std::swap(aw[k], aw[k + 1]);
 				Target ta[NTGT];
 				double t = 0.0;
 				for (int j = 0; j < n; ++j)
 				{
-					const int g = R.g[alt[j]];
+					const int g = ag[j];
 					const int tr = j == 0 ? std::max(0, dU[static_cast<std::size_t>(g)] - rng[i])
-										  : detail::box_dist(bx[static_cast<std::size_t>(R.g[alt[j - 1]])], bx[static_cast<std::size_t>(g)]);
-					const double c = tr + R.w[alt[j]];
+										  : detail::box_dist(bx[static_cast<std::size_t>(ag[j - 1])], bx[static_cast<std::size_t>(g)]);
+					const double c = tr + aw[j];
 					ta[j] = { g, t + tr, t + c };
 					t += c;
 				}
 				if (ta[n - 1].end < P.tgt[i][n - 1].end)
 					for (int j = 0; j < n; ++j)
-						P.tgt[i][j] = ta[j], pos[i][j] = alt[j];
+						P.tgt[i][j] = ta[j], tg[i][j] = ag[j], tw[i][j] = aw[j];
 			}
 	}
 
@@ -519,6 +619,7 @@ private:
 		double adj1, tot, S, val;
 	};
 	std::vector<Rg> rg_;	// reached groups with their body-independent terms (row())
+	std::vector<int> rgi_;	// group -> its entry in rg_ (-1: not reached)
 };
 
 // Plans 2-4 and the per-group tables from a Compact (keep the Compact, with its MapView and Features, to add plan 1 on a later turn).
@@ -537,12 +638,12 @@ inline Plans base_plans(const Compact& C, const MapView& m, const Features& F)
 }
 
 // Plans 2-4 and the per-group tables; plan 1 too when picks is not empty.
-inline Plans make_plans(const MapView& m, const Features& F, std::span<const int> picks = {})
+inline Plans make_plans(const MapView& m, const Features& F, std::span<const int> picks = {}, std::span<const int> rank = {})
 {
 	Compact C(m, F);
 	Plans P = base_plans(C, m, F);
 	if (!picks.empty())
-		C.plan1(picks, P);
+		C.plan1(picks, P, rank);
 	return P;
 }
 

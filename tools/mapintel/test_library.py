@@ -127,11 +127,13 @@ def run_maps(bot, maps, jobs, tmp):
 	subprocess.run(["cambc", "run-batch", man, "--jobs", str(jobs), "--rounds", "2", "--release", "--color", "never"], capture_output=True, text=True)
 
 
-def check_plans(n, team, M, T, other, fails, known):
-	"""plans.h output (MI P1-P4, MI D) against compact.py for this map and team; returns the number of lines compared."""
+def check_plans(n, team, M, T, other, fails, known, ftw=None):
+	"""plans.h output (MI P1-P4, MI D) against compact.py for this map and team (plan 1 with the first_scores() ranking when the weights
+	have it, as the test bot); returns the number of lines compared."""
 	C = CP.Compact(M, team)
 	picks = CP.TEST_PICKS[: max(0, min(5, M.team_size))]
-	bodies, plan = C.plan1(picks)
+	rank = EH.first_rank_py(M, team, ftw, 16) if ftw is not None else None
+	bodies, plan = C.plan1(picks, rank)
 	got = {}
 	for o in other:
 		t = o.split()
@@ -163,7 +165,7 @@ def check_plans(n, team, M, T, other, fails, known):
 			fails.append(f"{n} team {team}: plan 4 C++ {p4} != Python {C.thresholds()} mode {C.tiebreak_mode()}")
 		cnt += 3
 	g = [o.split() for o in other if o.startswith("MI G ")]
-	want = CP.pack(C, int(T["fp"], 16), picks, known, 255).hex()
+	want = CP.pack(C, int(T["fp"], 16), picks, known, 255, rank).hex()
 	if not g or g[0][2] != want:
 		d = g[0][2] if g else ""
 		diff = next((i // 2 for i in range(0, min(len(d), len(want)), 2) if d[i:i + 2] != want[i:i + 2]), -1)
@@ -284,7 +286,7 @@ def main():
 				if c is None or abs(c - py[i]) > 1e-9 * max(1.0, abs(py[i])):
 					fails.append(f"{n} team {team}: feature {name} C++ {c} != Python {py[i]}")
 				nfeat += 1
-			nplan += check_plans(n, team, M, T, other, fails, table is not None and idx >= 0)
+			nplan += check_plans(n, team, M, T, other, fails, table is not None and idx >= 0, ftw)
 			g = [o for o in other if o.startswith("MI G ")]
 			if not g:
 				fails.append(f"{n} team {team}: no champion read the block back")

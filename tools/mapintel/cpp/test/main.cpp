@@ -4,7 +4,7 @@
 //   turn 1: load_view, fingerprint(view), compute_features, Compact, base_plans (plans 2-4), row() of the first test pick's bodies
 //           MI T fp <hex> ts <n> fuel_view <f> fuel_fp <f> fuel_feat <f> fuel_base <f> fuel_row <f> table <0|1> turn_fuel_left <f>
 //   turn 2: row() of the second test pick (MI R2 fuel_row <f>)
-//   turn 3: rows of the remaining test picks + plan 1 (measured), the draft-memory block packed and written to the engine whole, then a
+//   turn 3: rows of the remaining test picks + plan 1 (measured; with turn 1's first_scores() ranking when model_weights.h has it), the draft-memory block packed and written to the engine whole, then a
 //           4-byte write from offset 0 as GOD v10 makes: MI R fuel_rows <f> fuel_plan1 <f> turn_fuel_left <f> fuel_pack_write <f>
 //   turn 4 (teams of 4+): the plans: MI P1 slot body (g arrive_bits end_bits)..., MI P2 banks, MI P3 band (g dU dE)..., MI P4 ... mode m
 //   turns 5+: plan 1 again from the cached rows: MI L turn_fuel_left <f> plan_fuel <f> nbody <n>
@@ -128,6 +128,17 @@ struct State
 		out[k] = static_cast<std::uint8_t>(gs[static_cast<std::size_t>(k)]);
 }
 
+// the first_scores() ranking of turn 1 as plan 1's input (empty without model_weights.h's first_scores: the greedy plan 1)
+static std::span<const int> rank_span(State& S)
+{
+	static int r[16];
+	int n = 0;
+	for (int k = 0; k < 16; ++k)
+		if (S.rank[k] != 255)
+			r[n++] = S.rank[k];
+	return std::span<const int>(r, static_cast<std::size_t>(n));
+}
+
 static void turn1(State& S)
 {
 	const auto f0 = bc::fuel_remaining();
@@ -248,7 +259,7 @@ static void turn3(State& S)
 			S.C->row(b[j]);
 	}
 	const auto g1 = bc::fuel_remaining();
-	S.C->plan1(std::span<const int>(mapintel::TEST_PICKS, static_cast<std::size_t>(S.npk)), S.P);
+	S.C->plan1(std::span<const int>(mapintel::TEST_PICKS, static_cast<std::size_t>(S.npk)), S.P, rank_span(S));
 	const auto g2 = bc::fuel_remaining();
 	const auto blk = mapintel::dmem_pack(S.P, S.fp, S.ts, S.known >= 0, 255);
 	std::vector<std::uint8_t> mem(1024, 0);
@@ -300,7 +311,7 @@ int main()
 				{
 					const auto g0 = bc::fuel_remaining();
 					mapintel::Plans P;
-					S.C->plan1(std::span<const int>(mapintel::TEST_PICKS, static_cast<std::size_t>(S.npk)), P);
+					S.C->plan1(std::span<const int>(mapintel::TEST_PICKS, static_cast<std::size_t>(S.npk)), P, rank_span(S));
 					const auto g1 = bc::fuel_remaining();
 					line("MI L turn_fuel_left " + std::to_string(g1) + " plan_fuel " + std::to_string(g0 - g1) + " nbody " + std::to_string(P.nbody));
 				}

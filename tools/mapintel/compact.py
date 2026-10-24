@@ -16,7 +16,9 @@ Model (per body type b and group g; all in rounds, doubles, the same operation o
   eta_b(g)   = max(0, dU(g) - attack range)   (dU = our fc distance to the group's nearest camp tile)
   work       = kill + trips x trip + capture 6 (computed once per body and group); cycle = travel + work;
                rate = value / cycle, value = gems + 0.1 x gold
-Plan 1: each body type's candidate list = its 12 best reached groups by first-target rate; first targets by a greedy assignment over
+Plan 1: each body type's candidate list = its 12 best reached groups by first-target rate; first targets: with a first_scores()
+ranking (plan1(picks, rank)), the first n ranked reached groups assigned to the n bodies by the cheapest total of walk + work
+(assign_dp); without one, a greedy assignment over
 (body, group) pairs by rate (each body and group once: repeatedly the best free pair, ties to the lower body slot, then the lower group
 index; equal to a scan of all groups since at most 5 groups are taken before any body's turn), then 3 more targets per body in slot
 order from its candidate list by rate from its last group (travel = the Chebyshev distance between the groups' bounding boxes), then one 2-opt
@@ -145,12 +147,27 @@ class Compact:
 			self._bm["row", b] = (sorted(rate, key=lambda g: (-rate[g], g))[:NTOP], rate)
 		return self._bm["row", b]
 
-	def plan1(self, picks):
+	def plan1(self, picks, rank=None):
+		"""Plan 1. rank = the groups by first_scores() (best first; export_headers.first_rank_py): the first n reached groups of it are
+		assigned to the n bodies by the cheapest total of walk to attack range + work (assign_dp; plans.h the same); without it the greedy
+		(body, group) pairs by first-target rate. Then 3 more targets per body from its candidate list, one 2-opt pass."""
 		E = EC.engine()
 		bodies = [b for p in picks for b in pick_bodies(p)][:NSLOT]
 		rng = [E.attack_range(b) for b in bodies]
 		rows = [self.row(b) for b in bodies]
 		plan, done, used = [[] for _ in bodies], set(), set()
+		if rank is not None:
+			top = [g for g in rank if 0 <= g < len(self.M.groups) and self.dU[g] >= 0][:len(bodies)]
+			cost = [[max(0, self.dU[g] - rng[i]) + self.work(b, g) for g in top] for i, b in enumerate(bodies)]
+			asg = assign_dp(cost) if top else [None] * len(bodies)
+			for i, j in enumerate(asg):
+				done.add(i)
+				if j is None:
+					continue
+				g = top[j]
+				eta = max(0, self.dU[g] - rng[i])
+				plan[i].append([g, eta, eta + self.work(bodies[i], g)])
+				used.add(g)
 		# greedy first targets: repeatedly the best free (body, group) pair by rate; ties to the lower slot, then the lower group (each
 		# body's best free group is the first free entry of its candidate list)
 		while True:
@@ -258,11 +275,62 @@ class Compact:
 		return p4model.apply(self.F, self.formula_thresholds())
 
 
+def assign_dp(cost):
+	"""The cheapest assignment of rows (bodies, in slot order) to distinct columns (groups) of a cost matrix (at most 6 x 6): a dynamic
+	program over the sets of used columns, masks in increasing order, columns in increasing order, a strictly cheaper sum wins (plans.h
+	detail::assign_dp: the same sums in the same order). With fewer columns than rows, the last rows get None."""
+	n, m = len(cost), len(cost[0]) if cost else 0
+	k = min(n, m)
+	INF = float("inf")
+	dp = [INF] * (1 << m)
+	par = [-1] * (1 << m)
+	dp[0] = 0.0
+	for mask in range(1 << m):
+		i = bin(mask).count("1")
+		if dp[mask] == INF or i >= k:
+			continue
+		for j in range(m):
+			if not mask >> j & 1:
+				v = dp[mask] + cost[i][j]
+				if v < dp[mask | 1 << j]:
+					dp[mask | 1 << j], par[mask | 1 << j] = v, j
+	best = None
+	for mask in range(1 << m):
+		if bin(mask).count("1") == k and dp[mask] < INF and (best is None or dp[mask] < dp[best]):
+			best = mask
+	out = [None] * n
+	mask, i = best if best is not None else 0, k - 1
+	while mask:
+		j = par[mask]
+		out[i] = j
+		mask ^= 1 << j
+		i -= 1
+	return out
+
+
+def assign_greedy(cost):
+	"""Rows (bodies) to distinct columns (groups): repeatedly the cheapest free (row, column) pair, ties to the lower row, then the lower
+	column (plans.h detail::assign_greedy). Rows beyond the columns get None."""
+	n, m = len(cost), len(cost[0]) if cost else 0
+	out, used = [None] * n, set()
+	for _ in range(min(n, m)):
+		best = None
+		for i in range(n):
+			if out[i] is not None:
+				continue
+			for j in range(m):
+				if j not in used and (best is None or cost[i][j] < best[0]):
+					best = (cost[i][j], i, j)
+		out[best[1]] = best[2]
+		used.add(best[2])
+	return out
+
+
 def r16(x):
 	return max(0, min(65535, int(math.floor(x + 0.5))))
 
 
-def pack(C, fingerprint, picks=None, known=False, archetype=255):
+def pack(C, fingerprint, picks=None, known=False, archetype=255, rank=None):
 	"""The draft-memory block (DMEM_SIZE bytes, written at DMEM_OFFSET), layout of dmem.h:
 	  0 magic 0xA7, 1 version, 2-9 fingerprint (little endian), 10 flags (bit 0 known map, bit 1 we can bank, bit 2 they can bank, bits 3-4
 	  tiebreak mode, bit 5 plan 1 present), 11 archetype (255 = none), 12 team size, 13 groups (<= 64), 14 contested band, 15 contested
@@ -296,7 +364,7 @@ def pack(C, fingerprint, picks=None, known=False, archetype=255):
 			b[215 + 3 * k] = b[216 + 3 * k] = b[217 + 3 * k] = 255
 	for k, v in enumerate(C.thresholds()):
 		b[263 + 2 * k], b[264 + 2 * k] = v & 0xFF, (v >> 8) & 0xFF
-	bodies, plan = C.plan1(picks) if picks else ([], [])
+	bodies, plan = C.plan1(picks, rank) if picks else ([], [])
 	b[16] = len(bodies)
 	for s in range(NSLOT):
 		b[17 + s] = bodies[s] if s < len(bodies) else 255

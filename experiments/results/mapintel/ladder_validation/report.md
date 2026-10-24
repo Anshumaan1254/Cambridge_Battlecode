@@ -2,7 +2,7 @@
 
 599 decoded games on 40 maps (strong vs strong first).
 
-- **Pace**: Spearman(model unopposed pace, real finish round) over 40 maps **0.848**; Spearman(model pace, -banked at r400) **0.714**; median real finish / model pace 0.88 (real games are contested: the ratio is the cost of an opponent).
+- **Pace**: Spearman(model pace, real finish round) over 40 maps **0.848**; Spearman(model pace, -banked at r400) **0.714**; median real finish / model pace 0.88 (the model plays against the LEARNED opposition share of economy.econ()['contest']; without it the ratio was 1.20).
 - **First targets**: over 1174 team-games, the share of the model's plan-1 first targets among the groups the team captured first is **0.592** (baseline: the nearest groups by walk, 0.542).
 - **Bank altars**: 0.972 of 24945 bank events are at an altar plan 2 names for some group; the share at the altar nearest to the team's spawn is 0.612 (median over map-teams).
 

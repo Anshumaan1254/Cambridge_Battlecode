@@ -102,6 +102,36 @@ also use it directly or by little changes; for many things you can use stats too
   (v10 writes 4 bytes `B7 ..` or its 0xC8 `dmplan` layout from offset 0; the mapintel block goes to offset 512, see 5.8 / 7.4).
 - The draft decision (roster and plan) is made by the bot's draft code; the library supplies its inputs (features, table, model, plans).
 
+### 1.9 Sixth addition (Oct 24, chat, to the reviewing session): team play, navigation, the final draft-memory layout
+A second session (the one that wrote this plan) works on team play next to this map analysis. **Its record is `TEAMPLAN.md`**, its code is
+in `tools/teamplan/`, and it does not edit the map-analysis files apart from this pointer. What concerns the map analysis:
+- **Navigation hazards, for this map analysis** (the user pasted a postmortem's "Unrolled BFS / Bug Nav / BugBFS" section: "think about
+  this in map analysis and other appropriate location too").
+  - CAMBC's host distance fields already solve global paths. What a bot still needs from the map are its static hazards, per map:
+    - chokepoints (articulation points);
+    - dash-only pockets (where dash bodies get trapped and walkers cannot follow);
+    - dead ends;
+    - hole lines a dash can cross;
+    - crystal shortcuts;
+    - the "field anchors" worth caching (spawn, bank altars, top groups) with their fuel.
+  - They belong in the catalog, the exact-match table and a NAV draft-memory block for unknown maps.
+  - The runtime half (unrolled local window, progress monitor, loop guard) is `tools/teamplan/cpp/teamplan/nav.h` (TEAMPLAN.md section 6).
+- **Tiebreak-prone maps** (the user: "whenever you sense a tiebreaker than only we will submit the gems at last else we will also be racing
+  for finishing"). The draft-time flag comes from this analysis: the unopposed pace near or over 2,000 rounds, or too few gems to reach
+  1,000. The risk-capped tiebreak mode itself is TEAMPLAN.md section 5.
+- **The final draft-memory layout** (the user: "give me a prompt to be given to other claude to implement the final memory state").
+  - The layout spec is written in `docs/DRAFT_MEMORY.md`: a table of contents at offset 4, checksummed blocks, the mapintel block kept at
+    512-863.
+  - At the end of the team-play work, the agent carrying out this plan gets a prompt to implement it in the mapintel library (dmem v2,
+    with Python twins and engine tests).
+- **Evidence the map model can use** (TEAMPLAN.md section 3, 599 top-team games):
+  - every body farms;
+  - captures are solo (5.4% shared);
+  - winners take 102 gems a game from enemy bags and lose 57 (losers 50 / 116);
+  - 2.7% of games reach round 2000;
+  - **the decoded summaries record no gold-only capture although 24% of the official groups are gold-only: please check `replays.py`
+    / the decoder.**
+
 ---
 
 ## 2. Background: the bots and what the ladder says (as of Oct 24)

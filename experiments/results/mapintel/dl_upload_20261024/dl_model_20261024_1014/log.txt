@@ -1,0 +1,42 @@
+device cuda (NVIDIA GeForce RTX 5070 Laptop GPU, 7.9 GB), torch 2.11.0+cu128, python 3.11.15, Windows; sizes {'maps': 40, 't1a': 911, 't1b': 34883, 't2': 2240, 'games': 599}
+t1a: 911 samples, inputs 41, bar 0.7228
+  t1a mlp seed 0: share 0.6644
+  t1a mlp seed 1: share 0.6836
+  t1a mlp seed 2: share 0.6813
+  t1a graph seed 0: share 0.6512
+  t1a graph seed 1: share 0.6322
+  t1a graph seed 2: share 0.6739
+  t1a distil seed 0: share 0.6724
+  t1a distil seed 1: share 0.6781
+  t1a distil seed 2: share 0.6654
+t1a done in 1.9 min
+t1b: 34883 samples, inputs 56, bar [0.4066, 0.724]
+  t1b mlp seed 0: top1 0.3445, top3 0.6827
+  t1b mlp seed 1: top1 0.3380, top3 0.6727
+  t1b mlp seed 2: top1 0.3388, top3 0.6735
+  t1b graph seed 0: top1 0.4049, top3 0.7332
+  t1b graph seed 1: top1 0.3849, top3 0.7137
+  t1b graph seed 2: top1 0.3949, top3 0.7140
+  t1b distil seed 0: top1 0.3427, top3 0.6796
+  t1b distil seed 1: top1 0.3412, top3 0.6834
+  t1b distil seed 2: top1 0.3417, top3 0.6730
+t1b done in 6.9 min
+t2: 2240 games, bar 0.622
+  t2 const seed 0: logloss_neg -0.6208
+  t2 const seed 1: logloss_neg -0.6208
+  t2 const seed 2: logloss_neg -0.6208
+  t2 const: held-out log loss 0.6208
+  t2 values seed 0: logloss_neg -0.6776
+  t2 values seed 1: logloss_neg -0.6598
+  t2 values seed 2: logloss_neg -0.6676
+  t2 values: held-out log loss 0.6683
+  t2 deepset seed 0: logloss_neg -0.6580
+  t2 deepset seed 1: logloss_neg -0.6564
+  t2 deepset seed 2: logloss_neg -0.6400
+  t2 deepset: held-out log loss 0.6515
+t2 done in 1.7 min
+t3: 80 map-teams, bar 0.221
+  t3 unet seed 0: pearson 0.5217
+  t3 unet seed 1: pearson 0.5156
+  t3 unet: held-out Pearson 0.5186 vs bar 0.2210
+t3 done in 2.1 min

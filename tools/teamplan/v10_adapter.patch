@@ -1,0 +1,447 @@
+diff -ruN '--exclude=teamplan' god/src/brain.cpp _tp_v10/src/brain.cpp
+--- a/brain.cpp	2026-10-24 05:52:38.590512166 +0000
++++ b/brain.cpp	2026-10-24 13:14:20.288900784 +0000
+@@ -708,6 +708,8 @@
+ 	learner().init(W.W, W.H);
+ 	comms().bodies = static_cast<int>(W.allies.size());
+ 	comms().bag_on = P.team_bank && W.groups.size() <= 62;
++	if (P.tp_own)
++		tp_own_ = tpa::read_own(static_cast<int>(type), static_cast<int>(W.groups.size()));
+ 	if (P.dm_plan)
+ 	{
+ 		// The draft's plan (dmplan.h): accepted only for this map (size and group count), else every user falls back.
+@@ -3108,7 +3110,8 @@
+ 			if (hp < 4.f * reflect && e->hp > burst_vs(*e))
+ 				continue;
+ 		}
+-		const float v = (60.f + bonus + static_cast<float>(e->gems) + (e->channeling ? 60.f : 0.f)) / eff_hp;
++		const float v = P.tp_focus ? tp_target_value(*e, eff_hp) + (e->channeling ? 60.f : 0.f) / eff_hp
++								   : (60.f + bonus + static_cast<float>(e->gems) + (e->channeling ? 60.f : 0.f)) / eff_hp;
+ 		if (v > best)
+ 			best = v, tgt = e;
+ 	}
+@@ -3586,7 +3589,8 @@
+ 			continue;
+ 		if (o.type == CT::ren && hp <= 2.5f * bc::constants::passive_abilities::ren_retaliation_focus_ratio * o.focus && o.hp > str)
+ 			continue;
+-		const float v = (60.f + ((o.type == CT::cassi || o.type == CT::issac) ? 60.f : 0.f) + static_cast<float>(o.gems)) / std::max(50.f, o.hp);
++		const float v = P.tp_focus ? tp_target_value(o, std::max(50.f, o.hp))
++								   : (60.f + ((o.type == CT::cassi || o.type == CT::issac) ? 60.f : 0.f) + static_cast<float>(o.gems)) / std::max(50.f, o.hp);
+ 		if (v > bv)
+ 			bv = v, best = &o;
+ 	}
+@@ -3701,7 +3705,8 @@
+ 						continue;
+ 					int r = o.kit.attack_range + (o.kit.ranged ? 0 : 1) + (o.ready(o.kit.dash) ? 2 : 0);
+ 					r = std::max(r, P.aoe_reach5 ? enemy_spell_reach(o, false) : ((o.ready(o.kit.dmg) || o.ready(o.kit.cc) || o.ready(o.kit.aoe)) ? 4 : 0));
+-					step_in |= cheb(pos, o.pos) - 1 <= r;
++					// P.tp_timing: entering the reach of an enemy that acts again only after us is not a free volley for it
++					step_in |= cheb(pos, o.pos) - 1 <= r && !(P.tp_timing && tp_we_first(o));
+ 				}
+ 				if (round - of_round > 1)
+ 					of_since = round;
+@@ -3762,6 +3767,25 @@
+ 				dbg_eng = 8;
+ 			else if (P.melee_aoe_stun && kit.aoe_stuns && d >= 2 && ready(kit.aoe) && e.type != CT::marcella && cast_area_stun_at(e))
+ 				dbg_eng = 7;
++			else if (P.tp_timing && d > 2 && !(d <= 4 && (ready(kit.cc) || ready(kit.dmg))) && [&] {
++						 // P.tp_timing: the step does not reach the target this turn; hold one round (at most open_hold) when it would end
++						 // inside the reach of an enemy that acts before our next turn
++						 if (round - of_round > 1)
++							 of_since = round;
++						 of_round = round;
++						 if (round - of_since >= P.open_hold)
++							 return false;
++						 for (const auto& o : world().enemies)
++						 {
++							 if (!o.alive || !o.visible)
++								 continue;
++							 const int r = o.kit.attack_range + (o.kit.ranged ? 0 : 1) + (o.ready(o.kit.dash) ? 2 : 0);
++							 if (cheb(pos, o.pos) - 1 <= r && !tp_we_first(o))
++								 return true;
++						 }
++						 return false;
++					 }())
++				dbg_eng = 10;
+ 			else if (d == 2 || !(d <= 4 && (ready(kit.cc) || ready(kit.dmg))))
+ 				step(goal, false, true), dbg_eng = 5;
+ 			else if (!cast_unit_champ(kit.cc, ec))
+@@ -4486,6 +4510,86 @@
+ 		deny_bonus += P.spar_deny;
+ 		fight_margin = std::max(0.9f, fight_margin + P.spar_fight);
+ 	}
++	if (P.tp_bag)
++		fight_margin = static_cast<float>(teamplan::fight_bar(fight_margin, static_cast<int>(gems), tpa::params()));
++	if (P.tp_tiebreak)
++		teamplan::tb_update(tp_tb_, round, static_cast<int>(bc::global_submitted_gems(team::ally)), static_cast<int>(bc::global_submitted_gems(team::enemy)),
++							static_cast<int>(gems) + (P.team_bank ? comms().others_carried() : 0), 0, tpa::consts(), tpa::params());
++}
++
++float Brain::tp_target_value(const Enemy& e, float eff_hp) const
++{
++	int n = 0;
++	for (const auto& o : world().enemies)
++		n += o.alive ? 1 : 0;
++	const double kv = teamplan::kill_value(static_cast<int>(e.gems), tpa::bodies_of_type(static_cast<int>(e.type)), std::max(1, n), tpa::consts(), tpa::params());
++	return static_cast<float>(kv) / eff_hp;
++}
++
++bool Brain::tp_we_first(const Enemy& e) const
++{
++	// timing.h on the bodies in sight: ranks by this round's priority (prev_priority) for this round and by next round's for the next;
++	// bodies out of sight are taken to act after the ones we see (they are far from the fight).
++	const int team = bc::detail::sdk_my_team() == 0 ? 0 : 1;
++	int us_now = 0, us_next = 0, e_now = 0, e_next = 0, n_ours = 0, n_theirs = 0;
++	int my_now = 0, my_next = 0, en_now = 0, en_next = 0;
++	try
++	{
++		const auto& me = bc::self();
++		my_now = me.prev_priority(), my_next = me.priority();
++		if (!e.ch)
++			return false;
++		en_now = e.ch->prev_priority(), en_next = e.ch->priority();
++	}
++	catch (...)
++	{
++		return false;
++	}
++	const int my_t = static_cast<int>(type), e_t = static_cast<int>(e.type);
++	for (const auto& c : bc::champions(team::ally))
++	{
++		++n_ours;
++		try
++		{
++			const int t = static_cast<int>(c.champion_name());
++			if (t == my_t)
++				continue;
++			const int pn = c.prev_priority(), px = c.priority();
++			us_now += pn > my_now || (pn == my_now && t < my_t) ? 1 : 0;
++			us_next += px > my_next || (px == my_next && t < my_t) ? 1 : 0;
++		}
++		catch (...)
++		{
++		}
++	}
++	for (const auto& c : bc::champions(team::enemy))
++	{
++		++n_theirs;
++		try
++		{
++			const int t = static_cast<int>(c.champion_name());
++			if (t == e_t)
++				continue;
++			const int pn = c.prev_priority(), px = c.priority();
++			e_now += pn > en_now || (pn == en_now && t < e_t) ? 1 : 0;
++			e_next += px > en_next || (px == en_next && t < e_t) ? 1 : 0;
++		}
++		catch (...)
++		{
++		}
++	}
++	int alive_us = 0, alive_them = 0;
++	for (const auto& a : world().allies)
++		alive_us += a.alive ? 1 : 0;
++	for (const auto& o : world().enemies)
++		alive_them += o.alive ? 1 : 0;
++	(void)n_ours, (void)n_theirs;
++	alive_us = std::max(alive_us, us_now + 1), alive_them = std::max(alive_them, e_now + 1);
++	const int pu = teamplan::turn_pos(round, team, us_now, alive_us, alive_them);
++	const int pe = teamplan::turn_pos(round, 1 - team, e_now, alive_them, alive_us);
++	if (pe > pu)
++		return false;
++	return teamplan::turn_pos(round + 1, team, us_next, alive_us, alive_them) < teamplan::turn_pos(round + 1, 1 - team, e_next, alive_them, alive_us);
+ }
+ 
+ bool Brain::ally_engaged(const Enemy& t) const
+@@ -4624,6 +4728,8 @@
+ 	const int ticks = static_cast<int>((gems + 9) / 10);
+ 	const bool endgame = round + dist + ticks + P.endgame_margin >= static_cast<int>(bc::constants::max_rounds);
+ 	const bool winning = wins_with(static_cast<int>(gems)) && gems > 0;
++	if (P.tp_tiebreak && !force && !endgame && !winning && teamplan::tb_defer(tp_tb_.mode, static_cast<int>(gems), enemy_near_d, tpa::params()))
++		return false; // tiebreak mode: the bag stays with us (risk-capped); v10's endgame rule banks it before the limit
+ 	if (P.prism_bank && type == CT::prism && !force && !endgame && !winning && hp >= P.prism_bank_hp * max_hp)
+ 		return false; // F4 Prism banker: the bag is focus (+1 per gem); bank it only when it wins, at the end, or when we may lose it
+ 	const bool risky = enemy_near_field && static_cast<int>(gems) >= P.tribute_risky &&
+@@ -4978,6 +5084,9 @@
+ 		v *= std::max(1.f, P.deny_capture_mult);
+ 	const int lb = std::max(0, cheb(g.center, pos) - g.radius);
+ 	const int d = g.st == ST_REWARD ? lb : approach_rounds(lb);
++	if (P.tp_own && tp_own_.ok && g.id >= 0 && g.id < static_cast<int>(tp_own_.owner.size()) &&
++		tp_own_.owner[static_cast<std::size_t>(g.id)] == tp_own_.slot)
++		v *= 1.f + P.tp_own_bonus; // keep the bound above group_score's
+ 	return v / std::max(1.f, static_cast<float>(d) + 6.f);
+ }
+ 
+@@ -5786,6 +5895,9 @@
+ 			return 1e4f / std::max(1.f, finish);
+ 		}
+ 	}
++	if (P.tp_own && tp_own_.ok && g.id >= 0 && g.id < static_cast<int>(tp_own_.owner.size()) &&
++		tp_own_.owner[static_cast<std::size_t>(g.id)] == tp_own_.slot)
++		return value / std::max(1.f, time) * (1.f + P.tp_own_bonus);
+ 	return value / std::max(1.f, time);
+ }
+ 
+diff -ruN '--exclude=teamplan' god/src/brain.h _tp_v10/src/brain.h
+--- a/brain.h	2026-10-24 05:52:38.594512166 +0000
++++ b/brain.h	2026-10-24 13:14:20.279494213 +0000
+@@ -4,6 +4,7 @@
+ #include "nav.h"
+ #include "params.h"
+ #include "world.h"
++#include "tp_adapter.h"
+ 
+ enum TaskKind : int
+ {
+@@ -373,6 +374,11 @@
+ 	int tr_hits = 0; // trace: attacks on the current target since it was set
+ #endif
+ 	void unstick();
++	// tools/teamplan (P.tp_*; tp_adapter.h)
++	tpa::Own tp_own_;
++	teamplan::TbState tp_tb_;
++	float tp_target_value(const Enemy& e, float eff_hp) const; // P.tp_focus
++	bool tp_we_first(const Enemy& e) const;					   // P.tp_timing: we act again before e
+ };
+ 
+ Brain& brain();
+diff -ruN '--exclude=teamplan' god/src/draft.cpp _tp_v10/src/draft.cpp
+--- a/draft.cpp	2026-10-24 05:52:38.594512166 +0000
++++ b/draft.cpp	2026-10-24 13:14:20.289845903 +0000
+@@ -13,6 +13,7 @@
+ #include "common.h"
+ #include "dmplan.h"
+ #include "params.h"
++#include "tp_adapter.h"
+ 
+ #include <cmath>
+ #if __has_include("draft_table.h")
+@@ -1006,6 +1007,14 @@
+ #else
+ 	play_draft_pick();
+ #endif
++	if (P.tp_own)
++		try
++		{
++			tpa::draft_write_own(g_last_pick);
++		}
++		catch (...)
++		{
++		}
+ 	if (P.dm_plan)
+ 		try
+ 		{
+diff -ruN '--exclude=teamplan' god/src/params.h _tp_v10/src/params.h
+--- a/params.h	2026-10-24 05:52:38.598512167 +0000
++++ b/params.h	2026-10-24 13:14:20.276721693 +0000
+@@ -874,6 +874,19 @@
+ 	int deny_altar_at = 850;
+ 	int watchdog = 1;			// 1: after 3 turns in a row that threw, a minimal safe turn (hit an adjacent enemy, else step toward spawn)
+ 
++	// ---- tools/teamplan (TEAMPLAN.md section 9; the test copy bots/_tp_v10 only, tools/teamplan/prepare_v10.py). 0 = v10.
++	int tp_focus = 0;		 // 1: the fight target's value = teamplan focus.h kill_value (its bag + kill gold + the farming lost while it is dead,
++							 // bodies from the SDK's pick structure) over its health, in place of v10's 60 (+ 60 for the pair) + bag
++	int tp_bag = 0;			 // 1: the proactive fight bar rises with our bag (bag.h fight_bar: x (1 + bag / 60))
++	int tp_timing = 0;		 // 1: the edge hold (open_first & 2, ranged) and the melee approach step into an enemy's reach only when we act again
++							 // before it (timing.h; this and next round's priorities of the bodies in sight, team from sdk_my_team())
++	int tp_tiebreak = 0;	 // 1: tiebreak mode (tiebreak.h): when both projected finishes lie beyond the round limit, a bag up to tp_tb_cap is
++							 // kept (no bank trip, no small on-the-way banks) while no enemy is within tb_safe_dist; v10's endgame rule banks it
++	int tp_tb_cap = 60;		 // ... the risk cap
++	int tp_own = 0;			 // 1: soft group ownership (assign.h): the draft writes the OWN block (draft memory 8..), a body's own groups score
++							 // x (1 + tp_own_bonus)
++	float tp_own_bonus = 0.25f;
++
+ 	// ---- Sparring proxies (testing only, docs/TESTING.md; never on in a submission): a fixed playing style, optionally switching at
+ 	// set rounds, built from existing GOD mechanisms. 1 farmer (stays home, avoids fights), 2 invader (PUSH: their half free, deny,
+ 	// lower fight bar), 3 deathball (2 + the whole team follows the lowest living body: P.style 1's blob), 4 objective rusher (heavy
+diff -ruN '--exclude=teamplan' god/src/tp_adapter.cpp _tp_v10/src/tp_adapter.cpp
+--- a/tp_adapter.cpp	1970-01-01 00:00:00.000000000 +0000
++++ b/tp_adapter.cpp	2026-10-24 13:13:33.306609393 +0000
+@@ -0,0 +1,146 @@
++#include "tp_adapter.h"
++
++#include <algorithm>
++
++#include "params.h"
++#include "teamplan/sdk_bridge.h"
++
++namespace tpa
++{
++const teamplan::Params& params()
++{
++	static const teamplan::Params p = [] {
++		teamplan::Params q;
++		q.tb_defer_cap = P.tp_tb_cap;
++		q.own_bonus = static_cast<double>(P.tp_own_bonus);
++		return q;
++	}();
++	return p;
++}
++
++const teamplan::Consts& consts()
++{
++	static const teamplan::Consts c = teamplan::consts_from_sdk();
++	return c;
++}
++
++const teamplan::Kit& kit_of(int type)
++{
++	static teamplan::Kit k[13];
++	static bool have[13] = {};
++	const int t = type < 0 || type > 12 ? 0 : type;
++	if (!have[t])
++		k[t] = teamplan::compute_kit(teamplan::design_of(t), consts(), params()), have[t] = true;
++	return k[t];
++}
++
++int pick_of_type(int type) { return type < 3 ? type : type <= 4 ? 3 : type - 1; }
++
++int bodies_of_type(int type)
++{
++	int n = 0;
++	for (int t = 0; t < 13; ++t)
++		n += pick_of_type(t) == pick_of_type(type) ? 1 : 0;
++	return n;
++}
++
++namespace
++{
++std::vector<teamplan::AGroup> g_groups; // the map's groups with the walk from our spawn (draft turn 1, kept in the draft's RAM)
++bool g_loaded = false;
++
++void load_groups()
++{
++	g_loaded = true;
++	const bc::bitboard blocked = bc::map::walls() | bc::map::holes() | bc::map::altars() | bc::map::spawn_region(team::enemy);
++	bc::bitboard roots = bc::map::spawn_region(team::ally), visited;
++	bc::distance_field f;
++	f.compute(blocked, roots, visited);
++	const auto& prm = params();
++	for (const auto& g : bc::map::camp_groups())
++	{
++		teamplan::AGroup a;
++		const int gems = static_cast<int>(g.gem_value()), gold = static_cast<int>(g.gold_value());
++		a.value = gems + prm.gold_gems * gold;
++		a.gem_free = gems == 0 ? 1 : 0;
++		double hp = 0;
++		for (const auto& c : g.camps())
++		{
++			hp += static_cast<double>(c.base_stats().base_health);
++			const std::uint16_t d = f.get(c.spawn_position());
++			if (d != bc::distance_field::unreachable && (a.walk < 0 || d < a.walk))
++				a.walk = d;
++		}
++		a.hp = hp;
++		g_groups.push_back(a);
++	}
++}
++} // namespace
++
++void draft_write_own(int last_pick)
++{
++	if (!g_loaded)
++		load_groups();
++	const int G = static_cast<int>(g_groups.size());
++	if (G > 250)
++		return;
++	std::vector<int> picks;
++	for (const auto d : bc::draft::current_draft(team::ally))
++		picks.push_back(static_cast<int>(d));
++	if (last_pick >= 0 && std::find(picks.begin(), picks.end(), last_pick) == picks.end())
++		picks.push_back(last_pick);
++	std::vector<int> types;
++	for (int t = 0; t < 13; ++t)
++		if (std::find(picks.begin(), picks.end(), pick_of_type(t)) != picks.end())
++			types.push_back(t);
++	const int n = std::min<int>(6, static_cast<int>(types.size()));
++	if (n == 0)
++		return;
++	teamplan::Kit kits[6];
++	for (int b = 0; b < n; ++b)
++		kits[b] = kit_of(types[static_cast<std::size_t>(b)]);
++	std::vector<std::uint8_t> owner(static_cast<std::size_t>(G));
++	std::vector<int> ord(static_cast<std::size_t>(G));
++	std::vector<double> key(static_cast<std::size_t>(G));
++	teamplan::assign_groups(g_groups.data(), G, kits, n, (1u << n) - 1u, consts(), params(), owner.data(), nullptr, nullptr, ord.data(), key.data());
++	std::vector<std::uint8_t> b(static_cast<std::size_t>(8 + 10 + G + 1), 0);
++	b[0] = 0xB7, b[1] = 2;
++	b[8] = 0x54, b[9] = 1, b[10] = static_cast<std::uint8_t>(n), b[11] = static_cast<std::uint8_t>(G);
++	for (int i = 0; i < 6; ++i)
++		b[static_cast<std::size_t>(12 + i)] = i < n ? static_cast<std::uint8_t>(types[static_cast<std::size_t>(i)]) : 255;
++	std::uint8_t x = 0;
++	for (int g = 0; g < G; ++g)
++		b[static_cast<std::size_t>(18 + g)] = owner[static_cast<std::size_t>(g)];
++	for (int i = 8; i < 18 + G; ++i)
++		x ^= b[static_cast<std::size_t>(i)];
++	b[static_cast<std::size_t>(18 + G)] = x;
++	bc::draft_memory = b;
++}
++
++Own read_own(int my_type, int n_groups)
++{
++	Own o;
++	const auto& m = bc::draft_memory;
++	if (m.size() < 19)
++		return o;
++	auto at = [&](int i) { return std::to_integer<std::uint8_t>(m[static_cast<std::size_t>(i)]); };
++	if (at(8) != 0x54 || at(9) != 1 || at(11) != n_groups || static_cast<int>(m.size()) < 19 + n_groups)
++		return o;
++	std::uint8_t x = 0;
++	for (int i = 8; i < 18 + n_groups; ++i)
++		x ^= at(i);
++	if (x != at(18 + n_groups))
++		return o;
++	const int n = at(10);
++	for (int i = 0; i < n && i < 6; ++i)
++		if (at(12 + i) == my_type)
++			o.slot = i;
++	if (o.slot < 0)
++		return o;
++	o.owner.resize(static_cast<std::size_t>(n_groups));
++	for (int g = 0; g < n_groups; ++g)
++		o.owner[static_cast<std::size_t>(g)] = at(18 + g);
++	o.ok = true;
++	return o;
++}
++} // namespace tpa
+diff -ruN '--exclude=teamplan' god/src/tp_adapter.h _tp_v10/src/tp_adapter.h
+--- a/tp_adapter.h	1970-01-01 00:00:00.000000000 +0000
++++ b/tp_adapter.h	2026-10-24 13:13:33.304989973 +0000
+@@ -0,0 +1,37 @@
++// tp_adapter.h: tools/teamplan inside GOD v10 (the test copy of TEAMPLAN.md section 9; tools/teamplan/v10_adapter.patch). Every use is
++// behind a P.tp_* switch (params.h), and with all of them 0 nothing here runs: the copy plays v10's games.
++#pragma once
++#include <cstdint>
++#include <vector>
++
++#include "common.h"
++#include "teamplan/assign.h"
++#include "teamplan/bag.h"
++#include "teamplan/focus.h"
++#include "teamplan/kit.h"
++#include "teamplan/params.h"
++#include "teamplan/tiebreak.h"
++#include "teamplan/timing.h"
++
++namespace tpa
++{
++const teamplan::Params& params();	   // the module defaults with the test copy's overrides (P.tp_tb_cap, P.tp_own_bonus)
++const teamplan::Consts& consts();	   // from the SDK, once
++const teamplan::Kit& kit_of(int type); // from the engine design, once per type
++int pick_of_type(int type);			   // the draft pick a body type belongs to (SDK enum order: picks 0-2 = bodies 0-2, 3 = bodies 3-4, ...)
++int bodies_of_type(int type);		   // bodies that die with a kill of this type (a pick of two bodies dies together)
++
++// Draft side (P.tp_own): after our pick of this draft turn (`last_pick`, -1 if none), plan the ownership of every group for the bodies
++// picked so far and write the OWN block to draft memory: offsets 8.. (bytes 0-7 are v10's header area, which its champions read only
++// with P.dm_plan): magic 0x54, version 1, bodies n, groups G, 6 body types (255 = none), G owners (body slot, 255 = none), XOR checksum.
++void draft_write_own(int last_pick);
++
++struct Own
++{
++	bool ok = false;
++	int slot = -1; // our body slot in the block
++	std::vector<std::uint8_t> owner;
++};
++// Champion side: read and check the block (the map's group count, the checksum, our type in its body list).
++Own read_own(int my_type, int n_groups);
++} // namespace tpa

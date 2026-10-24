@@ -68,17 +68,16 @@ analysis, see `MAPAnalysis.md` 1.9.
   - `tp_timing`: step into an enemy's reach only when we act again first;
   - `tp_tiebreak`: tiebreak mode, plus the cap `tp_tb_cap`;
   - `tp_own`: soft group ownership through a draft-memory OWN block at offset 8, plus `tp_own_bonus`.
-- It builds. The control check (80 games, all switches off against v10) is running; the first readout was empty because of a ledger
-  release-flag query, not the games.
-- The edit script that made the copy is in my scratchpad. Its result becomes `tools/teamplan/v10_adapter.patch` plus
-  `tools/teamplan/prepare_v10.py` (left, step 4).
+- **Step 4 is done** (`TEAMPLAN.md` 10, 14:25):
+  - the copy comes from `tools/teamplan/prepare_v10.py` + `tools/teamplan/v10_adapter.patch`;
+  - with all switches off it plays v10's games, 80 of 80 identical;
+  - the family-2 opponent is `tools/teamplan/make_forced_v10.py`; it plays the forced rosters in 80 of 80 games, and v10 wins 37 of 80
+    against it.
 
 ## Left
 
-1. **Step 4**:
-   - commit `tools/teamplan/v10_adapter.patch` and `tools/teamplan/prepare_v10.py`;
-   - confirm that all switches off plays v10's games (80 of 80 identical: same winner, rounds and gems).
-2. **Step 5, batteries**: each switch alone, then all combined, on 40 official maps x 2 sides.
+1. ~~Step 4~~ (done).
+2. **Step 5, batteries** (running, `tools/teamplan/batteries.py`): each switch alone, then all combined, on 40 official maps x 2 sides.
    - Family 1: against GOD v10.
    - Family 2: against a v10 copy forced to the strong teams' roster per map (`tools/mapintel/data/battery_rosters.json` rosters[0],
      through mapintel's `force_roster.h`).

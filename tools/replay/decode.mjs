@@ -196,9 +196,10 @@ async function decodeWith(wasmPath, buf, opts) {
         events.push({ r: n.step.round, k: 'Death', who: c.index, team: c.team, champ: CHAMP[c.type], at: [o.x, o.y], bag: o.gems,
           by: st.actor.kind === 1 ? st.actor.index : (st.actor.kind === 2 ? 'camp' : st.actor.kind), step: STEP[st.kind] });
       }
-      // a capture pays gems and / or gold: gold-only groups (gold clusters) raise only the gold, so both count (the event keeps its
-      // name: gems may be 0)
-      if (o && (c.gems > o.gems || c.gold > o.gold) && st.kind === 2) events.push({ r: n.step.round, k: 'CaptureGems', who: c.index, team: c.team, champ: CHAMP[c.type], gems: c.gems - o.gems, gold: c.gold - o.gold, at: [c.x, c.y] });
+      if (o && c.gems > o.gems && st.kind === 2) events.push({ r: n.step.round, k: 'CaptureGems', who: c.index, team: c.team, champ: CHAMP[c.type], gems: c.gems - o.gems, gold: c.gold - o.gold, at: [c.x, c.y] });
+      // Gold-only groups (24% of the official groups) never raise the bag, so CaptureGems misses them. Opt-in (opts.goldCaptures,
+      // --gold-captures) so readers that count every event kind see no change by default (TEAMPLAN.md, step 2).
+      else if (opts.goldCaptures && o && c.gems === o.gems && c.gold > o.gold && st.kind === 2) events.push({ r: n.step.round, k: 'CaptureGold', who: c.index, team: c.team, champ: CHAMP[c.type], gems: 0, gold: c.gold - o.gold, at: [c.x, c.y] });
       if (o && c.gems < o.gems && c.alive && st.kind === 18) events.push({ r: n.step.round, k: 'Banked', who: c.index, team: c.team, champ: CHAMP[c.type], gems: o.gems - c.gems, at: [c.x, c.y] });
     }
     if (n.step.round !== lastRound && n.phase !== 12) {
@@ -230,10 +231,10 @@ function compact(s, r) {
 if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith('decode.mjs')) {
   const argv = process.argv.slice(2);
   const file = argv.find((a) => !a.startsWith('--') && !/^\d+$/.test(a));
-  if (!file) { console.error('usage: decode.mjs replay.repl26a [--out file.json] [--every N]'); process.exit(2); }
+  if (!file) { console.error('usage: decode.mjs replay.repl26a [--out file.json] [--every N] [--gold-captures]'); process.exit(2); }
   const oi = argv.indexOf('--out');
   const ei = argv.indexOf('--every');
-  const res = await decode(fs.readFileSync(file), { every: ei >= 0 ? +argv[ei + 1] : 1 });
+  const res = await decode(fs.readFileSync(file), { every: ei >= 0 ? +argv[ei + 1] : 1, goldCaptures: argv.includes('--gold-captures') });
   const text = JSON.stringify(res);
   if (oi >= 0) fs.writeFileSync(argv[oi + 1], text); else process.stdout.write(text + '\n');
 }

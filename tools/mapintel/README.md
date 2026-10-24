@@ -4,6 +4,22 @@ The plan and the progress log are in `MAPAnalysis.md` (repository root). This fi
 Every output is marked by origin: **COMPUTED** (engine and map alone), **LEARNED** (current-patch real games), **SIMULATED** (games of
 your new bot, from the batteries below).
 
+## Before you start: three limits
+
+- **The repository path must not contain spaces.** `cambc run-batch` (used by `run_battery.sh`) splits its manifest lines on spaces, so
+  a path like `C:\Users\Your Name\Cambridge_Battlecode` breaks it; `battery.py` stops with an error before playing. On Windows, any of:
+  - clone into a path without spaces (Git Bash): `mkdir -p /c/cambc && cd /c/cambc && git clone https://github.com/Akshayg005/Cambridge_Battlecode.git`;
+  - keep your folder and give it a drive letter (Command Prompt, until the next reboot): `subst X: "C:\Users\Your Name\Cambridge_Battlecode"`,
+    then in Git Bash `cd /x/` and run the scripts there (`subst X: /D` removes it);
+  - or a junction (Command Prompt): `mklink /J C:\cb "C:\Users\Your Name\Cambridge_Battlecode"`, then run from `/c/cb` in Git Bash.
+- **Fuel of the first draft turn (1,000,000):** the library takes at most **735,414** on the worst official map (big-world:
+  `load_view`, `fingerprint`, `compute_features`, plans 2-4 and the first pick's rows), plus at most **85,540** if `first_scores()`
+  (the opening ranking) runs on the same turn: **777,699** in all on the worst map (`test_library.py` measures it); leave room for
+  your bot's own first-turn work. Later draft turns (100,000): `row()` <= 13.5k per pick; the plan-1 turn (the remaining picks' rows,
+  `plan1(picks, P, rank)` <= 43k, the block's pack and write) leaves at least 28k.
+- **Your bot's own draft memory must stay below offset 512.** The mapintel block lives at 512-863 (352 bytes, checksummed); a shorter
+  write of your bytes from offset 0 keeps it (tested). Bytes 864-1023 are not used by the library.
+
 ## Laptop scripts (run on your machine; upload the archive they print)
 
 ### 1. Ladder data now: `fetch_ladder.sh`
@@ -44,7 +60,7 @@ bash tools/mapintel/run_battery.sh --bot NAME           # the batteries
 - Runtime on 18 cores: about 10-15 minutes for 2,480 games (depends on your bot's speed). Output:
   `mapintel_battery_<NAME>_<UTC stamp>.tar.gz` (ledger rows, compact statistics, replays; ~25 KB a game, `--no-replays` to drop them).
 - Options: `--opps`, `--maps`, `--jobs` (default: CPUs - 1), `--per-map C`, `--skip-outcome`, `--skip-roster`, `--no-replays`.
-- The repository path must not contain spaces (`cambc run-batch` manifests are split on spaces).
+- The repository path must not contain spaces (`cambc run-batch` manifests are split on spaces): see "Before you start" for the Windows workaround.
 
 ### 3. Deep learning (step 7) on your GPU: `dl/run_dl.sh`
 ```bash
@@ -77,10 +93,10 @@ tools/mapintel/export_headers.py`; after a battery of your bot (its archive has 
 |---|---|---|
 | `features.h` | `load_view(team_size)` (the map, groups and BFS fields), `compute_features(view)` (47 runtime features), `fingerprint(view)` | COMPUTED |
 | `fingerprint.h` | `fingerprint()`: the exact-match key (FNV-1a 64); prefer `fingerprint(view)` (same value, no second `camp_groups()`) | COMPUTED |
-| `plans.h` | `Compact` (per-group tables), `base_plans()` (plans 2-4), `Compact::row(type)` and `plan1(picks, P, rank)` (plan 1: the first_scores() ranking's top groups assigned to the bodies by walk + work; held out it matches the top teams' first groups 0.717 vs 0.632 for the old greedy) for unknown maps | COMPUTED + LEARNED |
+| `plans.h` | `Compact` (per-group tables; its work uses the fitted economy constants of `model_weights.h` `econ_constants()`), `base_plans()` (plans 2-4; plan 2 by the walk, one BFS per candidate altar: 0.98 of the groups get the catalog's altar), `Compact::row(type)` and `plan1(picks, P, rank)` (plan 1: the first_scores() ranking's top groups assigned to the bodies by walk + work; held out it matches the top teams' first groups 0.696 vs 0.605 for the greedy without a ranking, body accuracy 0.177 vs 0.155) for unknown maps | COMPUTED + LEARNED |
 | `dmem.h` | `dmem_pack()` / `dmem_put()` (the draft-memory block at offset 512) and `dmem_get()` / `Block` (read it in the game) | - |
 | `known_maps.h` | generated: the table of the 40 official maps, `find_known(fp)`, `known_team(view, entry)` | COMPUTED + LEARNED |
-| `model_weights.h` | generated: `zfeat()`, `archetype_of()`, `champion_values()`, `first_scores()` (opening score: a 20-tree forest, 61k fuel) | COMPUTED + LEARNED + SIMULATED |
+| `model_weights.h` | generated: `zfeat()`, `archetype_of()`, `pick_prior()` (the default draft signal on unknown maps, < 3k fuel), `champion_values()` (secondary), `first_scores()` (opening score: a logistic on the group features, <= 86k fuel), `p4_thresholds()`, `econ_constants()` (the compact work's heal-trip share and camp damage scale) | COMPUTED + LEARNED + SIMULATED |
 | `force_roster.h` | `forced_pick()` for the roster battery only (inert without a generated `mi_roster.h`) | - |
 | `dl_weights.h` | generated by `dl/dl_export.py` only when a step-7 model beats step 6: `dl_inputs()`, `dl_opening_scores()`, `dl_next_scores(..., &candidates)` (about 1,600 fuel a group: score a candidate list in game turns), `dl_champion_values()` | LEARNED / SIMULATED |
 
@@ -96,13 +112,20 @@ view.emplace(mapintel::load_view());                      // ~160-300k
 const auto fp = mapintel::fingerprint(*view);             // ~40-70k
 F.emplace(mapintel::compute_features(*view));             // ~50-240k
 C.emplace(*view, *F);
-auto P = mapintel::base_plans(*C, *view, *F);             // plans 2-4, ~50-160k
+auto P = mapintel::base_plans(*C, *view, *F);             // plans 2-4, ~50-255k
 const int e = mapintel::find_known(fp);                   // >= 0: KNOWN[e] has the catalog's plans and the ladder's draft data
 double z[mapintel::MW_NF], value[12];
 mapintel::zfeat(*F, z);
-const int arch = mapintel::archetype_of(z);              // unknown maps: archetype and LEARNED champion values from the features
+const int arch = mapintel::archetype_of(z);              // unknown maps: the archetype from the features
+// the draft signal. DEFAULT (LEARNED, current-patch ranked games): the strong teams' pick prior, per champion (champion_draft ids):
+//   known map:   KNOWN[e].pick_strong[c] / 200.0                 (that map's own top-20-team pick rate)
+//   unknown map: pick_prior(z, rate, first)                      (rate and first-pick share predicted from the map's features)
+// SECONDARY (SIMULATED v10, flagged: GOD v10's roster battery, until a battery of your bot replaces it with run_battery.sh):
+//   KNOWN[e].value[c] / 1000.0, or champion_values(z, value)     (log-odds per champion)
+double rate[12], first[12];
+mapintel::pick_prior(z, rate, first);
 mapintel::champion_values(z, value);
-const auto sc = mapintel::first_scores(*C, *view, *F);  // ~61k: the LEARNED opening ranking; keep the 6-16 best groups:
+const auto sc = mapintel::first_scores(*C, *view, *F);  // <= 86k: the LEARNED opening ranking; keep the 6-16 best groups:
 std::vector<int> rank;                                    // reached groups by score, best first (ties to the lower index)
 // each later draft turn: C->row(type) for the bodies of the champion you just picked (<= 13k each)
 // the turn the roster is complete: C->plan1(our_picks, P, rank) (<= 40k; without rank the older greedy plan 1, <= 25k), then write

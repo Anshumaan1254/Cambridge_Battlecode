@@ -10,15 +10,16 @@ Per official map and team, the reference roster (the catalog's first; both teams
   plan 1    the first targets of compact.plan1(picks, rank) against the same ranking assigned by the catalog economy (plan1_learn's
             fs_catalog: the table's `ref_first`): bodies with the same first target, maps with any difference
   plan 2    compact.bank_altars() against the catalog's plan-2 altar per group (`bank_routes`): groups with the same altar
-Mechanics tried one at a time on top of the compact model (Python only; a mechanic goes into plans.h when it changes plan 1 or plan 2
-on several maps toward the catalog and its fuel fits):
+Mechanics tried one at a time on top of the compact model as it was before change 5 ("none": heal share 0.7, no damage scale; Python
+only; a mechanic goes into plans.h when it changes plan 1 or plan 2 on several maps toward the catalog and its fuel fits). Adopted:
+econ (compact.work now = this file's "econ", asserted below) and walk2 (compact.bank_altars now; the box version is bank_altars_box):
   econ      the fitted economy constants: heal trips usable down to the retreat line (1 - retreat of economy.econ() instead of 0.7) and
             the damage scale on camps (dmg_mult)
   shield    Varg / Heart of Ruin shields absorb mod x focus per cooldown of the damage taken
   stun      a camp stunned skips its attacks: damage taken x (1 - stuns per round)
   ren       Ren's retaliation: + ren_ret x focus x half the group's striking camps, per round, as damage dealt
   hor       Heart of Ruin's missing-health bonus: + 25% damage (the mean of 0 to 50% over a fight from full to the retreat line)
-  walk2     plan 2 by the walk from the group to the approach tiles (one BFS per altar) instead of the Chebyshev box distance
+  walk2     plan 2 by the walk from the group to the approach tiles (one BFS per altar) instead of the Chebyshev box distance (compact.bank_altars_box)
 Writes report.md and results.json."""
 import argparse, json, math, os, statistics, sys
 from collections import defaultdict
@@ -48,10 +49,6 @@ class Variant(CP.Compact):
 		key = ("v", b, g)
 		if key in self._bm:
 			return self._bm[key]
-		if self.mech == "none":
-			v = super().work(b, g)
-			self._bm[key] = v
-			return v
 		E = EC.engine()
 		d = E.champs[b]
 		S = EC.settings()
@@ -114,7 +111,7 @@ def main():
 	ftw = json.load(open(os.path.join(ROOT, "experiments/results/mapintel/first_targets/weights.json")))
 	tf = json.load(open(os.path.join(ROOT, "experiments/results/mapintel/plan1/table_first.json")))["maps"]
 	res = {m: {"work_logratio": [], "plan1_same": 0, "plan1_bodies": 0, "plan1_maps_diff": 0, "plan1_changed_maps": 0} for m in MECH}
-	p2 = {"compact": [0, 0], "walk2": [0, 0]}
+	p2 = {"compact": [0, 0], "walk2": [0, 0], "runtime": [0, 0]}
 	per_map = {}
 	for mp in mapdata.official_names():
 		M = mapdata.load(mp)
@@ -133,6 +130,12 @@ def main():
 			bodies = [b for p in picks for b in pick_bodies(p)][:CP.NSLOT]
 			for mech in MECH:
 				V = Variant(M, t, mech)
+				if mech == "econ":
+					base = CP.Compact(M, t)
+					for b_ in sorted(set(bodies)):
+						for g_ in range(len(M.groups)):
+							if V.dU[g_] >= 0 and V.work(b_, g_) != base.work(b_, g_):
+								raise SystemExit(f"{mp}: compact.work != the econ mechanic for body {b_} group {g_}")
 				_, pl = V.plan1(picks, rank)
 				first = [x[0][0] if x else None for x in pl]
 				if mech == "none":
@@ -153,7 +156,8 @@ def main():
 								res[mech]["work_logratio"].append(math.log(V.work(b, g) / (r.rounds + 6.0)))
 			# plan 2
 			C = CP.Compact(M, t)
-			bank_c = C.bank_altars()
+			bank_c = C.bank_altars_box()
+			bank_w = C.bank_altars()
 			want = {}
 			for r_ in cat["bank_routes"]:
 				for tt in r_["teams"]:
@@ -177,6 +181,8 @@ def main():
 						best = (cost, k)
 				p2["walk2"][1] += 1
 				p2["walk2"][0] += 1 if best and best[1] == alt else 0
+				p2["runtime"][1] += 1
+				p2["runtime"][0] += 1 if bank_w[g] == alt else 0
 		per_map[mp] = {f"{t}_{m}": v for (t, m), v in row.items()}
 	out = {m: {"work_log_ratio_median": float(np.median(v["work_logratio"])) if v["work_logratio"] else None,
 			   "work_abs_log_ratio_median": float(np.median(np.abs(v["work_logratio"]))) if v["work_logratio"] else None,
@@ -195,7 +201,8 @@ def main():
 		L.append(f"| {m} | {o['work_log_ratio_median']:+.3f} | {o['work_abs_log_ratio_median']:.3f} | {o['plan1_body_agreement']:.3f} | "
 				 f"{o['plan1_map_teams_differing']} | {o['plan1_map_teams_changed']} |")
 	L += ["", f"Plan 2 (the bank altar per group equal to the catalog's): compact box distance {out['plan2']['compact']:.3f}, walk from the group "
-		  f"(one BFS per altar) {out['plan2']['walk2']:.3f}."]
+		  f"(one BFS per altar) {out['plan2']['walk2']:.3f}; the runtime plan 2 now (compact.bank_altars = plans.h, recall cost from the approach "
+		  f"tiles' fc) {out['plan2']['runtime']:.3f}."]
 	open(os.path.join(a.out, "report.md"), "w").write("\n".join(L) + "\n")
 	print("\n".join(L))
 

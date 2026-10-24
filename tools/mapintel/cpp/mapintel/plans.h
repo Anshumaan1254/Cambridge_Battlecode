@@ -185,11 +185,11 @@ inline GroupPrep group_prep(const Group& g)
 	return p;
 }
 
-// (kill rounds, damage taken) of one body solo on a group: compact.body_model.
-inline std::pair<double, double> body_model(const Kit& k, bool varg, const GroupPrep& p)
+// (kill rounds, damage taken) of one body solo on a group: compact.body_model (dmg_mult: econ_constants()).
+inline std::pair<double, double> body_model(const Kit& k, bool varg, const GroupPrep& p, double dmg_mult)
 {
 	const double basic = k.str * (1.0 + (k.reset ? 1.0 / 8.0 : 0.0)) * (1.0 + (varg ? p.adj : 0.0));
-	const double dps = basic + k.single + k.area * (1.0 + p.adj);
+	const double dps = (basic + k.single + k.area * (1.0 + p.adj)) * dmg_mult;
 	return { p.tot / dps, p.S / dps };
 }
 // compact.assign_dp: the cheapest assignment of n rows (bodies, slot order) to distinct columns of the first m of cost (n, m <= NSLOT);
@@ -259,12 +259,17 @@ inline void p4_formula(const Features& F, const MapView& m, int t[8])
 // the thresholds a bot uses: model_weights.h defines it (the formulas with the LEARNED thresholds of plan4_learn.py written over them,
 // MAPINTEL_P4_FITTED); without a fitted model the end of this file defines it as the formulas
 inline void p4_thresholds(const Features& F, const MapView& m, int t[8]);
+// the economy constants of the compact work (compact.econ_constants): the share of a body's health a heal trip uses (1 - the retreat
+// line) and the damage scale on camps, LEARNED by econ_learn.py; model_weights.h defines them (MAPINTEL_ECON_FITTED), otherwise the end
+// of this file: 0.7 and 1.0
+inline void econ_constants(double& heal_use, double& dmg_mult);
 
 class Compact
 {
 public:
 	Compact(const MapView& m, const Features& F) : m_(m), F_(F)
 	{
+		econ_constants(use_, dm_);
 		G_ = static_cast<int>(m.groups.size());
 		const auto G = static_cast<std::size_t>(G_);
 		dU.resize(G), dE.resize(G), val.resize(G), bx.resize(G);
@@ -292,10 +297,10 @@ public:
 	std::vector<detail::GroupPrep> prep;
 
 	// rounds at group g after arriving (compact.work): kill + heal trips + capture
-	static double work(const detail::Kit& k, bool varg, const detail::GroupPrep& gp, int d)
+	double work(const detail::Kit& k, bool varg, const detail::GroupPrep& gp, int d) const
 	{
-		const auto e = detail::body_model(k, varg, gp);
-		const double trips = std::max(0.0, std::ceil(e.second / (0.7 * k.hp)) - 1.0);
+		const auto e = detail::body_model(k, varg, gp, dm_);
+		const double trips = std::max(0.0, std::ceil(e.second / (use_ * k.hp)) - 1.0);
 		const int trip = std::min(d, 6) + 1 + d;
 		return e.first + trips * trip + 6.0;
 	}
@@ -318,7 +323,7 @@ public:
 		R.type = type;
 		const detail::Kit k = detail::kit(type);
 		const bool varg = type == static_cast<int>(cambc::champion_type::varg);
-		const double basic0 = k.str * (1.0 + (k.reset ? 1.0 / 8.0 : 0.0)), hp7 = 0.7 * k.hp;
+		const double basic0 = k.str * (1.0 + (k.reset ? 1.0 / 8.0 : 0.0)), hp7 = use_ * k.hp;
 		const int nr = static_cast<int>(rg_.size());
 		const Rg* q = rg_.data();
 		for (int r = 0; r < nr; ++r)
@@ -326,7 +331,7 @@ public:
 			// compact.work and compact.row: the same operations in the same order
 			const Rg& e = q[r];
 			const double basic = varg ? basic0 * e.adj1 : basic0 * 1.0;
-			const double dps = basic + k.single + k.area * e.adj1;
+			const double dps = (basic + k.single + k.area * e.adj1) * dm_;
 			const double kill = e.tot / dps, dmg = e.S / dps;
 			const double trips = std::max(0.0, std::ceil(dmg / hp7) - 1.0);
 			const double w = kill + trips * e.trip + 6.0;
@@ -347,19 +352,19 @@ public:
 	double work_at(const detail::Kit& k, int type, int g) const
 	{
 		const bool varg = type == static_cast<int>(cambc::champion_type::varg);
-		const double basic0 = k.str * (1.0 + (k.reset ? 1.0 / 8.0 : 0.0)), hp7 = 0.7 * k.hp;
+		const double basic0 = k.str * (1.0 + (k.reset ? 1.0 / 8.0 : 0.0)), hp7 = use_ * k.hp;
 		if (g < 0 || g >= static_cast<int>(rgi_.size()) || rgi_[static_cast<std::size_t>(g)] < 0)
 			return 0.0;
 		const Rg& e = rg_[static_cast<std::size_t>(rgi_[static_cast<std::size_t>(g)])];
 		const double basic = varg ? basic0 * e.adj1 : basic0 * 1.0;
-		const double dps = basic + k.single + k.area * e.adj1;
+		const double dps = (basic + k.single + k.area * e.adj1) * dm_;
 		const double kill = e.tot / dps, dmg = e.S / dps;
 		const double trips = std::max(0.0, std::ceil(dmg / hp7) - 1.0);
 		return kill + trips * e.trip + 6.0;
 	}
 
 	// plan 1: compact.plan1. First targets: with rank (the groups by first_scores() of model_weights.h, best first, computed on an
-	// earlier draft turn: it costs ~61k), the first n reached groups of it assigned to the n bodies by the cheapest total of walk to
+	// earlier draft turn: it costs up to ~86k), the first n reached groups of it assigned to the n bodies by the cheapest total of walk to
 	// attack range + work (detail::assign_dp); without rank, the greedy (body, group) pairs by first-target rate. Then 3 more per body
 	// from its candidate row, one 2-opt pass.
 	void plan1(std::span<const int> picks, Plans& P, std::span<const int> rank = {})
@@ -493,75 +498,84 @@ public:
 			}
 	}
 
-	// plan 2: bank altar per group (compact.bank_altars). The same result as compact's scan of every approach tile (altars in row-major
-	// order, tiles in (dy, dx) order, the first tile with the least cost min(walk, 6 + spawn walk) wins), computed in two parts: the
-	// recall cost 6 + f does not depend on the group (its least value and first tile once), and the walk's least value and first tile
-	// per group, skipping altars that cannot beat the best walk so far (an approach tile is within 1 of its altar). The first tile with
-	// the least cost is then the earlier of the two first tiles (or the only one that reaches the minimum).
+	// plan 2 by the walk (compact.bank_altars; the user's change 5 of Oct 24: 0.98 of the groups get the catalog's altar, 0.81 with
+	// bank_altars_box): per altar, in altar order, one BFS from its approach tiles through the ally's passable tiles; a group's cost
+	// there = min(the walk to its nearest camp tile, 6 + the least fc of the approach tiles); per group the first altar with the least
+	// cost (255: none). Exact pruning (the same result as Python's full loop): the walk from an approach tile is at least the Chebyshev
+	// distance from the group's box to the altar - 1, and every group's least cost is at most the least recall cost rec*, so an altar
+	// is skipped for a group when min(that bound, its recall cost) > rec* (its cost is then strictly above the group's least), and its
+	// BFS is skipped when that holds for every group.
 	std::vector<int> bank_altars() const
 	{
-		struct Ap
-		{
-			int x, y, a;
-		};
-		struct Al
-		{
-			int x, y, begin, end;
-		};
 		constexpr int INF = 1 << 29;
-		std::vector<Ap> ap;
-		std::vector<Al> al;
-		ap.reserve(m_.altar_tiles.size() * 8), al.reserve(m_.altar_tiles.size());
-		int rbest = INF, rfirst = -1;
-		for (int a = 0; a < static_cast<int>(m_.altar_tiles.size()); ++a)
+		const int nA = static_cast<int>(m_.altar_tiles.size()), area = m_.W * m_.H;
+		std::vector<int> rec(static_cast<std::size_t>(nA), INF), nroot(static_cast<std::size_t>(nA), 0);
+		int rstar = INF;
+		for (int a = 0; a < nA; ++a)
 		{
 			const auto at = m_.altar_tiles[static_cast<std::size_t>(a)];
-			Al A{ at.x, at.y, static_cast<int>(ap.size()), 0 };
 			for (int dy = -1; dy <= 1; ++dy)
 				for (int dx = -1; dx <= 1; ++dx)
 				{
 					const int x = at.x + dx, y = at.y + dy;
 					if ((dx == 0 && dy == 0) || !m_.in(x, y) || !m_.pass(0, x, y))
 						continue;
-					const int f = m_.fc[0][m_.at(x, y)];
-					if (f >= 0 && 6 + f < rbest)
-						rbest = 6 + f, rfirst = static_cast<int>(ap.size());
-					ap.push_back({ x, y, a });
+					++nroot[static_cast<std::size_t>(a)];
+					const int v = m_.fc[0][m_.at(x, y)];
+					if (v >= 0 && 6 + v < rec[static_cast<std::size_t>(a)])
+						rec[static_cast<std::size_t>(a)] = 6 + v;
 				}
-			A.end = static_cast<int>(ap.size());
-			if (A.end > A.begin)
-				al.push_back(A);
+			rstar = std::min(rstar, rec[static_cast<std::size_t>(a)]);
 		}
-		std::vector<int> out;
-		out.reserve(static_cast<std::size_t>(G_));
-		for (int g = 0; g < G_; ++g)
+		std::vector<int> best(static_cast<std::size_t>(G_), INF), out(static_cast<std::size_t>(G_), 255);
+		std::vector<std::uint8_t> cand(static_cast<std::size_t>(G_));
+		std::unique_ptr<std::uint16_t[]> f;
+		for (int a = 0; a < nA; ++a)
 		{
-			// Chebyshev distance from the group's box to a tile: max(b0 - x, x - b2, b1 - y, y - b3, 0)
-			const auto& b = bx[static_cast<std::size_t>(g)];
-			const int b0 = b[0], b1 = b[1], b2 = b[2], b3 = b[3];
-			int wbest = INF, wfirst = -1;
-			for (const Al& A : al)
+			if (nroot[static_cast<std::size_t>(a)] == 0)
+				continue;
+			const auto at = m_.altar_tiles[static_cast<std::size_t>(a)];
+			const int ra = rec[static_cast<std::size_t>(a)];
+			int nc = 0;
+			for (int g = 0; g < G_; ++g)
 			{
-				const int d = std::max(std::max(std::max(b0 - A.x, A.x - b2), std::max(b1 - A.y, A.y - b3)), 0);
-				const int lo = d > 0 ? d - 1 : 0;
-				if (lo >= wbest)
-					continue;
-				for (int k = A.begin; k < A.end; ++k)
-				{
-					const Ap& p = ap[static_cast<std::size_t>(k)];
-					const int walk = std::max(std::max(std::max(b0 - p.x, p.x - b2), std::max(b1 - p.y, p.y - b3)), 0);
-					if (walk < wbest)
-					{
-						wbest = walk, wfirst = k;
-						if (walk == lo) // no later tile of this altar can be strictly shorter
-							break;
-					}
-				}
+				const auto& b = bx[static_cast<std::size_t>(g)];
+				const int d = std::max(std::max(std::max(b[0] - at.x, at.x - b[2]), std::max(b[1] - at.y, at.y - b[3])), 0);
+				const bool c = rstar >= INF || std::min(d > 0 ? d - 1 : 0, ra) <= rstar;
+				cand[static_cast<std::size_t>(g)] = c ? 1 : 0;
+				nc += c ? 1 : 0;
 			}
-			int t = -1;
-			if (wfirst >= 0 || rfirst >= 0)
-				t = wbest < rbest ? wfirst : rbest < wbest ? rfirst : std::min(wfirst, rfirst);
-			out.push_back(t >= 0 ? ap[static_cast<std::size_t>(t)].a : 255);
+			if (nc == 0)
+				continue;
+			cambc::bitboard roots;
+			for (int dy = -1; dy <= 1; ++dy)
+				for (int dx = -1; dx <= 1; ++dx)
+				{
+					const int x = at.x + dx, y = at.y + dy;
+					if ((dx || dy) && m_.in(x, y) && m_.pass(0, x, y))
+						roots.set({ x, y });
+				}
+			cambc::distance_field df;
+			cambc::bitboard visited;
+			df.compute(m_.blocked[0], roots, visited);
+			if (!f)
+				f.reset(new std::uint16_t[static_cast<std::size_t>(area)]);
+			df.export_linear_buffer(std::span<std::uint16_t>(f.get(), static_cast<std::size_t>(area)));
+			for (int g = 0; g < G_; ++g)
+			{
+				if (!cand[static_cast<std::size_t>(g)])
+					continue;
+				int w = INF;
+				for (const auto& c : m_.groups[static_cast<std::size_t>(g)].camps)
+				{
+					const int v = f[static_cast<std::size_t>(m_.at(c.x, c.y))];
+					if (v != 65535 && v < w)
+						w = v;
+				}
+				const int cost = std::min(w, ra);
+				if (cost < best[static_cast<std::size_t>(g)])
+					best[static_cast<std::size_t>(g)] = cost, out[static_cast<std::size_t>(g)] = a;
+			}
 		}
 		return out;
 	}
@@ -619,6 +633,7 @@ private:
 		double adj1, tot, S, val;
 	};
 	std::vector<Rg> rg_;	// reached groups with their body-independent terms (row())
+	double use_ = 0.7, dm_ = 1.0;  // econ_constants()
 	std::vector<int> rgi_;	// group -> its entry in rg_ (-1: not reached)
 };
 
@@ -692,6 +707,15 @@ namespace mapintel
 inline void p4_thresholds(const Features& F, const MapView& m, int t[8])
 {
 	p4_formula(F, m, t);
+}
+} // namespace mapintel
+#endif
+#ifndef MAPINTEL_ECON_FITTED
+namespace mapintel
+{
+inline void econ_constants(double& heal_use, double& dmg_mult)
+{
+	heal_use = 0.7, dmg_mult = 1.0;
 }
 } // namespace mapintel
 #endif

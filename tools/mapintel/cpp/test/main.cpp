@@ -3,10 +3,13 @@
 // each turn, and prints the results on turns where printing does not hide the measurement:
 //   turn 1: load_view, fingerprint(view), compute_features, Compact, base_plans (plans 2-4), row() of the first test pick's bodies
 //           MI T fp <hex> ts <n> fuel_view <f> fuel_fp <f> fuel_feat <f> fuel_base <f> fuel_row <f> table <0|1> turn_fuel_left <f>
-//   turn 2: row() of the second test pick (MI R2 fuel_row <f>)
-//   turn 3: rows of the remaining test picks + plan 1 (measured; with turn 1's first_scores() ranking when model_weights.h has it), the draft-memory block packed and written to the engine whole, then a
+//   turn 2: row() of the second test pick (MI R2 fuel_row <f>); with model_weights.h's pick_prior(): MI PP <12 pick rates and 12
+//           first-pick shares as uint16 x 10000, little endian> fuel <f>
+//   turn 3 (turn 4 for 5-champion teams, whose turn 3 computes pick 3's rows: MI R3 fuel_rows <f>): rows of the remaining test picks
+//           + plan 1 (measured; with turn 1's first_scores() ranking when model_weights.h has it), the draft-memory block packed and written to the engine whole, then a
 //           4-byte write from offset 0 as GOD v10 makes: MI R fuel_rows <f> fuel_plan1 <f> turn_fuel_left <f> fuel_pack_write <f>
-//   turn 4 (teams of 4+): the plans: MI P1 slot body (g arrive_bits end_bits)..., MI P2 banks, MI P3 band (g dU dE)..., MI P4 ... mode m
+//   turn 4 (teams of 4; turn 5 for teams of 5): the plans: MI P1 slot body (g arrive_bits end_bits)..., MI P2 banks, MI P3 band
+//           (g dU dE)..., MI P4 ... mode m
 //   turns 5+: plan 1 again from the cached rows: MI L turn_fuel_left <f> plan_fuel <f> nbody <n>
 //   each champion's first game turn: MI G <hex|none> prefix <byte> (the block read back; the test compares it with compact.pack) and
 //           MI FX <47 doubles' bits, FEATURE_NAMES order> known <int32 hex> kteam <int32 hex> (written by turn 3 at offsets 128-511),
@@ -246,12 +249,44 @@ static void turn2(State& S)
 	}
 	const auto g1 = bc::fuel_remaining();
 	line("MI R2 fuel_row " + std::to_string(g0 - g1));
+#ifdef MAPINTEL_PICK_PRIOR
+	{
+		double z[mapintel::MW_NF], rate[12], first[12];
+		mapintel::zfeat(*S.F, z);
+		const auto a = bc::fuel_remaining();
+		mapintel::pick_prior(z, rate, first);
+		const auto fu = a - bc::fuel_remaining();
+		std::uint8_t b[48];
+		for (int c = 0; c < 12; ++c)
+		{
+			const auto r = static_cast<std::uint16_t>(std::floor(rate[c] * 10000.0 + 0.5)), f = static_cast<std::uint16_t>(std::floor(first[c] * 10000.0 + 0.5));
+			b[2 * c] = static_cast<std::uint8_t>(r & 255), b[2 * c + 1] = static_cast<std::uint8_t>(r >> 8);
+			b[24 + 2 * c] = static_cast<std::uint8_t>(f & 255), b[25 + 2 * c] = static_cast<std::uint8_t>(f >> 8);
+		}
+		line("MI PP " + hex(b, 48) + " fuel " + std::to_string(fu));
+	}
+#endif
 }
 
-static void turn3(State& S)
+// rows of test picks [from, to) only (5-champion teams, turn 3: a real bot computes each pick's rows on that pick's turn)
+static void rows_only(State& S, int from, int to)
 {
 	const auto g0 = bc::fuel_remaining();
-	for (int k = 2; k < S.npk; ++k)
+	for (int k = from; k < to && k < S.npk; ++k)
+	{
+		int b[2];
+		const int nb = mapintel::pick_bodies(mapintel::TEST_PICKS[k], b);
+		for (int j = 0; j < nb; ++j)
+			S.C->row(b[j]);
+	}
+	line("MI R3 fuel_rows " + std::to_string(g0 - bc::fuel_remaining()));
+}
+
+// the rows of test picks from `from` on, plan 1, the block (turn 3; turn 4 for 5-champion teams)
+static void turn3(State& S, int from = 2)
+{
+	const auto g0 = bc::fuel_remaining();
+	for (int k = from; k < S.npk; ++k)
 	{
 		int b[2];
 		const int nb = mapintel::pick_bodies(mapintel::TEST_PICKS[k], b);
@@ -303,9 +338,13 @@ int main()
 					turn1(S);
 				else if (S.turn == 2 && S.F)
 					turn2(S);
+				else if (S.turn == 3 && S.C && S.npk >= 5)
+					rows_only(S, 2, 3); // 5 picks (up to 6 bodies): pick 3's rows now, the rest with plan 1 on turn 4
 				else if (S.turn == 3 && S.C)
 					turn3(S);
-				else if (S.turn == 4 && S.C)
+				else if (S.turn == 4 && S.C && S.npk >= 5)
+					turn3(S, 3);
+				else if ((S.turn == 4 && S.C && S.npk < 5) || (S.turn == 5 && S.C && S.npk >= 5))
 					line(describe_bits(S.P)); // stdout costs fuel per byte: the plans print on a turn of their own
 				else if (S.C)
 				{

@@ -349,14 +349,15 @@ def evaluate(name, params, jobs, verbose=True):
 	return E
 
 
-CHOSEN = {"retreat": 0.52, "heal_frac": 0.9, "bank_bag": 20, "shop_gold": 115, "gold_w": 0.02, "pace_gold_w": 0.02, "dmg_mult": 1.3}
+CHOSEN = {"retreat": 0.52, "heal_frac": 0.9, "bank_bag": 20, "shop_gold": 115, "gold_w": 0.167, "pace_gold_w": 0.167, "dmg_mult": 1.3}
 WHY = {"retreat": "measured: median health at a mid-fight heal trip (3,109 trips); also the best pace Spearman of the grid",
 	   "heal_frac": "fitted (grid 0.3-0.95): the top teams go home after a capture 59% of the time at a median health of 0.93, so health does "
 					"not separate the decision; 0.9 keeps the model going home after most jobs",
 	   "bank_bag": "fitted to the real bank sizes (median 26 gems over 24,945 banks): bag 20 gives the model's median bank 28",
 	   "shop_gold": "measured: median unspent gold at a shop visit after a recall with an empty bag (18,572 visits)",
-	   "gold_w": "measured: the top teams' next-group choice (12,000 choices; gems, gold, walk, health, heavy) values 1 gold as 0.020 gems",
-	   "pace_gold_w": "the same measurement (it equals the old default)",
+	   "gold_w": "measured: the top teams' next-group choice (12,000 choices with the gold-only captures; gems, gold, walk, health, heavy "
+				 "controls) values 1 gold as 0.167 gems (0.020 when the decoder missed the gold-only captures)",
+	   "pace_gold_w": "the same measurement",
 	   "dmg_mult": "fitted to the real kill durations (1-2 attacker kills, 43,782 episodes): 1.3 makes the model's median kill time equal",
 	   "contest": "LEARNED logistic of the team's capture share of a group on (their walk - ours) / band, all ladder captures; the pace check "
 				  "uses out-of-fold coefficients"}

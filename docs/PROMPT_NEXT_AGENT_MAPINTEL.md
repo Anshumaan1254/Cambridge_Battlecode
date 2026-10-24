@@ -40,16 +40,18 @@ Everything else in `AGENTS.md` and the older docs predates the Oct 20-22 patches
    runtime dumps, geometry, the full-cycle economy model, plans 1-4, per-kit-class tile analysis, the catalog `maps/catalog/`.
 4. **Step 4**: archetypes (k = 3) and 5 archetype-stratified leave-maps-out folds (`maps/catalog/splits.json`).
 5. **Step 6** on the user's ladder archive (8,455 current-patch match rows, 599 decoded replays) and GOD v10's battery:
-   - 3C validation: pace Spearman 0.758 against the top teams' real finishes; plan 2's bank altars hold 97% of 24,945 real banks;
-   - opening score `first_scores()`: a 20-tree boosted forest, 0.717 top-n share on held-out maps (nearest 0.608);
+   - 3C validation: pace Spearman 0.758 against the top teams' real finishes (0.802 held out after change 2's fit, below); plan 2's
+     bank altars hold 97% of 24,945 real banks;
+   - opening score `first_scores()`: since the gold-only capture fix (below) a logistic on 22 group features, 0.696 top-n share on
+     held-out maps (forest 0.689, nearest groups 0.648);
    - draft values: the ladder has no champion signal over team rating (log loss 0.6829 rating only vs 0.6847 with champions); the
      values come from GOD v10's roster battery (log loss 0.622 vs 0.662 side only): SIMULATED (v10), to be refitted on the user's bot;
    - per-map pick prior of the strong teams (`maps/catalog/draft_prior.json`), behaviour targets (`maps/catalog/behaviour.json`).
 6. **Step 8**: the header-only C++ library `tools/mapintel/cpp/mapintel/` (features, fingerprint, plans, draft-memory block at offset
    512, forced rosters for the battery, the generated `known_maps.h` and `model_weights.h`), its test bot and `test_library.py`: features
    and plans bit-equal to Python on 40 maps x 2 teams, the table lookup, perturbed maps take the fallback, the block survives GOD v10's
-   own write, fuel within limits (609k worst first draft turn); builds on SDK 3.0.5 and 3.0.4.
-7. **Step 7 (built at the user's request on Oct 24; not run yet on a GPU)**: `tools/mapintel/dl/`:
+   own write, fuel within limits (735k worst first draft turn, 778k with `first_scores()` on it); builds on SDK 3.0.5 and 3.0.4.
+7. **Step 7 (built at the user's request on Oct 24; run on the user's RTX 5070 laptop GPU, nothing beat step 6)**: `tools/mapintel/dl/`:
    - `make_dataset.py` -> `experiments/results/mapintel/dl_data/` (committed: dataset.npz + meta.json with the step-6 bars);
    - `dl_train.py` (torch): T1a opening (MLP, group-graph attention with a learned distance bias, distillation), T1b next target (the
      same three: behaviour cloning of the top teams' target choice), T2 champion values per map (values MLP, deep set), T3 heat maps
@@ -59,26 +61,40 @@ Everything else in `AGENTS.md` and the older docs predates the Oct 20-22 patches
      --dl-weights` checks the header in the engine: tested with forced weights on 78 map-teams, rankings and values equal Python exactly;
      fuel: inputs 62k, opening 92k (draft turn), next target 40k a call on 16 candidates (all 64 groups 107k: too much for a game turn),
      values 4k. The forced test header was deleted (no `dl_weights.h` is committed until a real run beats step 6).
-   - Not trained here: a CPU check was stopped at the user's request (only the opening MLP finished: 0.670 held-out share, below the
-     forest's 0.723; one seed, so not a result). The run is the user's, on their RTX 5070 laptop GPU (`run_dl.sh` requires a working
-     CUDA GPU unless `--cpu` is given).
+   - The user's GPU run (3 seeds, results in `experiments/results/mapintel/dl_model_20261024_1014/`, MAPAnalysis 7.2 at 10:40): T1a
+     MLP 0.676 / graph 0.653 / distilled 0.672 against the forest's 0.723, T1b no gain, T2 0.668 against 0.622 but not by the margin,
+     T3 heat maps 0.519 against 0.221 (research only). Nothing exported, no `dl_weights.h`. The run used the replays as decoded before
+     the gold-only capture fix; a re-run is optional (the user's call).
+8. **The user's changes of Oct 24 (after the first handoff), all done** (MAPAnalysis 7.2, 10:35 to 15:30):
+   - the decoder missed gold-only captures (`CaptureGold`, `decode.mjs --gold-captures`): every capture-based result re-run;
+   - change 1: plan 4 LEARNED (`plan4_learn.py`, `p4model.py`, `model_weights.h` `p4_thresholds()`): one value per map beats the formulas
+     held out for k_abandon, p, d_regroup and the bank margin; no map feature moved them; w_max stays the formula;
+   - change 2: the economy constants fitted to the top teams' replays (`econ_learn.py`, `experiments/results/mapintel/economy/`): pace
+     Spearman 0.802 held out (0.758 before) with an opposition share term; the catalog rebuilt;
+   - change 3: plan 1 = the `first_scores()` ranking's top groups assigned by walk + work (exact subset DP, `plan1(picks, P, rank)`),
+     held-out body accuracy 0.177 (`plan1_learn.py`, per kit class); the table's `ref_first` from the catalog economy;
+   - change 4: the strong teams' pick prior is the default draft signal (`pick_strong` in the table, `pick_prior()` for unknown maps),
+     GOD v10's values flagged secondary;
+   - change 5: the runtime fallback against the catalog (`fallback_gap.py`): the fitted economy constants (`econ_constants()`) and plan 2
+     by the walk added; shields, stuns, Ren's retaliation, Heart of Ruin's bonus measured and not added;
+   - change 6: the README's "Before you start: three limits" (first-turn fuel, draft memory below 512, no spaces in the repository path
+     with the Windows workarounds);
+   - the T3 heat maps as plan 3 / plan 4 features: tested, not adopted (`heat_features.py`).
 
 ## What is left (in order)
-1. **The step-7 GPU run** (the user, on an RTX 5070 laptop GPU, Windows Git Bash: `bash tools/mapintel/dl/run_dl.sh --quick`, then
-   `bash tools/mapintel/dl/run_dl.sh`; upload `mapintel_dl_<stamp>.tar.gz`). If it stops with the GPU error, the fix is on their side
-   (driver 570+, charger plugged in, high-performance GPU for python.exe, delete `mapintel_work/dlvenv`). When it arrives: unpack it into `experiments/results/mapintel/dl_model_<stamp>/` (its own directory),
-   read `report.md`. For each model marked "export": `python3 -I tools/mapintel/dl/dl_export.py --weights <dir>/dl_weights.json`, then
-   `python3 -I tools/mapintel/test_library.py --dl-weights <dir>/dl_weights.json` (all checks must pass), commit the header and the
-   results, add the README / ISSUES lines. If nothing beats step 6, record that (with the numbers) and leave the step-6 models in use.
-   T3's heat maps (`heat_pred.npz`) are research output: compare them with the catalog's danger and contested tiles; nothing goes into
-   a header from them.
+1. **Optional: a step-7 re-run on the fixed captures** (only if the user asks; rebuild the dataset with `make_dataset.py` first). The
+   user runs it (`bash tools/mapintel/dl/run_dl.sh`, RTX 5070 laptop GPU, Windows Git Bash; GPU fixes: driver 570+, charger plugged in,
+   high-performance GPU for python.exe, delete `mapintel_work/dlvenv`). Unpack the archive into
+   `experiments/results/mapintel/dl_model_<stamp>/`; for each model marked "export": `dl_export.py --weights <dir>/dl_weights.json`, then
+   `test_library.py --dl-weights <dir>/dl_weights.json` (all checks must pass); else record the numbers and keep the step-6 models.
+   T3's heat maps (`heat_pred.npz`) are research output; as plan features they did not help (change list above).
 2. **The user's new bot**: when it exists, `run_battery.sh --bot <copy> --from <their bot>`; then `draft_learn.py --battery-only
    --battery <archive>/battery/games.csv --battery-label NAME`, `export_headers.py`, `test_library.py`, and rebuild the step-7 dataset
    (`make_dataset.py --battery <that games.csv>`) so T2 refits on their play. The current draft values are GOD v10's (SIMULATED v10).
 3. **Integration help**: the user plugs the headers into their bot (`tools/mapintel/README.md`, "how a bot uses it"); answer
    questions, keep the library's tests passing, keep the block at offset 512.
-4. **Pace model calibration**: Spearman 0.76 against the top teams; the slow / fast map types are in 7.2 (08:25). 40 maps are too few
-   for a learned correction; improve the model's mechanics only if the user asks.
+4. **Pace model calibration**: Spearman 0.802 held out against the top teams since change 2 (0.76 before); per map type in 7.2 (11:40).
+   Improve the model's mechanics only if the user asks.
 5. **Contextual ES of parameters** (5.6): deferred until the user's bot exists (it needs a bot with parameters).
 
 ## What was abandoned or dropped, and why

@@ -379,12 +379,38 @@ def shop(ch, gold):
 	return gold
 
 
+def contest_share(ctx, team, coef):
+	"""Per group the team's expected share of its reward against an opponent: 1 / (1 + exp(-(a + b x gap))), gap = (their walk - ours)
+	/ the contested band (compact.py's dU, dE and band; 9 when they cannot reach it); all 1 without coefficients (the unopposed model)."""
+	G = len(ctx.M.groups)
+	if not coef:
+		return [1.0] * G
+	key = ("share", team, coef["a"], coef["b"])
+	cache = ctx.__dict__.setdefault("_share_cache", {})
+	if key not in cache:
+		import compact as CP
+		C = CP.Compact(ctx.M, team)
+		band, _ = C.contested()
+		out = []
+		for g in range(G):
+			gap = 9.0 if C.dE[g] < 0 else max(-9.0, min(9.0, (C.dE[g] - C.dU[g]) / band))
+			out.append(1.0 / (1.0 + math.exp(-(coef["a"] + coef["b"] * gap))))
+		cache[key] = out
+	return cache[key]
+
+
 class Planner:
-	def __init__(self, ctx, team, picks, bank_bag=40, retreat=0.3, heal_frac=0.5, join=True, gold_w=GOLD_W, max_wait=30):
+	def __init__(self, ctx, team, picks, bank_bag=None, retreat=None, heal_frac=None, join=True, gold_w=None, max_wait=30):
+		E = EC.econ()  # the economy constants (LEARNED by econ_learn.py when fitted)
+		bank_bag = E["bank_bag"] if bank_bag is None else bank_bag
+		retreat = E["retreat"] if retreat is None else retreat
+		heal_frac = E["heal_frac"] if heal_frac is None else heal_frac
+		gold_w = E["gold_w"] if gold_w is None else gold_w
 		self.ctx, self.team, self.picks = ctx, team, list(picks)
-		self.value = [g["gems"] + gold_w * g["gold"] for g in ctx.M.groups]
+		self.share = contest_share(ctx, team, E.get("contest"))  # the expected share of each group's reward (1 = unopposed)
+		self.value = [(g["gems"] + gold_w * g["gold"]) * self.share[i] for i, g in enumerate(ctx.M.groups)]
 		self.max_wait = max_wait  # plan 4's drop rule: never commit to a respawn wait longer than this (do something else first)
-		self.shop_gold = 300  # recall home to shop when this much gold is unspent and the bag is empty
+		self.shop_gold = E["shop_gold"]  # recall home to shop when this much gold is unspent and the bag is empty
 		self.bodies = [b for p in picks for b in pick_bodies(p)]
 		self.bank_bag, self.retreat, self.heal_frac, self.join = bank_bag, retreat, heal_frac, join
 		self._cache = {}
@@ -597,8 +623,8 @@ class Planner:
 				claim[g] = k
 			# the capturer (first body) takes the reward; the group respawns after its timer
 			gm = M.groups[g]
-			bag[i] += gm["gems"]
-			gold_gain = int(gm["gold"] * ch.gold_mult())
+			bag[i] += gm["gems"] * self.share[g]  # expected gems: the opponent takes the rest (economy.econ()["contest"]; 1 = unopposed)
+			gold_gain = int(gm["gold"] * ch.gold_mult() * self.share[g])
 			gold[i] += gold_gain
 			gold_earned += gold_gain
 			respawn_at[g] = cap + gm["respawn"]
@@ -668,11 +694,11 @@ def plan1(ctx, team, picks, R0=150, top=None, evaluate=40):
 		None if g is None else ctx.M.groups[g]["id"] for g in combo], "bodies": base.bodies, "plan": res["plan"]}
 
 
-PACE_GOLD_W = 0.02  # the pace counts gems; gold only buys items (a small weight keeps the gold clusters as a tie-break)
+PACE_GOLD_W = 0.02  # default of economy.econ()["pace_gold_w"]: the pace counts gems; gold only buys items
 
 
 def pace(ctx, team, picks):
-	P = Planner(ctx, team, picks, gold_w=PACE_GOLD_W)
+	P = Planner(ctx, team, picks, gold_w=EC.econ()["pace_gold_w"])
 	res = P.run(until=2000, target=int(EC.settings()["winning_gems"]))
 	return {"pace": res["pace"], "banked": res["banked"], "gold_earned": res["gold_earned"]}
 

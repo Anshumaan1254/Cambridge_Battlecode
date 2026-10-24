@@ -37,7 +37,7 @@ import mapdata  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 OUT = os.path.join(ROOT, "experiments/results/mapintel/economy")
-KEYS = ["retreat", "heal_frac", "bank_bag", "shop_gold", "gold_w", "pace_gold_w"]
+KEYS = ["retreat", "heal_frac", "bank_bag", "shop_gold", "gold_w", "pace_gold_w", "dmg_mult"]
 
 
 def cheb(a, b):
@@ -194,6 +194,206 @@ def measure(a):
 	print("bank", {k: v for k, v in J["bank"].items() if k != "per_map_median"}, "kill episodes", sum(len(v) for v in J["kill"].values()))
 
 
+def map_type(M):
+	F = dict(zip(FT.NAMES, FT.compute(M, 0)))
+	if F["n_gem_cluster"] + F["n_gold_cluster"] >= 60:
+		return "many-cluster"
+	return "objective" if F["mono_golem_gem_share"] >= 0.3 else "other"
+
+
+def _eval_map(job):
+	mp, params, combos = job
+	import catalog as CT
+	import plans as P
+	EC.econ().update(params)
+	M = mapdata.load(mp)
+	ctx = P.Ctx(M)
+	R = json.load(open(os.path.join(ROOT, "tools/mapintel/data/battery_rosters.json")))
+	out = {"map": mp, "type": map_type(M), "pace": [], "first": {}, "banks": [], "kill": {}}
+	for ref in CT.reference_rosters(mp, M.team_size, R):
+		Pl = P.Planner(ctx, 0, ref["picks"], gold_w=EC.econ()["pace_gold_w"])
+		res = Pl.run(until=2000, target=int(EC.settings()["winning_gems"]))
+		out["pace"].append(res["pace"] if res["pace"] is not None else 2000)
+		for body in res["plan"]:
+			for st in body:
+				if st.get("do") == "farm":
+					g = st["group"]
+					out["first"][g] = min(out["first"].get(g, 10 ** 9), st["captured"])
+				elif st.get("do") == "bank":
+					out["banks"].append(st["gems"])
+	for key in combos:
+		_, g, t, types = key.split("|")
+		r = EC.fight(M, int(t), [EC.Champ(int(b)) for b in types.split(",")], M.groups[int(g)], ctx.home(int(t)))
+		out["kill"][key] = r.rounds if r.cleared else None
+	return out
+
+
+def contest_rows():
+	"""Per map: (gap, own captures, their captures) per group and team from the ladder summaries (gap as in plans.contest_share)."""
+	import compact as CP
+	rows = defaultdict(list)
+	for f in sorted(glob.glob(os.path.join(ROOT, "experiments/results/mapintel/ladder_20261024/*.json"))):
+		S = json.load(open(f))
+		if not S.get("map") or S.get("error"):
+			continue
+		rows[S["map"]].append(S)
+	out = {}
+	for mp, gs in rows.items():
+		M = mapdata.load(mp)
+		C = [CP.Compact(M, t) for t in (0, 1)]
+		band, _ = C[0].contested()
+		cnt = defaultdict(lambda: [0, 0])
+		for S in gs:
+			for c in S["captures"]:
+				if c[3] is not None:
+					cnt[c[3]][c[1]] += 1
+		r = []
+		for g in range(len(M.groups)):
+			for t in (0, 1):
+				if C[t].dU[g] < 0 or cnt[g][0] + cnt[g][1] == 0:
+					continue
+				gap = 9.0 if C[t].dE[g] < 0 else max(-9.0, min(9.0, (C[t].dE[g] - C[t].dU[g]) / band))
+				r.append((gap, cnt[g][t], cnt[g][1 - t]))
+		out[mp] = r
+	return out
+
+
+def contest_fit(rows, maps):
+	from sklearn.linear_model import LogisticRegression
+	X, y, w = [], [], []
+	for m in maps:
+		for gap, own, other in rows[m]:
+			X += [[gap], [gap]]
+			y += [1, 0]
+			w += [own, other]
+	m_ = LogisticRegression(C=1e6, max_iter=2000).fit(np.array(X), np.array(y), sample_weight=np.array(w, float))
+	return {"a": float(m_.intercept_[0]), "b": float(m_.coef_[0][0])}
+
+
+def evaluate(name, params, jobs, verbose=True):
+	"""The model with this constant set (missing keys = economy.ECON_DEFAULT) against the real targets."""
+	import validate_ladder as VL
+	full = dict(EC.ECON_DEFAULT, **params)
+	meas = json.load(open(os.path.join(OUT, "measured.json")))
+	games = defaultdict(list)
+	for f in sorted(glob.glob(os.path.join(ROOT, "experiments/results/mapintel/ladder_20261024/*.json"))):
+		S = json.load(open(f))
+		if S.get("map") and not S.get("error"):
+			games[S["map"]].append(S)
+	finish = {m: statistics.median([VL.finish_round(S) for S in gs]) for m, gs in games.items()}
+	first_real = defaultdict(list)
+	for m, gs in games.items():
+		for S in gs:
+			for t, g, r in S["first_capture"]:
+				if t == 0:
+					first_real[(m, g)].append(r)
+	combos = defaultdict(list)
+	for k, v in meas["kill"].items():
+		if len(v) >= 3:
+			combos[k.split("|")[0]].append((len(v), k))
+	maps = mapdata.official_names()
+	per_map = {m: dict(full) for m in maps}
+	if full.get("contest") == "cv":  # out of fold: each map's coefficients fitted without its fold's maps
+		folds = json.load(open(os.path.join(ROOT, "maps/catalog/splits.json")))["folds"]
+		rows = contest_rows()
+		for k, fm_ in enumerate(folds):
+			co = contest_fit(rows, [m for m in rows if m not in fm_])
+			for m in fm_:
+				per_map[m]["contest"] = co
+	jobs_ = [(m, per_map[m], [k for _, k in sorted(combos[m], reverse=True)[:60]]) for m in maps]
+	with cf.ProcessPoolExecutor(jobs) as ex:
+		res = list(ex.map(_eval_map, jobs_))
+	mp_pace = {r["map"]: statistics.median(r["pace"]) if r["pace"] else 2000 for r in res}
+	ok = [m for m in maps if m in finish]
+	rho = spearmanr([mp_pace[m] for m in ok], [finish[m] for m in ok])[0]
+	types = defaultdict(list)
+	for r in res:
+		if r["map"] in finish:
+			types[r["type"]].append(finish[r["map"]] / max(1, mp_pace[r["map"]]))
+	fm, fr = [], []
+	per_map_fc = []
+	for r in res:
+		a_, b_ = [], []
+		for g, rr in r["first"].items():
+			if (r["map"], g) in first_real:
+				a_.append(rr)
+				b_.append(statistics.median(first_real[(r["map"], g)]))
+		fm += a_
+		fr += b_
+		if len(a_) >= 4:
+			per_map_fc.append(spearmanr(a_, b_)[0])
+	bank_err = []
+	for r in res:
+		real = meas["bank"]["per_map_median"].get(r["map"])
+		if real and r["banks"]:
+			bank_err.append(math.log(statistics.median(r["banks"]) / real))
+	kl = []
+	for r in res:
+		for k, v in r["kill"].items():
+			if v:
+				kl.append(math.log(v / statistics.median(meas["kill"][k])))
+	ratio_all = statistics.median([finish[m] / max(1, mp_pace[m]) for m in ok])
+	E = {"name": name, "constants": full, "pace_spearman": float(rho), "real_over_model_median": ratio_all,
+		 "per_type": {t: {"maps": len(v), "real_over_model_median": float(np.median(v)),
+						  "bias_vs_all": float(np.median(v) / ratio_all)} for t, v in sorted(types.items())},
+		 "first_capture_spearman_pooled": float(spearmanr(fm, fr)[0]), "first_capture_spearman_per_map": float(np.mean(per_map_fc)),
+		 "first_capture_groups": len(fm), "bank_log_ratio_median": float(np.median(bank_err)), "bank_abs_log_ratio_median": float(np.median(np.abs(bank_err))),
+		 "kill_log_ratio_median": float(np.median(kl)), "kill_abs_log_ratio_median": float(np.median(np.abs(kl))), "kill_combos": len(kl),
+		 "model_bank_median": float(np.median([b for r in res for b in r["banks"]])), "model_pace": mp_pace}
+	os.makedirs(OUT, exist_ok=True)
+	json.dump(E, open(os.path.join(OUT, f"eval_{name}.json"), "w"), indent=1)
+	if verbose:
+		print(f"{name}: pace Spearman {rho:.3f}; per type real / model " + ", ".join(f"{t} {v['real_over_model_median']:.2f}" for t, v in E["per_type"].items())
+			  + f"; first capture Spearman {E['first_capture_spearman_pooled']:.3f} (per map {E['first_capture_spearman_per_map']:.3f}); bank log ratio "
+			  f"{E['bank_log_ratio_median']:+.2f} (model median {E['model_bank_median']:.0f}); kill log ratio {E['kill_log_ratio_median']:+.2f}", flush=True)
+	return E
+
+
+CHOSEN = {"retreat": 0.52, "heal_frac": 0.9, "bank_bag": 20, "shop_gold": 115, "gold_w": 0.02, "pace_gold_w": 0.02, "dmg_mult": 1.3}
+WHY = {"retreat": "measured: median health at a mid-fight heal trip (3,109 trips); also the best pace Spearman of the grid",
+	   "heal_frac": "fitted (grid 0.3-0.95): the top teams go home after a capture 59% of the time at a median health of 0.93, so health does "
+					"not separate the decision; 0.9 keeps the model going home after most jobs",
+	   "bank_bag": "fitted to the real bank sizes (median 26 gems over 24,945 banks): bag 20 gives the model's median bank 28",
+	   "shop_gold": "measured: median unspent gold at a shop visit after a recall with an empty bag (18,572 visits)",
+	   "gold_w": "measured: the top teams' next-group choice (12,000 choices; gems, gold, walk, health, heavy) values 1 gold as 0.020 gems",
+	   "pace_gold_w": "the same measurement (it equals the old default)",
+	   "dmg_mult": "fitted to the real kill durations (1-2 attacker kills, 43,782 episodes): 1.3 makes the model's median kill time equal",
+	   "contest": "LEARNED logistic of the team's capture share of a group on (their walk - ours) / band, all ladder captures; the pace check "
+				  "uses out-of-fold coefficients"}
+
+
+def fit(a):
+	before = evaluate("before", {}, a.jobs)
+	after = evaluate("after", dict(CHOSEN, contest="cv"), a.jobs)
+	noopp = evaluate("after_unopposed", dict(CHOSEN), a.jobs)
+	co = contest_fit(contest_rows(), mapdata.official_names())
+	J = {"origin": "LEARNED (599 current-patch top-team replays; tools/mapintel/econ_learn.py)", "constants": dict(CHOSEN, contest=co),
+		 "why": WHY, "check": {k: {kk: E[kk] for kk in ("pace_spearman", "per_type", "first_capture_spearman_pooled", "bank_log_ratio_median",
+														   "kill_log_ratio_median")} for k, E in (("before", before), ("after", after), ("after_unopposed", noopp))}}
+	json.dump(J, open(os.path.join(OUT, "constants.json"), "w"), indent=1)
+	meas = json.load(open(os.path.join(OUT, "measured.json")))
+	L = ["# Economy constants fitted to the top teams' replays\n",
+		 "| constant | before | after | evidence |", "|---|---|---|---|"]
+	for k in CHOSEN:
+		L.append(f"| {k} | {EC.ECON_DEFAULT[k]} | {CHOSEN[k]} | {WHY[k]} |")
+	L.append(f"| contest | none (unopposed) | a {co['a']:.3f}, b {co['b']:.3f} | {WHY['contest']} |")
+	L += ["", "Checks (the catalog's pace model on the 40 maps, the reference rosters; real = 599 ladder games):\n",
+		  "| set | pace Spearman | real / model: many-cluster | objective | other | first-capture Spearman | bank log ratio | kill log ratio |",
+		  "|---|---|---|---|---|---|---|---|"]
+	for name, E in (("before (defaults)", before), ("after, unopposed", noopp), ("after (+ contest, out of fold)", after)):
+		pt = E["per_type"]
+		L.append(f"| {name} | {E['pace_spearman']:.3f} | {pt['many-cluster']['real_over_model_median']:.2f} | {pt['objective']['real_over_model_median']:.2f} | "
+				 f"{pt['other']['real_over_model_median']:.2f} | {E['first_capture_spearman_pooled']:.3f} | {E['bank_log_ratio_median']:+.2f} | {E['kill_log_ratio_median']:+.2f} |")
+	L += ["", "Map types: many-cluster = 60+ gem and gold clusters (10 maps), objective = monolith + golem gem share >= 0.3 (18), other (12). "
+		  "real / model = median over the type's maps of the real finish over the model's pace; a type is biased when it differs from the others.",
+		  f"Measured: retreat median {meas['retreat']['median']:.2f} (q25 {meas['retreat']['q25']:.2f}, q75 {meas['retreat']['q75']:.2f}); after a capture "
+		  f"home {100 * meas['heal_frac']['heal_share']:.0f}% (median health {meas['heal_frac']['median_hp_heal']:.2f} home, {meas['heal_frac']['median_hp_go_on']:.2f} on); "
+		  f"shop gold median {meas['shop_gold']['median']:.0f}; bank size median {meas['bank']['median']:.0f} (q25 {meas['bank']['q25']:.0f}, q75 {meas['bank']['q75']:.0f}); "
+		  f"gold per gem {meas['gold_weight']['gold_per_gem']:.3f}."]
+	open(os.path.join(OUT, "report.md"), "w").write("\n".join(L) + "\n")
+	print("\n".join(L))
+
+
 def main():
 	ap = argparse.ArgumentParser()
 	ap.add_argument("cmd", choices=["measure", "evaluate", "fit"])
@@ -203,6 +403,15 @@ def main():
 	a = ap.parse_args()
 	if a.cmd == "measure":
 		measure(a)
+	elif a.cmd == "fit":
+		fit(a)
+	elif a.cmd == "evaluate":
+		name = a.rest[0]
+		params = {}
+		for kv in a.rest[1:]:
+			k, v = kv.split("=")
+			params[k] = v if k == "contest" else float(v) if k in ("retreat", "heal_frac", "gold_w", "pace_gold_w", "dmg_mult") else int(v)
+		evaluate(name, params, a.jobs)
 
 
 if __name__ == "__main__":

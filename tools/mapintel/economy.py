@@ -20,6 +20,7 @@ Pieces (each a function, so plans.py and the catalog can combine them):
     turns at a legal approach tile (probed: 7 gems, one tick, banked the next turn); getting home is a choice (walk / recall / bank at a
     nearby altar on the way), never assumed; respawn timers from the runtime groups (an occupied spawn tile holds the respawn).
 Interference between teammates and the multi-body pace come from plans.py (joint assignment over the groups)."""
+import json
 import math
 import os
 import sys
@@ -45,6 +46,30 @@ S = None  # game settings (engine().settings)
 
 def settings():
 	return engine().settings
+
+
+# The economy model's free constants (MAPAnalysis.md 5.3c): defaults, replaced by the LEARNED set of econ_learn.py
+# (experiments/results/mapintel/economy/constants.json) when it exists; MAPINTEL_ECON=default keeps the defaults (the before / after
+# report). retreat: a body leaves a fight below retreat x max hp (the heal-trip rule: it heals at home and comes back); heal_frac:
+# between jobs it goes home below this health fraction; bank_bag: it banks a bag of at least this many gems; shop_gold: it recalls to
+# shop with this much unspent gold and an empty bag; gold_w: the planner's value = gems + gold_w x gold (target choice); pace_gold_w:
+# the same in the pace estimate; dmg_mult: a scale on champion damage against camps (Champ.camp_mult); contest: {a, b} or None, the
+# opponent's effect on an unopposed plan: the team's expected share of a group's reward = 1 / (1 + exp(-(a + b x gap))), gap = (their
+# walk - ours) / the contested band (plans.Planner scales the value and the reward). (plans.Ctx.value, plan 3's value, keeps GOLD_W 0.1:
+# plan 3 is not refitted.)
+ECON_DEFAULT = {"retreat": 0.3, "heal_frac": 0.5, "bank_bag": 40, "shop_gold": 300, "gold_w": 0.1, "pace_gold_w": 0.02, "dmg_mult": 1.0,
+				"contest": None}
+ECON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "experiments", "results", "mapintel", "economy", "constants.json")
+_ECON = None
+
+
+def econ():
+	global _ECON
+	if _ECON is None:
+		_ECON = dict(ECON_DEFAULT)
+		if os.path.exists(ECON_PATH) and os.environ.get("MAPINTEL_ECON") != "default":
+			_ECON.update(json.load(open(ECON_PATH))["constants"])
+	return _ECON
 
 
 @dataclass
@@ -82,7 +107,9 @@ class Champ:
 		return int(self.d()["range"])
 
 	def camp_mult(self):
-		return float(self.d().get("campmul", 1.0)) * (1.1 if "monster" in self.emblems else 1.0)
+		# dmg_mult (econ): the damage the model's bodies lack against camps compared with the top teams (items bought earlier, focus
+		# fire); 1 = the engine's numbers, fitted to the replays' kill durations by econ_learn.py
+		return float(self.d().get("campmul", 1.0)) * (1.1 if "monster" in self.emblems else 1.0) * econ()["dmg_mult"]
 
 	def taken_mult_camp(self):
 		m = 1.0
@@ -177,11 +204,13 @@ class FightResult:
 	camp_hp: dict = None  # camps' health at the end (all 0 when cleared)
 
 
-def fight(M, team, champs, group, home_dist, retreat=0.3, max_rounds=1500, tiles=None, delays=None, hp_left=None, shop_fn=None):
+def fight(M, team, champs, group, home_dist, retreat=None, max_rounds=1500, tiles=None, delays=None, hp_left=None, shop_fn=None):
 	"""Simulate champs (list of Champ, full health unless ch.hp >= 0) clearing group (a dict of mapdata). home_dist: walking distance
 	field to our spawn (for heal trips). Bodies start at their standing tiles; delays[i] = rounds before body i arrives (its travel
 	beyond the first body's); hp_left = {camp tile: health} for a group damaged earlier (camps do not regenerate); shop_fn(i) is called
 	when body i is home on a heal trip (it may buy shards: the body comes back with them)."""
+	if retreat is None:
+		retreat = econ()["retreat"]
 	camps = [(c[1], c[2]) for c in group["camps"]]
 	hp = {}
 	for c in group["camps"]:

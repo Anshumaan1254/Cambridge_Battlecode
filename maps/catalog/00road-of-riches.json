@@ -4543,8 +4543,8 @@
    "range": 5,
    "ring_tiles": 35,
    "safe_area_tiles": 44,
-   "team_kill_rounds": 575,
-   "team_kill_trips": 33,
+   "team_kill_rounds": 559,
+   "team_kill_trips": 34,
    "dist": [
     74,
     172
@@ -4561,7 +4561,7 @@
    "range": 5,
    "ring_tiles": 35,
    "safe_area_tiles": 44,
-   "team_kill_rounds": 1325,
+   "team_kill_rounds": 1316,
    "team_kill_trips": 35,
    "dist": [
     172,
@@ -4579,7 +4579,7 @@
    "range": 4,
    "ring_tiles": 31,
    "safe_area_tiles": 49,
-   "team_kill_rounds": 17,
+   "team_kill_rounds": 14,
    "team_kill_trips": 1,
    "dist": [
     43,
@@ -4597,7 +4597,7 @@
    "range": 4,
    "ring_tiles": 31,
    "safe_area_tiles": 49,
-   "team_kill_rounds": 17,
+   "team_kill_rounds": 14,
    "team_kill_trips": 1,
    "dist": [
     204,
@@ -4613,15 +4613,31 @@
   "ambush_bushes": 8
  },
  "plan4": {
-  "origin": "COMPUTED default formulas; values fitted in step 6 (LEARNED, then SIMULATED)",
+  "origin": "LEARNED where plan4_learn.py beat the formula (d, k, m, p), else COMPUTED formulas",
   "spawn_distance": 40,
-  "k_abandon": 5,
-  "p_power": 0.8,
-  "d_regroup": 8,
   "r_enemies": 8,
-  "bank_margin": 3,
   "contested_groups": 9,
-  "w_max_rule": "drop a group whose respawn wait exceeds value / (next best group's rate)"
+  "k_abandon": 0,
+  "p_power": 10.0,
+  "d_regroup": 6,
+  "bank_margin": 7,
+  "w_max": 30,
+  "per_team": [
+   {
+    "k_abandon": 0,
+    "p_power": 10.0,
+    "d_regroup": 6,
+    "bank_margin": 7,
+    "w_max": 30
+   },
+   {
+    "k_abandon": 0,
+    "p_power": 10.0,
+    "d_regroup": 6,
+    "bank_margin": 7,
+    "w_max": 30
+   }
+  ]
  },
  "reference_rosters": [
   {
@@ -4689,15 +4705,15 @@
    "origin": "LEARNED",
    "plan1": {
     "R0": 150,
-    "value": 222.0,
-    "banked": 162,
-    "carried": 120,
+    "value": 166.8,
+    "banked": 106.40730498624174,
+    "carried": 120.6961631720235,
     "first_targets": [
      28,
      17,
-     21,
      35,
-     7
+     7,
+     21
     ],
     "bodies": [
      6,
@@ -4713,75 +4729,84 @@
        "group": 28,
        "arrive": 2,
        "start": 2,
-       "cleared": 6,
-       "captured": 12,
+       "cleared": 4,
+       "captured": 10,
        "with": []
       },
       {
        "do": "bank",
        "altar": 1,
-       "gems": 21,
-       "round": 31
+       "gems": 6.370547904275415,
+       "round": 27
       },
       {
        "do": "farm",
        "group": 0,
-       "arrive": 31,
-       "start": 31,
-       "cleared": 37,
-       "captured": 43,
+       "arrive": 27,
+       "start": 27,
+       "cleared": 30,
+       "captured": 36,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 28,
-       "round": 47
+       "gems": 14.0,
+       "round": 39
       },
       {
        "do": "farm",
        "group": 27,
-       "arrive": 60,
-       "start": 60,
-       "cleared": 64,
-       "captured": 70,
+       "arrive": 52,
+       "start": 52,
+       "cleared": 54,
+       "captured": 60,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 21,
-       "round": 89
+       "gems": 14.629452095724584,
+       "round": 78
       },
       {
        "do": "farm",
        "group": 0,
-       "arrive": 89,
-       "start": 93,
-       "cleared": 99,
-       "captured": 105,
+       "arrive": 78,
+       "start": 86,
+       "cleared": 89,
+       "captured": 95,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 28,
-       "round": 109
+       "gems": 14.0,
+       "round": 98
       },
       {
        "do": "farm",
        "group": 27,
-       "arrive": 122,
-       "start": 122,
-       "cleared": 126,
-       "captured": 132,
+       "arrive": 111,
+       "start": 111,
+       "cleared": 113,
+       "captured": 119,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 21,
-       "round": 151
+       "gems": 14.629452095724584,
+       "round": 137
+      },
+      {
+       "do": "farm",
+       "group": 27,
+       "arrive": 150,
+       "start": 169,
+       "cleared": 171,
+       "captured": 177,
+       "with": []
       }
      ],
      [
@@ -4790,49 +4815,23 @@
        "group": 17,
        "arrive": 9,
        "start": 9,
-       "cleared": 11,
-       "captured": 17,
+       "cleared": 10,
+       "captured": 16,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 7,
-       "round": 128
-      },
-      {
-       "do": "farm",
-       "group": 28,
-       "arrive": 142,
-       "start": 142,
-       "cleared": 150,
-       "captured": 156,
-       "with": []
-      }
-     ],
-     [
-      {
-       "do": "farm",
-       "group": 21,
-       "arrive": 29,
-       "start": 29,
-       "cleared": 31,
-       "captured": 37,
-       "with": []
-      },
-      {
-       "do": "bank",
-       "altar": 0,
-       "gems": 14,
-       "round": 129
+       "gems": 6.974507207054168,
+       "round": 127
       },
       {
        "do": "farm",
        "group": 0,
-       "arrive": 129,
-       "start": 155,
-       "cleared": 163,
-       "captured": 169,
+       "arrive": 127,
+       "start": 145,
+       "cleared": 152,
+       "captured": 158,
        "with": []
       }
      ],
@@ -4842,8 +4841,8 @@
        "group": 35,
        "arrive": 43,
        "start": 43,
-       "cleared": 424,
-       "captured": 430,
+       "cleared": 573,
+       "captured": 579,
        "with": []
       }
      ],
@@ -4853,19 +4852,67 @@
        "group": 7,
        "arrive": 10,
        "start": 10,
-       "cleared": 71,
-       "captured": 77,
-       "with": []
-      },
-      {
-       "do": "heal",
-       "round": 85
+       "cleared": 27,
+       "captured": 33,
+       "with": [
+        4
+       ]
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 22,
-       "round": 208
+       "gems": 21.919879793598813,
+       "round": 149
+      },
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 155,
+       "start": 155,
+       "cleared": 177,
+       "captured": 183,
+       "with": [
+        4
+       ]
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 7,
+       "arrive": 10,
+       "start": 10,
+       "cleared": 27,
+       "captured": 33,
+       "with": [
+        3
+       ]
+      },
+      {
+       "do": "farm",
+       "group": 21,
+       "arrive": 54,
+       "start": 54,
+       "cleared": 55,
+       "captured": 61,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 13.883465889864171,
+       "round": 153
+      },
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 155,
+       "start": 155,
+       "cleared": 177,
+       "captured": 183,
+       "with": [
+        3
+       ]
       }
      ]
     ]
@@ -4883,15 +4930,15 @@
    "origin": "LEARNED",
    "plan1": {
     "R0": 150,
-    "value": 222.0,
-    "banked": 162,
-    "carried": 120,
+    "value": 166.8,
+    "banked": 106.40730498624174,
+    "carried": 120.6961631720235,
     "first_targets": [
      27,
      18,
-     22,
      36,
-     8
+     8,
+     22
     ],
     "bodies": [
      6,
@@ -4907,75 +4954,84 @@
        "group": 27,
        "arrive": 2,
        "start": 2,
-       "cleared": 6,
-       "captured": 12,
+       "cleared": 4,
+       "captured": 10,
        "with": []
       },
       {
        "do": "bank",
        "altar": 1,
-       "gems": 21,
-       "round": 31
+       "gems": 6.370547904275415,
+       "round": 27
       },
       {
        "do": "farm",
        "group": 0,
-       "arrive": 31,
-       "start": 31,
-       "cleared": 37,
-       "captured": 43,
+       "arrive": 27,
+       "start": 27,
+       "cleared": 30,
+       "captured": 36,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 28,
-       "round": 47
+       "gems": 14.0,
+       "round": 39
       },
       {
        "do": "farm",
        "group": 28,
-       "arrive": 60,
-       "start": 60,
-       "cleared": 64,
-       "captured": 70,
+       "arrive": 52,
+       "start": 52,
+       "cleared": 54,
+       "captured": 60,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 21,
-       "round": 89
+       "gems": 14.629452095724584,
+       "round": 78
       },
       {
        "do": "farm",
        "group": 0,
-       "arrive": 89,
-       "start": 93,
-       "cleared": 99,
-       "captured": 105,
+       "arrive": 78,
+       "start": 86,
+       "cleared": 89,
+       "captured": 95,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 28,
-       "round": 109
+       "gems": 14.0,
+       "round": 98
       },
       {
        "do": "farm",
        "group": 28,
-       "arrive": 122,
-       "start": 122,
-       "cleared": 126,
-       "captured": 132,
+       "arrive": 111,
+       "start": 111,
+       "cleared": 113,
+       "captured": 119,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 21,
-       "round": 151
+       "gems": 14.629452095724584,
+       "round": 137
+      },
+      {
+       "do": "farm",
+       "group": 28,
+       "arrive": 150,
+       "start": 169,
+       "cleared": 171,
+       "captured": 177,
+       "with": []
       }
      ],
      [
@@ -4984,49 +5040,23 @@
        "group": 18,
        "arrive": 9,
        "start": 9,
-       "cleared": 11,
-       "captured": 17,
+       "cleared": 10,
+       "captured": 16,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 7,
-       "round": 128
-      },
-      {
-       "do": "farm",
-       "group": 27,
-       "arrive": 142,
-       "start": 142,
-       "cleared": 150,
-       "captured": 156,
-       "with": []
-      }
-     ],
-     [
-      {
-       "do": "farm",
-       "group": 22,
-       "arrive": 29,
-       "start": 29,
-       "cleared": 31,
-       "captured": 37,
-       "with": []
-      },
-      {
-       "do": "bank",
-       "altar": 0,
-       "gems": 14,
-       "round": 129
+       "gems": 6.974507207054168,
+       "round": 127
       },
       {
        "do": "farm",
        "group": 0,
-       "arrive": 129,
-       "start": 155,
-       "cleared": 163,
-       "captured": 169,
+       "arrive": 127,
+       "start": 145,
+       "cleared": 152,
+       "captured": 158,
        "with": []
       }
      ],
@@ -5036,8 +5066,8 @@
        "group": 36,
        "arrive": 43,
        "start": 43,
-       "cleared": 424,
-       "captured": 430,
+       "cleared": 573,
+       "captured": 579,
        "with": []
       }
      ],
@@ -5047,19 +5077,67 @@
        "group": 8,
        "arrive": 10,
        "start": 10,
-       "cleared": 71,
-       "captured": 77,
-       "with": []
-      },
-      {
-       "do": "heal",
-       "round": 85
+       "cleared": 27,
+       "captured": 33,
+       "with": [
+        4
+       ]
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 22,
-       "round": 208
+       "gems": 21.919879793598813,
+       "round": 149
+      },
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 155,
+       "start": 155,
+       "cleared": 177,
+       "captured": 183,
+       "with": [
+        4
+       ]
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 8,
+       "arrive": 10,
+       "start": 10,
+       "cleared": 27,
+       "captured": 33,
+       "with": [
+        3
+       ]
+      },
+      {
+       "do": "farm",
+       "group": 22,
+       "arrive": 54,
+       "start": 54,
+       "cleared": 55,
+       "captured": 61,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 13.883465889864171,
+       "round": 153
+      },
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 155,
+       "start": 155,
+       "cleared": 177,
+       "captured": 183,
+       "with": [
+        3
+       ]
       }
      ]
     ],
@@ -5078,13 +5156,13 @@
    "origin": "LEARNED",
    "plan1": {
     "R0": 150,
-    "value": 240.0,
-    "banked": 212,
-    "carried": 56,
+    "value": 160.0,
+    "banked": 147.49149611324378,
+    "carried": 25.060094516847272,
     "first_targets": [
      28,
-     21,
      7,
+     21,
      9,
      47,
      17
@@ -5104,69 +5182,96 @@
        "group": 28,
        "arrive": 2,
        "start": 2,
-       "cleared": 10,
-       "captured": 16,
+       "cleared": 7,
+       "captured": 13,
        "with": []
       },
       {
        "do": "bank",
        "altar": 1,
-       "gems": 21,
-       "round": 35
+       "gems": 6.370547904275415,
+       "round": 30
       },
       {
        "do": "farm",
        "group": 0,
-       "arrive": 35,
-       "start": 35,
-       "cleared": 45,
-       "captured": 51,
+       "arrive": 30,
+       "start": 30,
+       "cleared": 37,
+       "captured": 43,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 28,
-       "round": 55
+       "gems": 14.0,
+       "round": 46
       },
       {
        "do": "farm",
        "group": 27,
-       "arrive": 68,
-       "start": 68,
-       "cleared": 76,
-       "captured": 82,
+       "arrive": 59,
+       "start": 59,
+       "cleared": 64,
+       "captured": 70,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 21,
-       "round": 101
-      },
-      {
-       "do": "farm",
-       "group": 28,
-       "arrive": 115,
-       "start": 115,
-       "cleared": 123,
-       "captured": 129,
-       "with": []
-      },
-      {
-       "do": "bank",
-       "altar": 1,
-       "gems": 21,
-       "round": 148
+       "gems": 14.629452095724584,
+       "round": 88
       },
       {
        "do": "farm",
        "group": 0,
-       "arrive": 148,
-       "start": 166,
-       "cleared": 176,
-       "captured": 182,
+       "arrive": 88,
+       "start": 93,
+       "cleared": 100,
+       "captured": 106,
        "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 14.0,
+       "round": 109
+      },
+      {
+       "do": "farm",
+       "group": 27,
+       "arrive": 122,
+       "start": 122,
+       "cleared": 127,
+       "captured": 133,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 14.629452095724584,
+       "round": 151
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 7,
+       "arrive": 10,
+       "start": 10,
+       "cleared": 74,
+       "captured": 80,
+       "with": []
+      },
+      {
+       "do": "heal",
+       "round": 88
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 21.919879793598813,
+       "round": 211
       }
      ],
      [
@@ -5175,47 +5280,24 @@
        "group": 21,
        "arrive": 29,
        "start": 29,
-       "cleared": 31,
-       "captured": 37,
+       "cleared": 30,
+       "captured": 36,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 14,
-       "round": 129
+       "gems": 13.883465889864171,
+       "round": 128
       },
       {
        "do": "farm",
-       "group": 11,
-       "arrive": 154,
-       "start": 154,
-       "cleared": 156,
-       "captured": 162,
+       "group": 0,
+       "arrive": 128,
+       "start": 156,
+       "cleared": 165,
+       "captured": 171,
        "with": []
-      }
-     ],
-     [
-      {
-       "do": "farm",
-       "group": 7,
-       "arrive": 10,
-       "start": 10,
-       "cleared": 34,
-       "captured": 40,
-       "with": [
-        4
-       ]
-      },
-      {
-       "do": "heal",
-       "round": 48
-      },
-      {
-       "do": "bank",
-       "altar": 0,
-       "gems": 22,
-       "round": 171
       }
      ],
      [
@@ -5224,77 +5306,60 @@
        "group": 9,
        "arrive": 84,
        "start": 84,
-       "cleared": 114,
-       "captured": 120,
+       "cleared": 107,
+       "captured": 113,
        "with": []
       },
       {
        "do": "heal",
-       "round": 128
+       "round": 121
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 22,
-       "round": 251
+       "gems": 19.1931726726471,
+       "round": 243
       }
      ],
      [
       {
        "do": "farm",
-       "group": 7,
-       "arrive": 10,
-       "start": 10,
-       "cleared": 34,
-       "captured": 40,
-       "with": [
-        2
-       ]
-      },
-      {
-       "do": "farm",
        "group": 47,
-       "arrive": 41,
-       "start": 41,
-       "cleared": 42,
-       "captured": 48,
+       "arrive": 13,
+       "start": 13,
+       "cleared": 14,
+       "captured": 20,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 7,
-       "round": 89
+       "gems": 6.273803477186874,
+       "round": 61
       },
       {
        "do": "farm",
-       "group": 0,
-       "arrive": 89,
-       "start": 101,
-       "cleared": 110,
-       "captured": 116,
+       "group": 11,
+       "arrive": 84,
+       "start": 84,
+       "cleared": 88,
+       "captured": 94,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 28,
-       "round": 120
+       "gems": 11.06009451684727,
+       "round": 122
       },
       {
        "do": "farm",
-       "group": 27,
-       "arrive": 133,
-       "start": 133,
-       "cleared": 141,
-       "captured": 147,
+       "group": 11,
+       "arrive": 145,
+       "start": 145,
+       "cleared": 149,
+       "captured": 155,
        "with": []
-      },
-      {
-       "do": "bank",
-       "altar": 0,
-       "gems": 21,
-       "round": 166
       }
      ],
      [
@@ -5310,17 +5375,23 @@
       {
        "do": "bank",
        "altar": 0,
-       "gems": 7,
+       "gems": 6.974507207054168,
        "round": 130
       },
       {
        "do": "farm",
-       "group": 12,
-       "arrive": 156,
-       "start": 156,
-       "cleared": 161,
-       "captured": 167,
+       "group": 29,
+       "arrive": 142,
+       "start": 142,
+       "cleared": 144,
+       "captured": 150,
        "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 4.557120460320801,
+       "round": 164
       }
      ]
     ]
@@ -5338,13 +5409,13 @@
    "origin": "LEARNED",
    "plan1": {
     "R0": 150,
-    "value": 240.0,
-    "banked": 212,
-    "carried": 56,
+    "value": 160.0,
+    "banked": 147.49149611324378,
+    "carried": 25.060094516847272,
     "first_targets": [
      27,
-     22,
      8,
+     22,
      10,
      48,
      18
@@ -5364,69 +5435,96 @@
        "group": 27,
        "arrive": 2,
        "start": 2,
-       "cleared": 10,
-       "captured": 16,
+       "cleared": 7,
+       "captured": 13,
        "with": []
       },
       {
        "do": "bank",
        "altar": 1,
-       "gems": 21,
-       "round": 35
+       "gems": 6.370547904275415,
+       "round": 30
       },
       {
        "do": "farm",
        "group": 0,
-       "arrive": 35,
-       "start": 35,
-       "cleared": 45,
-       "captured": 51,
+       "arrive": 30,
+       "start": 30,
+       "cleared": 37,
+       "captured": 43,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 28,
-       "round": 55
+       "gems": 14.0,
+       "round": 46
       },
       {
        "do": "farm",
        "group": 28,
-       "arrive": 68,
-       "start": 68,
-       "cleared": 76,
-       "captured": 82,
+       "arrive": 59,
+       "start": 59,
+       "cleared": 64,
+       "captured": 70,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 21,
-       "round": 101
-      },
-      {
-       "do": "farm",
-       "group": 27,
-       "arrive": 115,
-       "start": 115,
-       "cleared": 123,
-       "captured": 129,
-       "with": []
-      },
-      {
-       "do": "bank",
-       "altar": 1,
-       "gems": 21,
-       "round": 148
+       "gems": 14.629452095724584,
+       "round": 88
       },
       {
        "do": "farm",
        "group": 0,
-       "arrive": 148,
-       "start": 166,
-       "cleared": 176,
-       "captured": 182,
+       "arrive": 88,
+       "start": 93,
+       "cleared": 100,
+       "captured": 106,
        "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 14.0,
+       "round": 109
+      },
+      {
+       "do": "farm",
+       "group": 28,
+       "arrive": 122,
+       "start": 122,
+       "cleared": 127,
+       "captured": 133,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 14.629452095724584,
+       "round": 151
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 8,
+       "arrive": 10,
+       "start": 10,
+       "cleared": 74,
+       "captured": 80,
+       "with": []
+      },
+      {
+       "do": "heal",
+       "round": 88
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 21.919879793598813,
+       "round": 211
       }
      ],
      [
@@ -5435,47 +5533,24 @@
        "group": 22,
        "arrive": 29,
        "start": 29,
-       "cleared": 31,
-       "captured": 37,
+       "cleared": 30,
+       "captured": 36,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 14,
-       "round": 129
+       "gems": 13.883465889864171,
+       "round": 128
       },
       {
        "do": "farm",
-       "group": 12,
-       "arrive": 154,
-       "start": 154,
-       "cleared": 156,
-       "captured": 162,
+       "group": 0,
+       "arrive": 128,
+       "start": 156,
+       "cleared": 165,
+       "captured": 171,
        "with": []
-      }
-     ],
-     [
-      {
-       "do": "farm",
-       "group": 8,
-       "arrive": 10,
-       "start": 10,
-       "cleared": 34,
-       "captured": 40,
-       "with": [
-        4
-       ]
-      },
-      {
-       "do": "heal",
-       "round": 48
-      },
-      {
-       "do": "bank",
-       "altar": 0,
-       "gems": 22,
-       "round": 171
       }
      ],
      [
@@ -5484,77 +5559,60 @@
        "group": 10,
        "arrive": 84,
        "start": 84,
-       "cleared": 114,
-       "captured": 120,
+       "cleared": 107,
+       "captured": 113,
        "with": []
       },
       {
        "do": "heal",
-       "round": 128
+       "round": 121
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 22,
-       "round": 251
+       "gems": 19.1931726726471,
+       "round": 243
       }
      ],
      [
       {
        "do": "farm",
-       "group": 8,
-       "arrive": 10,
-       "start": 10,
-       "cleared": 34,
-       "captured": 40,
-       "with": [
-        2
-       ]
-      },
-      {
-       "do": "farm",
        "group": 48,
-       "arrive": 41,
-       "start": 41,
-       "cleared": 42,
-       "captured": 48,
+       "arrive": 13,
+       "start": 13,
+       "cleared": 14,
+       "captured": 20,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 7,
-       "round": 89
+       "gems": 6.273803477186874,
+       "round": 61
       },
       {
        "do": "farm",
-       "group": 0,
-       "arrive": 89,
-       "start": 101,
-       "cleared": 110,
-       "captured": 116,
+       "group": 12,
+       "arrive": 84,
+       "start": 84,
+       "cleared": 88,
+       "captured": 94,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 28,
-       "round": 120
+       "gems": 11.06009451684727,
+       "round": 122
       },
       {
        "do": "farm",
-       "group": 28,
-       "arrive": 133,
-       "start": 133,
-       "cleared": 141,
-       "captured": 147,
+       "group": 12,
+       "arrive": 145,
+       "start": 145,
+       "cleared": 149,
+       "captured": 155,
        "with": []
-      },
-      {
-       "do": "bank",
-       "altar": 0,
-       "gems": 21,
-       "round": 166
       }
      ],
      [
@@ -5570,17 +5628,23 @@
       {
        "do": "bank",
        "altar": 0,
-       "gems": 7,
+       "gems": 6.974507207054168,
        "round": 130
       },
       {
        "do": "farm",
-       "group": 11,
-       "arrive": 156,
-       "start": 156,
-       "cleared": 161,
-       "captured": 167,
+       "group": 30,
+       "arrive": 142,
+       "start": 142,
+       "cleared": 144,
+       "captured": 150,
        "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 4.557120460320801,
+       "round": 164
       }
      ]
     ],
@@ -5599,15 +5663,15 @@
    "origin": "COMPUTED",
    "plan1": {
     "R0": 150,
-    "value": 260.0,
-    "banked": 225,
-    "carried": 70,
+    "value": 187.3,
+    "banked": 123.74120298027589,
+    "carried": 127.06671107629892,
     "first_targets": [
      7,
+     47,
+     35,
      17,
      21,
-     47,
-     5,
      28
     ],
     "bodies": [
@@ -5625,21 +5689,29 @@
        "group": 7,
        "arrive": 10,
        "start": 10,
-       "cleared": 28,
-       "captured": 34,
+       "cleared": 27,
+       "captured": 33,
        "with": [
         1
        ]
       },
       {
-       "do": "heal",
-       "round": 42
-      },
-      {
        "do": "bank",
        "altar": 0,
-       "gems": 22,
-       "round": 165
+       "gems": 21.919879793598813,
+       "round": 149
+      },
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 155,
+       "start": 155,
+       "cleared": 174,
+       "captured": 180,
+       "with": [
+        3,
+        1
+       ]
       }
      ],
      [
@@ -5648,41 +5720,106 @@
        "group": 7,
        "arrive": 10,
        "start": 10,
-       "cleared": 28,
-       "captured": 34,
+       "cleared": 27,
+       "captured": 33,
        "with": [
         0
        ]
       },
       {
+       "do": "heal",
+       "round": 41
+      },
+      {
        "do": "farm",
-       "group": 28,
-       "arrive": 58,
-       "start": 60,
-       "cleared": 68,
-       "captured": 74,
+       "group": 47,
+       "arrive": 53,
+       "start": 53,
+       "cleared": 54,
+       "captured": 60,
        "with": []
       },
       {
        "do": "bank",
-       "altar": 1,
-       "gems": 21,
-       "round": 93
+       "altar": 0,
+       "gems": 6.273803477186874,
+       "round": 101
       },
       {
        "do": "farm",
-       "group": 28,
-       "arrive": 106,
+       "group": 11,
+       "arrive": 124,
        "start": 124,
-       "cleared": 132,
-       "captured": 138,
+       "cleared": 127,
+       "captured": 133,
        "with": []
       },
       {
        "do": "bank",
-       "altar": 1,
-       "gems": 21,
-       "round": 157
+       "altar": 0,
+       "gems": 11.06009451684727,
+       "round": 161
+      },
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 155,
+       "start": 155,
+       "cleared": 174,
+       "captured": 180,
+       "with": [
+        0,
+        3
+       ]
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 35,
+       "arrive": 43,
+       "start": 43,
+       "cleared": 562,
+       "captured": 568,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 17,
+       "arrive": 9,
+       "start": 9,
+       "cleared": 10,
+       "captured": 16,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 6.974507207054168,
+       "round": 127
+      },
+      {
+       "do": "farm",
+       "group": 0,
+       "arrive": 127,
+       "start": 143,
+       "cleared": 152,
+       "captured": 158,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 3,
+       "arrive": 155,
+       "start": 155,
+       "cleared": 174,
+       "captured": 180,
+       "with": [
+        0,
+        1
+       ]
       }
      ],
      [
@@ -5691,105 +5828,23 @@
        "group": 21,
        "arrive": 29,
        "start": 29,
-       "cleared": 31,
-       "captured": 37,
+       "cleared": 34,
+       "captured": 40,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 14,
-       "round": 129
+       "gems": 13.883465889864171,
+       "round": 132
       },
       {
        "do": "farm",
-       "group": 0,
-       "arrive": 129,
-       "start": 153,
-       "cleared": 157,
-       "captured": 163,
-       "with": []
-      }
-     ],
-     [
-      {
-       "do": "farm",
-       "group": 47,
-       "arrive": 13,
-       "start": 13,
-       "cleared": 14,
-       "captured": 20,
-       "with": []
-      },
-      {
-       "do": "bank",
-       "altar": 0,
-       "gems": 7,
-       "round": 61
-      },
-      {
-       "do": "farm",
-       "group": 0,
-       "arrive": 61,
-       "start": 88,
-       "cleared": 97,
-       "captured": 103,
-       "with": []
-      },
-      {
-       "do": "bank",
-       "altar": 0,
-       "gems": 28,
-       "round": 107
-      },
-      {
-       "do": "farm",
-       "group": 11,
-       "arrive": 130,
-       "start": 130,
-       "cleared": 134,
-       "captured": 140,
-       "with": []
-      },
-      {
-       "do": "bank",
-       "altar": 0,
-       "gems": 14,
-       "round": 168
-      }
-     ],
-     [
-      {
-       "do": "farm",
-       "group": 5,
-       "arrive": 14,
-       "start": 14,
-       "cleared": 19,
-       "captured": 25,
-       "with": []
-      },
-      {
-       "do": "farm",
-       "group": 17,
-       "arrive": 28,
-       "start": 28,
-       "cleared": 30,
-       "captured": 36,
-       "with": []
-      },
-      {
-       "do": "bank",
-       "altar": 0,
-       "gems": 7,
-       "round": 147
-      },
-      {
-       "do": "farm",
-       "group": 28,
-       "arrive": 163,
-       "start": 188,
-       "cleared": 196,
-       "captured": 202,
+       "group": 27,
+       "arrive": 147,
+       "start": 167,
+       "cleared": 175,
+       "captured": 181,
        "with": []
       }
      ],
@@ -5806,61 +5861,76 @@
       {
        "do": "bank",
        "altar": 1,
-       "gems": 21,
-       "round": 29
+       "gems": 6.370547904275415,
+       "round": 27
       },
       {
        "do": "farm",
        "group": 0,
-       "arrive": 29,
-       "start": 29,
-       "cleared": 32,
-       "captured": 38,
+       "arrive": 27,
+       "start": 27,
+       "cleared": 29,
+       "captured": 35,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 28,
-       "round": 42
+       "gems": 14.0,
+       "round": 38
       },
       {
        "do": "farm",
        "group": 27,
-       "arrive": 55,
-       "start": 55,
-       "cleared": 57,
-       "captured": 63,
+       "arrive": 51,
+       "start": 51,
+       "cleared": 53,
+       "captured": 59,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 21,
-       "round": 82
+       "gems": 14.629452095724584,
+       "round": 77
       },
       {
        "do": "farm",
-       "group": 27,
-       "arrive": 95,
-       "start": 113,
-       "cleared": 115,
-       "captured": 121,
+       "group": 0,
+       "arrive": 77,
+       "start": 85,
+       "cleared": 87,
+       "captured": 93,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 21,
-       "round": 140
+       "gems": 14.0,
+       "round": 96
       },
       {
        "do": "farm",
        "group": 27,
-       "arrive": 153,
-       "start": 171,
-       "cleared": 173,
-       "captured": 179,
+       "arrive": 109,
+       "start": 109,
+       "cleared": 111,
+       "captured": 117,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 14.629452095724584,
+       "round": 135
+      },
+      {
+       "do": "farm",
+       "group": 28,
+       "arrive": 149,
+       "start": 149,
+       "cleared": 151,
+       "captured": 157,
        "with": []
       }
      ]
@@ -5879,15 +5949,15 @@
    "origin": "COMPUTED",
    "plan1": {
     "R0": 150,
-    "value": 260.0,
-    "banked": 225,
-    "carried": 70,
+    "value": 187.3,
+    "banked": 123.74120298027589,
+    "carried": 127.06671107629892,
     "first_targets": [
      8,
+     48,
+     36,
      18,
      22,
-     48,
-     6,
      27
     ],
     "bodies": [
@@ -5905,21 +5975,29 @@
        "group": 8,
        "arrive": 10,
        "start": 10,
-       "cleared": 28,
-       "captured": 34,
+       "cleared": 27,
+       "captured": 33,
        "with": [
         1
        ]
       },
       {
-       "do": "heal",
-       "round": 42
-      },
-      {
        "do": "bank",
        "altar": 0,
-       "gems": 22,
-       "round": 165
+       "gems": 21.919879793598813,
+       "round": 149
+      },
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 155,
+       "start": 155,
+       "cleared": 174,
+       "captured": 180,
+       "with": [
+        3,
+        1
+       ]
       }
      ],
      [
@@ -5928,41 +6006,106 @@
        "group": 8,
        "arrive": 10,
        "start": 10,
-       "cleared": 28,
-       "captured": 34,
+       "cleared": 27,
+       "captured": 33,
        "with": [
         0
        ]
       },
       {
+       "do": "heal",
+       "round": 41
+      },
+      {
        "do": "farm",
-       "group": 27,
-       "arrive": 58,
-       "start": 60,
-       "cleared": 68,
-       "captured": 74,
+       "group": 48,
+       "arrive": 53,
+       "start": 53,
+       "cleared": 54,
+       "captured": 60,
        "with": []
       },
       {
        "do": "bank",
-       "altar": 1,
-       "gems": 21,
-       "round": 93
+       "altar": 0,
+       "gems": 6.273803477186874,
+       "round": 101
       },
       {
        "do": "farm",
-       "group": 27,
-       "arrive": 106,
+       "group": 12,
+       "arrive": 124,
        "start": 124,
-       "cleared": 132,
-       "captured": 138,
+       "cleared": 127,
+       "captured": 133,
        "with": []
       },
       {
        "do": "bank",
-       "altar": 1,
-       "gems": 21,
-       "round": 157
+       "altar": 0,
+       "gems": 11.06009451684727,
+       "round": 161
+      },
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 155,
+       "start": 155,
+       "cleared": 174,
+       "captured": 180,
+       "with": [
+        0,
+        3
+       ]
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 36,
+       "arrive": 43,
+       "start": 43,
+       "cleared": 562,
+       "captured": 568,
+       "with": []
+      }
+     ],
+     [
+      {
+       "do": "farm",
+       "group": 18,
+       "arrive": 9,
+       "start": 9,
+       "cleared": 10,
+       "captured": 16,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 6.974507207054168,
+       "round": 127
+      },
+      {
+       "do": "farm",
+       "group": 0,
+       "arrive": 127,
+       "start": 143,
+       "cleared": 152,
+       "captured": 158,
+       "with": []
+      },
+      {
+       "do": "farm",
+       "group": 4,
+       "arrive": 155,
+       "start": 155,
+       "cleared": 174,
+       "captured": 180,
+       "with": [
+        0,
+        1
+       ]
       }
      ],
      [
@@ -5971,105 +6114,23 @@
        "group": 22,
        "arrive": 29,
        "start": 29,
-       "cleared": 31,
-       "captured": 37,
+       "cleared": 34,
+       "captured": 40,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 14,
-       "round": 129
+       "gems": 13.883465889864171,
+       "round": 132
       },
       {
        "do": "farm",
-       "group": 0,
-       "arrive": 129,
-       "start": 153,
-       "cleared": 157,
-       "captured": 163,
-       "with": []
-      }
-     ],
-     [
-      {
-       "do": "farm",
-       "group": 48,
-       "arrive": 13,
-       "start": 13,
-       "cleared": 14,
-       "captured": 20,
-       "with": []
-      },
-      {
-       "do": "bank",
-       "altar": 0,
-       "gems": 7,
-       "round": 61
-      },
-      {
-       "do": "farm",
-       "group": 0,
-       "arrive": 61,
-       "start": 88,
-       "cleared": 97,
-       "captured": 103,
-       "with": []
-      },
-      {
-       "do": "bank",
-       "altar": 0,
-       "gems": 28,
-       "round": 107
-      },
-      {
-       "do": "farm",
-       "group": 12,
-       "arrive": 130,
-       "start": 130,
-       "cleared": 134,
-       "captured": 140,
-       "with": []
-      },
-      {
-       "do": "bank",
-       "altar": 0,
-       "gems": 14,
-       "round": 168
-      }
-     ],
-     [
-      {
-       "do": "farm",
-       "group": 6,
-       "arrive": 14,
-       "start": 14,
-       "cleared": 19,
-       "captured": 25,
-       "with": []
-      },
-      {
-       "do": "farm",
-       "group": 18,
-       "arrive": 28,
-       "start": 28,
-       "cleared": 30,
-       "captured": 36,
-       "with": []
-      },
-      {
-       "do": "bank",
-       "altar": 0,
-       "gems": 7,
-       "round": 147
-      },
-      {
-       "do": "farm",
-       "group": 27,
-       "arrive": 163,
-       "start": 188,
-       "cleared": 196,
-       "captured": 202,
+       "group": 28,
+       "arrive": 147,
+       "start": 167,
+       "cleared": 175,
+       "captured": 181,
        "with": []
       }
      ],
@@ -6086,61 +6147,76 @@
       {
        "do": "bank",
        "altar": 1,
-       "gems": 21,
-       "round": 29
+       "gems": 6.370547904275415,
+       "round": 27
       },
       {
        "do": "farm",
        "group": 0,
-       "arrive": 29,
-       "start": 29,
-       "cleared": 32,
-       "captured": 38,
+       "arrive": 27,
+       "start": 27,
+       "cleared": 29,
+       "captured": 35,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 28,
-       "round": 42
+       "gems": 14.0,
+       "round": 38
       },
       {
        "do": "farm",
        "group": 28,
-       "arrive": 55,
-       "start": 55,
-       "cleared": 57,
-       "captured": 63,
+       "arrive": 51,
+       "start": 51,
+       "cleared": 53,
+       "captured": 59,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 21,
-       "round": 82
+       "gems": 14.629452095724584,
+       "round": 77
       },
       {
        "do": "farm",
-       "group": 28,
-       "arrive": 95,
-       "start": 113,
-       "cleared": 115,
-       "captured": 121,
+       "group": 0,
+       "arrive": 77,
+       "start": 85,
+       "cleared": 87,
+       "captured": 93,
        "with": []
       },
       {
        "do": "bank",
        "altar": 0,
-       "gems": 21,
-       "round": 140
+       "gems": 14.0,
+       "round": 96
       },
       {
        "do": "farm",
        "group": 28,
-       "arrive": 153,
-       "start": 171,
-       "cleared": 173,
-       "captured": 179,
+       "arrive": 109,
+       "start": 109,
+       "cleared": 111,
+       "captured": 117,
+       "with": []
+      },
+      {
+       "do": "bank",
+       "altar": 0,
+       "gems": 14.629452095724584,
+       "round": 135
+      },
+      {
+       "do": "farm",
+       "group": 27,
+       "arrive": 149,
+       "start": 149,
+       "cleared": 151,
+       "captured": 157,
        "with": []
       }
      ]
@@ -6160,9 +6236,9 @@
     "Heart of Ruin"
    ],
    "origin": "LEARNED",
-   "pace": 568,
-   "banked": 1035,
-   "gold_earned": 679
+   "pace": 972,
+   "banked": 1007.589209822172,
+   "gold_earned": 1025
   },
   {
    "team": 0,
@@ -6174,9 +6250,9 @@
     "Cassi & Issac"
    ],
    "origin": "LEARNED",
-   "pace": 530,
-   "banked": 1056,
-   "gold_earned": 589
+   "pace": 833,
+   "banked": 1013.2769811949222,
+   "gold_earned": 878
   },
   {
    "team": 0,
@@ -6188,9 +6264,9 @@
     "Stellar"
    ],
    "origin": "COMPUTED",
-   "pace": 576,
-   "banked": 1026,
-   "gold_earned": 499
+   "pace": 881,
+   "banked": 1011.3339506949018,
+   "gold_earned": 650
   }
  ],
  "per_champion_group": [
@@ -6213,7 +6289,7 @@
       24,
       1
      ],
-     "solo_rounds": 4,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -6237,7 +6313,7 @@
       17,
       121
      ],
-     "solo_rounds": 10,
+     "solo_rounds": 7,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -6336,7 +6412,7 @@
       24,
       1
      ],
-     "solo_rounds": 3,
+     "solo_rounds": 2,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -6362,7 +6438,7 @@
       24,
       1
      ],
-     "solo_rounds": 6,
+     "solo_rounds": 3,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -6411,7 +6487,7 @@
       17,
       121
      ],
-     "solo_rounds": 10,
+     "solo_rounds": 7,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -6436,7 +6512,7 @@
       17,
       121
      ],
-     "solo_rounds": 13,
+     "solo_rounds": 9,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -6539,8 +6615,8 @@
       24,
       1
      ],
-     "solo_rounds": 164,
-     "solo_damage": 980,
+     "solo_rounds": 153,
+     "solo_damage": 720,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -6563,8 +6639,8 @@
       18,
       122
      ],
-     "solo_rounds": 179,
-     "solo_damage": 1240,
+     "solo_rounds": 165,
+     "solo_damage": 940,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -6577,8 +6653,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 165,
-     "solo_damage": 980,
+     "solo_rounds": 157,
+     "solo_damage": 740,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -6602,8 +6678,8 @@
       17,
       121
      ],
-     "solo_rounds": 440,
-     "solo_damage": 1340,
+     "solo_rounds": 429,
+     "solo_damage": 1100,
      "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
@@ -6616,8 +6692,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 324,
-     "solo_damage": 1760,
+     "solo_rounds": 310,
+     "solo_damage": 1300,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -6642,9 +6718,9 @@
       24,
       1
      ],
-     "solo_rounds": 287,
-     "solo_damage": 1120,
-     "solo_trips": 2,
+     "solo_rounds": 408,
+     "solo_damage": 960,
+     "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
       13,
@@ -6668,9 +6744,9 @@
       24,
       1
      ],
-     "solo_rounds": 287,
-     "solo_damage": 1020,
-     "solo_trips": 2,
+     "solo_rounds": 152,
+     "solo_damage": 680,
+     "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
       13,
@@ -6693,8 +6769,8 @@
       17,
       121
      ],
-     "solo_rounds": 176,
-     "solo_damage": 1120,
+     "solo_rounds": 167,
+     "solo_damage": 920,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -6717,8 +6793,8 @@
       18,
       122
      ],
-     "solo_rounds": 304,
-     "solo_damage": 1260,
+     "solo_rounds": 289,
+     "solo_damage": 920,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -6742,8 +6818,8 @@
       17,
       121
      ],
-     "solo_rounds": 177,
-     "solo_damage": 1000,
+     "solo_rounds": 164,
+     "solo_damage": 800,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -6756,8 +6832,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 30,
-     "solo_damage": 520,
+     "solo_rounds": 23,
+     "solo_damage": 400,
      "solo_trips": 0,
      "solo_cleared": true,
      "solo_tile": [
@@ -6781,8 +6857,8 @@
       17,
       121
      ],
-     "solo_rounds": 169,
-     "solo_damage": 920,
+     "solo_rounds": 162,
+     "solo_damage": 740,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -6795,8 +6871,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 53,
-     "solo_damage": 650,
+     "solo_rounds": 40,
+     "solo_damage": 440,
      "solo_trips": 0,
      "solo_cleared": true,
      "solo_tile": [
@@ -6825,8 +6901,8 @@
       24,
       1
      ],
-     "solo_rounds": 172,
-     "solo_damage": 1000,
+     "solo_rounds": 162,
+     "solo_damage": 720,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -6849,8 +6925,8 @@
       17,
       121
      ],
-     "solo_rounds": 188,
-     "solo_damage": 1240,
+     "solo_rounds": 174,
+     "solo_damage": 940,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -6863,8 +6939,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 174,
-     "solo_damage": 1080,
+     "solo_rounds": 164,
+     "solo_damage": 780,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -6888,8 +6964,8 @@
       17,
       121
      ],
-     "solo_rounds": 467,
-     "solo_damage": 1340,
+     "solo_rounds": 456,
+     "solo_damage": 1100,
      "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
@@ -6902,9 +6978,9 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 341,
-     "solo_damage": 1860,
-     "solo_trips": 2,
+     "solo_rounds": 461,
+     "solo_damage": 1380,
+     "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
       24,
@@ -6928,9 +7004,9 @@
       24,
       1
      ],
-     "solo_rounds": 305,
-     "solo_damage": 1120,
-     "solo_trips": 2,
+     "solo_rounds": 435,
+     "solo_damage": 960,
+     "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
       22,
@@ -6954,9 +7030,9 @@
       24,
       1
      ],
-     "solo_rounds": 305,
-     "solo_damage": 1020,
-     "solo_trips": 2,
+     "solo_rounds": 161,
+     "solo_damage": 680,
+     "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
       22,
@@ -6979,8 +7055,8 @@
       17,
       121
      ],
-     "solo_rounds": 187,
-     "solo_damage": 1300,
+     "solo_rounds": 175,
+     "solo_damage": 960,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -7003,8 +7079,8 @@
       17,
       121
      ],
-     "solo_rounds": 322,
-     "solo_damage": 1260,
+     "solo_rounds": 307,
+     "solo_damage": 920,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -7028,8 +7104,8 @@
       17,
       121
      ],
-     "solo_rounds": 185,
-     "solo_damage": 1040,
+     "solo_rounds": 172,
+     "solo_damage": 840,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -7042,8 +7118,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 30,
-     "solo_damage": 520,
+     "solo_rounds": 23,
+     "solo_damage": 400,
      "solo_trips": 0,
      "solo_cleared": true,
      "solo_tile": [
@@ -7067,8 +7143,8 @@
       17,
       121
      ],
-     "solo_rounds": 178,
-     "solo_damage": 920,
+     "solo_rounds": 171,
+     "solo_damage": 740,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -7081,8 +7157,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 41,
-     "solo_damage": 510,
+     "solo_rounds": 39,
+     "solo_damage": 430,
      "solo_trips": 0,
      "solo_cleared": true,
      "solo_tile": [
@@ -7111,9 +7187,9 @@
       21,
       135
      ],
-     "solo_rounds": 157,
-     "solo_damage": 1740,
-     "solo_trips": 1,
+     "solo_rounds": 270,
+     "solo_damage": 1200,
+     "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
       10,
@@ -7125,8 +7201,8 @@
       3
      ],
      "safe_tiles": 0,
-     "solo_rounds": 405,
-     "solo_damage": 2160,
+     "solo_rounds": 393,
+     "solo_damage": 1620,
      "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
@@ -7139,8 +7215,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 277,
-     "solo_damage": 1740,
+     "solo_rounds": 269,
+     "solo_damage": 1260,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -7164,9 +7240,9 @@
       21,
       135
      ],
-     "solo_rounds": 528,
-     "solo_damage": 1980,
-     "solo_trips": 4,
+     "solo_rounds": 642,
+     "solo_damage": 1620,
+     "solo_trips": 5,
      "solo_cleared": true,
      "solo_tile": [
       8,
@@ -7178,9 +7254,9 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 547,
-     "solo_damage": 3000,
-     "solo_trips": 4,
+     "solo_rounds": 659,
+     "solo_damage": 2400,
+     "solo_trips": 5,
      "solo_cleared": true,
      "solo_tile": [
       10,
@@ -7204,9 +7280,9 @@
       21,
       135
      ],
-     "solo_rounds": 641,
-     "solo_damage": 2400,
-     "solo_trips": 5,
+     "solo_rounds": 506,
+     "solo_damage": 1500,
+     "solo_trips": 4,
      "solo_cleared": true,
      "solo_tile": [
       8,
@@ -7230,9 +7306,9 @@
       21,
       135
      ],
-     "solo_rounds": 394,
-     "solo_damage": 1620,
-     "solo_trips": 3,
+     "solo_rounds": 509,
+     "solo_damage": 1440,
+     "solo_trips": 4,
      "solo_cleared": true,
      "solo_tile": [
       8,
@@ -7255,8 +7331,8 @@
       21,
       135
      ],
-     "solo_rounds": 285,
-     "solo_damage": 2040,
+     "solo_rounds": 275,
+     "solo_damage": 1320,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -7269,9 +7345,9 @@
       3
      ],
      "safe_tiles": 0,
-     "solo_rounds": 404,
-     "solo_damage": 2100,
-     "solo_trips": 3,
+     "solo_rounds": 514,
+     "solo_damage": 1680,
+     "solo_trips": 4,
      "solo_cleared": true,
      "solo_tile": [
       8,
@@ -7294,8 +7370,8 @@
       21,
       135
      ],
-     "solo_rounds": 292,
-     "solo_damage": 1860,
+     "solo_rounds": 281,
+     "solo_damage": 1380,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -7308,8 +7384,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 297,
-     "solo_damage": 1500,
+     "solo_rounds": 284,
+     "solo_damage": 1140,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -7333,8 +7409,8 @@
       21,
       135
      ],
-     "solo_rounds": 279,
-     "solo_damage": 1560,
+     "solo_rounds": 268,
+     "solo_damage": 960,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -7347,9 +7423,9 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 170,
-     "solo_damage": 1290,
-     "solo_trips": 1,
+     "solo_rounds": 285,
+     "solo_damage": 1080,
+     "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
       10,
@@ -7377,9 +7453,9 @@
       25,
       1
      ],
-     "solo_rounds": 174,
-     "solo_damage": 1740,
-     "solo_trips": 1,
+     "solo_rounds": 304,
+     "solo_damage": 1200,
+     "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
       27,
@@ -7391,8 +7467,8 @@
       3
      ],
      "safe_tiles": 0,
-     "solo_rounds": 459,
-     "solo_damage": 2160,
+     "solo_rounds": 447,
+     "solo_damage": 1620,
      "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
@@ -7405,8 +7481,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 311,
-     "solo_damage": 1740,
+     "solo_rounds": 303,
+     "solo_damage": 1260,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -7430,9 +7506,9 @@
       16,
       112
      ],
-     "solo_rounds": 600,
-     "solo_damage": 1980,
-     "solo_trips": 4,
+     "solo_rounds": 732,
+     "solo_damage": 1620,
+     "solo_trips": 5,
      "solo_cleared": true,
      "solo_tile": [
       26,
@@ -7444,9 +7520,9 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 615,
-     "solo_damage": 3000,
-     "solo_trips": 4,
+     "solo_rounds": 744,
+     "solo_damage": 2400,
+     "solo_trips": 5,
      "solo_cleared": true,
      "solo_tile": [
       27,
@@ -7470,9 +7546,9 @@
       25,
       1
      ],
-     "solo_rounds": 731,
-     "solo_damage": 2400,
-     "solo_trips": 5,
+     "solo_rounds": 578,
+     "solo_damage": 1500,
+     "solo_trips": 4,
      "solo_cleared": true,
      "solo_tile": [
       26,
@@ -7496,9 +7572,9 @@
       25,
       1
      ],
-     "solo_rounds": 448,
-     "solo_damage": 1620,
-     "solo_trips": 3,
+     "solo_rounds": 581,
+     "solo_damage": 1440,
+     "solo_trips": 4,
      "solo_cleared": true,
      "solo_tile": [
       26,
@@ -7521,8 +7597,8 @@
       16,
       112
      ],
-     "solo_rounds": 319,
-     "solo_damage": 2040,
+     "solo_rounds": 309,
+     "solo_damage": 1320,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -7535,9 +7611,9 @@
       3
      ],
      "safe_tiles": 0,
-     "solo_rounds": 458,
-     "solo_damage": 2100,
-     "solo_trips": 3,
+     "solo_rounds": 586,
+     "solo_damage": 1680,
+     "solo_trips": 4,
      "solo_cleared": true,
      "solo_tile": [
       26,
@@ -7560,8 +7636,8 @@
       16,
       112
      ],
-     "solo_rounds": 326,
-     "solo_damage": 1860,
+     "solo_rounds": 315,
+     "solo_damage": 1380,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -7574,8 +7650,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 331,
-     "solo_damage": 1500,
+     "solo_rounds": 318,
+     "solo_damage": 1140,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -7599,8 +7675,8 @@
       16,
       112
      ],
-     "solo_rounds": 315,
-     "solo_damage": 1560,
+     "solo_rounds": 304,
+     "solo_damage": 960,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -7613,9 +7689,9 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 187,
-     "solo_damage": 1290,
-     "solo_trips": 1,
+     "solo_rounds": 319,
+     "solo_damage": 1080,
+     "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
       27,
@@ -7643,7 +7719,7 @@
       11,
       163
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -7667,7 +7743,7 @@
       5,
       229
      ],
-     "solo_rounds": 5,
+     "solo_rounds": 3,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -7841,7 +7917,7 @@
       5,
       229
      ],
-     "solo_rounds": 5,
+     "solo_rounds": 3,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -7866,7 +7942,7 @@
       5,
       228
      ],
-     "solo_rounds": 6,
+     "solo_rounds": 4,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -7969,7 +8045,7 @@
       28,
       5
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -7993,7 +8069,7 @@
       30,
       11
      ],
-     "solo_rounds": 5,
+     "solo_rounds": 3,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -8167,7 +8243,7 @@
       30,
       11
      ],
-     "solo_rounds": 5,
+     "solo_rounds": 3,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -8192,7 +8268,7 @@
       30,
       11
      ],
-     "solo_rounds": 6,
+     "solo_rounds": 4,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -8295,9 +8371,9 @@
       12,
       162
      ],
-     "solo_rounds": 55,
-     "solo_damage": 1740,
-     "solo_trips": 1,
+     "solo_rounds": 66,
+     "solo_damage": 1200,
+     "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
       7,
@@ -8309,8 +8385,8 @@
       3
      ],
      "safe_tiles": 0,
-     "solo_rounds": 97,
-     "solo_damage": 2160,
+     "solo_rounds": 85,
+     "solo_damage": 1620,
      "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
@@ -8323,8 +8399,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 72,
-     "solo_damage": 1740,
+     "solo_rounds": 64,
+     "solo_damage": 1260,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -8348,9 +8424,9 @@
       9,
       232
      ],
-     "solo_rounds": 117,
-     "solo_damage": 1980,
-     "solo_trips": 4,
+     "solo_rounds": 129,
+     "solo_damage": 1620,
+     "solo_trips": 5,
      "solo_cleared": true,
      "solo_tile": [
       9,
@@ -8362,9 +8438,9 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 136,
-     "solo_damage": 3000,
-     "solo_trips": 4,
+     "solo_rounds": 147,
+     "solo_damage": 2400,
+     "solo_trips": 5,
      "solo_cleared": true,
      "solo_tile": [
       7,
@@ -8388,9 +8464,9 @@
       12,
       162
      ],
-     "solo_rounds": 131,
-     "solo_damage": 2400,
-     "solo_trips": 5,
+     "solo_rounds": 98,
+     "solo_damage": 1500,
+     "solo_trips": 4,
      "solo_cleared": true,
      "solo_tile": [
       9,
@@ -8414,9 +8490,9 @@
       12,
       162
      ],
-     "solo_rounds": 88,
-     "solo_damage": 1620,
-     "solo_trips": 3,
+     "solo_rounds": 101,
+     "solo_damage": 1440,
+     "solo_trips": 4,
      "solo_cleared": true,
      "solo_tile": [
       9,
@@ -8439,8 +8515,8 @@
       9,
       232
      ],
-     "solo_rounds": 79,
-     "solo_damage": 2040,
+     "solo_rounds": 69,
+     "solo_damage": 1320,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -8453,9 +8529,9 @@
       3
      ],
      "safe_tiles": 0,
-     "solo_rounds": 96,
-     "solo_damage": 2100,
-     "solo_trips": 3,
+     "solo_rounds": 105,
+     "solo_damage": 1680,
+     "solo_trips": 4,
      "solo_cleared": true,
      "solo_tile": [
       9,
@@ -8478,8 +8554,8 @@
       9,
       232
      ],
-     "solo_rounds": 84,
-     "solo_damage": 1860,
+     "solo_rounds": 74,
+     "solo_damage": 1380,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -8492,8 +8568,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 93,
-     "solo_damage": 1500,
+     "solo_rounds": 80,
+     "solo_damage": 1140,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -8517,8 +8593,8 @@
       9,
       232
      ],
-     "solo_rounds": 72,
-     "solo_damage": 1560,
+     "solo_rounds": 61,
+     "solo_damage": 960,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -8531,9 +8607,9 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 61,
-     "solo_damage": 1290,
-     "solo_trips": 1,
+     "solo_rounds": 73,
+     "solo_damage": 1080,
+     "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
       7,
@@ -8561,9 +8637,9 @@
       25,
       5
      ],
-     "solo_rounds": 281,
-     "solo_damage": 1740,
-     "solo_trips": 1,
+     "solo_rounds": 518,
+     "solo_damage": 1200,
+     "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
       32,
@@ -8575,8 +8651,8 @@
       3
      ],
      "safe_tiles": 0,
-     "solo_rounds": 775,
-     "solo_damage": 2160,
+     "solo_rounds": 763,
+     "solo_damage": 1620,
      "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
@@ -8589,8 +8665,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 524,
-     "solo_damage": 1740,
+     "solo_rounds": 516,
+     "solo_damage": 1260,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -8614,9 +8690,9 @@
       25,
       6
      ],
-     "solo_rounds": 1021,
-     "solo_damage": 1980,
-     "solo_trips": 4,
+     "solo_rounds": 1259,
+     "solo_damage": 1620,
+     "solo_trips": 5,
      "solo_cleared": true,
      "solo_tile": [
       31,
@@ -8628,9 +8704,9 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 1040,
-     "solo_damage": 3000,
-     "solo_trips": 4,
+     "solo_rounds": 1277,
+     "solo_damage": 2400,
+     "solo_trips": 5,
      "solo_cleared": true,
      "solo_tile": [
       32,
@@ -8654,9 +8730,9 @@
       25,
       5
      ],
-     "solo_rounds": 1261,
-     "solo_damage": 2400,
-     "solo_trips": 5,
+     "solo_rounds": 1002,
+     "solo_damage": 1500,
+     "solo_trips": 4,
      "solo_cleared": true,
      "solo_tile": [
       31,
@@ -8680,9 +8756,9 @@
       25,
       5
      ],
-     "solo_rounds": 766,
-     "solo_damage": 1620,
-     "solo_trips": 3,
+     "solo_rounds": 1005,
+     "solo_damage": 1440,
+     "solo_trips": 4,
      "solo_cleared": true,
      "solo_tile": [
       31,
@@ -8705,8 +8781,8 @@
       25,
       6
      ],
-     "solo_rounds": 531,
-     "solo_damage": 2040,
+     "solo_rounds": 521,
+     "solo_damage": 1320,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -8719,9 +8795,9 @@
       3
      ],
      "safe_tiles": 0,
-     "solo_rounds": 774,
-     "solo_damage": 2100,
-     "solo_trips": 3,
+     "solo_rounds": 1009,
+     "solo_damage": 1680,
+     "solo_trips": 4,
      "solo_cleared": true,
      "solo_tile": [
       31,
@@ -8744,8 +8820,8 @@
       25,
       6
      ],
-     "solo_rounds": 536,
-     "solo_damage": 1860,
+     "solo_rounds": 526,
+     "solo_damage": 1380,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -8758,8 +8834,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 545,
-     "solo_damage": 1500,
+     "solo_rounds": 532,
+     "solo_damage": 1140,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -8783,8 +8859,8 @@
       25,
       6
      ],
-     "solo_rounds": 524,
-     "solo_damage": 1560,
+     "solo_rounds": 513,
+     "solo_damage": 960,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -8797,9 +8873,9 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 287,
-     "solo_damage": 1290,
-     "solo_trips": 1,
+     "solo_rounds": 525,
+     "solo_damage": 1080,
+     "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
       32,
@@ -8827,8 +8903,8 @@
       21,
       135
      ],
-     "solo_rounds": 132,
-     "solo_damage": 980,
+     "solo_rounds": 121,
+     "solo_damage": 720,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -8851,8 +8927,8 @@
       12,
       162
      ],
-     "solo_rounds": 141,
-     "solo_damage": 1240,
+     "solo_rounds": 129,
+     "solo_damage": 940,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -8865,8 +8941,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 131,
-     "solo_damage": 980,
+     "solo_rounds": 122,
+     "solo_damage": 740,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -8890,8 +8966,8 @@
       12,
       162
      ],
-     "solo_rounds": 334,
-     "solo_damage": 1340,
+     "solo_rounds": 325,
+     "solo_damage": 1100,
      "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
@@ -8904,8 +8980,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 254,
-     "solo_damage": 1760,
+     "solo_rounds": 239,
+     "solo_damage": 1300,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -8930,9 +9006,9 @@
       21,
       135
      ],
-     "solo_rounds": 221,
-     "solo_damage": 1120,
-     "solo_trips": 2,
+     "solo_rounds": 309,
+     "solo_damage": 960,
+     "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
       0,
@@ -8956,9 +9032,9 @@
       21,
       135
      ],
-     "solo_rounds": 221,
-     "solo_damage": 1020,
-     "solo_trips": 2,
+     "solo_rounds": 119,
+     "solo_damage": 680,
+     "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
       0,
@@ -8981,8 +9057,8 @@
       12,
       162
      ],
-     "solo_rounds": 138,
-     "solo_damage": 1120,
+     "solo_rounds": 130,
+     "solo_damage": 920,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -9005,8 +9081,8 @@
       12,
       162
      ],
-     "solo_rounds": 232,
-     "solo_damage": 1260,
+     "solo_rounds": 220,
+     "solo_damage": 920,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -9030,8 +9106,8 @@
       12,
       162
      ],
-     "solo_rounds": 137,
-     "solo_damage": 1000,
+     "solo_rounds": 126,
+     "solo_damage": 800,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -9044,8 +9120,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 30,
-     "solo_damage": 520,
+     "solo_rounds": 23,
+     "solo_damage": 400,
      "solo_trips": 0,
      "solo_cleared": true,
      "solo_tile": [
@@ -9069,8 +9145,8 @@
       12,
       162
      ],
-     "solo_rounds": 132,
-     "solo_damage": 920,
+     "solo_rounds": 125,
+     "solo_damage": 740,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -9083,8 +9159,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 49,
-     "solo_damage": 650,
+     "solo_rounds": 37,
+     "solo_damage": 440,
      "solo_trips": 0,
      "solo_cleared": true,
      "solo_tile": [
@@ -9113,8 +9189,8 @@
       29,
       79
      ],
-     "solo_rounds": 205,
-     "solo_damage": 980,
+     "solo_rounds": 194,
+     "solo_damage": 720,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -9137,8 +9213,8 @@
       27,
       81
      ],
-     "solo_rounds": 215,
-     "solo_damage": 1240,
+     "solo_rounds": 203,
+     "solo_damage": 940,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -9151,8 +9227,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 203,
-     "solo_damage": 980,
+     "solo_rounds": 195,
+     "solo_damage": 740,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -9176,8 +9252,8 @@
       28,
       80
      ],
-     "solo_rounds": 556,
-     "solo_damage": 1340,
+     "solo_rounds": 547,
+     "solo_damage": 1100,
      "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
@@ -9190,8 +9266,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 400,
-     "solo_damage": 1760,
+     "solo_rounds": 385,
+     "solo_damage": 1300,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -9216,9 +9292,9 @@
       29,
       79
      ],
-     "solo_rounds": 369,
-     "solo_damage": 1120,
-     "solo_trips": 2,
+     "solo_rounds": 531,
+     "solo_damage": 960,
+     "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
       36,
@@ -9242,9 +9318,9 @@
       29,
       79
      ],
-     "solo_rounds": 369,
-     "solo_damage": 1020,
-     "solo_trips": 2,
+     "solo_rounds": 193,
+     "solo_damage": 680,
+     "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
       36,
@@ -9267,8 +9343,8 @@
       28,
       80
      ],
-     "solo_rounds": 211,
-     "solo_damage": 1120,
+     "solo_rounds": 204,
+     "solo_damage": 920,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -9291,8 +9367,8 @@
       27,
       81
      ],
-     "solo_rounds": 380,
-     "solo_damage": 1260,
+     "solo_rounds": 368,
+     "solo_damage": 920,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -9316,8 +9392,8 @@
       28,
       80
      ],
-     "solo_rounds": 210,
-     "solo_damage": 1000,
+     "solo_rounds": 202,
+     "solo_damage": 800,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -9330,8 +9406,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 30,
-     "solo_damage": 520,
+     "solo_rounds": 23,
+     "solo_damage": 400,
      "solo_trips": 0,
      "solo_cleared": true,
      "solo_tile": [
@@ -9355,8 +9431,8 @@
       28,
       80
      ],
-     "solo_rounds": 206,
-     "solo_damage": 920,
+     "solo_rounds": 199,
+     "solo_damage": 740,
      "solo_trips": 1,
      "solo_cleared": true,
      "solo_tile": [
@@ -9369,8 +9445,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 45,
-     "solo_damage": 470,
+     "solo_rounds": 36,
+     "solo_damage": 340,
      "solo_trips": 0,
      "solo_cleared": true,
      "solo_tile": [
@@ -9399,7 +9475,7 @@
       32,
       36
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -9423,7 +9499,7 @@
       28,
       146
      ],
-     "solo_rounds": 5,
+     "solo_rounds": 3,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -9597,7 +9673,7 @@
       28,
       146
      ],
-     "solo_rounds": 5,
+     "solo_rounds": 3,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -9622,7 +9698,7 @@
       27,
       145
      ],
-     "solo_rounds": 6,
+     "solo_rounds": 4,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -9725,7 +9801,7 @@
       11,
       97
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -9749,7 +9825,7 @@
       11,
       97
      ],
-     "solo_rounds": 5,
+     "solo_rounds": 3,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -9923,7 +9999,7 @@
       11,
       97
      ],
-     "solo_rounds": 5,
+     "solo_rounds": 3,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -9948,7 +10024,7 @@
       11,
       97
      ],
-     "solo_rounds": 6,
+     "solo_rounds": 4,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -10075,7 +10151,7 @@
       26,
       138
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -10249,7 +10325,7 @@
       26,
       138
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -10274,7 +10350,7 @@
       25,
       138
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -10401,7 +10477,7 @@
       9,
       102
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -10575,7 +10651,7 @@
       9,
       102
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -10600,7 +10676,7 @@
       9,
       101
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -10703,7 +10779,7 @@
       0,
       190
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -10727,7 +10803,7 @@
       0,
       191
      ],
-     "solo_rounds": 5,
+     "solo_rounds": 3,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -10901,7 +10977,7 @@
       0,
       191
      ],
-     "solo_rounds": 5,
+     "solo_rounds": 3,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -10926,7 +11002,7 @@
       0,
       190
      ],
-     "solo_rounds": 6,
+     "solo_rounds": 4,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -11029,7 +11105,7 @@
       32,
       26
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -11053,7 +11129,7 @@
       36,
       45
      ],
-     "solo_rounds": 5,
+     "solo_rounds": 3,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -11227,7 +11303,7 @@
       36,
       45
      ],
-     "solo_rounds": 5,
+     "solo_rounds": 3,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -11252,7 +11328,7 @@
       36,
       44
      ],
-     "solo_rounds": 6,
+     "solo_rounds": 4,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -11379,7 +11455,7 @@
       7,
       230
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -11553,7 +11629,7 @@
       7,
       230
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -11578,7 +11654,7 @@
       6,
       229
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -11705,7 +11781,7 @@
       30,
       11
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -11879,7 +11955,7 @@
       30,
       11
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -11904,7 +11980,7 @@
       30,
       11
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -12031,7 +12107,7 @@
       7,
       219
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -12205,7 +12281,7 @@
       7,
       219
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -12230,7 +12306,7 @@
       7,
       218
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -12357,7 +12433,7 @@
       32,
       18
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -12531,7 +12607,7 @@
       32,
       18
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -12556,7 +12632,7 @@
       32,
       17
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -12659,7 +12735,7 @@
       9,
       100
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -12683,7 +12759,7 @@
       5,
       210
      ],
-     "solo_rounds": 5,
+     "solo_rounds": 3,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -12857,7 +12933,7 @@
       5,
       210
      ],
-     "solo_rounds": 5,
+     "solo_rounds": 3,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -12882,7 +12958,7 @@
       5,
       209
      ],
-     "solo_rounds": 6,
+     "solo_rounds": 4,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -12985,7 +13061,7 @@
       28,
       1
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -13009,7 +13085,7 @@
       32,
       26
      ],
-     "solo_rounds": 5,
+     "solo_rounds": 3,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -13183,7 +13259,7 @@
       32,
       26
      ],
-     "solo_rounds": 5,
+     "solo_rounds": 3,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -13208,7 +13284,7 @@
       32,
       25
      ],
-     "solo_rounds": 6,
+     "solo_rounds": 4,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -13335,7 +13411,7 @@
       6,
       205
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -13509,7 +13585,7 @@
       6,
       205
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -13534,7 +13610,7 @@
       6,
       205
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -13661,7 +13737,7 @@
       32,
       34
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -13835,7 +13911,7 @@
       32,
       34
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -13860,7 +13936,7 @@
       32,
       33
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -13964,7 +14040,7 @@
       167
      ],
      "solo_rounds": 1500,
-     "solo_damage": 17000,
+     "solo_damage": 10600,
      "solo_trips": 17,
      "solo_cleared": false,
      "solo_tile": [
@@ -13978,7 +14054,7 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 14400,
+     "solo_damage": 10800,
      "solo_trips": 18,
      "solo_cleared": false,
      "solo_tile": [
@@ -13992,8 +14068,8 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 14200,
-     "solo_trips": 17,
+     "solo_damage": 10800,
+     "solo_trips": 18,
      "solo_cleared": false,
      "solo_tile": [
       3,
@@ -14007,7 +14083,7 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 10800,
+     "solo_damage": 7200,
      "solo_trips": 18,
      "solo_cleared": false,
      "solo_tile": [
@@ -14021,8 +14097,8 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 14200,
-     "solo_trips": 17,
+     "solo_damage": 10800,
+     "solo_trips": 18,
      "solo_cleared": false,
      "solo_tile": [
       3,
@@ -14047,7 +14123,7 @@
       167
      ],
      "solo_rounds": 1500,
-     "solo_damage": 10800,
+     "solo_damage": 7200,
      "solo_trips": 18,
      "solo_cleared": false,
      "solo_tile": [
@@ -14073,7 +14149,7 @@
       167
      ],
      "solo_rounds": 1500,
-     "solo_damage": 10800,
+     "solo_damage": 7200,
      "solo_trips": 18,
      "solo_cleared": false,
      "solo_tile": [
@@ -14088,8 +14164,8 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 17000,
-     "solo_trips": 17,
+     "solo_damage": 10800,
+     "solo_trips": 18,
      "solo_cleared": false,
      "solo_tile": [
       3,
@@ -14102,7 +14178,7 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 10800,
+     "solo_damage": 7200,
      "solo_trips": 18,
      "solo_cleared": false,
      "solo_tile": [
@@ -14117,7 +14193,7 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 13600,
+     "solo_damage": 10600,
      "solo_trips": 17,
      "solo_cleared": false,
      "solo_tile": [
@@ -14131,7 +14207,7 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 12750,
+     "solo_damage": 9700,
      "solo_trips": 17,
      "solo_cleared": false,
      "solo_tile": [
@@ -14146,8 +14222,8 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 14000,
-     "solo_trips": 17,
+     "solo_damage": 10800,
+     "solo_trips": 18,
      "solo_cleared": false,
      "solo_tile": [
       3,
@@ -14160,7 +14236,7 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 14450,
+     "solo_damage": 11050,
      "solo_trips": 17,
      "solo_cleared": false,
      "solo_tile": [
@@ -14190,8 +14266,8 @@
       13
      ],
      "solo_rounds": 1500,
-     "solo_damage": 8000,
-     "solo_trips": 8,
+     "solo_damage": 5400,
+     "solo_trips": 9,
      "solo_cleared": false,
      "solo_tile": [
       38,
@@ -14204,7 +14280,7 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 7200,
+     "solo_damage": 5400,
      "solo_trips": 9,
      "solo_cleared": false,
      "solo_tile": [
@@ -14218,7 +14294,7 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 7200,
+     "solo_damage": 5400,
      "solo_trips": 9,
      "solo_cleared": false,
      "solo_tile": [
@@ -14233,7 +14309,7 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 5400,
+     "solo_damage": 3600,
      "solo_trips": 9,
      "solo_cleared": false,
      "solo_tile": [
@@ -14247,7 +14323,7 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 7200,
+     "solo_damage": 5400,
      "solo_trips": 9,
      "solo_cleared": false,
      "solo_tile": [
@@ -14273,7 +14349,7 @@
       13
      ],
      "solo_rounds": 1500,
-     "solo_damage": 5400,
+     "solo_damage": 3600,
      "solo_trips": 9,
      "solo_cleared": false,
      "solo_tile": [
@@ -14299,7 +14375,7 @@
       13
      ],
      "solo_rounds": 1500,
-     "solo_damage": 5400,
+     "solo_damage": 3600,
      "solo_trips": 9,
      "solo_cleared": false,
      "solo_tile": [
@@ -14314,8 +14390,8 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 8600,
-     "solo_trips": 8,
+     "solo_damage": 5400,
+     "solo_trips": 9,
      "solo_cleared": false,
      "solo_tile": [
       38,
@@ -14328,7 +14404,7 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 5400,
+     "solo_damage": 3600,
      "solo_trips": 9,
      "solo_cleared": false,
      "solo_tile": [
@@ -14343,8 +14419,8 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 6800,
-     "solo_trips": 8,
+     "solo_damage": 5400,
+     "solo_trips": 9,
      "solo_cleared": false,
      "solo_tile": [
       38,
@@ -14357,8 +14433,8 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 6350,
-     "solo_trips": 8,
+     "solo_damage": 4950,
+     "solo_trips": 9,
      "solo_cleared": false,
      "solo_tile": [
       38,
@@ -14372,7 +14448,7 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 7200,
+     "solo_damage": 5400,
      "solo_trips": 9,
      "solo_cleared": false,
      "solo_tile": [
@@ -14386,7 +14462,7 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 6800,
+     "solo_damage": 5650,
      "solo_trips": 8,
      "solo_cleared": false,
      "solo_tile": [
@@ -14415,7 +14491,7 @@
       24,
       1
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -14439,7 +14515,7 @@
       24,
       1
      ],
-     "solo_rounds": 8,
+     "solo_rounds": 5,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -14564,7 +14640,7 @@
       24,
       1
      ],
-     "solo_rounds": 4,
+     "solo_rounds": 2,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -14613,7 +14689,7 @@
       24,
       1
      ],
-     "solo_rounds": 8,
+     "solo_rounds": 5,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -14638,7 +14714,7 @@
       24,
       1
      ],
-     "solo_rounds": 9,
+     "solo_rounds": 7,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -14741,7 +14817,7 @@
       11,
       101
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -14765,7 +14841,7 @@
       12,
       104
      ],
-     "solo_rounds": 8,
+     "solo_rounds": 5,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -14890,7 +14966,7 @@
       11,
       101
      ],
-     "solo_rounds": 4,
+     "solo_rounds": 2,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -14939,7 +15015,7 @@
       12,
       104
      ],
-     "solo_rounds": 8,
+     "solo_rounds": 5,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -14964,7 +15040,7 @@
       11,
       103
      ],
-     "solo_rounds": 9,
+     "solo_rounds": 7,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -15091,7 +15167,7 @@
       21,
       135
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -15265,7 +15341,7 @@
       21,
       135
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -15290,7 +15366,7 @@
       21,
       135
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -15417,7 +15493,7 @@
       14,
       109
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -15591,7 +15667,7 @@
       14,
       109
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -15616,7 +15692,7 @@
       14,
       108
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -15719,7 +15795,7 @@
       21,
       135
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -15743,7 +15819,7 @@
       21,
       135
      ],
-     "solo_rounds": 5,
+     "solo_rounds": 3,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -15917,7 +15993,7 @@
       21,
       135
      ],
-     "solo_rounds": 5,
+     "solo_rounds": 3,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -15942,7 +16018,7 @@
       21,
       135
      ],
-     "solo_rounds": 6,
+     "solo_rounds": 4,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -16045,7 +16121,7 @@
       25,
       6
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -16069,7 +16145,7 @@
       16,
       112
      ],
-     "solo_rounds": 5,
+     "solo_rounds": 3,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -16243,7 +16319,7 @@
       16,
       112
      ],
-     "solo_rounds": 5,
+     "solo_rounds": 3,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -16268,7 +16344,7 @@
       15,
       108
      ],
-     "solo_rounds": 6,
+     "solo_rounds": 4,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -16371,8 +16447,8 @@
       0,
       180
      ],
-     "solo_rounds": 186,
-     "solo_damage": 2600,
+     "solo_rounds": 170,
+     "solo_damage": 1740,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -16385,8 +16461,8 @@
       3
      ],
      "safe_tiles": 0,
-     "solo_rounds": 324,
-     "solo_damage": 3240,
+     "solo_rounds": 310,
+     "solo_damage": 2580,
      "solo_trips": 4,
      "solo_cleared": true,
      "solo_tile": [
@@ -16399,9 +16475,9 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 255,
-     "solo_damage": 2700,
-     "solo_trips": 3,
+     "solo_rounds": 313,
+     "solo_damage": 2200,
+     "solo_trips": 4,
      "solo_cleared": true,
      "solo_tile": [
       20,
@@ -16424,8 +16500,8 @@
       0,
       190
      ],
-     "solo_rounds": 536,
-     "solo_damage": 3800,
+     "solo_rounds": 511,
+     "solo_damage": 2380,
      "solo_trips": 7,
      "solo_cleared": true,
      "solo_tile": [
@@ -16438,8 +16514,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 570,
-     "solo_damage": 4940,
+     "solo_rounds": 551,
+     "solo_damage": 3780,
      "solo_trips": 7,
      "solo_cleared": true,
      "solo_tile": [
@@ -16464,8 +16540,8 @@
       0,
       180
      ],
-     "solo_rounds": 372,
-     "solo_damage": 2840,
+     "solo_rounds": 355,
+     "solo_damage": 1780,
      "solo_trips": 5,
      "solo_cleared": true,
      "solo_tile": [
@@ -16490,8 +16566,8 @@
       0,
       180
      ],
-     "solo_rounds": 377,
-     "solo_damage": 2800,
+     "solo_rounds": 362,
+     "solo_damage": 1840,
      "solo_trips": 5,
      "solo_cleared": true,
      "solo_tile": [
@@ -16515,9 +16591,9 @@
       0,
       190
      ],
-     "solo_rounds": 265,
-     "solo_damage": 3020,
-     "solo_trips": 3,
+     "solo_rounds": 322,
+     "solo_damage": 2580,
+     "solo_trips": 4,
      "solo_cleared": true,
      "solo_tile": [
       20,
@@ -16529,8 +16605,8 @@
       3
      ],
      "safe_tiles": 0,
-     "solo_rounds": 455,
-     "solo_damage": 3400,
+     "solo_rounds": 438,
+     "solo_damage": 2500,
      "solo_trips": 6,
      "solo_cleared": true,
      "solo_tile": [
@@ -16554,8 +16630,8 @@
       0,
       190
      ],
-     "solo_rounds": 327,
-     "solo_damage": 2720,
+     "solo_rounds": 318,
+     "solo_damage": 2220,
      "solo_trips": 4,
      "solo_cleared": true,
      "solo_tile": [
@@ -16568,8 +16644,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 191,
-     "solo_damage": 2040,
+     "solo_rounds": 179,
+     "solo_damage": 1350,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -16593,8 +16669,8 @@
       0,
       190
      ],
-     "solo_rounds": 247,
-     "solo_damage": 2280,
+     "solo_rounds": 240,
+     "solo_damage": 1860,
      "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
@@ -16607,9 +16683,9 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 254,
-     "solo_damage": 2200,
-     "solo_trips": 3,
+     "solo_rounds": 169,
+     "solo_damage": 1470,
+     "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
       20,
@@ -16637,8 +16713,8 @@
       32,
       17
      ],
-     "solo_rounds": 436,
-     "solo_damage": 2540,
+     "solo_rounds": 422,
+     "solo_damage": 1680,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -16651,8 +16727,8 @@
       3
      ],
      "safe_tiles": 0,
-     "solo_rounds": 836,
-     "solo_damage": 3240,
+     "solo_rounds": 822,
+     "solo_damage": 2580,
      "solo_trips": 4,
      "solo_cleared": true,
      "solo_tile": [
@@ -16665,8 +16741,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 629,
-     "solo_damage": 2500,
+     "solo_rounds": 620,
+     "solo_damage": 2020,
      "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
@@ -16690,8 +16766,8 @@
       36,
       53
      ],
-     "solo_rounds": 1432,
-     "solo_damage": 3800,
+     "solo_rounds": 1407,
+     "solo_damage": 2380,
      "solo_trips": 7,
      "solo_cleared": true,
      "solo_tile": [
@@ -16704,8 +16780,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 1447,
-     "solo_damage": 4760,
+     "solo_rounds": 1427,
+     "solo_damage": 3580,
      "solo_trips": 7,
      "solo_cleared": true,
      "solo_tile": [
@@ -16730,8 +16806,8 @@
       32,
       17
      ],
-     "solo_rounds": 1012,
-     "solo_damage": 2840,
+     "solo_rounds": 995,
+     "solo_damage": 1780,
      "solo_trips": 5,
      "solo_cleared": true,
      "solo_tile": [
@@ -16756,8 +16832,8 @@
       32,
       17
      ],
-     "solo_rounds": 1017,
-     "solo_damage": 2800,
+     "solo_rounds": 1002,
+     "solo_damage": 1840,
      "solo_trips": 5,
      "solo_cleared": true,
      "solo_tile": [
@@ -16781,8 +16857,8 @@
       36,
       53
      ],
-     "solo_rounds": 642,
-     "solo_damage": 2940,
+     "solo_rounds": 631,
+     "solo_damage": 2400,
      "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
@@ -16795,8 +16871,8 @@
       3
      ],
      "safe_tiles": 0,
-     "solo_rounds": 1223,
-     "solo_damage": 3400,
+     "solo_rounds": 1206,
+     "solo_damage": 2500,
      "solo_trips": 6,
      "solo_cleared": true,
      "solo_tile": [
@@ -16820,9 +16896,9 @@
       36,
       53
      ],
-     "solo_rounds": 636,
-     "solo_damage": 2640,
-     "solo_trips": 3,
+     "solo_rounds": 818,
+     "solo_damage": 2160,
+     "solo_trips": 4,
      "solo_cleared": true,
      "solo_tile": [
       22,
@@ -16834,8 +16910,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 441,
-     "solo_damage": 2040,
+     "solo_rounds": 429,
+     "solo_damage": 1350,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -16859,8 +16935,8 @@
       36,
       53
      ],
-     "solo_rounds": 631,
-     "solo_damage": 2280,
+     "solo_rounds": 624,
+     "solo_damage": 1860,
      "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
@@ -16873,9 +16949,9 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 451,
-     "solo_damage": 2190,
-     "solo_trips": 2,
+     "solo_rounds": 632,
+     "solo_damage": 1570,
+     "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
       22,
@@ -16903,9 +16979,9 @@
       0,
       199
      ],
-     "solo_rounds": 381,
-     "solo_damage": 6600,
-     "solo_trips": 6,
+     "solo_rounds": 523,
+     "solo_damage": 5400,
+     "solo_trips": 9,
      "solo_cleared": true,
      "solo_tile": [
       38,
@@ -16917,9 +16993,9 @@
       3
      ],
      "safe_tiles": 0,
-     "solo_rounds": 703,
-     "solo_damage": 9240,
-     "solo_trips": 12,
+     "solo_rounds": 628,
+     "solo_damage": 6840,
+     "solo_trips": 11,
      "solo_cleared": true,
      "solo_tile": [
       36,
@@ -16931,9 +17007,9 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 586,
-     "solo_damage": 7200,
-     "solo_trips": 10,
+     "solo_rounds": 519,
+     "solo_damage": 5400,
+     "solo_trips": 9,
      "solo_cleared": true,
      "solo_tile": [
       38,
@@ -16956,9 +17032,9 @@
       0,
       200
      ],
-     "solo_rounds": 968,
-     "solo_damage": 8160,
-     "solo_trips": 17,
+     "solo_rounds": 787,
+     "solo_damage": 5160,
+     "solo_trips": 14,
      "solo_cleared": true,
      "solo_tile": [
       36,
@@ -16970,9 +17046,9 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 1004,
-     "solo_damage": 12720,
-     "solo_trips": 17,
+     "solo_rounds": 1079,
+     "solo_damage": 9120,
+     "solo_trips": 19,
      "solo_cleared": true,
      "solo_tile": [
       38,
@@ -16996,9 +17072,9 @@
       0,
       199
      ],
-     "solo_rounds": 719,
-     "solo_damage": 6600,
-     "solo_trips": 13,
+     "solo_rounds": 596,
+     "solo_damage": 4080,
+     "solo_trips": 11,
      "solo_cleared": true,
      "solo_tile": [
       36,
@@ -17022,9 +17098,9 @@
       0,
       199
      ],
-     "solo_rounds": 685,
-     "solo_damage": 7200,
-     "solo_trips": 12,
+     "solo_rounds": 606,
+     "solo_damage": 3960,
+     "solo_trips": 11,
      "solo_cleared": true,
      "solo_tile": [
       36,
@@ -17047,8 +17123,8 @@
       0,
       200
      ],
-     "solo_rounds": 557,
-     "solo_damage": 8880,
+     "solo_rounds": 530,
+     "solo_damage": 5760,
      "solo_trips": 9,
      "solo_cleared": true,
      "solo_tile": [
@@ -17061,9 +17137,9 @@
       3
      ],
      "safe_tiles": 0,
-     "solo_rounds": 854,
-     "solo_damage": 9000,
-     "solo_trips": 15,
+     "solo_rounds": 928,
+     "solo_damage": 6120,
+     "solo_trips": 17,
      "solo_cleared": true,
      "solo_tile": [
       36,
@@ -17086,8 +17162,8 @@
       0,
       200
      ],
-     "solo_rounds": 670,
-     "solo_damage": 8040,
+     "solo_rounds": 644,
+     "solo_damage": 5520,
      "solo_trips": 11,
      "solo_cleared": true,
      "solo_tile": [
@@ -17100,9 +17176,9 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 787,
-     "solo_damage": 9700,
-     "solo_trips": 13,
+     "solo_rounds": 709,
+     "solo_damage": 7080,
+     "solo_trips": 12,
      "solo_cleared": true,
      "solo_tile": [
       38,
@@ -17125,8 +17201,8 @@
       0,
       200
      ],
-     "solo_rounds": 538,
-     "solo_damage": 6720,
+     "solo_rounds": 514,
+     "solo_damage": 4320,
      "solo_trips": 9,
      "solo_cleared": true,
      "solo_tile": [
@@ -17139,9 +17215,9 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 394,
-     "solo_damage": 5400,
-     "solo_trips": 6,
+     "solo_rounds": 603,
+     "solo_damage": 5700,
+     "solo_trips": 10,
      "solo_cleared": true,
      "solo_tile": [
       38,
@@ -17169,10 +17245,10 @@
       34,
       36
      ],
-     "solo_rounds": 1353,
-     "solo_damage": 6600,
-     "solo_trips": 6,
-     "solo_cleared": true,
+     "solo_rounds": 1500,
+     "solo_damage": 4200,
+     "solo_trips": 7,
+     "solo_cleared": false,
      "solo_tile": [
       2,
       38
@@ -17184,7 +17260,7 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 5040,
+     "solo_damage": 4200,
      "solo_trips": 7,
      "solo_cleared": false,
      "solo_tile": [
@@ -17198,7 +17274,7 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 5040,
+     "solo_damage": 4200,
      "solo_trips": 7,
      "solo_cleared": false,
      "solo_tile": [
@@ -17223,7 +17299,7 @@
       39
      ],
      "solo_rounds": 1500,
-     "solo_damage": 3360,
+     "solo_damage": 2520,
      "solo_trips": 7,
      "solo_cleared": false,
      "solo_tile": [
@@ -17237,7 +17313,7 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 5040,
+     "solo_damage": 3360,
      "solo_trips": 7,
      "solo_cleared": false,
      "solo_tile": [
@@ -17263,7 +17339,7 @@
       36
      ],
      "solo_rounds": 1500,
-     "solo_damage": 3360,
+     "solo_damage": 2520,
      "solo_trips": 7,
      "solo_cleared": false,
      "solo_tile": [
@@ -17289,7 +17365,7 @@
       36
      ],
      "solo_rounds": 1500,
-     "solo_damage": 4200,
+     "solo_damage": 2520,
      "solo_trips": 7,
      "solo_cleared": false,
      "solo_tile": [
@@ -17314,7 +17390,7 @@
       39
      ],
      "solo_rounds": 1500,
-     "solo_damage": 6720,
+     "solo_damage": 4200,
      "solo_trips": 7,
      "solo_cleared": false,
      "solo_tile": [
@@ -17328,7 +17404,7 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 4200,
+     "solo_damage": 2520,
      "solo_trips": 7,
      "solo_cleared": false,
      "solo_tile": [
@@ -17353,7 +17429,7 @@
       39
      ],
      "solo_rounds": 1500,
-     "solo_damage": 5040,
+     "solo_damage": 3360,
      "solo_trips": 7,
      "solo_cleared": false,
      "solo_tile": [
@@ -17367,7 +17443,7 @@
      ],
      "safe_tiles": 0,
      "solo_rounds": 1500,
-     "solo_damage": 4970,
+     "solo_damage": 4130,
      "solo_trips": 7,
      "solo_cleared": false,
      "solo_tile": [
@@ -17392,7 +17468,7 @@
       39
      ],
      "solo_rounds": 1500,
-     "solo_damage": 5040,
+     "solo_damage": 3360,
      "solo_trips": 7,
      "solo_cleared": false,
      "solo_tile": [
@@ -17405,10 +17481,10 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 1366,
-     "solo_damage": 5400,
-     "solo_trips": 6,
-     "solo_cleared": true,
+     "solo_rounds": 1500,
+     "solo_damage": 3990,
+     "solo_trips": 7,
+     "solo_cleared": false,
      "solo_tile": [
       2,
       38
@@ -17459,7 +17535,7 @@
       0,
       174
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -17633,7 +17709,7 @@
       0,
       174
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -17658,7 +17734,7 @@
       0,
       174
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -17785,7 +17861,7 @@
       36,
       66
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -17959,7 +18035,7 @@
       36,
       66
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -17984,7 +18060,7 @@
       36,
       65
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -18111,7 +18187,7 @@
       0,
       190
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -18285,7 +18361,7 @@
       0,
       190
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -18310,7 +18386,7 @@
       0,
       190
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -18437,7 +18513,7 @@
       36,
       50
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -18611,7 +18687,7 @@
       36,
       50
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -18636,7 +18712,7 @@
       36,
       49
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -18763,7 +18839,7 @@
       0,
       197
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -18937,7 +19013,7 @@
       0,
       197
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -18962,7 +19038,7 @@
       0,
       196
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -19089,7 +19165,7 @@
       36,
       43
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -19263,7 +19339,7 @@
       36,
       43
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -19288,7 +19364,7 @@
       36,
       43
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -19415,7 +19491,7 @@
       9,
       165
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -19589,7 +19665,7 @@
       9,
       165
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -19614,7 +19690,7 @@
       10,
       164
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -19741,7 +19817,7 @@
       32,
       76
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -19915,7 +19991,7 @@
       32,
       76
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -19940,7 +20016,7 @@
       32,
       76
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -20067,7 +20143,7 @@
       0,
       176
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -20241,7 +20317,7 @@
       0,
       176
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -20266,7 +20342,7 @@
       0,
       175
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -20393,7 +20469,7 @@
       36,
       63
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -20567,7 +20643,7 @@
       36,
       63
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -20592,7 +20668,7 @@
       36,
       63
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -20719,7 +20795,7 @@
       12,
       162
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -20893,7 +20969,7 @@
       12,
       162
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -20918,7 +20994,7 @@
       12,
       162
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -21045,7 +21121,7 @@
       31,
       77
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -21219,7 +21295,7 @@
       31,
       77
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -21244,7 +21320,7 @@
       32,
       76
      ],
-     "solo_rounds": 2,
+     "solo_rounds": 1,
      "solo_damage": 0,
      "solo_trips": 0,
      "solo_cleared": true,
@@ -21347,8 +21423,8 @@
       21,
       135
      ],
-     "solo_rounds": 250,
-     "solo_damage": 2540,
+     "solo_rounds": 236,
+     "solo_damage": 1680,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -21361,8 +21437,8 @@
       3
      ],
      "safe_tiles": 0,
-     "solo_rounds": 460,
-     "solo_damage": 3240,
+     "solo_rounds": 446,
+     "solo_damage": 2580,
      "solo_trips": 4,
      "solo_cleared": true,
      "solo_tile": [
@@ -21375,8 +21451,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 350,
-     "solo_damage": 2500,
+     "solo_rounds": 341,
+     "solo_damage": 2020,
      "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
@@ -21390,8 +21466,8 @@
       4
      ],
      "safe_tiles": 0,
-     "solo_rounds": 774,
-     "solo_damage": 3800,
+     "solo_rounds": 749,
+     "solo_damage": 2380,
      "solo_trips": 7,
      "solo_cleared": true,
      "solo_tile": [
@@ -21404,8 +21480,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 795,
-     "solo_damage": 4760,
+     "solo_rounds": 776,
+     "solo_damage": 3580,
      "solo_trips": 7,
      "solo_cleared": true,
      "solo_tile": [
@@ -21430,8 +21506,8 @@
       21,
       135
      ],
-     "solo_rounds": 542,
-     "solo_damage": 2840,
+     "solo_rounds": 525,
+     "solo_damage": 1780,
      "solo_trips": 5,
      "solo_cleared": true,
      "solo_tile": [
@@ -21456,8 +21532,8 @@
       21,
       135
      ],
-     "solo_rounds": 547,
-     "solo_damage": 2800,
+     "solo_rounds": 532,
+     "solo_damage": 1840,
      "solo_trips": 5,
      "solo_cleared": true,
      "solo_tile": [
@@ -21471,8 +21547,8 @@
       4
      ],
      "safe_tiles": 0,
-     "solo_rounds": 363,
-     "solo_damage": 2940,
+     "solo_rounds": 352,
+     "solo_damage": 2400,
      "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
@@ -21485,8 +21561,8 @@
       3
      ],
      "safe_tiles": 0,
-     "solo_rounds": 659,
-     "solo_damage": 3400,
+     "solo_rounds": 642,
+     "solo_damage": 2500,
      "solo_trips": 6,
      "solo_cleared": true,
      "solo_tile": [
@@ -21500,9 +21576,9 @@
       4
      ],
      "safe_tiles": 0,
-     "solo_rounds": 358,
-     "solo_damage": 2640,
-     "solo_trips": 3,
+     "solo_rounds": 447,
+     "solo_damage": 2160,
+     "solo_trips": 4,
      "solo_cleared": true,
      "solo_tile": [
       1,
@@ -21514,8 +21590,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 255,
-     "solo_damage": 2040,
+     "solo_rounds": 243,
+     "solo_damage": 1350,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -21529,8 +21605,8 @@
       4
      ],
      "safe_tiles": 0,
-     "solo_rounds": 349,
-     "solo_damage": 2280,
+     "solo_rounds": 342,
+     "solo_damage": 1860,
      "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
@@ -21543,8 +21619,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 257,
-     "solo_damage": 2000,
+     "solo_rounds": 240,
+     "solo_damage": 1400,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -21573,8 +21649,8 @@
       11,
       97
      ],
-     "solo_rounds": 368,
-     "solo_damage": 2540,
+     "solo_rounds": 354,
+     "solo_damage": 1680,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -21587,8 +21663,8 @@
       3
      ],
      "safe_tiles": 0,
-     "solo_rounds": 700,
-     "solo_damage": 3240,
+     "solo_rounds": 686,
+     "solo_damage": 2580,
      "solo_trips": 4,
      "solo_cleared": true,
      "solo_tile": [
@@ -21601,8 +21677,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 527,
-     "solo_damage": 2500,
+     "solo_rounds": 518,
+     "solo_damage": 2020,
      "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
@@ -21616,8 +21692,8 @@
       4
      ],
      "safe_tiles": 0,
-     "solo_rounds": 1194,
-     "solo_damage": 3800,
+     "solo_rounds": 1169,
+     "solo_damage": 2380,
      "solo_trips": 7,
      "solo_cleared": true,
      "solo_tile": [
@@ -21630,8 +21706,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 1209,
-     "solo_damage": 4760,
+     "solo_rounds": 1189,
+     "solo_damage": 3580,
      "solo_trips": 7,
      "solo_cleared": true,
      "solo_tile": [
@@ -21656,8 +21732,8 @@
       11,
       97
      ],
-     "solo_rounds": 842,
-     "solo_damage": 2840,
+     "solo_rounds": 825,
+     "solo_damage": 1780,
      "solo_trips": 5,
      "solo_cleared": true,
      "solo_tile": [
@@ -21682,8 +21758,8 @@
       11,
       97
      ],
-     "solo_rounds": 847,
-     "solo_damage": 2800,
+     "solo_rounds": 832,
+     "solo_damage": 1840,
      "solo_trips": 5,
      "solo_cleared": true,
      "solo_tile": [
@@ -21697,8 +21773,8 @@
       4
      ],
      "safe_tiles": 0,
-     "solo_rounds": 540,
-     "solo_damage": 2940,
+     "solo_rounds": 529,
+     "solo_damage": 2400,
      "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
@@ -21711,8 +21787,8 @@
       3
      ],
      "safe_tiles": 0,
-     "solo_rounds": 1019,
-     "solo_damage": 3400,
+     "solo_rounds": 1002,
+     "solo_damage": 2500,
      "solo_trips": 6,
      "solo_cleared": true,
      "solo_tile": [
@@ -21726,9 +21802,9 @@
       4
      ],
      "safe_tiles": 0,
-     "solo_rounds": 534,
-     "solo_damage": 2640,
-     "solo_trips": 3,
+     "solo_rounds": 682,
+     "solo_damage": 2160,
+     "solo_trips": 4,
      "solo_cleared": true,
      "solo_tile": [
       37,
@@ -21740,8 +21816,8 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 373,
-     "solo_damage": 2040,
+     "solo_rounds": 361,
+     "solo_damage": 1350,
      "solo_trips": 2,
      "solo_cleared": true,
      "solo_tile": [
@@ -21755,8 +21831,8 @@
       4
      ],
      "safe_tiles": 0,
-     "solo_rounds": 529,
-     "solo_damage": 2280,
+     "solo_rounds": 522,
+     "solo_damage": 1860,
      "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
@@ -21769,9 +21845,9 @@
       1
      ],
      "safe_tiles": 0,
-     "solo_rounds": 383,
-     "solo_damage": 2190,
-     "solo_trips": 2,
+     "solo_rounds": 530,
+     "solo_damage": 1570,
+     "solo_trips": 3,
      "solo_cleared": true,
      "solo_tile": [
       37,

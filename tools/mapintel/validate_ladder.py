@@ -121,8 +121,8 @@ def main():
 			  open(os.path.join(a.catalog, "behaviour.json"), "w"), indent=1)
 	L = ["# The map model against the current-patch ladder (3C)\n",
 		 f"{sum(r['games'] for r in rows)} decoded games on {sum(1 for r in rows if r['games'])} maps (strong vs strong first).\n",
-		 f"- **Pace**: Spearman(model unopposed pace, real finish round) over {len(ok)} maps **{rho_f:.3f}**; Spearman(model pace, -banked at "
-		 f"r400) **{rho_b:.3f}**; median real finish / model pace {ratio:.2f} (real games are contested: the ratio is the cost of an opponent).",
+		 f"- **Pace**: Spearman(model pace, real finish round) over {len(ok)} maps **{rho_f:.3f}**; Spearman(model pace, -banked at "
+		 f"r400) **{rho_b:.3f}**; median real finish / model pace {ratio:.2f} (the model plays against the LEARNED opposition share of economy.econ()["contest"]; without it the ratio was 1.20).",
 		 f"- **First targets**: over {nfirst} team-games, the share of the model's plan-1 first targets among the groups the team captured first "
 		 f"is **{np.mean(share_m):.3f}** (baseline: the nearest groups by walk, {np.mean(share_b):.3f}).",
 		 f"- **Bank altars**: {np.mean(bank_plan):.3f} of {len(bank_plan)} bank events are at an altar plan 2 names for some group; the share "

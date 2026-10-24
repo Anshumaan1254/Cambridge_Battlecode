@@ -124,8 +124,15 @@ stafe".
 
 **Live team memory**: 8 bytes, readable and writable all game.
 
-**Turn order**: the rules say "Champion turns follow, alternating teams; the starting team swaps each round" and "within a team, higher
-priority acts first". Whether teams act in blocks or champion by champion is **ambiguous**: probed in step 2.
+**Turn order (measured in step 2 on a decoded top-team replay, rounds 30-400)**:
+- **Champion turns alternate between the teams, one body at a time** (A, B, A, B, ...). In 333 of 371 rounds the sequence alternated
+  exactly; the rest had a dead or absent body, so the larger team's last bodies acted back to back.
+- **The starting team swaps every round**, and within a team higher priority acts first.
+- **Consequence**: for two opposing bodies of equal rank, the order flips every round, so each gets two actions in a row relative to the
+  other at every second round boundary. Example: A_k acts at the end of its pair in round r (B started) and at the start of its pair in
+  r+1 (A starts).
+- **Stepping into an enemy's reach is safe only when we act again before it does.** That is the "do not enter range first" rule of
+  smite / Don't @ Me / Just Woke Up, and it is computable from the round parity, our team and the two bodies' ranks.
 
 ---
 
@@ -172,9 +179,19 @@ strong vs strong). They were measured in memory on Oct 24; the script lands in s
   - **16 (2.7%) reach the round-2000 tiebreak**;
   - 56 (9.3%) are close races (the loser has 900+ tributed).
 
-**Data caveat**: none of the 48,594 recorded captures is gold-only, yet **200 of the 836 official-map groups (24%) are gold-only** (11%
-of all group gold). The decoder very likely records only gem captures. Gold totals above therefore miss gold-only captures; checked in
-step 2.
+**Data caveat, resolved in step 2**:
+- **The decoder recorded a capture only when the bag grew** (`tools/replay/decode.mjs`, `CaptureGems`), so gold-only groups (200 of the
+  836 official groups, 11% of group gold) were missing from the summaries.
+- The decoder now has an opt-in `goldCaptures` option (`--gold-captures`) that adds `CaptureGold` events. It is off by default, so the
+  20 existing readers of `CaptureGems` see no change.
+- **On the 25 committed raw top-team replays** (`experiments/ladder_oct24/raw/`; `tools/teamplan/capture_rows.mjs` →
+  `experiments/results/teamplan/caprows_raw25.jsonl`):
+  - 500 of 2,480 captures (20%) are gold-only, 9.4% of all capture gold;
+  - **front bodies take relatively more of them**: gold-only captures are 16% of Heart of Ruin's capture gold, 26% of Ryth's, 15% of
+    Varg's, but only 7.3% of Vesper Vale's and 5.0% of Marcella's;
+  - Vesper Vale still collects the most capture gold (36.8% in these games).
+  - So the top teams do something close to U3': the gem-free groups lean to the front bodies, the gem groups to the carries.
+- Full tables: `experiments/results/teamplan/roles_ladder.md` (`tools/teamplan/ladder_roles.py`).
 
 ---
 
@@ -197,7 +214,7 @@ step 2.
 | P1 | Kill value = kill odds x (enemy bag + 100 gold + 60 rounds of absence) (Don't @ Me, food, SPAARK) | bags decide about 110 gems a game | chasing into their half | none | **build** as a target-score term, gated by our own bag |
 | P2 | Live comms as indices into shared tables, one owner per field, everything expires (smite, 4 Musketeers, Lorem Ipsum, food) | no write races; stale data cannot mislead | 64 bits is tight | a free-form protocol | **build the spec** (`live.h`) |
 | P3 | Precompute with full information; coordinate by identical computation instead of messages (XSquare 2020, smite) | the draft sees everything with 10x fuel | none | none | **the basis of the draft-memory layout** |
-| P4 | "Do not enter range first"; exploit turn order (smite, Don't @ Me, Just Woke Up) | the opener wins fights | depends on the exact turn order (ambiguous in the rules) | none | **probe the turn order first**; a micro rule only if a double move exists at round boundaries |
+| P4 | "Do not enter range first"; exploit turn order (smite, Don't @ Me, Just Woke Up) | the opener wins fights | an enemy's rank inside its team is not observable (only estimated) | none | **build as `timing.h` + switch `tp_timing`**: the probe found the double move (section 2); step into reach only when we act again before that enemy |
 | P5 | Score every candidate action in one currency (Cout for Clout +100 rating; Generalized Stroke's Theorem; SPAARK) | strong evidence | fuel; that is the new bot's combat code | v10's combat heuristics | **next batch (micro)**, after this one |
 | P6 | Guess area casts into unseen tiles (Gone Fishin', 4 Musketeers; area spells need no sight, engine probe) | free damage | wastes an 8-round cooldown | none | **test** as a switch |
 | P7 | Static guards, extra comms units, rushes | | failed for them too | | **not built** |
@@ -255,6 +272,26 @@ is reported, not assumed for the ladder.
 | Progress monitor (BFS → bug when no progress; Generalized Stroke's Theorem 2026) | if the field distance has not dropped for k turns: recompute the field with units as walls, sidestep, or yield by priority | v10 has `stall_guard`, `pocket_fix` | **build in `nav.h`** |
 | Loop prevention ("turn locations" + reverse); target-switch hysteresis (XSquare: switch only when the new target is closer than the best distance reached so far) | the same | none | **build in `nav.h`** |
 | **Static hazards (map analysis)** | per map: chokepoints (articulation points), dash-only pockets, dead ends, hole lines a dash can cross, crystal shortcuts, and the "field anchors" worth caching (spawn, bank altars, top groups) with their fuel | congestion is dynamic; static chokepoints are a proxy | **for the other Claude**: the catalog, the table and a NAV draft-memory block (MAPAnalysis 1.9) |
+
+**Measured in step 2** (`tools/teamplan/probe_nav.py`, release mode as on the platform; probe bot
+`tools/teamplan/cpp/probe_nav/main.cpp`; fuel per call; `experiments/results/teamplan/nav_fuel_table.md`):
+| Map | Size | Walls export | Full field | Field limited to 3 | Field to one target | 49 `get`s | Walls + 10 unit tiles | Full field with units | 7x7 BFS in wasm, looped | 7x7 BFS in wasm, unrolled |
+|---|---|---|---|---|---|---|---|---|---|---|
+| big-world | 100x100 | 1,889 | 30,843 | 3,535 | 28,048 | 2,667 | 1,281 | 30,211 | turn ran out | 10,783 |
+| ambush | 100x100 | 1,889 | 25,858 | 3,535 | 25,090 | 2,667 | 1,281 | 25,479 | turn ran out | 10,783 |
+| islands | 60x60 | 879 | 5,863 | 1,345 | 5,946 | 2,667 | 1,176 | 5,441 | 17,460 | 10,783 |
+| lanes | 90x30 | 735 | 5,463 | 1,041 | 5,455 | 2,667 | 1,160 | 5,073 | 17,460 | 10,783 |
+| gold-rush | 31x31 | 492 | 1,725 | 433 | 1,858 | 2,450 | 1,147 | 1,393 | 12,473 | 7,465 |
+
+**Conclusion (this revises the BugBFS row above)**:
+- **The unrolled local BFS does not pay in CAMBC.** The host's field limited to radius 3, over the walls plus the unit tiles, costs
+  1.2k + 0.4-3.5k. That is exact and cheaper than the same search written in wasm (10.8k unrolled, 17.5k looped).
+- **Unrolling still pays for any loop that must run in wasm** (a 38% cut here).
+- **Full fields cost up to 31k on 100x100 maps** (a third of a turn), so global fields are cached and never recomputed per turn.
+- **`nav.h` therefore uses**:
+  - cached global fields (the field anchors);
+  - for local detours, a radius-3 to radius-5 host field over walls + units;
+  - reads of only the neighbours it needs (a `get` costs about 55).
 
 ---
 
@@ -437,6 +474,7 @@ Weights live in one versioned parameter set.
 | `bag.h` | bank-before-fight, fight-empty, hunt-big-bags, "bank now if it wins" (U2') |
 | `tiebreak.h` | tiebreak detection, the risk cap for deferring, the final tribute window, end-window denial (section 5) |
 | `focus.h` | the kill-value target term (P1) |
+| `timing.h` | turn-order helper: who acts next between two opposing bodies (round parity, team, ranks); the "step in only when we act again first" gate (P4) |
 | `assign.h` | soft ownership + variants (D1) |
 | `swap.h` | the expected-value swap check, hysteresis, cursor; a TinyML slot left at zero (U4') |
 | `nav.h` | the unrolled local window, progress monitor, loop guard, target hysteresis, field cache (section 6) |
@@ -476,3 +514,12 @@ Weights live in one versioned parameter set.
 
   Next: step 2 (probes: the turn order, gold-only captures, role tables, fuel of a host field vs an unrolled window, the offline capturer
   comparison).
+- **12:30**: step 2, probes and offline checks (commit after this line).
+  - **Turn order**: alternation one body at a time, the starting team swaps each round. The double move exists, so `timing.h` was added
+    (section 2, P4).
+  - **Gold-only captures**: the decoder dropped them. It now has the opt-in `--gold-captures`. 20% of captures are gold-only, and front
+    bodies take relatively more of them (section 3).
+  - **Role tables**: `experiments/results/teamplan/roles_ladder.md` (+ .json), with a death hazard per champion.
+  - **Navigation fuel**: the host field limited to radius 3 beats an unrolled wasm BFS (section 6), so `nav.h` uses host fields.
+  - **Deferred to step 3**: the check of the risk-matched capturer against the top teams' choices. It needs the Python twin of
+    `capture.h` and the 25 raw replays' positions (who else could have captured each reward).

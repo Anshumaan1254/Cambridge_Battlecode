@@ -129,8 +129,10 @@ in `tools/teamplan/`, and it does not edit the map-analysis files apart from thi
   - captures are solo (5.4% shared);
   - winners take 102 gems a game from enemy bags and lose 57 (losers 50 / 116);
   - 2.7% of games reach round 2000;
-  - **the decoded summaries record no gold-only capture although 24% of the official groups are gold-only: please check `replays.py`
-    / the decoder.**
+  - **the decoded summaries had no gold-only captures although 24% of the official groups are gold-only. Cause: `tools/replay/decode.mjs`
+    emitted `CaptureGems` only when the bag grew.** The decoder now has an opt-in `goldCaptures` option / `--gold-captures` flag that
+    adds `CaptureGold` events (off by default, so no reader changes). On the 25 raw top-team replays: 20% of captures are gold-only, 9.4%
+    of capture gold (TEAMPLAN.md section 3). `replays.py` can pass the flag when its summaries are rebuilt.
 
 ---
 

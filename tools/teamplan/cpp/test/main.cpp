@@ -143,6 +143,7 @@ static void draft_turn1()
 	for (double x : { P.enhanced_extra, P.enhanced_stun, P.missing_hp_avg, P.hits_taken, P.splash_targets, P.area_targets, P.fight_rounds, P.ranged_front, P.immune_ehp,
 					  P.dash_escape, P.reach_escape, P.gold_gems, P.team_rate, P.hazard, P.danger_hazard, P.items_half })
 		hp.d(x);
+	hp.i(P.capture_mode);
 	hp.i(P.bag_fight), hp.d(P.bag_fight_scale), hp.d(P.hunt_bag), hp.d(P.hunt_bonus), hp.d(P.kv_ref);
 	for (int x : { P.tb_period, P.tb_enter, P.tb_leave, P.tb_min_round, P.tb_defer_cap, P.tb_safe_dist, P.tb_final_margin, P.tb_denial_rounds })
 		hp.i(x);
@@ -266,13 +267,18 @@ static void game_turn2()
 				x.slot = s, x.bag = (g * 7 + s * 13) % 70, x.items = (g + 3 * s) % 15, x.walk_reward = (g + s) % 4;
 				x.walk_bank = std::min(groups[static_cast<std::size_t>(g)].walk, 60), x.danger = (g * (s + 1)) % 3, x.kit = &K[ROSTER[r][s]];
 			}
-			double gains[5];
-			const long long c0 = fuel();
-			const int w = tp::choose_capturer(cs, n, groups[static_cast<std::size_t>(g)].gems, groups[static_cast<std::size_t>(g)].gold, team_n, C, P, gains);
-			worst = std::max(worst, c0 - fuel());
-			h.i(w);
-			for (int i = 0; i < n; ++i)
-				h.d(gains[i]);
+			for (int mode = 0; mode < 2; ++mode)
+			{  // both rules (capture_mode 0 and 1), with items_half on (12) and off (0)
+				tp::Params q = P;
+				q.capture_mode = mode, q.items_half = mode ? 0.0 : 12.0;
+				double gains[5];
+				const long long c0 = fuel();
+				const int w = tp::choose_capturer(cs, n, groups[static_cast<std::size_t>(g)].gems, groups[static_cast<std::size_t>(g)].gold, team_n, C, q, gains);
+				worst = std::max(worst, c0 - fuel());
+				h.i(w);
+				for (int i = 0; i < n; ++i)
+					h.d(gains[i]);
+			}
 		}
 		line("TP C " + std::to_string(r) + " " + h.str() + " fuel " + std::to_string(worst));
 	}

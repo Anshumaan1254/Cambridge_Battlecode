@@ -29,7 +29,10 @@ struct Params
 	double team_rate = 0.94;	 // LEARNED: a top team's gems per round (1,000 gems at the median final round 1,064; tools/teamplan/ladder_roles.py)
 	double hazard = 0.0016;		 // LEARNED: deaths per body-round in top-team games (1.4-1.9 per 1,000 for the common picks; roles_ladder.md)
 	double danger_hazard = 0.02; // ASSUMED: extra deaths per round per enemy in reach of the bank route (the caller's danger count)
-	double items_half = 12.0;	 // ASSUMED: owned items at which one more gold is worth half as much (diminishing returns)
+	double items_half = 0.0;	 // owned items at which one more gold is worth half as much (0 = off). ASSUMED 12 first; the top teams' capture
+								 // choices contradict it (tools/teamplan/capture_check.py: 42% agreement with it, 54% without), so off
+	int capture_mode = 1;		 // capture.h: 1 = the top teams' pattern, the highest gold multiplier, then the nearest (LEARNED: 65% of their
+								 // captures with 2+ bodies near, chance 41%); 0 = the risk-matched gain (54-58%: not what they do)
 	// ---- bag.h
 	int bag_fight = 30;			  // ASSUMED: bag (gems) above which a body banks before a fight it can avoid
 	double bag_fight_scale = 60.0;// ASSUMED: the fight bar rises by bag / this (a full bag makes the body choosier)

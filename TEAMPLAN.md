@@ -535,3 +535,47 @@ Weights live in one versioned parameter set.
     than 255 gems (448); **a visible enemy's priority is readable** (`prev_priority()`, so `timing.h` can use the real rank), its team is
     `cambc::detail::sdk_my_team()`; ties inside a team act in body-type order (all priorities 0); vision is not shared (an ally out of
     sight cannot be read); the enhanced attack reset stuns (rules text; counted in `stun`).
+- **14:25**: step 4, the GOD v10 test copy (commit after this line).
+  - **v10 almost never shares a capture**: 10 mirror games, 1.1% of capture events had two or more bodies (1.01 bodies per capture;
+    the top teams 5.5%). So the capture rule (one body captures, the others move on) has nothing to save in v10 and is not in its
+    batteries; in v10 the useful part is who goes to which group (`tp_own`). The rule stays in the library for a bot that sends several
+    bodies to one group.
+  - **v10 already has three of the planned rules**: the turn-order fact (`update_priority`), the endgame bank window and "bank now if it
+    wins" (`tribute()`, `win_bank` + `team_bank`). The new parts are below.
+  - **The copy**: `python3 -I tools/teamplan/prepare_v10.py [--name N] [KEY=VALUE ...]` = `bots/god/src` + `tools/teamplan/cpp/teamplan` +
+    `tools/teamplan/v10_adapter.patch` (`tp_adapter.h/.cpp` and guarded hooks). Five switches, all 0 by default:
+    - `tp_focus`: the fight target's value = kill value (its bag + kill gold + the farming lost while dead) over its health, in place of
+      v10's constant 60 (+60 for the pair) + bag;
+    - `tp_bag`: the proactive fight bar rises with our bag (x (1 + bag / 60));
+    - `tp_timing`: the ranged edge hold and the melee approach step into an enemy's reach only when we act again before it (priorities of
+      the bodies in sight, both rounds);
+    - `tp_tiebreak` (+ `tp_tb_cap`): in tiebreak mode a bag up to the cap is kept while no enemy is near; v10's endgame rule banks it;
+    - `tp_own` (+ `tp_own_bonus`): the draft writes the OWN block (draft memory offset 8: magic, version, bodies, groups, body types,
+      one owner per group, checksum) after each pick; a body's own groups score x 1.25.
+  - **Control**: all switches 0 plays v10's games: **80 of 80 identical** (winner, rounds, gems, deaths, gold; `tools/samegames.py ...
+    --release`, a flag added for release-mode rows).
+  - **Family 2 opponent**: `tools/teamplan/make_forced_v10.py` = v10 forced to the strong teams' roster of each map (roster slot 0 of
+    `tools/mapintel/data/battery_rosters.json`, via mapintel's `force_roster.h`): the forced roster is played in 80 of 80 games; **v10's
+    own draft wins 37 of 80 (46.2%) against it**.
+  - Running: `tools/teamplan/batteries.py` (7 variants x 2 families x 80 games).
+- **14:55**: offline check of the capturer rule (task 20; commit after this line).
+  - **What was checked**: does the risk-matched capturer pick the body the top teams picked? The data: 25 raw replays,
+    `tools/teamplan/capture_ctx.mjs` (state N rounds before each capture) and `tools/teamplan/capture_check.py`.
+  - **Three rounds before the capture began** (1,166 captures with two or more bodies within 3; agreement, with chance at 41%):
+    - the highest gold multiplier: 65%;
+    - the nearest: 61%;
+    - the risk-matched rule: 42%;
+    - the lowest bag: 46%;
+    - the front or back kit: 44-45%.
+  - **Five rounds before**: nearest 92% (the capturer is already on the tile, so that number is an artefact). **Twelve rounds before**:
+    gold multiplier 54%, nearest 46%, the rule 38%.
+  - **The rule fails** on two counts:
+    - its diminishing gold value per item (ASSUMED) points to the poorest body, and the top teams do not do that: without it the rule
+      reaches 54-58%;
+    - its gem-risk part does not explain their choices.
+  - **Verdict, by the user's "keep what wins against its counterparts" rule**: `capture.h` now defaults to the LEARNED pattern
+    (`capture_mode` 1: the gold-bonus body, then the nearest). The risk-matched gain is kept as mode 0, and `items_half` is 0 (off).
+    The engine test still passes (both modes, 2,080 results bit-equal).
+  - **The answer to "should the frontliner take the gold"**: the strong teams give a shared reward to the gold-bonus body when it is near,
+    else to the nearest body; front bodies take relatively more gold-only groups because they stand at them (TEAMPLAN.md 3).
+  - Outputs: `experiments/results/teamplan/capture_check_lag*.txt`.

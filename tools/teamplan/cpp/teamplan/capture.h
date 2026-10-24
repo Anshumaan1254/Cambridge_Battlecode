@@ -1,4 +1,8 @@
-// teamplan/capture.h: who captures a dead group's reward (TEAMPLAN.md 4, U3': the risk-matched capturer).
+// teamplan/capture.h: who captures a dead group's reward (TEAMPLAN.md 4, U3'). Two rules (Params::capture_mode):
+//   1 (default, LEARNED): the body with the highest gold multiplier, then the nearest: what the top teams do (65% of their captures with
+//     two or more bodies near, chance 41%; tools/teamplan/capture_check.py on 25 raw replays, 3 rounds before the capture began);
+//   0: the risk-matched gain below (gold at the body's multiplier and weight, gems at the chance to bank them, the bag put at risk, the
+//     farming lost): 54-58% agreement, so the top teams do not choose this way; kept for tests.
 // The reward is split evenly among the allies present when the capture finishes, and more allies do not speed it up, so one body
 // captures and the others move on. Every present body runs this on the same inputs (kits, the present allies' bags and items, which
 // are in sight, the walks from the reward tile, the shared danger count) and gets the same answer; ties go to the lower slot.
@@ -61,8 +65,18 @@ inline int choose_capturer(const CaptureCand* cands, int n, int gems, int gold, 
 		const double v = capture_gain(cands[i], gems, gold, wr, rate, dr, c, p);
 		if (gains)
 			gains[i] = v;
-		if (best < 0 || v > bv || (v == bv && cands[i].slot < cands[best].slot))
+		if (p.capture_mode == 0 && (best < 0 || v > bv || (v == bv && cands[i].slot < cands[best].slot)))
 			best = i, bv = v;
+	}
+	if (p.capture_mode == 0)
+		return best;
+	best = 0;
+	for (int i = 1; i < n; ++i)
+	{
+		const CaptureCand &x = cands[i], &b = cands[best];
+		const double gx = x.kit->gold_mult, gb = b.kit->gold_mult;
+		if (gx > gb || (gx == gb && (x.walk_reward < b.walk_reward || (x.walk_reward == b.walk_reward && x.slot < b.slot))))
+			best = i;
 	}
 	return best;
 }

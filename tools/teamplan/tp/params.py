@@ -21,7 +21,8 @@ class Params:
 	team_rate: float = 0.94
 	hazard: float = 0.0016
 	danger_hazard: float = 0.02
-	items_half: float = 12.0
+	items_half: float = 0.0
+	capture_mode: int = 1
 	bag_fight: int = 30
 	bag_fight_scale: float = 60.0
 	hunt_bag: float = 25.0

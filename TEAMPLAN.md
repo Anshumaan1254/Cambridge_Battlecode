@@ -623,3 +623,46 @@ Weights live in one versioned parameter set.
     cost on the previous turn + 10k).
   - **Running**: the confirmation battery (`tools/teamplan/batteries.py --confirm`): `tp_bag`, `tp_own` and both together, against v10
     and v10 forced to roster slots 0, 1 and 2; v10's own games against each forced roster are the paired base.
+
+---
+
+## 11. Results (Oct 24): what the tests showed, the verdicts, and the answers
+
+**How it was measured** (every v10 number is SIMULATED (v10): it says how a rule changes GOD v10's games, not how it plays on the
+ladder or in the user's bot):
+- **The test copy**: GOD v10 with the five `tp_*` switches (section 10, 14:25). With all switches off it plays v10's games, 80 of 80.
+- **Games**: the 40 official maps x 2 sides, release mode, through `tools/ledger.py`; rows in `experiments/results/ledger_v3_0_4/_tp_*`.
+- **Opponents**:
+  - GOD v10, head-to-head;
+  - v10 forced to roster slot k of `tools/mapintel/data/battery_rosters.json`. Slots 0-3 are real strong-team rosters on every map
+    (LEARNED); slots 4-7 are COMPUTED, balanced over kit classes.
+- **Paired**: a variant's game is compared with v10's own game against the same opponent, map and side. Two measures: the gem margin
+  difference per map (bootstrap 95% interval), and the games it turned into wins or losses (two-sided sign test).
+- **Offline**: the capturer check on 25 raw top-team replays, the role tables from 599 decoded games, and the engine test of the
+  library (2,080 results bit-equal, fuel per call).
+
+### 11.1 The batteries
+
+**First battery** (`experiments/results/teamplan/batteries_v10.md`; the paired column uses slot 0):
+
+| Switch | Head-to-head vs v10 | Paired vs v10 forced to slot 0 | Games turned (wins / losses) |
+|---|---|---|---|
+| `tp_bag`: the fight bar rises with the bag | 44/80, +37.5 [-43, +114] | +85.4 [-4.8, +182.2] | 9 / 3 |
+| `tp_own`: soft group ownership through draft memory | 44/80, +19.0 [-122, +159] | +120.8 [-53, +327] | 18 / 12 |
+| `tp_focus`: kill-value targeting | 41/80, +16.7 [-66, +99] | +47.5 [-32, +135] | 8 / 4 |
+| `tp_timing`: step into reach only when we act again first | 38/80, -7.7 [-101, +94] | -60.7 [-237, +120] | 15 / 17 |
+| `tp_tiebreak`, cap 60 | 35/80, -45.8 [-121, +24] | +8.5 [-71, +84] | 5 / 4 |
+| `tp_tiebreak`, cap 150 | 37/80, -18.9 [-101, +65] | +5.8 [-99, +103] | 7 / 4 |
+| all five | 39/80, -3.5 [-109, +111] | -77.9 [-233, +70] | 17 / 20 |
+
+**Confirmation battery of the two leads** (`experiments/results/teamplan/batteries_v10_confirm.md`, slots 0-7):
+
+_Running (Oct 24, 16:52): this table is filled in when the confirmation battery on slots 0-7 ends. The slots 0-2 part is in `experiments/results/teamplan/batteries_v10_confirm.md`._
+
+### 11.2 Verdicts (the user's rule: keep an idea only if it still wins against its alternatives)
+
+_Written when the confirmation battery ends._
+
+### 11.3 Answers to the user's questions (1.2 and 1.6)
+
+_Written when the confirmation battery ends._

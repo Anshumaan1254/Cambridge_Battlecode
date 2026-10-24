@@ -77,7 +77,7 @@ python3 -I tools/teamplan/make_forced_v10.py --name _tp_v10F1 --slot 1   # oppon
 
 # batteries (tools/ledger.py underneath: release mode, both sides, a cut run resumes)
 python3 -I tools/teamplan/batteries.py [--maps 'maps/official/*.map26a'] [--jobs 4] [--only NAME,...] [--report-only]
-python3 -I tools/teamplan/batteries.py --confirm              # the two leads vs v10 forced to roster slots 0, 1, 2
+python3 -I tools/teamplan/batteries.py --confirm --slots 0,1,2,3,4,5,6,7   # the two leads vs v10 forced to roster slots 0-7
 
 # offline checks on replays
 node tools/teamplan/capture_ctx.mjs --lag 8 experiments/ladder_oct24/raw > CTX.jsonl

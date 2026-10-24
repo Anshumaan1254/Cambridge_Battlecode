@@ -268,3 +268,21 @@ Base: our dynamic-draft bot `_m1p3`. Stage 1 = head-to-head vs `_m1p3` on `train
 | Scouting wards (`ward_smart` 2: the best tile ahead on the walk field toward their spawn, scored by bushes, corridor, contested groups) | v10's ward points two tiles toward their spawn in a straight line, through walls | h2h vs v10 54.5% on all 308 maps (sign p 0.0097, margin +43 [+3, +83]) but 19 outside opponents 655/798 vs 678 (ambush persona 20 vs 32) | non-transitive: candidate zip for a ladder A/B only |
 | `ward_smart` 3 (2 + a bush next to our target group first) | the ambush persona farms from bushes beside its camps | ambush persona 21/42, h2h 51.9% | no |
 | The Prism team with every change above (`_v11Pw2`, `_v11`) | the user's full v11 | 24.4% / 17.9% | no |
+
+## Session 18c, team play (Oct 24; `TEAMPLAN.md` 11; the GOD v10 test copy on engine 3.0.5, the 40 official maps x 2 sides, 80 games per cell; SIMULATED (v10))
+
+"Paired" compares each game with v10's own game against the same opponent, map and side. The opponents are v10 itself, and v10 forced
+to real strong-team rosters (slots 0-3 of `tools/mapintel/data/battery_rosters.json`) or to computed kit-balanced ones (slots 4-7).
+
+| Idea | Why it should help | Result | Verdict |
+|---|---|---|---|
+| Step into an enemy's reach only when we act again before it (`tp_timing`, `teamplan/timing.h`) | turns alternate one body at a time and the starting team swaps each round, so every second round boundary gives a double move; "first to move into range dies" (smite, Don't @ Me) | head-to-head 38/80, margin -7.7; paired vs the strong roster -60.7 [-237, +120], games turned 15 / 17 | rejected: holding back gives up the opener's damage, and v10's fights already count support |
+| Tiebreak mode: hold bags back while no enemy is near (`tp_tiebreak`, cap 60 / 150) | the user's idea: bank at the end only when a tiebreak is sensed; it also hides our score | head-to-head 35/80 / 37/80; paired vs the strong roster +8.5 / +5.8 | rejected: 2.7% of top-team games reach round 2000, and a held bag is a target. The race to finish and the final tribute window stay |
+| Kill-value targeting (`tp_focus`: the victim's bag + kill gold + the enemy's farming lost while it is dead) | about 110 gems a game change hands through kills | head-to-head 41/80, +16.7; paired +47.5 [-32, +135], 8 / 4 | level |
+| The fight bar rises with the bag (`tp_bag`) | fight with an empty bag, bank before a fight that can wait | slot 0 +85.4 [-4.8, +182.2], but slot 1 -0.0 and slot 2 -59.9; slots 3-7 running | not confirmed so far (final verdict in `TEAMPLAN.md` 11) |
+| All five switches together (`tp_all`) | | head-to-head 39/80; paired -77.9 [-233, +70], 17 / 20 | the rules interfere: worse than the best one alone |
+| Both leads together (`tp_bag` + `tp_own`) | | head-to-head 39/80; paired over slots 0-2 +62.6 [-50, +179] (ownership alone +68.1); slots 3-7 running | no better than ownership alone |
+| The risk-matched capturer (`teamplan/capture.h` mode 0: gold to the body that gains most from it, gems to the body most likely to bank them) | U3' (TEAMPLAN.md 4) | matches the strong teams' choice in 42% of 1,166 shared captures (chance 41%); "the gold-bonus body, else the nearest" matches 65% | replaced by that LEARNED rule (mode 1); mode 0 kept for tests |
+| Diminishing gold value per owned item (`items_half` 12) | a body with many items gains less from more gold | the capturer rule matches 54-58% without it and 42% with it | off (0) |
+| Unrolled 7x7 BFS in wasm (the user's BugBFS excerpt) | exact local paths around units | 10.8k fuel (17.5k looped); a host field limited to radius 3 over walls + units costs 1.2k + 0.4-3.5k | not built: the host field is exact and cheaper |
+| TinyML for job swaps (the user's suggestion) | learn when a lagging body should swap jobs | not built | the expected-value check (`teamplan/swap.h`) instead. Roles are kit-bound, an ally's gold is unreadable, one game is too short to learn in, and no top Battlecode team reports ML tuning paying off. It is untested: v10 has no live bits for the progress codes, so test it on the new bot (`teamplan/live.h`) |

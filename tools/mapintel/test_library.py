@@ -23,6 +23,7 @@ import argparse, glob, json, os, shutil, struct, subprocess, sys, tempfile, zipf
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import compact as CP  # noqa: E402
+import export_headers as EH  # noqa: E402
 import features as FT  # noqa: E402
 import mapdata  # noqa: E402
 
@@ -66,6 +67,7 @@ def parse(text):
 			F = {n: struct.unpack("<d", bytes.fromhex(t[2][16 * i:16 * i + 16]))[0] for i, n in enumerate(FT.NAMES)}  # memory order
 			k = bytes.fromhex(t[4])
 			other.append("MI K " + str(int.from_bytes(k, "little", signed=True)))
+			other.append("MI KT " + str(int.from_bytes(bytes.fromhex(t[6]), "little", signed=True)))
 		elif l.startswith("MI "):
 			other.append(l)
 	return T, F, other
@@ -156,6 +158,14 @@ def main():
 	kn = os.path.join(ROOT, "tools/mapintel/cpp/mapintel/known_maps.h")
 	if os.path.exists(kn):
 		table = [l.split('"')[1] for l in open(kn) if "/* map " in l and '"' in l]
+	weights, arche, nmw, ftw = None, None, 0, None
+	if os.path.exists(os.path.join(ROOT, "tools/mapintel/cpp/mapintel/model_weights.h")):
+		arche = json.load(open(os.path.join(ROOT, "maps/catalog/archetypes.json")))
+		wd = os.path.join(ROOT, "experiments/results/mapintel/draft_model")
+		wp = next((os.path.join(wd, f) for f in ("weights_sim.json", "weights.json") if os.path.exists(os.path.join(wd, f))), None)  # export_headers.py's choice
+		weights = json.load(open(wp)) if wp else {}
+		fp_ = os.path.join(ROOT, "experiments/results/mapintel/first_targets/weights.json")
+		ftw = json.load(open(fp_)) if os.path.exists(fp_) and "MAPINTEL_FIRST_SCORES" in open(os.path.join(ROOT, "tools/mapintel/cpp/mapintel/model_weights.h")).read() else None
 	maps = sorted(glob.glob(os.path.join(ROOT, a.maps)))
 	tmp = tempfile.mkdtemp(prefix="mi_test_")
 	run_maps(bot, maps, a.jobs, tmp)
@@ -184,6 +194,30 @@ def main():
 				idx = int(k[0].split()[2]) if k else -2
 				if idx < 0 or table[idx] != n:
 					fails.append(f"{n}: table lookup gave {idx}")
+			if table is not None:
+				kt = [o for o in other if o.startswith("MI KT")]
+				if not kt or int(kt[0].split()[2]) != team:
+					fails.append(f"{n} team {team}: known_team gave {kt[0].split()[2] if kt else None}")
+			if weights is not None:
+				mw = [o.split()[2] for o in other if o.startswith("MI MW")]
+				z = EH.zfeat_py(FT.compute(M, team), arche)
+				want_a, want_v = EH.archetype_py(z, arche), EH.champion_values_py(z, weights)
+				if not mw:
+					fails.append(f"{n} team {team}: no MI MW line")
+				else:
+					b = bytes.fromhex(mw[0])
+					got_a = int.from_bytes(b[:4], "little", signed=True)
+					got_v = struct.unpack("<12d", b[4:100])
+					if got_a != want_a or (team == 0 and got_a != arche["labels"][n]):
+						fails.append(f"{n} team {team}: archetype C++ {got_a} Python {want_a} label {arche['labels'][n]}")
+					if any(abs(x - y) > 1e-9 * max(1.0, abs(y)) for x, y in zip(got_v, want_v)):
+						fails.append(f"{n} team {team}: champion values C++ {got_v[:3]} != Python {want_v[:3]}")
+					if ftw is not None:
+						rk = [b_ for b_ in bytes.fromhex([o for o in other if o.startswith("MI MW")][0].split()[4]) if b_ != 255]
+						want_r = EH.first_rank_py(M, team, ftw, 16)
+						if rk != want_r:
+							fails.append(f"{n} team {team}: first_scores ranking C++ {rk[:6]} != Python {want_r[:6]}")
+					nmw += 1
 			py = FT.compute(M, team)
 			for i, name in enumerate(FT.NAMES):
 				c = F.get(name)
@@ -223,7 +257,8 @@ def main():
 					t_ = o.split()
 					worst["later_left_min"] = min(worst["later_left_min"], int(t_[3]))
 					worst["later_plan"] = max(worst["later_plan"], int(t_[5]))
-	print(f"official maps: {len(maps)} x 2 teams, {nfeat} feature values and {nplan} plan lines compared, {ngame} champion read-backs")
+	print(f"official maps: {len(maps)} x 2 teams, {nfeat} feature values and {nplan} plan lines compared, {ngame} champion read-backs"
+		  + (f", table lookups {'checked' if table is not None else 'not generated'}, model_weights checked on {nmw}" if weights is not None else ""))
 	print(f"fuel, first draft turn (limit 1,000,000): max view {worst['view']}, fingerprint {worst['fp']}, features {worst['feat']}, "
 		  f"plans 2-4 {worst['base']}, first pick's rows {worst['row']}; worst total {worst['first_turn']}")
 	print(f"fuel, turn 2 (limit 100,000): second pick's rows {worst.get('row2', 0)}")

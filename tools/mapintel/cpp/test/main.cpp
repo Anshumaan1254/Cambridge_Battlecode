@@ -9,7 +9,8 @@
 //   turn 4 (teams of 4+): the plans: MI P1 slot body (g arrive_bits end_bits)..., MI P2 banks, MI P3 band (g dU dE)..., MI P4 ... mode m
 //   turns 5+: plan 1 again from the cached rows: MI L turn_fuel_left <f> plan_fuel <f> nbody <n>
 //   each champion's first game turn: MI G <hex|none> prefix <byte> (the block read back; the test compares it with compact.pack) and
-//           MI FX <47 doubles' bits, FEATURE_NAMES order> known <int32 hex> (written by turn 3 at offsets 128-507 for this print)
+//           MI FX <47 doubles' bits, FEATURE_NAMES order> known <int32 hex> kteam <int32 hex> (written by turn 3 at offsets 128-511),
+//           MI MW <archetype int32, 12 champion values: model_weights.h> (offsets 24-123) rank <16 groups by first_scores()> (8-23)
 // stdout costs fuel per byte in this engine, so each turn prints little and after its measurements.
 //   MI E <what> on any exception. Test roster: TEST_PICKS cut to the team size.
 #include <cambc.h>
@@ -27,6 +28,13 @@
 #if __has_include("mapintel/known_maps.h")
 #include "mapintel/known_maps.h"
 #define MI_HAS_TABLE 1
+#endif
+#if __has_include("mapintel/model_weights.h")
+#include "mapintel/model_weights.h"
+#define MI_HAS_WEIGHTS 1
+#endif
+#ifdef MAPINTEL_FIRST_SCORES
+#define MI_HAS_FIRST 1
 #endif
 namespace bc = cambc;
 
@@ -89,7 +97,10 @@ struct State
 	std::optional<mapintel::Compact> C;
 	mapintel::Plans P;
 	std::uint64_t fp = 0;
-	int ts = 0, turn = 0, npk = 0, known = -1;
+	int ts = 0, turn = 0, npk = 0, known = -1, kteam = -1, arch = -1;
+	double vals[12]{};
+	unsigned long long fuel_mw = 0, fuel_fs = 0;
+	std::uint8_t rank[16] = { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 };
 };
 
 static void turn1(State& S)
@@ -113,11 +124,37 @@ static void turn1(State& S)
 	const auto f5 = bc::fuel_remaining();
 #ifdef MI_HAS_TABLE
 	S.known = mapintel::find_known(S.fp);
+	if (S.known >= 0)
+		S.kteam = mapintel::known_team(*S.V, mapintel::KNOWN[S.known]);
+#endif
+#ifdef MI_HAS_WEIGHTS
+	{
+		const auto m0 = bc::fuel_remaining();
+		double z[mapintel::MW_NF];
+		mapintel::zfeat(*S.F, z);
+		S.arch = mapintel::archetype_of(z);
+		mapintel::champion_values(z, S.vals);
+		S.fuel_mw = m0 - bc::fuel_remaining();
+	}
+#ifdef MI_HAS_FIRST
+	{
+		const auto m0 = bc::fuel_remaining();
+		const auto sc = mapintel::first_scores(*S.C, *S.V, *S.F);
+		std::vector<int> gs;
+		for (int g = 0; g < static_cast<int>(sc.size()); ++g)
+			if (sc[static_cast<std::size_t>(g)] > -1e299)
+				gs.push_back(g);
+		std::sort(gs.begin(), gs.end(), [&](int a, int b) { return sc[static_cast<std::size_t>(a)] != sc[static_cast<std::size_t>(b)] ? sc[static_cast<std::size_t>(a)] > sc[static_cast<std::size_t>(b)] : a < b; });
+		for (int k = 0; k < 16 && k < static_cast<int>(gs.size()); ++k)
+			S.rank[k] = static_cast<std::uint8_t>(gs[static_cast<std::size_t>(k)]);
+		S.fuel_fs = m0 - bc::fuel_remaining();
+	}
+#endif
 #endif
 	char buf[360];
 	auto u = [](auto v) { return static_cast<unsigned long long>(v); };
-	std::snprintf(buf, sizeof buf, "MI T fp %016llx ts %d fuel_view %llu fuel_fp %llu fuel_feat %llu fuel_base %llu fuel_row %llu table %d turn_fuel_left %llu",
-				  u(S.fp), S.ts, u(f0 - f1), u(f1 - f2), u(f2 - f3), u(f3 - f4), u(f4 - f5), S.known >= 0 ? 1 : 0, u(f5));
+	std::snprintf(buf, sizeof buf, "MI T fp %016llx ts %d fuel_view %llu fuel_fp %llu fuel_feat %llu fuel_base %llu fuel_row %llu table %d fuel_mw %llu fuel_fs %llu turn_fuel_left %llu",
+				  u(S.fp), S.ts, u(f0 - f1), u(f1 - f2), u(f2 - f3), u(f3 - f4), u(f4 - f5), S.known >= 0 ? 1 : 0, S.fuel_mw, S.fuel_fs, u(bc::fuel_remaining()));
 	line(buf);
 }
 
@@ -158,6 +195,10 @@ static void turn3(State& S)
 	for (int i = 0; i < mapintel::NF; ++i)
 		std::memcpy(&mem[static_cast<std::size_t>(128 + 8 * i)], &S.F->v[static_cast<std::size_t>(i)], 8);
 	std::memcpy(&mem[504], &S.known, 4);
+	std::memcpy(&mem[508], &S.kteam, 4);
+	std::memcpy(&mem[8], S.rank, 16);
+	std::memcpy(&mem[24], &S.arch, 4);
+	std::memcpy(&mem[28], S.vals, 96);
 	bc::draft_memory = mem;
 	const std::array<std::uint8_t, 4> v10{ 0xB7, 2, 0, 0 }; // a shorter write from offset 0, as GOD v10 makes it
 	bc::draft_memory = v10;
@@ -210,10 +251,13 @@ int main()
 				line(std::string("MI G ") + (ok ? hex(B.b.data(), mapintel::DMEM_SIZE) : std::string("none")) + " prefix " + std::to_string(prefix));
 				if (bc::draft_memory.size() >= 512)
 				{
-					std::uint8_t raw[384];
+					std::uint8_t raw[384], mw[116];
 					for (int k = 0; k < 384; ++k)
 						raw[k] = std::to_integer<std::uint8_t>(bc::draft_memory[static_cast<std::size_t>(128 + k)]);
-					line("MI FX " + hex(raw, 8 * mapintel::NF) + " known " + hex(raw + 376, 4));
+					for (int k = 0; k < 116; ++k)
+						mw[k] = std::to_integer<std::uint8_t>(bc::draft_memory[static_cast<std::size_t>(8 + k)]);
+					line("MI FX " + hex(raw, 8 * mapintel::NF) + " known " + hex(raw + 376, 4) + " kteam " + hex(raw + 380, 4));
+					line("MI MW " + hex(mw + 16, 100) + " rank " + hex(mw, 16));
 				}
 			}
 		}

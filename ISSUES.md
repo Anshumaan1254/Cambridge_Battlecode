@@ -99,3 +99,27 @@ not (champion knowledge typed into the code; none is map dependent):
 (`mapdraft` 1-3), the sneaky-bush mask `md_sneaky` (`mapdraft` 4), `build_style` 9 (Mite), 10 (ifish), and the IC proxy settings of
 session 12. They exist to imitate other teams' fixed per-map tables; the shipped bot uses `mapdraft` 6 (parameter draft) and
 `build_style` 2, so none of it runs. `md_stampede` only acts with `mapdraft` 3.
+
+## mapintel (session 18b, MAPAnalysis.md; `tools/mapintel/`, library `tools/mapintel/cpp/mapintel/`)
+
+Hardcoded on purpose or measured on the current pool / patch; each may need a refresh when the map pool, the patch or the bot changes.
+- **The exact-match table** `known_maps.h` (approved by the user): the 40 official maps by fingerprint, with the catalog's plans and the
+  ladder's draft data. A changed map does not match (8 of 8 perturbed copies took the fallback in the test). Regenerate with
+  `draft_learn.py` + `export_headers.py` after a new `cambc init` map pull, a new ladder download or a patch.
+- **Fitted on the current data, not derived**: the archetype scaling, PCA basis and centroids (40 official maps), the draft values
+  (`model_weights.h`: GOD v10's roster battery, SIMULATED v10: values for v10's play, not for a new bot; rerun `run_battery.sh --bot
+  NAME`), the opening score `first_scores()` (599 ladder games of the current patch), the strong-team pick rates (top 20 ratings on Oct 24).
+- **The ladder draft model has no signal**: on 8,455 ranked games no champion model beats team rating alone out of sample, so the
+  table's `value` comes from the battery; the ladder pick rates are an imitation prior, not a measured value.
+- **Compact plan constants** (`compact.py` = `plans.h`): capture 6 rounds, heal-trip rule (a trip per 0.7 x health of damage taken
+  solo), recall 5 + 1 rounds, value = gems + 0.1 x gold, the candidate row of 12 groups, the attack-reset bonus 1 / 8, Varg's splash as
+  the only basic-attack splash (`champion_type::varg`), contested band max(3, 0.1 x spawn distance), plan-4 threshold formulas (0.12 d,
+  80, 0.2 d, 8, 3, 30). Not modelled: Ryth's health-scaled strength, Heart of Ruin's missing-health bonus, Prism's focus per gem, shields,
+  heals, allies tanking, shopping (the catalog's fight simulation has them). Plan 1's first targets match the top teams' first captures
+  no better than "nearest groups" (validate_ladder.py: 0.53 vs 0.54); use `first_scores()` (0.65 held out) for the opening.
+- **Economy model defaults** (`economy.py`, the catalog): retreat at 30% health, heal under 50% between jobs, bank at a 40-gem bag, shop
+  trip at 300 unspent gold, the model build (Monster in the damage stat, Jungle health, Power). Unfitted.
+- **Engine facts typed in after a probe** (re-probe after a patch): crystal hop range 3 (`CRYSTAL_RANGE`), the dash legality rules, the
+  pick -> body mapping (picks 0-2 = bodies 0-2, pick 3 = bodies 3 and 4, picks 4-11 = bodies 5-12, the SDK enum order).
+- **Draft-memory layout**: the mapintel block at offsets 512-863 (version 1, magic 0xA7). A bot's own data must stay below 512 (GOD
+  v10 writes 4 bytes at 0: tested to coexist). The test bot also uses 8-511 for its own prints (test only).

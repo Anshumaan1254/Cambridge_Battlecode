@@ -46,6 +46,52 @@ bash tools/mapintel/run_battery.sh --bot NAME           # the batteries
 - Options: `--opps`, `--maps`, `--jobs` (default: CPUs - 1), `--per-map C`, `--skip-outcome`, `--skip-roster`, `--no-replays`.
 - The repository path must not contain spaces (`cambc run-batch` manifests are split on spaces).
 
+## The C++ library (`cpp/mapintel/`): how a bot uses it
+
+Header-only C++20 on the SDK alone; copy `cpp/mapintel/` into your bot's `src/` (so `src/mapintel/*.h`) and include what you use.
+Regenerate the data headers after a new ladder download or catalog: `python3 -I tools/mapintel/draft_learn.py && python3 -I
+tools/mapintel/export_headers.py`; then run the tests: `python3 -I tools/mapintel/test_library.py` (all 40 maps x 2 teams in the engine).
+
+| header | what | origin |
+|---|---|---|
+| `features.h` | `load_view(team_size)` (the map, groups and BFS fields), `compute_features(view)` (47 runtime features), `fingerprint(view)` | COMPUTED |
+| `fingerprint.h` | `fingerprint()`: the exact-match key (FNV-1a 64); prefer `fingerprint(view)` (same value, no second `camp_groups()`) | COMPUTED |
+| `plans.h` | `Compact` (per-group tables), `base_plans()` (plans 2-4), `Compact::row(type)` and `plan1(picks, P)` (plan 1) for unknown maps | COMPUTED |
+| `dmem.h` | `dmem_pack()` / `dmem_put()` (the draft-memory block at offset 512) and `dmem_get()` / `Block` (read it in the game) | - |
+| `known_maps.h` | generated: the table of the 40 official maps, `find_known(fp)`, `known_team(view, entry)` | COMPUTED + LEARNED |
+| `model_weights.h` | generated: `zfeat()`, `archetype_of()`, `champion_values()` (the fallback for unknown maps) | COMPUTED + LEARNED |
+| `force_roster.h` | `forced_pick()` for the roster battery only (inert without a generated `mi_roster.h`) | - |
+
+A draft that uses it (fuel measured by `test_library.py`, worst map; keep `view`, `F`, `C` alive across draft turns):
+
+```cpp
+#include "mapintel/dmem.h"          // includes plans.h and features.h
+#include "mapintel/known_maps.h"
+#include "mapintel/model_weights.h"
+// first draft turn (1M fuel): <= 609k for all of this on the largest official map (lanes)
+static std::optional<mapintel::MapView> view; static std::optional<mapintel::Features> F; static std::optional<mapintel::Compact> C;
+view.emplace(mapintel::load_view());                      // ~160-300k
+const auto fp = mapintel::fingerprint(*view);             // ~40-70k
+F.emplace(mapintel::compute_features(*view));             // ~50-240k
+C.emplace(*view, *F);
+auto P = mapintel::base_plans(*C, *view, *F);             // plans 2-4, ~50-160k
+const int e = mapintel::find_known(fp);                   // >= 0: KNOWN[e] has the catalog's plans and the ladder's draft data
+double z[mapintel::MW_NF], value[12];
+mapintel::zfeat(*F, z);
+const int arch = mapintel::archetype_of(z);              // unknown maps: archetype and LEARNED champion values from the features
+mapintel::champion_values(z, value);
+// each later draft turn: C->row(type) for the bodies of the champion you just picked (<= 13k each)
+// the turn the roster is complete: C->plan1(our_picks, P) (<= 25k), then write your own bytes and the block together:
+std::vector<std::uint8_t> mem(1024, 0);                   // your data at 0..511
+mapintel::dmem_put(mem, mapintel::dmem_pack(P, fp, view->team, e >= 0, arch));
+cambc::draft_memory = mem;                                // a later shorter write of your prefix keeps the block (tested)
+// in the game, any champion: mapintel::Block B; if (mapintel::dmem_get(B)) { B.plan(slot, k), B.bank_altar(g), B.con(k), ... }
+```
+
+Fuel facts the library follows (measured in this engine): ~50-75 fuel per step of a simple loop; a zero-initialised buffer costs ~1.2
+fuel per byte (use trivial types / uninitialised buffers); `map::camp_groups()` builds every camp object (call it once); `camp::base_stats()`
+is a host call; stdout costs ~90 fuel per byte.
+
 ## Files
 
 | path | what | origin |
@@ -55,6 +101,12 @@ bash tools/mapintel/run_battery.sh --bot NAME           # the batteries
 | `battery_rosters.py`, `data/battery_rosters.json` | candidate rosters per map for the roster battery | LEARNED + COMPUTED |
 | `dump_maps.py` | runtime dump of maps through the probe bot (`cpp/probe`) | COMPUTED |
 | `engine.py` | engine facts parsed from the engine probe's output (`experiments/results/probe_v3_0_5/engine_3_0_5.txt`) | COMPUTED |
-| `cpp/mapintel/` | the header-only C++ library a bot includes (`fingerprint.h`, `force_roster.h`; more in step 8) | - |
+| `cpp/mapintel/` | the header-only C++ library a bot includes (section above) | - |
+| `cpp/test/main.cpp`, `test_library.py` | the library's test bot and test driver (features, plans, block, table, weights, fuel) | - |
+| `compact.py` | Python twin of `plans.h` and `dmem.h` (bit-equal) | COMPUTED |
+| `features.py` | Python twin of `features.h` | COMPUTED |
+| `draft_learn.py` | step 6, draft: per-map prior (`maps/catalog/draft_prior.json`) and the draft win models (leave-maps-out) | LEARNED |
+| `export_headers.py` | generates `known_maps.h` and `model_weights.h` | - |
+| `replays.py` | ladder replays -> per-game summaries (captures, banks, deaths, standing tiles) | LEARNED |
 | `cpp/probe/`, `cpp/idle/` | probe bot and idle opponent sources (fresh, from the 3.0.5 starter) | - |
 | `../../experiments/results/mapintel/dump/` | `<map>.txt` runtime dumps and `fingerprints.txt` | COMPUTED |

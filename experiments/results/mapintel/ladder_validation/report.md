@@ -1,0 +1,50 @@
+# The map model against the current-patch ladder (3C)
+
+599 decoded games on 40 maps (strong vs strong first).
+
+- **Pace**: Spearman(model unopposed pace, real finish round) over 40 maps **0.758**; Spearman(model pace, -banked at r400) **0.743**; median real finish / model pace 1.20 (real games are contested: the ratio is the cost of an opponent).
+- **First targets**: over 1174 team-games, the share of the model's plan-1 first targets among the groups the team captured first is **0.532** (baseline: the nearest groups by walk, 0.542).
+- **Bank altars**: 0.972 of 24945 bank events are at an altar plan 2 names for some group; the share at the altar nearest to the team's spawn is 0.612 (median over map-teams).
+
+| map | games | model pace | real finish (median) | banked at r400 (median) | ended by gems |
+|---|---|---|---|---|---|
+| 00ambush | 15 | 1085 | 1119 | 88.0 | 15 |
+| 00collision | 15 | 874 | 1171 | 109.0 | 15 |
+| 00contest | 15 | 1398 | 1512 | 0.0 | 15 |
+| 00corners | 15 | 753 | 966 | 150.0 | 15 |
+| 00eight | 15 | 756 | 993 | 113.0 | 15 |
+| 00elkring | 15 | 597 | 885 | 302.5 | 15 |
+| 00expanse | 15 | 901 | 972 | 177.0 | 15 |
+| 00fragment | 15 | 1331 | 1557 | 80.5 | 15 |
+| 00gem-fields | 15 | 495 | 694 | 358.5 | 15 |
+| 00gemfight | 15 | 672 | 769 | 178.5 | 15 |
+| 00great-wall | 15 | 907 | 1007 | 160.0 | 15 |
+| 00interlock | 15 | 927 | 1187 | 116.5 | 15 |
+| 00lanes | 15 | 739 | 1021 | 234.5 | 15 |
+| 00lost-world | 14 | 326 | 686.5 | 332.5 | 14 |
+| 00monolith | 15 | 840 | 1050 | 179.5 | 15 |
+| 00packs | 15 | 784 | 1161 | 186.0 | 15 |
+| 00pilgrimage | 15 | 1600 | 1538 | 45.0 | 14 |
+| 00quadrants | 15 | 436 | 507 | 528.0 | 15 |
+| 00reverse-spiral | 15 | 1125 | 1376 | 74.0 | 14 |
+| 00road-of-riches | 15 | 568 | 708 | 197.5 | 15 |
+| 00rows | 15 | 1351 | 1101 | 122.5 | 15 |
+| 00rushbait-v2 | 15 | 880 | 1087 | 125.0 | 15 |
+| 00split | 15 | 637 | 789 | 284.5 | 15 |
+| 00stampede | 15 | 1626 | 1802 | 0.0 | 10 |
+| 00swirl | 15 | 695 | 1148 | 125.0 | 15 |
+| 01big-world | 15 | 914 | 1062 | 153.5 | 15 |
+| 01boss-battle | 15 | 876 | 1082 | 0.0 | 14 |
+| 01broken-curve | 15 | 941 | 847 | 253.0 | 15 |
+| 01concentrated-wealth | 15 | 1050 | 1124 | 114.5 | 15 |
+| 01corridors | 15 | 1202 | 1142 | 58.0 | 15 |
+| 01elk-arena | 15 | 1069 | 1358 | 114.0 | 14 |
+| 01fracture | 15 | 1066 | 1083 | 118.0 | 15 |
+| 01gold-rush | 15 | 1280 | 1404 | 33.0 | 14 |
+| 01hooks | 15 | 956 | 1194 | 88.0 | 15 |
+| 01islands | 15 | 887 | 937 | 218.5 | 15 |
+| 01shortcut | 15 | 1391 | 1005 | 113.0 | 15 |
+| 01starfish | 15 | 833 | 1156 | 69.0 | 14 |
+| 01starvation | 15 | 1894 | 1741 | 62.0 | 10 |
+| 01the-farm | 15 | 881 | 967 | 159.5 | 15 |
+| 01yellow-brick-road | 15 | 578 | 967 | 136.0 | 15 |

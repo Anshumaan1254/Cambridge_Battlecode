@@ -603,3 +603,23 @@ Weights live in one versioned parameter set.
   - **Next**:
     - check that `tp_own`'s draft writes never cost a pick (fuel);
     - confirm `tp_bag`, `tp_own` and both together against two more forced rosters (slots 1 and 2).
+- **16:35**: the `tp_own` draft fuel (commit after this line; the container restarted at 16:26, the files survived).
+  - **Why**: `tpa::draft_write_own` runs after the pick in every draft turn. A turn that ran out of fuel would lose the write, and, as in
+    session 14's draft fuel bug (AGENTS.md), later picks could be drawn at random.
+  - **Measured**: a scratch copy of `_tp_own` with one stdout line per draft turn (`TPF`: pick cost, OWN cost, fuel left after the
+    write), 1 round on the 40 maps x 2 sides against v10 (80 games). Worst over the 80, per draft turn:
+
+    | Draft turn (fuel) | v10's pick | OWN write | Least fuel left |
+    |---|---|---|---|
+    | 1 (1,000,000) | 140.8k | 138.0k (includes the group list with the spawn field) | 723.7k |
+    | 2 (100,000) | 22.5k | 47.9k | 29.6k |
+    | 3 (100,000) | 18.5k | 54.0k | 27.5k |
+    | 4 (100,000) | 14.3k | 59.2k | 26.5k |
+    | 5 (100,000) | 10.7k | 65.1k | **24.2k** |
+
+    All the worst cases are on road-of-riches, the longest group list. **The rosters equal v10's in 80 of 80 games: no pick lost.**
+  - **Verdict**: safe on the 40 official maps, with 24k to spare. There is no guard, though: a map with more groups could run past
+    100k after the pick. The final layout adds one (`docs/DRAFT_MEMORY.md` 7: a block runs only when the fuel left exceeds 1.25 x its
+    cost on the previous turn + 10k).
+  - **Running**: the confirmation battery (`tools/teamplan/batteries.py --confirm`): `tp_bag`, `tp_own` and both together, against v10
+    and v10 forced to roster slots 0, 1 and 2; v10's own games against each forced roster are the paired base.

@@ -74,27 +74,23 @@ analysis, see `MAPAnalysis.md` 1.9.
   - the family-2 opponent is `tools/teamplan/make_forced_v10.py`; it plays the forced rosters in 80 of 80 games, and v10 wins 37 of 80
     against it.
 
-## Left
+## Left (updated 16:35)
 
-1. ~~Step 4~~ (done).
-2. **Step 5, batteries** (running, `tools/teamplan/batteries.py`): each switch alone, then all combined, on 40 official maps x 2 sides.
-   - Family 1: against GOD v10.
-   - Family 2: against a v10 copy forced to the strong teams' roster per map (`tools/mapintel/data/battery_rosters.json` rosters[0],
-     through mapintel's `force_roster.h`).
-   - Stats: `tools/abstat.py` / `tools/abmargin.py`, labelled SIMULATED (v10).
-   - Also a tiebreak variant with the cap at 150, the closer form of the user's "hold the gems" idea.
-3. **Step 6**: TinyML only if the expected-value swap check fails. It cannot be tested in v10, because v10's live bytes have no room
-   for per-body progress codes. `live.h` gives a new bot that room.
-4. **Offline check**: does the risk-matched capturer match the top teams' choices on the 25 raw replays? (task 20)
-5. **Step 7**:
-   - `docs/DRAFT_MEMORY.md`, the final byte map with measured fuel: header and table of contents at 4; the blocks TEAM, OWN, BODY,
-     CONT, CODEBOOK, ENEMY, NAV and DEBUG; mapintel's block kept at 512-863;
+1. ~~Step 4~~, ~~step 5 batteries~~, ~~the capturer check (task 20)~~, ~~the `tp_own` draft-fuel check~~: done (`TEAMPLAN.md` 10,
+   checkpoints 14:25 to 16:35; table `experiments/results/teamplan/batteries_v10.md`).
+2. **The confirmation battery** (running): `tools/teamplan/batteries.py --confirm`, i.e. `tp_bag`, `tp_own` and both together against
+   v10 and v10 forced to roster slots 0, 1 and 2 (`_tp_v10F`, `_tp_v10F1`, `_tp_v10F2`); writes
+   `experiments/results/teamplan/batteries_v10_confirm.md`.
+3. **Step 6**: TinyML is not built. v10's live bytes have no room for per-body progress codes, so the expected-value swap check cannot
+   run in v10. `live.h` gives a new bot that room. To be recorded as a verdict.
+4. **Step 7, docs**:
+   - `TEAMPLAN.md` section 11 (results and answers to the user's questions);
    - `tools/teamplan/README.md`;
-   - ISSUES entries;
-   - the results in `TEAMPLAN.md` section 11, with checkpoints.
-6. **Step 8**: the handoff prompt for the other Claude (implement the final draft-memory state + static navigation hazards in the
-   mapintel library), given to the user in chat.
-7. **Delete this file** once 1-6 are done.
+   - `docs/DRAFT_MEMORY.md` final (measured OWN fuel, the fuel guard);
+   - ISSUES (a teamplan section: the ASSUMED constants and engine assumptions);
+   - SUGGESTIONS (the rejected ideas).
+5. **Step 8**: the handoff prompt for the other Claude, given in chat.
+6. **Delete this file** once 2-5 are done.
 
 ## Rules in force
 

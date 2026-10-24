@@ -35,6 +35,15 @@ VARIANTS = [
 	("_tp_all", ["tp_focus=1", "tp_bag=1", "tp_timing=1", "tp_tiebreak=1", "tp_own=1"], "all five"),
 ]
 BASE, FORCED = "_tp_v10ref", "_tp_v10F"
+# --confirm: the two leads of the first battery and their combination, against two more forced rosters (slots 1 and 2 of
+# tools/mapintel/data/battery_rosters.json: the second and third strong-team rosters per map, or COMPUTED kit-balanced ones where fewer
+# real rosters exist), each paired with v10's own games against the same opponent.
+CONFIRM = [
+	("_tp_bag", ["tp_bag=1"], "fight bar rises with the bag"),
+	("_tp_own", ["tp_own=1"], "soft group ownership"),
+	("_tp_bo", ["tp_bag=1", "tp_own=1"], "both"),
+]
+CONFIRM_FORCED = [(FORCED, 0), ("_tp_v10F1", 1), ("_tp_v10F2", 2)]
 
 
 def wilson(w, n, z=1.96):
@@ -106,6 +115,76 @@ def paired(var, base, opp):
 	return {"m": m, "lo": lo, "hi": hi, "wa": wa, "wb": wb, "n": len(set(a) & set(b))}
 
 
+def prepare(name, sets, rebuild):
+	"""A variant copy (tools/teamplan/prepare_v10.py), kept when it exists unless rebuild: the ledger counts rows only for the sources they
+	were played with, and a rebuilt copy takes the library headers as they are now."""
+	if not rebuild and os.path.exists(os.path.join(ROOT, "bots", name, "src", "tp_adapter.h")):
+		print(f"bots/{name} kept", flush=True)
+		return
+	r = subprocess.run([sys.executable, "-I", os.path.join(HERE, "prepare_v10.py"), "--name", name] + sets, cwd=ROOT, capture_output=True, text=True)
+	print(r.stdout.strip() or r.stderr.strip()[-500:], flush=True)
+
+
+def forced(name, slot):
+	if os.path.exists(os.path.join(ROOT, "bots", name, "src", "mapintel", "mi_roster.h")):
+		print(f"bots/{name} kept", flush=True)
+		return
+	r = subprocess.run([sys.executable, "-I", os.path.join(HERE, "make_forced_v10.py"), "--name", name, "--slot", str(slot)], cwd=ROOT,
+					   capture_output=True, text=True)
+	print(r.stdout.strip() or r.stderr.strip()[-500:], flush=True)
+
+
+def pooled(var, base, opps):
+	"""Paired margin (variant minus v10, same map, side and opponent) pooled over opponents: one value per (map, opponent), bootstrap over
+	those."""
+	xs = []
+	for opp in opps:
+		a, b = ledger.current_rows(var, opp, True), ledger.current_rows(base, opp, True)
+		per = {}
+		for k in set(a) & set(b):
+			per.setdefault(k[0], []).append(margin(a[k]) - margin(b[k]))
+		xs += [sum(v) / len(v) for v in per.values()]
+	return boot(xs) + (len(xs),)
+
+
+def confirm(a):
+	if not a.report_only:
+		for name, sets, _ in CONFIRM:
+			prepare(name, sets, a.rebuild)
+		for name, slot in CONFIRM_FORCED:
+			forced(name, slot)
+		for opp, _ in CONFIRM_FORCED:
+			run_cell(BASE, opp, a.maps, a.jobs)
+		for name, _, _ in CONFIRM:
+			run_cell(name, BASE, a.maps, a.jobs)
+			for opp, _ in CONFIRM_FORCED:
+				run_cell(name, opp, a.maps, a.jobs)
+	opps = [o for o, _ in CONFIRM_FORCED]
+	L = ["# Confirmation battery of the two leads (SIMULATED (v10); tools/teamplan/batteries.py --confirm)", "",
+		 f"Maps `{a.maps}`, both sides, release mode. Opponents: GOD v10 (head-to-head) and v10 forced to roster slots 0, 1, 2 of "
+		 "`tools/mapintel/data/battery_rosters.json` (`_tp_v10F`, `_tp_v10F1`, `_tp_v10F2`). Paired margin = the variant's gem margin minus "
+		 "v10's own against the same opponent, map and side, averaged per map [bootstrap 95%].", "",
+		 "| Variant | Head-to-head vs v10 | " + " | ".join(f"vs `{o}`: wins (v10's), paired margin" for o in opps) + " | Pooled paired margin (maps x 3) |",
+		 "|---|---|" + "---|" * len(opps) + "---|"]
+	for name, _, what in CONFIRM:
+		c = cell(name, BASE)
+		row = [f"`{name}` ({what})", f"{c['w']}/{c['n']}, {c['m']:+.1f} [{c['ml']:+.1f}, {c['mh']:+.1f}]" if c else "-"]
+		for o in opps:
+			cv, cb = cell(name, o), cell(BASE, o)
+			if cv and cb:
+				pm = paired(name, BASE, o)
+				row.append(f"{cv['w']} ({cb['w']}), {pm['m']:+.1f} [{pm['lo']:+.1f}, {pm['hi']:+.1f}]")
+			else:
+				row.append("-")
+		m, lo, hi, n = pooled(name, BASE, opps)
+		row.append(f"{m:+.1f} [{lo:+.1f}, {hi:+.1f}] over {n}")
+		L.append("| " + " | ".join(row) + " |")
+	out = os.path.join(ROOT, "experiments", "results", "teamplan", "batteries_v10_confirm.md")
+	open(out, "w").write("\n".join(L) + "\n")
+	print("\n".join(L))
+	print(f"\nwrote {os.path.relpath(out, ROOT)}")
+
+
 def run_cell(bot, opp, maps, jobs):
 	r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "ledger.py"), "run", bot, opp, "--maps", maps, "--jobs", str(jobs), "--release"],
 					   cwd=ROOT, capture_output=True, text=True)
@@ -124,12 +203,15 @@ def main():
 	ap.add_argument("--jobs", type=int, default=4)
 	ap.add_argument("--only", default="")
 	ap.add_argument("--report-only", action="store_true")
+	ap.add_argument("--confirm", action="store_true", help="the confirmation battery (CONFIRM x CONFIRM_FORCED); writes batteries_v10_confirm.md")
+	ap.add_argument("--rebuild", action="store_true", help="re-prepare variant copies that exist (their ledger rows then stop counting)")
 	a = ap.parse_args()
+	if a.confirm:
+		return confirm(a)
 	vs = [v for v in VARIANTS if not a.only or v[0] in a.only.split(",")]
 	if not a.report_only:
 		for name, sets, _ in vs:
-			r = subprocess.run([sys.executable, "-I", os.path.join(HERE, "prepare_v10.py"), "--name", name] + sets, cwd=ROOT, capture_output=True, text=True)
-			print(r.stdout.strip() or r.stderr.strip()[-500:], flush=True)
+			prepare(name, sets, a.rebuild)
 		run_cell(BASE, FORCED, a.maps, a.jobs)
 		for name, _, _ in vs:
 			run_cell(name, BASE, a.maps, a.jobs)

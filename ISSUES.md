@@ -180,8 +180,15 @@ changes. No champion name or map identity is in the logic: champions enter throu
       itself. If a patch stops dead champions' turns, a dead body's field goes stale instead (harmless; its claim then expires).
     - **One ally per body type**: the slots are the allies' types in ascending order, and a two-body pick gives two types.
     - **A 1-bit beat**: a reader that loses its own turn gets one round of doubt, once in a row. A reader that loses turns in most
-      rounds may see live allies as stale. That is the trade-off of 1 bit per body; the 10-bit field has no spare bit for a longer
+      rounds may see live allies as stale. That is the trade-off of 1 bit per body; the 8-bit field has no spare bit for a longer
       counter.
+  - **The team alert and the place codes** (`live.h`, TEAMPLAN.md 11.7):
+    - the alert's ttl of 5 rounds and its rank order (help > kill chance > enemy at an altar > army) are ASSUMED;
+    - the place order assumes the SDK's `camp_groups()` order is the same in the draft and in every champion, and that the altars'
+      ascending tile index is stable (both are engine facts today);
+    - on a map with more than 62 places, the last altars and the rally tiles get no code;
+    - the 2-bit progress code per body is gone from the live bytes, so `swap.h`'s job-swap check has no live input until a bot gives
+      it another channel.
   - **The engine test compares against `experiments/results/teamplan/designs_3_0_5.txt`**: after a patch, run `--dump-designs` first.
 - **The v10 test copy** (`v10_adapter.patch`, cut against `bots/god` = GOD v10):
   - if `bots/god` changes, the patch stops applying (`prepare_v10.py` exits with a message);

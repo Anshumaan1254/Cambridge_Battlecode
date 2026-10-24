@@ -12,7 +12,7 @@ values' bytes, as the bot prints them):
     capture.h on 16 groups per roster (synthetic bags, items, walks and danger); timing.h, bag.h, focus.h, tiebreak.h, swap.h, live.h
     and nav.h on fixed sweeps;
   * nav_sdk.h's local detour returns a neighbouring tile or the body's own;
-  * live.h / live_sdk.h on the 8 shared bytes, every body from round 8 (live_check: the chain of reads and writes, the twin, stale
+  * live.h's place codes (TP S4); live.h / live_sdk.h on the 8 shared bytes, every body from round 8 (live_check: the chain of reads and writes, the twin, stale
     detection when slots 1 and 0 stop, the team bits moving to slot 2);
   * 0 exceptions; and the fuel of each part (the worst call over maps) is printed.
 Exit status 1 on any failure."""
@@ -237,14 +237,18 @@ def s3_hashes(kits_all, team_n, P):
 	h = HI()
 	v = 0
 	for k in range(40):
-		o = {"claim": (k * 11) % 64, "status": k % 4, "beat": (k // 2) % 2, "flag": (k // 3) % 2}
+		o = {"claim": (k * 11) % 64, "beat": (k // 2) % 2, "flag": (k // 3) % 2}
 		v = live.set_body(v, k % 6, o)
 		v = live.set_team(v, k % 8, (k // 5) % 2)
+		v = live.set_alert(v, {"place": (k * 7) % 64, "kind": k % 4, "count": k % 6, "seq": (k // 4) % 4})
 		w = live.load64(live.store64(v))
 		r_ = live.get_body(w, (k * 5) % 6)
 		h.i(w & 0xFFFFFFFF), h.i(w >> 32)
-		for f in ("claim", "status", "beat", "flag"):
+		for f in ("claim", "beat", "flag"):
 			h.i(r_[f])
+		g = live.get_alert(w)
+		for f in ("place", "kind", "count", "seq"):
+			h.i(g[f])
 		h.i(live.get_cursor(w)), h.i(live.get_tiebreak(w))
 	bt = live.Beat()
 	for rnd in range(12):
@@ -270,7 +274,9 @@ def live_check(rows, tag):
 	  * no false stale: a slot that published since the reader's previous line is live in the reader's view;
 	  * stale detection: a slot whose last write the reader first saw in round a is not live from round a + 4 on (a + 3, plus the one
 	    round of doubt a reader gets when it lost a turn);
-	  * the stops happen (slot 1 after round 14, slot 0 after round 18) and the team bits change hands: by round 23 slot 2 writes them.
+	  * the stops happen (slot 1 after round 14, slot 0 after round 18) and the team bits change hands: by round 23 slot 2 writes them;
+	  * the alert: it changes only with a post; a post lands as given with seq + 1; a post always replaces a missing, old (ttl) or
+	    lower-rank alert, and never a current higher-rank one.
 	Returns (failures, results compared, worst fuel)."""
 	fails, states, prev, n_cmp, worst = [], {}, 0, 0, 0
 	last_pub = {}		 # slot -> stream index of its last line
@@ -279,17 +285,31 @@ def live_check(rows, tag):
 	late_writer = False
 	for k, t in enumerate(rows):
 		rnd, slot, n = int(t[0]), int(t[1]), int(t[2])
-		seen, wrote, livem, w, f = int(t[3], 16), int(t[4], 16), int(t[5], 16), t[6] == "1", int(t[7])
+		seen, wrote, livem, w, posted, f = int(t[3], 16), int(t[4], 16), int(t[5], 16), t[6] == "1", t[7] == "1", int(t[8])
 		worst = max(worst, f)
 		where = f"{tag}: round {rnd} slot {slot}"
 		if seen != prev:
 			fails.append(f"{where} read {t[3]} but the last write was {prev:016x}")
 		L = states.setdefault(slot, live.LiveState(slot, n))
 		live.live_observe(L, seen, rnd)
-		v, ww = live.live_compose(L, (rnd * 7 + slot * 11) % 63, (rnd + slot) % 4, (rnd + slot) % 2, rnd % 8, (rnd // 3) % 2)
+		cur, age = dict(L.alert), L.alert_age
+		want = (rnd + slot) % 3 == 0
+		post = {"place": (rnd * 5 + slot * 3) % 63, "kind": (rnd + 2 * slot) % 4, "count": 1 + slot % 4, "seq": 0} if want else None
+		v, ww, pp = live.live_compose(L, (rnd * 7 + slot * 11) % 63, (rnd + slot) % 2, rnd % 8, (rnd // 3) % 2, post)
 		n_cmp += 1
-		if (v, ww, L.live) != (wrote, w, livem):
-			fails.append(f"{where}: twin {v:016x} writer {int(ww)} live {L.live:02x}, bot {t[4]} {t[6]} {t[5]}")
+		if (v, ww, pp, L.live) != (wrote, w, posted, livem):
+			fails.append(f"{where}: twin {v:016x} writer {int(ww)} posted {int(pp)} live {L.live:02x}, bot {t[4]} {t[6]} {t[7]} {t[5]}")
+		# the alert rule, checked directly (not only through the twin)
+		if not posted and live.alert_bits(wrote) != live.alert_bits(seen):
+			fails.append(f"{where}: the alert changed without a post")
+		if posted:
+			g = live.get_alert(wrote)
+			if (g["place"], g["kind"], g["count"], g["seq"]) != (post["place"], post["kind"], post["count"], (cur["seq"] + 1) & 3):
+				fails.append(f"{where}: posted alert {g} is not the post {post} with seq + 1")
+		if want and not posted and (cur["place"] == live.NO_PLACE or age >= L.ttl or post["kind"] > cur["kind"]):
+			fails.append(f"{where}: a post that must replace the alert (none, old or lower rank) did not")
+		if want and posted and cur["place"] != live.NO_PLACE and age < L.ttl and post["kind"] < cur["kind"]:
+			fails.append(f"{where}: a lower-rank post replaced a current alert")
 		prev = wrote
 		pk = prev_line.get(slot)
 		for o in range(min(n, 6)):
@@ -313,6 +333,21 @@ def live_check(rows, tag):
 	elif max(int(t[0]) for t in rows) >= 23 and not late_writer:
 		fails.append(f"{tag}: slot 2 never took the team bits after slots 0 and 1 stopped")
 	return fails, n_cmp, worst
+
+
+def s4_hashes():
+	h = HI()
+	for PP in (live.Places(40, 6, 8), live.Places(55, 6, 8)):
+		for kind in range(5):
+			for idx in range(-1, 70, 3):
+				c = live.place_code(PP, kind, idx)
+				k2, i2 = live.place_kind(PP, c)
+				h.i(c), h.i(k2), h.i(i2)
+	xs, ys = [(i * 7) % 50 for i in range(30)], [(i * 13) % 50 for i in range(30)]
+	for q in range(20):
+		h.i(live.nearest_place(xs, ys, (q * 9) % 50, (q * 5) % 50))
+	h.i(live.nearest_place([], [], 3, 3))
+	return {"place": h.str()}
 
 
 def design_lines(out):
@@ -343,7 +378,7 @@ def main():
 		kits_all = {t: kit.compute_kit(des[t], C, P) for t in des}
 		ref_lines = [l.strip() for l in open(stored) if l.strip() and not l.startswith("#")]
 	fuel = {"kits": 0, "groups": 0, "assign": 0, "capture": 0, "timing": 0, "bag": 0, "focus": 0, "tiebreak": 0, "swap": 0, "live": 0, "nav": 0,
-			"live_turn": 0}
+			"place": 0, "live_turn": 0}
 	navs = []
 	n_cmp = 0
 	for m in maps:
@@ -402,7 +437,8 @@ def main():
 			want.update(s1_hashes(kits_all, team_n, C, P))
 			want.update(s2_hashes(C, P))
 			want.update(s3_hashes(kits_all, team_n, P))
-			for key in ("S1", "S2", "S3"):
+			want.update(s4_hashes())
+			for key in ("S1", "S2", "S3", "S4"):
 				t = out.get(key)
 				if not t:
 					fails.append(f"{n} team {team}: no TP {key} line")

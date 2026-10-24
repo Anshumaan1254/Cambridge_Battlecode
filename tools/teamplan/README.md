@@ -41,8 +41,8 @@ body with a bag fights, kill value, turn order, tiebreak mode, job swaps, the li
 | `tiebreak.h` | `tiebreak.py` | tiebreak detection with hysteresis, the risk-capped deferral, the final tribute window, the denial window | under 1k | in game |
 | `assign.h` | `assign.py` | soft group ownership by list scheduling (gem-free groups lean to front bodies); the runner-up per group (the next owner); variants with one body left out | **56.1k** (51 groups, 5 bodies) | **the draft**, stored in draft memory (the OWN block); in game only as the one-off recompute of `docs/DRAFT_MEMORY.md` 7 |
 | `swap.h` | `swap.py` | the expected-value swap check with hysteresis; a TinyML slot with zero weights (off) | under 1k | in game |
-| `live.h` | `live.py` | the 64-bit live protocol: per body a claim, a progress code, a heartbeat and a flag; a plan cursor and a tiebreak bit; the per-turn layer (`LiveState`, `live_observe`, `live_compose`: who is live, with one round of doubt after a lost turn; the team bits to the lowest live slot) | 708 per body-turn with the two host calls | in game, every turn |
-| `live_sdk.h` | (checked in the test) | `live_read` / `live_write` of the 8 shared bytes; `live_init`: our slot from the allies' body types | in the 708 above | in game |
+| `live.h` | `live.py` | the 64-bit live protocol: per body a claim (a place code), a heartbeat and a flag; the team alert (army, enemy at an altar, kill chance, help: place, enemy count, sequence) under a post rule; a plan cursor and a tiebreak bit; the place vocabulary (groups, altars, rally tiles: `place_code`, `place_kind`, `nearest_place`); the per-turn layer (`LiveState`, `live_observe`, `live_compose`: who is live, with one round of doubt after a lost turn; the team bits to the lowest live slot) | 991 per body-turn with the two host calls | in game, every turn |
+| `live_sdk.h` | (checked in the test) | `live_read` / `live_write` of the 8 shared bytes; `live_init`: our slot from the allies' body types | in the 991 above | in game |
 | `nav.h` | `nav.py` | progress monitor, loop guard, target hysteresis | under 1k | in game |
 | `nav_sdk.h` | (checked in the test) | local detour on host distance fields: walls + units, a field of radius 3-5 | 9k median, 17k max | in game, only when stuck |
 
@@ -68,7 +68,7 @@ Every number in `params.h`, and every result, carries one label:
 ## Commands
 
 ```bash
-# engine test: 7,939 results bit-equal between C++ and Python (40 maps x 2 teams, the live bytes included), fuel per part; exit 1 on any failure
+# engine test: 8,019 results bit-equal between C++ and Python (40 maps x 2 teams, the live bytes included), fuel per part; exit 1 on any failure
 python3 -I tools/teamplan/test_teamplan.py [--maps 'maps/official/*.map26a'] [--jobs 4]
 python3 -I tools/teamplan/test_teamplan.py --dump-designs     # after a patch: rewrite experiments/results/teamplan/designs_3_0_5.txt
 python3 -I tools/teamplan/kit_table.py --md                   # the kit table
@@ -103,8 +103,9 @@ Outputs go to `experiments/results/teamplan/` and the ledger `experiments/result
    - recompute nothing over 20k;
    - call the cheap modules every turn;
    - the live bytes: `live_init(L)` on the first turn; then at the start of every turn `live_observe(L, live_read(), round)`, decide,
-     and `live_write(live_compose(L, claim, status, flag, cursor, tiebreak))`. A dead body keeps its turns (it may shop) and publishes
-     claim 63.
+     and `live_write(live_compose(L, claim, flag, cursor, tiebreak, post))`. `post` is an optional `Alert` (place, kind, count): a
+     sighting at `nearest_place` of the enemy's tile. `L.alert` and `L.alert_age` are the team's current alert. A dead body keeps its
+     turns (it may shop) and publishes claim 63.
 5. **No champion names**:
    - champions enter through their designs, `passive_type` and the SDK constants;
    - `sdk_bridge.h` finds a passive's constant by the passive tag, so a passive moved to another champion still works.

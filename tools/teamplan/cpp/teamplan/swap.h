@@ -1,6 +1,7 @@
 // teamplan/swap.h: swap two bodies' jobs when one lags (TEAMPLAN.md 4, U4': an expected-value check, not TinyML first).
 // Each body measures its own progress q = realized rate / planned rate (its own gold and captures are readable; an ally's are not, so
-// the progress travels as a 2-bit code in the live bytes, live.h). Assume a body's efficiency q stays with the body: swapping the plans
+// the check needs every body's 2-bit code; the live bytes carried them until the team alert took those bits, TEAMPLAN.md 11.7, so a
+// bot that wants this check must find another channel for the codes). Assume a body's efficiency q stays with the body: swapping the plans
 // of bodies a and b changes the expected total from P_a q_a + P_b q_b to P_a q_b + P_b q_a, a gain of (P_a - P_b)(q_b - q_a). Swap when
 // a lags (q_a < lag_ratio), the kits allow it (can_swap), and the gain is at least swap_margin of the current total; then hold for
 // swap_hold rounds. A learned correction (the TinyML slot, weights 0 = off) can be added to the gain. Python twin: tools/teamplan/swap.py.

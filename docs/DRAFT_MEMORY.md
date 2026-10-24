@@ -151,13 +151,14 @@ Fuel: to be measured with the bot's build logic. The route is a copy of mapintel
 
 ### 5.5 CODE (32 bytes): the codebook
 
-The live bytes carry 3- to 6-bit indices into these tables instead of raw tiles (smite, 4 Musketeers):
+The live bytes carry 6-bit place codes instead of raw tiles (smite, 4 Musketeers). The places are the groups, then the altars, then
+the rally tiles below (section 6), so a claim or an alert can point at a rally tile or an altar:
 
 | Bytes | Content |
 |---|---|
 | 0-15 | 8 rally tiles (uint16) |
 | 16-23 | 8 zone anchors (group ids) |
-| 24-31 | 8 altar ids in bank order |
+| 24-31 | 8 altar ids (index in the altar list: ascending tile index) in bank order |
 
 ### 5.6 ENEMY (16 bytes): the enemy model from their visible picks (a soft input)
 
@@ -192,25 +193,50 @@ The live bytes carry 3- to 6-bit indices into these tables instead of raw tiles 
 
 ## 6. Live bytes (8 bytes, all game): `teamplan/live.h` + `teamplan/live_sdk.h` (built and engine-tested)
 
-**Layout** (64 bits, little-endian):
-- **Bits 10b..10b+9, body slot b = 0..5, written only by that body**:
-  - claim: 6 bits, a group index (63 = none);
-  - status: 2 bits, the progress code of `swap.h` or a role state;
-  - beat: 1 bit, toggled every turn the body publishes;
-  - flag: 1 bit, carrying at least the hunt threshold.
-- **Bits 60-63, written only by the lowest live slot**: the plan cursor (3 bits: the variant in use) and the tiebreak bit (1).
-- **Indices point into OWN, CODE and the variant set**: the draft and the champions computed the same tables.
+**Layout** (64 bits, little-endian; vision is not shared between allies, so the alert is how one body tells the others what it sees):
+
+| Bits | Written by | Content |
+|---|---|---|
+| 8b..8b+7, slot b = 0..5 | that body only | its field: claim (6 bits, a place code; 63 = none, also while dead), beat (1 bit, toggled every turn it publishes), flag (1 bit, carrying at least the hunt threshold, 25 gems by default) |
+| 48-53 | any body, under the post rule | alert place: a place code, stored + 1 so the all-zero start means "no alert" |
+| 54-55 | | alert kind, also its rank: 0 an enemy army (keep away, do not walk in alone), 1 an enemy at an altar (its tribute can be cancelled by a stun or a lock; or it threatens ours), 2 a kill chance (an enemy with low health or a big bag), 3 help (an ally is fighting there) |
+| 56-57 | | enemies seen there: 1-4 (4 = four or more) |
+| 58-59 | | sequence: bumped by every post, so a repost of the same sighting still changes the field |
+| 60-62 | the lowest live slot | plan cursor (the variant in use) |
+| 63 | the lowest live slot | tiebreak bit |
+
+**Places** (`place_code`, `place_kind`, `nearest_place`): one 6-bit vocabulary for claims and alerts.
+- **Order**:
+  1. the map's camp groups, in the SDK's `camp_groups()` order;
+  2. the altars, in ascending tile index (`y * W + x`);
+  3. the CODE block's rally tiles, in its order.
+- **Codes** are 0-62. Places past 62 get no code: the rally tiles go first, then the last altars.
+- **Fit**: the largest official map has 51 groups, so every official map fits.
+- **Readers**: every body and the draft compute the same list, so no tile coordinates are sent.
+- **A sighting is reported at the place nearest the enemy** (Chebyshev distance, ties to the lower code).
+
+**The post rule** (`alert_accepts`): a post replaces the current alert when any of these holds:
+- there is none;
+- it is at least 5 rounds old (`LiveState::ttl`, ASSUMED; rounds since its field last changed, as the poster saw it);
+- the post ranks higher;
+- the post is the same sighting (same kind and place: a refresh).
+
+Otherwise the current alert stays (first come, first served), so two posters do not flip it every turn. Readers ignore an alert older
+than the ttl.
 
 **Slots**: the allies' body types in ascending order (`live_slot_of`). Every body computes the same order at spawn, and TEAM bytes 4-9
 list the bodies in that same order, so OWN's owner nibbles and the live slots agree.
 
 **Every turn, at its start** (`live_sdk.h`):
-1. `live_observe(L, live_read(), round)`: one host read of the 8 bytes, and which slots are live;
-2. the body decides what to publish;
-3. `live_write(live_compose(L, claim, status, flag, cursor, tiebreak))`: our field with the beat toggled, plus the team bits when no lower
-   slot is live; one host write.
+1. `live_observe(L, live_read(), round)`: one host read of the 8 bytes; which slots are live; the alert and its age;
+2. the body decides what to publish and whether to post a sighting;
+3. `live_write(live_compose(L, claim, flag, cursor, tiebreak, post))`: one host write. It carries:
+   - our field with the beat toggled;
+   - the team bits, when no lower slot is live;
+   - our alert, when the post rule accepts it.
 - **Turns never overlap**, so the read-modify-write is safe: the engine test checked every read against the previous body's write.
-- **Fuel**: 708 at most per body-turn (engine test, 40 maps x 2 teams).
+- **Fuel**: 991 at most per body-turn with alerts (engine test, 40 maps x 2 teams). `nearest_place` over the place list is extra, once
+  per sighting.
 
 **When a slot is live**:
 - **The slot has published once**: a nonzero field, or a change, was seen. The memory starts at zero.
@@ -224,6 +250,9 @@ list the bodies in that same order, so OWN's owner nibbles and the live slots ag
 
 **Dead champions still act** (they get a turn to shop, GameRules), so a dead body keeps beating. It publishes claim 63 (none) while
 dead. Staleness catches lost turns and stopped processes, not deaths.
+
+**Removed from the first version**: each body's 2-bit progress code (the input of `swap.h`'s job-swap check). The alert took those 12
+bits (TEAMPLAN.md 11.7).
 
 ## 7. Write order across draft turns, and the fuel guard
 

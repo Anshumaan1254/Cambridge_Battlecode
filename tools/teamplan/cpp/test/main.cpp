@@ -12,9 +12,11 @@
 //     4: TP S1 timing <hash> bag <hash> focus <hash> fuel <f> <f> <f>     5: TP S2 tiebreak <hash> fuel <f>
 //     6: TP S3 swap <hash> live <hash> nav <hash> fuel <f> <f> <f>        (the fuel of a sweep includes hashing its outputs)
 //     7: TP NAV step <dx> <dy> fuel <f> units <n> (nav_sdk.h local detour toward the enemy spawn around the champions in sight)
+//     8: TP S4 place <hash> fuel <f> (live.h's place codes, kinds and nearest place)
 //   every body, every turn from round 8: TP L <round> <slot> <slots> <bytes read, 16 hex> <bytes written, 16 hex> <live mask, 2 hex>
-//   <team-bit writer 0/1> <fuel of read + observe + compose + write> (live.h / live_sdk.h on the 8 shared bytes, synthetic values; slot 1
-//   stops publishing after round 14 and slot 0 after round 18: the others must see them go stale and slot 2 must take the team bits)
+//   <team-bit writer 0/1> <alert posted 0/1> <fuel of read + observe + compose + write> (live.h / live_sdk.h on the 8 shared bytes,
+//   synthetic values and alerts; slot 1 stops publishing after round 14 and slot 0 after round 18: the others must see them go stale and
+//   slot 2 must take the team bits)
 //   every body, rounds 2-7 and every 10th round 20-80: TP O <round> <type> <prio> <prev_prio> (turn order inside a team) and
 //   TP EP <round> <enemy type> dist <d> <prev_prio | err> for the first two enemies listed; from round 8 the other bodies walk to the
 //   enemy spawn so enemies come into sight
@@ -412,15 +414,21 @@ static void game_turn_s3()
 		for (int k = 0; k < 40; ++k)
 		{
 			tp::BodyField o;
-			o.claim = (k * 11) % 64, o.status = k % 4, o.beat = (k / 2) % 2, o.flag = (k / 3) % 2;
+			o.claim = (k * 11) % 64, o.beat = (k / 2) % 2, o.flag = (k / 3) % 2;
 			v = tp::set_body(v, k % 6, o);
 			v = tp::set_team(v, k % 8, (k / 5) % 2);
+			tp::Alert a;
+			a.place = (k * 7) % 64, a.kind = k % 4, a.count = k % 6, a.seq = (k / 4) % 4;
+			v = tp::set_alert(v, a);
 			std::uint8_t b[8];
 			tp::store64(v, b);
 			const std::uint64_t w = tp::load64(b);
 			const tp::BodyField r = tp::get_body(w, (k * 5) % 6);
 			h.i(static_cast<long long>(w & 0xFFFFFFFFull)), h.i(static_cast<long long>(w >> 32));
-			h.i(r.claim), h.i(r.status), h.i(r.beat), h.i(r.flag), h.i(tp::get_cursor(w)), h.i(tp::get_tiebreak(w));
+			h.i(r.claim), h.i(r.beat), h.i(r.flag);
+			const tp::Alert g = tp::get_alert(w);
+			h.i(g.place), h.i(g.kind), h.i(g.count), h.i(g.seq);
+			h.i(tp::get_cursor(w)), h.i(tp::get_tiebreak(w));
 		}
 		tp::Beat bt;
 		for (int rnd = 0; rnd < 12; ++rnd)
@@ -446,6 +454,30 @@ static void game_turn_s3()
 		fu += " " + std::to_string(f0 - fuel());
 	}
 	line(out + fu);
+}
+
+// The place vocabulary of live.h (claims and alerts): codes, kinds, the nearest place to a tile.
+static void game_turn_s4()
+{
+	const long long f0 = fuel();
+	H h;
+	const tp::Places PPs[2] = { { 40, 6, 8 }, { 55, 6, 8 } };
+	for (const auto& PP : PPs)
+		for (int kind = 0; kind < 5; ++kind)
+			for (int idx = -1; idx < 70; idx += 3)
+			{
+				const int c = tp::place_code(PP, kind, idx);
+				int i2 = 0;
+				const int k2 = tp::place_kind(PP, c, &i2);
+				h.i(c), h.i(k2), h.i(i2);
+			}
+	int xs[30], ys[30];
+	for (int q = 0; q < 30; ++q)
+		xs[q] = (q * 7) % 50, ys[q] = (q * 13) % 50;
+	for (int q = 0; q < 20; ++q)
+		h.i(tp::nearest_place(xs, ys, 30, (q * 9) % 50, (q * 5) % 50));
+	h.i(tp::nearest_place(xs, ys, 0, 3, 3));
+	line("TP S4 place " + h.str() + " fuel " + std::to_string(f0 - fuel()));
 }
 
 static void game_turn_nav()
@@ -483,8 +515,8 @@ static void game_turn_nav()
 
 static std::string hex64(std::uint64_t v) { return hexn(static_cast<unsigned>(v >> 32), 8) + hexn(static_cast<unsigned>(v), 8); }
 
-// The live protocol on the shared bytes (TP L): every body publishes synthetic values from round 8; slot 1 quits after round 14 and
-// slot 0 after round 18.
+// The live protocol on the shared bytes (TP L): every body publishes synthetic values from round 8 and posts a synthetic alert when
+// (round + slot) % 3 == 0; slot 1 quits after round 14 and slot 0 after round 18.
 static tp::LiveState LS;
 static void live_turn(int rnd)
 {
@@ -493,13 +525,16 @@ static void live_turn(int rnd)
 	const long long f0 = fuel();
 	const std::uint64_t seen = tp::live_read();
 	tp::live_observe(LS, seen, rnd);
-	bool w = false;
+	bool w = false, posted = false;
 	const int s = LS.slot;
-	const std::uint64_t v = tp::live_compose(LS, (rnd * 7 + s * 11) % 63, (rnd + s) % 4, (rnd + s) % 2, rnd % 8, (rnd / 3) % 2, &w);
+	tp::Alert a;
+	a.place = (rnd * 5 + s * 3) % 63, a.kind = (rnd + 2 * s) % 4, a.count = 1 + s % 4;
+	const bool want = (rnd + s) % 3 == 0;
+	const std::uint64_t v = tp::live_compose(LS, (rnd * 7 + s * 11) % 63, (rnd + s) % 2, rnd % 8, (rnd / 3) % 2, want ? &a : nullptr, &w, &posted);
 	tp::live_write(v);
 	const long long f1 = fuel();
 	line("TP L " + std::to_string(rnd) + " " + std::to_string(s) + " " + std::to_string(LS.n) + " " + hex64(seen) + " " + hex64(v) + " " +
-		 hexn(LS.live, 2) + " " + (w ? "1" : "0") + " " + std::to_string(f0 - f1));
+		 hexn(LS.live, 2) + " " + (w ? "1" : "0") + " " + (posted ? "1" : "0") + " " + std::to_string(f0 - f1));
 }
 
 int main()
@@ -596,6 +631,8 @@ int main()
 						game_turn_s3();
 					else if (gturn == 7)
 						game_turn_nav();
+					else if (gturn == 8)
+						game_turn_s4();
 				}
 			}
 		}

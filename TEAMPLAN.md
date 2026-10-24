@@ -654,6 +654,11 @@ Weights live in one versioned parameter set.
     1-bit beat aliasing after a reader's lost turn (11.6).
   - **Result**: 7,939 results bit-equal on 40 maps x 2 teams, every check passed, 708 fuel per body-turn.
   - **Docs**: `docs/DRAFT_MEMORY.md` 5.1 and 6, the prompt, `tools/teamplan/README.md`, `ISSUES.md`.
+- **17:41**: the team alert and the place vocabulary (commit after this line).
+  - **Why**: the user asked to fix the gap (the CODE block could not be named by the live bytes) and whether the bodies share
+    sightings. They did not.
+  - **Done**: 11.7. The per-body field is now 8 bits (the progress code removed), plus a 12-bit alert. Engine test: 8,019 results
+    bit-equal, all checks passed, 991 fuel per body-turn.
 
 ---
 
@@ -778,7 +783,7 @@ ones.
   - `kit.h`: kit values from the designs;
   - `capture.h` mode 1;
   - `assign.h`: OWN and the next owner;
-  - `live.h` + `live_sdk.h`: the 8 shared bytes, every turn (11.6);
+  - `live.h` + `live_sdk.h`: the 8 shared bytes, every turn, with the team alert and the place vocabulary (11.6-11.7);
   - `timing.h`: who acts next;
   - `tiebreak.h`: the detection and the final tribute window, deferral cap 0;
   - `nav.h` and `nav_sdk.h`.
@@ -841,3 +846,44 @@ publishes claim 63 (none) while dead.
 
 **What is left for the user's bot**: its champion code calls these functions every turn and decides what to publish. That part is the
 bot itself: the claim it works on, its progress code from `swap.h`, the bag flag from `bag.h`, the plan cursor and the tiebreak bit.
+
+### 11.7 Sightings between champions, and one place vocabulary (Oct 24, the user: "fix the gap, also are we using it for communicating between different characters, like if one sees an enemy army, a low-health character, an altar, it tells the others")
+
+**Before this change, no**: vision is not shared between allies, and the 8 live bytes carried no sightings. Also, the draft memory's
+CODE block (rally tiles, altar ids) was meant to be named by the live bytes, but no field could.
+
+**Now** (`live.h`, layout in `docs/DRAFT_MEMORY.md` 6):
+- **The team alert** (12 bits), which any body may post:
+  - where: a place code;
+  - what, also its rank: 0 an enemy army, 1 an enemy at an altar, 2 a kill chance (low health or a big bag), 3 help (an ally is fighting
+    there);
+  - how many enemies: 1-4+;
+  - a sequence number.
+- **The post rule**: a post replaces the current alert when there is none, it is 5+ rounds old, the post ranks higher, or the post
+  refreshes the same sighting. Otherwise first come, first served, so two posters do not flip it.
+- **One place vocabulary** for claims and alerts: groups, then altars (ascending tile index), then the CODE block's rally tiles. A claim
+  can now say "banking at altar j" or "going to rally tile k", and an alert can say "enemy army at group g". A sighting goes to the
+  place nearest the enemy.
+
+**The price**: the 64 bits were full. Each body's field went from 10 to 8 bits, dropping the 2-bit progress code that fed `swap.h`'s
+job-swap check. Why the alert wins those bits:
+- the swap check could not be tested (no v10 room) and has no evidence behind it (section 7: no top team reports job swaps paying off);
+- shared sightings have support:
+  - food 2026: broadcasting enemy positions "greatly improved" micro;
+  - Generalized Stroke's Theorem: broadcasting fighters' HP was "a worthy tradeoff";
+  - Lorem Ipsum: memory-based attacks won over 85% locally;
+  - v10's own audit: "help that does not come" was its costliest coordination failure, 39% of its deaths in session 2.
+
+**The engine test**: 40 maps x 2 teams, 8,019 results bit-equal with the twin, all passed. It covers:
+- the place codes and the nearest place (TP S4);
+- the alert codec;
+- in real games, every alert rule checked directly:
+  - an alert changes only with a post;
+  - a post lands as given with the sequence + 1;
+  - a missing, old or lower-rank alert is always replaced;
+  - a current higher-rank alert never is.
+
+The cost is 991 fuel per body-turn with alerts.
+
+**Not measured**: whether the alert wins games. That needs the new bot's reactions to each kind (keep away, deny, converge, come
+help), and a battery on that bot.

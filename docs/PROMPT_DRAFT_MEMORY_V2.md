@@ -51,18 +51,27 @@ tests. Then the user's bot can write and read all 1,024 bytes through one API. Y
   - the DL outputs are reserved at 864-999.
   - **Keep both byte-identical.**
 - **The team-play library** `tools/teamplan/cpp/teamplan/` (header-only C++ with Python twins in `tools/teamplan/tp/`). Its engine test
-  `python3 -I tools/teamplan/test_teamplan.py` checks 7,939 results bit-equal on 40 maps x 2 teams. What you need from it:
+  `python3 -I tools/teamplan/test_teamplan.py` checks 8,019 results bit-equal on 40 maps x 2 teams. What you need from it:
   - `assign.h`: `assign_groups`, the soft ownership plan. Its `runner_up` output is the next owner. 56.1k fuel worst (51 groups, 5
     bodies).
   - `kit.h`: kit values from the designs; `front_order`; passives by tag.
   - `sdk_bridge.h`: `design_of`, `consts_from_sdk`.
   - `capture.h`: mode 1, the LEARNED rule.
   - `tiebreak.h`, `nav.h` / `nav_sdk.h`.
-  - **The 8 shared live bytes are already built**: `live.h` (layout and the per-turn layer: who is live, the team bits to the lowest
-    live slot) and `live_sdk.h` (`live_read` / `live_write` / `live_init`). They are engine-tested (every read equals the previous
-    write, lost turns, stale detection, the hand-over of the team bits) and cost 708 fuel per body-turn. The live slots are the allies'
-    body types in ascending order; your TEAM block must list the bodies in that same order (`docs/DRAFT_MEMORY.md` 5.1 and 6). The
-    claim indices in the live bytes point into your OWN and CODE blocks.
+  - **The 8 shared live bytes are already built**: `live.h` and `live_sdk.h` (`live_read` / `live_write` / `live_init`). They cost 991
+    fuel per body-turn.
+    - What they carry: per body a claim, a heartbeat and a bag flag; the team alert (an enemy army, an enemy at an altar, a kill chance,
+      help: where, how many enemies); the plan cursor and the tiebreak bit.
+    - What the engine test checks: every read equals the previous write, lost turns, stale detection, the hand-over of the team bits,
+      and the alert's post rule.
+    - Do not rebuild them. Your blocks must agree with them in three ways (`docs/DRAFT_MEMORY.md` 5.1, 5.5 and 6):
+      - **Slots**: the live slots are the allies' body types in ascending order, and your TEAM block (bytes 4-9) lists the bodies in
+        that order.
+      - **Places**: claims and alerts use one 6-bit place code (`live.h` `place_code`). The order is the map's camp groups in the SDK's
+        `camp_groups()` order, then the altars in ascending tile index, then your CODE block's rally tiles. Your group indices (OWN,
+        CODE zone anchors, ENEMY) must use that same group order, and your altar ids the ascending-tile altar list.
+      - **Rally tiles**: CODE bytes 0-15 hold the rally tiles. Pick them so a claim or an alert can name them, for example the
+        contested groups' approach tiles and the bank altars' approaches.
 - **The OWN prototype** (version 1 at offset 8) in the git-ignored GOD v10 test copy (`tools/teamplan/v10_adapter.patch`):
   - draft fuel measured: 138k on turn 1, 48-65k on turns 2-5, at least 24.2k left;
   - rosters equal v10's in 80 of 80 games.

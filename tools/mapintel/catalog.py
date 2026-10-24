@@ -136,19 +136,20 @@ def build_map(name, R, do_pace=True, outdir=None):
 	refs = reference_rosters(name, M.team_size, R)
 	obj = objectives(ctx, [b for p in refs[0]["picks"] for b in pick_bodies(p)] if refs else [0, 2, 12])
 	ropen, rpace = [], []
+	assert all(ctx.mirror_group[ctx.mirror_group[g]] == g for g in range(len(M.groups)) if ctx.mirror_group[g] is not None)
 	for ref in refs:
-		for t in (0, 1):
-			pl = P.plan1(ctx, t, ref["picks"])
-			ropen.append({"team": t, "roster": ref["names"], "origin": ref["origin"], "plan1": pl})
-			if do_pace:
-				pc = P.pace(ctx, t, ref["picks"])
-				rpace.append({"team": t, "roster": ref["names"], "origin": ref["origin"], **pc})
+		pl = P.plan1(ctx, 0, ref["picks"])
+		ropen.append({"team": 0, "roster": ref["names"], "origin": ref["origin"], "plan1": pl})
+		ropen.append({"team": 1, "roster": ref["names"], "origin": ref["origin"], "plan1": P.mirror_plan(ctx, pl)})
+		if do_pace:
+			pc = P.pace(ctx, 0, ref["picks"])
+			rpace.append({"team": 0, "roster": ref["names"], "origin": ref["origin"], **pc})
 	J = {
 		"map": name, "origin": "COMPUTED", "fingerprint": M.fingerprint, "W": M.W, "H": M.H, "sym": ["horizontal", "vertical", "rotational180"][M.sym],
 		"team_size": M.team_size, "spawn": [M.spawn_box["ally"][:4], M.spawn_box["enemy"][:4]],
 		"altars": p2["altars"], "banking_cases": p2["cases"], "bank_routes": p2["bank_routes"],
 		"groups": [dict(g, camps=[[CAMP_NAMES[c[0]], c[1], c[2]] for c in M.groups[i]["camps"]], respawn=M.groups[i]["respawn"]) for i, g in enumerate(p3["groups"])],
-		"first_contact": p3["first_contact"], "objectives": obj, "conflict": cf, "plan4": p4,
+		"first_contact": p3["first_contact"], "contested_rule": {"k_contest": p3["k_contest"], "band": p3["band"]}, "objectives": obj, "conflict": cf, "plan4": p4,
 		"reference_rosters": refs, "plan1": ropen, "pace": rpace, "per_champion_group": per,
 	}
 	feats = features(M, ctx, L, p2, p3, cf, obj, rpace, width, load)

@@ -102,6 +102,13 @@ class Ctx:
 					ts.append((x, y))
 			self.approach.append(ts)
 		self._fields = {}
+		# the mirror image of each group (the engine builds the other half of the map by its symmetry): team B's plans are team A's
+		# plans with every group replaced by its mirror (the planner does not model turn order, the only asymmetry)
+		mir = {0: lambda x, y: (M.W - 1 - x, y), 1: lambda x, y: (x, M.H - 1 - y), 2: lambda x, y: (M.W - 1 - x, M.H - 1 - y)}[M.sym]
+		self.mirror_group = []
+		for g in M.groups:
+			x, y = g["camps"][0][1], g["camps"][0][2]
+			self.mirror_group.append(M.camp_group.get(mir(x, y)))
 
 	def field(self, key, sources, team, clear=False):
 		"""Walking distance field to a source set (moves are symmetric, so it is also the distance from the set). clear=False: every
@@ -248,9 +255,17 @@ def tiebreak_rule(us, them):
 # ---------------------------------------------------------------------------------------------------------------------------------
 # plan 3: contested groups and arrival times
 
-def plan3(ctx, k_contest=10, band=6):
+def plan3(ctx, k_contest=None, band=None):
+	"""Contested = |ETA gap| <= k_contest rounds or |d_us - d_them| <= band tiles; both default to max(3, 0.1 x the spawn-to-spawn walking
+	distance) so they scale with the map (a fixed 10 marks every group of a 30 x 30 map)."""
 	M = ctx.M
 	out = []
+	if k_contest is None or band is None:
+		fn = G.bfs(~(M.walls | M.holes | M.altars), M.spawn[0])
+		sd = min_on(fn, M.spawn[1])
+		scale = max(3, round(0.1 * (sd if sd > 0 else max(M.W, M.H))))
+		k_contest = scale if k_contest is None else k_contest
+		band = scale if band is None else band
 	# earliest round an enemy body can be within 4 (spell reach) of each tile: min filter of their walking field
 	near = []
 	for t in (0, 1):
@@ -302,7 +317,8 @@ def plan3(ctx, k_contest=10, band=6):
 	# the map's first-contact point: where the two fronts meet (earliest max(t_A, t_B within 4) over all tiles)
 	both = np.maximum(np.where(ctx.walk[0] >= 0, ctx.walk[0], 1 << 20), near[1])
 	y, x = np.unravel_index(int(np.argmin(both)), both.shape)
-	return {"groups": out, "first_contact": {"round": int(both[y, x]) if both[y, x] < (1 << 19) else None, "tile": [int(x), int(y)]}}
+	return {"groups": out, "first_contact": {"round": int(both[y, x]) if both[y, x] < (1 << 19) else None, "tile": [int(x), int(y)]},
+			"k_contest": k_contest, "band": band}
 
 
 def shortest_path(dist_from_spawn, goal_mask, spawn_mask, passable):
@@ -595,11 +611,25 @@ class Planner:
 				"rounds": min(max(free), until)}
 
 
-def plan1(ctx, team, picks, R0=150, top=3):
-	"""The opening: every body's first target searched over its `top` best first targets (by solo rate from spawn), all combinations
-	(distinct groups), each evaluated by the planner to round R0; objective banked + 0.5 x carried value."""
+def mirror_plan(ctx, plan):
+	"""Team B's plan from team A's (or back): every group id replaced by its mirror group."""
+	if plan is None:
+		return None
+	mg = {ctx.M.groups[g]["id"]: ctx.M.groups[ctx.mirror_group[g]]["id"] for g in range(len(ctx.M.groups)) if ctx.mirror_group[g] is not None}
+	out = dict(plan)
+	out["first_targets"] = [mg.get(g, g) for g in plan["first_targets"]]
+	out["plan"] = [[dict(s, group=mg.get(s["group"], s["group"])) if "group" in s else dict(s) for s in body] for body in plan["plan"]]
+	out["mirrored_from"] = "A"
+	return out
+
+
+def plan1(ctx, team, picks, R0=150, top=None, evaluate=40):
+	"""The opening (plan 1): every body's first target is searched over its best `top` first targets (by solo rate from spawn; default
+	team size + 1); the combinations with distinct groups are ranked by their summed solo rates and the best `evaluate` are each played
+	by the planner to round R0 (coalitions allowed after the first targets); objective = banked + 0.5 x carried value at R0."""
 	base = Planner(ctx, team, picks)
 	n = len(base.bodies)
+	top = top or n + 1
 	cands = []
 	for i, b in enumerate(base.bodies):
 		ch = EC.Champ(b)
@@ -611,25 +641,28 @@ def plan1(ctx, team, picks, R0=150, top=3):
 			r = base.kill(g, [ch], [0])
 			if not r.cleared:
 				continue
-			rates.append((ctx.value[g] / (tr + r.rounds + EC.capture_rounds()), g))
+			rates.append((base.value[g] / (tr + r.rounds + EC.capture_rounds()), g))
 		rates.sort(reverse=True)
-		cands.append([g for _, g in rates[:top]] or [None])
-	best = None
-	combos = list(itertools.product(*cands))
-	if len(combos) > 400:
-		combos = combos[:400]
-	for combo in combos:
-		gs = [g for g in combo if g is not None]
+		cands.append(rates[:top] or [(0.0, None)])
+	combos = []
+	for combo in itertools.product(*cands):
+		gs = [g for _, g in combo if g is not None]
 		if len(set(gs)) < len(gs):
 			continue
-		P = Planner(ctx, team, picks)
-		P._cache = base._cache
-		res = P.run(until=R0, target=0, first=list(combo))
+		combos.append((sum(r for r, _ in combo), [g for _, g in combo]))
+		if len(combos) > 20000:
+			break
+	if not combos:  # fewer groups than bodies: let the bodies share (the planner forms coalitions)
+		combos = [(0.0, [c[0][1] for c in cands])]
+	combos.sort(key=lambda c: -c[0])
+	best = None
+	for _, combo in combos[:evaluate]:
+		P_ = Planner(ctx, team, picks)
+		P_._cache = base._cache
+		res = P_.run(until=R0, target=0, first=list(combo))
 		val = res["banked"] + 0.5 * res["carried"]
 		if best is None or val > best[0]:
 			best = (val, combo, res)
-	if best is None:
-		return None
 	val, combo, res = best
 	return {"R0": R0, "value": round(val, 1), "banked": res["banked"], "carried": res["carried"], "first_targets": [
 		None if g is None else ctx.M.groups[g]["id"] for g in combo], "bodies": base.bodies, "plan": res["plan"]}

@@ -170,61 +170,24 @@ def build_map(name, R, do_pace=True, outdir=None):
 
 
 def features(M, ctx, L, p2, p3, cf, obj, rpace, width, load):
-	"""~80 features. 'core_*' are computable at runtime from the SDK (features.h has the same definitions); 'ext_*' are offline only."""
+	"""One maps.csv row (team A's view). f_* = the runtime features of features.py (= features.h, computable by a bot during the draft);
+	ext_* = offline only (line of sight, dash fields, flows, simulations)."""
+	import features as FT
 	f = {"map": M.name}
-	area = M.W * M.H
-	walk = ~(M.walls | M.holes | M.altars)
-	f.update(core_w=M.W, core_h=M.H, core_area=area, core_sym=M.sym, core_team=M.team_size, core_walk_share=round(walk.mean(), 4),
-			 core_wall_share=round(M.walls.mean(), 4), core_hole_share=round(M.holes.mean(), 4), core_bush_share=round(M.bushes.mean(), 4),
-			 core_altars=len(M.altar_tiles), core_groups=len(M.groups))
-	ct = np.zeros(6, int)
-	for c in M.camp_list:
-		ct[c[0]] += 1
-	for k in range(6):
-		f[f"core_n_{CAMP_NAMES[k]}"] = int(ct[k])
-	gems = np.array([g["gems"] for g in M.groups], float)
-	gold = np.array([g["gold"] for g in M.groups], float)
-	resp = np.array([g["respawn"] for g in M.groups], float)
-	f.update(core_gems=int(gems.sum()), core_gold=int(gold.sum()), core_gem_rate=round(float((gems / resp).sum()), 3),
-			 core_gold_rate=round(float((gold / resp).sum()), 3), core_gold_per_gem=round(float(gold.sum() / max(1, gems.sum())), 3))
-	dA = np.array([P.min_on(ctx.walk_clear[0], ctx.gmask[g]) for g in range(len(M.groups))], float)
-	dB = np.array([P.min_on(ctx.walk_clear[1], ctx.gmask[g]) for g in range(len(M.groups))], float)
-	ok = (dA >= 0) & (dB >= 0)
-	ss = P.min_on(ctx.walk_clear[0], M.spawn[1]) if (ctx.walk_clear[0][M.spawn[1]] >= 0).any() else -1
-	f["core_spawn_dist"] = ss
-	own = ok & (dA + 6 < dB)
-	mid = ok & (np.abs(dA - dB) <= 6)
-	f["core_gems_own_share"] = round(float(gems[own].sum() / max(1, gems.sum())) * 2, 4)  # x2: one side's share of its half
-	f["core_gems_mid_share"] = round(float(gems[mid].sum() / max(1, gems.sum())), 4)
-	f["core_gold_mid_share"] = round(float(gold[mid].sum() / max(1, gold.sum())), 4)
-	wv = gems / resp
-	f["core_dist_gem_weighted"] = round(float((dA[ok] * wv[ok]).sum() / max(1e-9, wv[ok].sum())), 2) if ok.any() else -1
-	f["core_dist_nearest_gem_group"] = int(dA[(gems > 0) & (dA >= 0)].min()) if ((gems > 0) & (dA >= 0)).any() else -1
-	heavy = np.array([sum(EC.camp_stats(c[0])[0] for c in g["camps"]) for g in M.groups], float)
-	f["core_hp_total"] = int(heavy.sum())
-	f["core_gems_per_khp"] = round(float(gems.sum() / max(1, heavy.sum()) * 1000), 3)
-	big = heavy >= 4800
-	f["core_gems_heavy_share"] = round(float(gems[big].sum() / max(1, gems.sum())), 4)
-	f["core_n_heavy_groups"] = int(big.sum())
-	f["core_mono_golem_gem_share"] = round(float(sum(g["gems"] for g in M.groups if any(c[0] in (4, 5) for c in g["camps"])) / max(1, gems.sum())), 4)
-	f["core_max_group_gems"] = int(gems.max()) if len(gems) else 0
-	f["core_mean_respawn_w"] = round(float((resp * gems).sum() / max(1, gems.sum())), 2)
-	da = [a["teams"][0]["walk_clear"] for a in p2["altars"] if a["teams"][0]["walk_clear"] >= 0]
-	f["core_dist_nearest_altar"] = min(da) if da else -1
-	f["core_altars_reachable_walk"] = sum(1 for a in p2["altars"] if a["teams"][0]["mode"] == "walk")
-	f["core_altar_camp_gated"] = int(any(a["teams"][0]["camp_tile_only"] for a in p2["altars"]))
-	f["core_bank_mode_A"] = min((["walk", "walk_after_clearing", "dash", "crystal", "none"].index(a["teams"][0]["mode"]) for a in p2["altars"]), default=4)
-	f["core_bank_mode_B"] = min((["walk", "walk_after_clearing", "dash", "crystal", "none"].index(a["teams"][1]["mode"]) for a in p2["altars"]), default=4)
-	f["core_contested_groups"] = sum(1 for g in p3["groups"] if g["contested"])
-	f["core_contested_value_share"] = round(sum(g["value"] for g in p3["groups"] if g["contested"]) / max(1e-9, sum(g["value"] for g in p3["groups"])), 4)
-	f["core_first_contact"] = p3["first_contact"]["round"] if p3["first_contact"]["round"] is not None else -1
-	f["core_dash_gain"] = round(float(np.mean([(ctx.walk[0][y, x] - ctx.dash[0][y, x]) for (x, y) in [(c[1], c[2]) for c in M.camp_list]
-												 if 0 <= ctx.walk[0][y, x] and 0 <= ctx.dash[0][y, x]] or [0])), 3)
-	f["core_islands"] = int(sum(1 for g in range(len(M.groups)) if P.min_on(ctx.walk_clear[0], ctx.gmask[g]) < 0 and P.dist_to_tiles(ctx.walk_clear[0], ctx.gtiles[g]) < 0))
-	for R_ in (1, 3, 4, 5):
+	for n, v in zip(FT.NAMES, FT.compute(M, 0)):
+		if n != "reserved":
+			f["f_" + n] = round(v, 6)
+	for R_ in (1, 3, 4):
 		h = L[f"hit_{R_}"].any(axis=(1, 2))
 		sfe = L[f"safe_{R_}"].any(axis=(1, 2))
-		f[f"core_safe_groups_r{R_}"] = round(float(sfe.sum() / max(1, h.sum())), 4)
+		f[f"ext_safe_groups_r{R_}"] = round(float(sfe.sum() / max(1, h.sum())), 4)
+	camp_tiles = [(c[1], c[2]) for c in M.camp_list]
+	gains = [int(ctx.walk[0][y, x] - ctx.dash[0][y, x]) for (x, y) in camp_tiles if ctx.walk[0][y, x] >= 0 and ctx.dash[0][y, x] >= 0]
+	f["ext_dash_gain"] = round(float(np.mean(gains)) if gains else 0.0, 3)
+	f["ext_contested_groups"] = sum(1 for g in p3["groups"] if g["contested"])
+	f["ext_contested_value_share"] = round(sum(g["value"] for g in p3["groups"] if g["contested"]) / max(1e-9, sum(g["value"] for g in p3["groups"])), 4)
+	f["ext_first_contact"] = p3["first_contact"]["round"] if p3["first_contact"]["round"] is not None else -1
+	f["ext_crystal_only_altars"] = sum(1 for a in p2["altars"] if a["teams"][0]["mode"] == "crystal")
 	f["ext_lanes"] = cf["lanes"] if cf["lanes"] is not None else -1
 	f["ext_chokepoints"] = len(cf["chokepoints"])
 	f["ext_corridor_width"] = cf["corridor_width_mean"]
@@ -239,18 +202,37 @@ def features(M, ctx, L, p2, p3, cf, obj, rpace, width, load):
 	return f
 
 
+def csv_only(names, outdir):
+	"""Rebuild maps.csv from the saved <map>.json (plans, conflict, objectives, pace) without re-running the simulations."""
+	rows = []
+	for n in names:
+		J = json.load(open(os.path.join(outdir, n + ".json")))
+		M = mapdata.load(n)
+		ctx = P.Ctx(M)
+		L, _ = T.build(M, sim=False)
+		load = np.load(os.path.join(outdir, n + ".npz"))["route_load"]
+		p2 = {"altars": J["altars"]}
+		p3 = {"groups": J["groups"], "first_contact": J["first_contact"]}
+		rows.append(features(M, ctx, L, p2, p3, J["conflict"], J["objectives"], J["pace"], None, load))
+	return rows
+
+
 def main():
 	ap = argparse.ArgumentParser()
 	ap.add_argument("--maps", default="all")
 	ap.add_argument("--out", default=os.path.join(ROOT, "maps/catalog"))
 	ap.add_argument("--no-pace", action="store_true")
+	ap.add_argument("--csv-only", action="store_true", help="rebuild maps.csv from the saved JSON / npz files")
 	a = ap.parse_args()
 	names = mapdata.official_names() if a.maps == "all" else a.maps.split(",")
 	R = json.load(open(os.path.join(ROOT, "tools/mapintel/data/battery_rosters.json")))
-	rows = []
-	for n in names:
-		_, feats = build_map(n, R, not a.no_pace, a.out)
-		rows.append(feats)
+	if a.csv_only:
+		rows = csv_only(names, a.out)
+	else:
+		rows = []
+		for n in names:
+			_, feats = build_map(n, R, not a.no_pace, a.out)
+			rows.append(feats)
 	if a.maps == "all":
 		with open(os.path.join(a.out, "maps.csv"), "w", newline="") as f:
 			w = csv.DictWriter(f, fieldnames=list(rows[0]))

@@ -1,0 +1,5767 @@
+{
+ "map": "01starvation",
+ "origin": "COMPUTED",
+ "fingerprint": "75cffd7745041769",
+ "W": 80,
+ "H": 80,
+ "sym": "horizontal",
+ "team_size": 5,
+ "spawn": [
+  [
+   1,
+   48,
+   3,
+   50
+  ],
+  [
+   76,
+   48,
+   78,
+   50
+  ]
+ ],
+ "altars": [
+  {
+   "altar": [
+    35,
+    15
+   ],
+   "approach": [
+    {
+     "tile": [
+      34,
+      14
+     ],
+     "camp_group": null,
+     "spawn_of": []
+    },
+    {
+     "tile": [
+      35,
+      14
+     ],
+     "camp_group": null,
+     "spawn_of": []
+    },
+    {
+     "tile": [
+      36,
+      14
+     ],
+     "camp_group": null,
+     "spawn_of": []
+    },
+    {
+     "tile": [
+      34,
+      15
+     ],
+     "camp_group": null,
+     "spawn_of": []
+    },
+    {
+     "tile": [
+      36,
+      15
+     ],
+     "camp_group": null,
+     "spawn_of": []
+    },
+    {
+     "tile": [
+      34,
+      16
+     ],
+     "camp_group": null,
+     "spawn_of": []
+    },
+    {
+     "tile": [
+      35,
+      16
+     ],
+     "camp_group": null,
+     "spawn_of": []
+    },
+    {
+     "tile": [
+      36,
+      16
+     ],
+     "camp_group": null,
+     "spawn_of": []
+    }
+   ],
+   "teams": [
+    {
+     "team": 0,
+     "walk": 99,
+     "walk_clear": 99,
+     "dash": 50,
+     "dash_clear": 50,
+     "crystal": -1,
+     "mode": "walk",
+     "camp_tile_only": false
+    },
+    {
+     "team": 1,
+     "walk": 99,
+     "walk_clear": 99,
+     "dash": 55,
+     "dash_clear": 55,
+     "crystal": -1,
+     "mode": "walk",
+     "camp_tile_only": false
+    }
+   ],
+   "side_A": "middle"
+  },
+  {
+   "altar": [
+    44,
+    15
+   ],
+   "approach": [
+    {
+     "tile": [
+      43,
+      14
+     ],
+     "camp_group": null,
+     "spawn_of": []
+    },
+    {
+     "tile": [
+      44,
+      14
+     ],
+     "camp_group": null,
+     "spawn_of": []
+    },
+    {
+     "tile": [
+      45,
+      14
+     ],
+     "camp_group": null,
+     "spawn_of": []
+    },
+    {
+     "tile": [
+      43,
+      15
+     ],
+     "camp_group": null,
+     "spawn_of": []
+    },
+    {
+     "tile": [
+      45,
+      15
+     ],
+     "camp_group": null,
+     "spawn_of": []
+    },
+    {
+     "tile": [
+      43,
+      16
+     ],
+     "camp_group": null,
+     "spawn_of": []
+    },
+    {
+     "tile": [
+      44,
+      16
+     ],
+     "camp_group": null,
+     "spawn_of": []
+    },
+    {
+     "tile": [
+      45,
+      16
+     ],
+     "camp_group": null,
+     "spawn_of": []
+    }
+   ],
+   "teams": [
+    {
+     "team": 0,
+     "walk": 99,
+     "walk_clear": 99,
+     "dash": 55,
+     "dash_clear": 55,
+     "crystal": -1,
+     "mode": "walk",
+     "camp_tile_only": false
+    },
+    {
+     "team": 1,
+     "walk": 99,
+     "walk_clear": 99,
+     "dash": 50,
+     "dash_clear": 50,
+     "crystal": -1,
+     "mode": "walk",
+     "camp_tile_only": false
+    }
+   ],
+   "side_A": "middle"
+  }
+ ],
+ "banking_cases": {
+  "walk": {
+   "A_can_bank": true,
+   "B_can_bank": true,
+   "rule_for_A": "both can bank: normal play",
+   "rule_for_B": "both can bank: normal play"
+  },
+  "dash": {
+   "A_can_bank": true,
+   "B_can_bank": true,
+   "rule_for_A": "both can bank: normal play",
+   "rule_for_B": "both can bank: normal play"
+  },
+  "crystal": {
+   "A_can_bank": true,
+   "B_can_bank": true,
+   "rule_for_A": "both can bank: normal play",
+   "rule_for_B": "both can bank: normal play"
+  }
+ },
+ "bank_routes": [
+  {
+   "group": 0,
+   "teams": [
+    {
+     "team": 0,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 68,
+     "tribute": 1,
+     "eta": 69,
+     "side": "middle"
+    },
+    {
+     "team": 1,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 68,
+     "tribute": 1,
+     "eta": 69,
+     "side": "middle"
+    }
+   ]
+  },
+  {
+   "group": 1,
+   "teams": [
+    {
+     "team": 0,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 68,
+     "tribute": 1,
+     "eta": 69,
+     "side": "middle"
+    },
+    {
+     "team": 1,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 68,
+     "tribute": 1,
+     "eta": 69,
+     "side": "middle"
+    }
+   ]
+  },
+  {
+   "group": 2,
+   "teams": [
+    {
+     "team": 0,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 2,
+     "tribute": 9,
+     "eta": 11,
+     "side": "middle"
+    },
+    {
+     "team": 1,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 2,
+     "tribute": 9,
+     "eta": 11,
+     "side": "middle"
+    }
+   ]
+  },
+  {
+   "group": 3,
+   "teams": [
+    {
+     "team": 0,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 23,
+     "tribute": 1,
+     "eta": 24,
+     "side": "middle"
+    },
+    {
+     "team": 1,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 23,
+     "tribute": 1,
+     "eta": 24,
+     "side": "middle"
+    }
+   ]
+  },
+  {
+   "group": 4,
+   "teams": [
+    {
+     "team": 0,
+     "altar": 1,
+     "how": "walk",
+     "rounds": 23,
+     "tribute": 1,
+     "eta": 24,
+     "side": "middle"
+    },
+    {
+     "team": 1,
+     "altar": 1,
+     "how": "walk",
+     "rounds": 23,
+     "tribute": 1,
+     "eta": 24,
+     "side": "middle"
+    }
+   ]
+  },
+  {
+   "group": 5,
+   "teams": [
+    {
+     "team": 0,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 3,
+     "tribute": 3,
+     "eta": 6,
+     "side": "middle"
+    },
+    {
+     "team": 1,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 3,
+     "tribute": 3,
+     "eta": 6,
+     "side": "middle"
+    }
+   ]
+  },
+  {
+   "group": 6,
+   "teams": [
+    {
+     "team": 0,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 12,
+     "tribute": 1,
+     "eta": 13,
+     "side": "middle"
+    },
+    {
+     "team": 1,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 12,
+     "tribute": 1,
+     "eta": 13,
+     "side": "middle"
+    }
+   ]
+  },
+  {
+   "group": 7,
+   "teams": [
+    {
+     "team": 0,
+     "altar": 1,
+     "how": "walk",
+     "rounds": 12,
+     "tribute": 1,
+     "eta": 13,
+     "side": "middle"
+    },
+    {
+     "team": 1,
+     "altar": 1,
+     "how": "walk",
+     "rounds": 12,
+     "tribute": 1,
+     "eta": 13,
+     "side": "middle"
+    }
+   ]
+  },
+  {
+   "group": 8,
+   "teams": [
+    {
+     "team": 0,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 86,
+     "tribute": 1,
+     "eta": 87,
+     "side": "middle"
+    },
+    {
+     "team": 1,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 86,
+     "tribute": 1,
+     "eta": 87,
+     "side": "middle"
+    }
+   ]
+  },
+  {
+   "group": 9,
+   "teams": [
+    {
+     "team": 0,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 86,
+     "tribute": 1,
+     "eta": 87,
+     "side": "middle"
+    },
+    {
+     "team": 1,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 86,
+     "tribute": 1,
+     "eta": 87,
+     "side": "middle"
+    }
+   ]
+  },
+  {
+   "group": 10,
+   "teams": [
+    {
+     "team": 0,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 18,
+     "tribute": 20,
+     "eta": 38,
+     "side": "middle"
+    },
+    {
+     "team": 1,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 18,
+     "tribute": 20,
+     "eta": 38,
+     "side": "middle"
+    }
+   ]
+  },
+  {
+   "group": 11,
+   "teams": [
+    {
+     "team": 0,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 18,
+     "tribute": 20,
+     "eta": 38,
+     "side": "middle"
+    },
+    {
+     "team": 1,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 18,
+     "tribute": 20,
+     "eta": 38,
+     "side": "middle"
+    }
+   ]
+  },
+  {
+   "group": 12,
+   "teams": [
+    {
+     "team": 0,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 72,
+     "tribute": 1,
+     "eta": 73,
+     "side": "middle"
+    },
+    {
+     "team": 1,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 72,
+     "tribute": 1,
+     "eta": 73,
+     "side": "middle"
+    }
+   ]
+  },
+  {
+   "group": 13,
+   "teams": [
+    {
+     "team": 0,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 72,
+     "tribute": 1,
+     "eta": 73,
+     "side": "middle"
+    },
+    {
+     "team": 1,
+     "altar": 0,
+     "how": "walk",
+     "rounds": 72,
+     "tribute": 1,
+     "eta": 73,
+     "side": "middle"
+    }
+   ]
+  }
+ ],
+ "groups": [
+  {
+   "group": 0,
+   "gems": 0,
+   "gold": 60,
+   "value": 6.0,
+   "teams": [
+    {
+     "walk_1": 159,
+     "dash_1": 37,
+     "walk_clear_1": 159,
+     "walk_3": 157,
+     "dash_3": 35,
+     "walk_clear_3": 157,
+     "dist": 160,
+     "first_contact": 90,
+     "first_contact_tile": [
+      37,
+      4
+     ]
+    },
+    {
+     "walk_1": 159,
+     "dash_1": 42,
+     "walk_clear_1": 159,
+     "walk_3": 157,
+     "dash_3": 41,
+     "walk_clear_3": 157,
+     "dist": 160,
+     "first_contact": 90,
+     "first_contact_tile": [
+      42,
+      4
+     ]
+    }
+   ],
+   "eta": [
+    157,
+    157
+   ],
+   "gap_A": 0,
+   "middle_band": true,
+   "contested": true,
+   "deny_value": 6.0,
+   "priority": 6.0,
+   "race_winner": "tie",
+   "camps": [
+    [
+     "gold_cluster",
+     35,
+     76
+    ],
+    [
+     "gold_cluster",
+     35,
+     75
+    ],
+    [
+     "gold_cluster",
+     34,
+     76
+    ]
+   ],
+   "respawn": 50
+  },
+  {
+   "group": 1,
+   "gems": 0,
+   "gold": 60,
+   "value": 6.0,
+   "teams": [
+    {
+     "walk_1": 159,
+     "dash_1": 42,
+     "walk_clear_1": 159,
+     "walk_3": 157,
+     "dash_3": 41,
+     "walk_clear_3": 157,
+     "dist": 160,
+     "first_contact": 90,
+     "first_contact_tile": [
+      37,
+      4
+     ]
+    },
+    {
+     "walk_1": 159,
+     "dash_1": 37,
+     "walk_clear_1": 159,
+     "walk_3": 157,
+     "dash_3": 35,
+     "walk_clear_3": 157,
+     "dist": 160,
+     "first_contact": 90,
+     "first_contact_tile": [
+      42,
+      4
+     ]
+    }
+   ],
+   "eta": [
+    157,
+    157
+   ],
+   "gap_A": 0,
+   "middle_band": true,
+   "contested": true,
+   "deny_value": 6.0,
+   "priority": 6.0,
+   "race_winner": "tie",
+   "camps": [
+    [
+     "gold_cluster",
+     44,
+     76
+    ],
+    [
+     "gold_cluster",
+     44,
+     75
+    ],
+    [
+     "gold_cluster",
+     45,
+     76
+    ]
+   ],
+   "respawn": 50
+  },
+  {
+   "group": 2,
+   "gems": 88,
+   "gold": 440,
+   "value": 132.0,
+   "teams": [
+    {
+     "walk_1": 99,
+     "dash_1": 50,
+     "walk_clear_1": 99,
+     "walk_3": 98,
+     "dash_3": 49,
+     "walk_clear_3": 98,
+     "dist": 100,
+     "first_contact": 90,
+     "first_contact_tile": [
+      37,
+      4
+     ]
+    },
+    {
+     "walk_1": 99,
+     "dash_1": 50,
+     "walk_clear_1": 99,
+     "walk_3": 98,
+     "dash_3": 49,
+     "walk_clear_3": 98,
+     "dist": 100,
+     "first_contact": 90,
+     "first_contact_tile": [
+      42,
+      4
+     ]
+    }
+   ],
+   "eta": [
+    98,
+    98
+   ],
+   "gap_A": 0,
+   "middle_band": true,
+   "contested": true,
+   "deny_value": 132.0,
+   "priority": 132.0,
+   "race_winner": "tie",
+   "camps": [
+    [
+     "elk",
+     39,
+     16
+    ],
+    [
+     "elk",
+     40,
+     16
+    ],
+    [
+     "elk",
+     39,
+     15
+    ],
+    [
+     "elk",
+     40,
+     15
+    ],
+    [
+     "gold_cluster",
+     41,
+     15
+    ],
+    [
+     "gold_cluster",
+     38,
+     15
+    ],
+    [
+     "gold_cluster",
+     41,
+     16
+    ],
+    [
+     "gold_cluster",
+     38,
+     16
+    ],
+    [
+     "gem_cluster",
+     39,
+     17
+    ],
+    [
+     "gem_cluster",
+     40,
+     17
+    ],
+    [
+     "gem_cluster",
+     38,
+     17
+    ],
+    [
+     "gem_cluster",
+     41,
+     17
+    ]
+   ],
+   "respawn": 60
+  },
+  {
+   "group": 3,
+   "gems": 0,
+   "gold": 40,
+   "value": 4.0,
+   "teams": [
+    {
+     "walk_1": 112,
+     "dash_1": 34,
+     "walk_clear_1": 112,
+     "walk_3": 43,
+     "dash_3": 33,
+     "walk_clear_3": 43,
+     "dist": 113,
+     "first_contact": 111,
+     "first_contact_tile": [
+      19,
+      27
+     ]
+    },
+    {
+     "walk_1": 115,
+     "dash_1": 63,
+     "walk_clear_1": 115,
+     "walk_3": 113,
+     "dash_3": 61,
+     "walk_clear_3": 113,
+     "dist": 116,
+     "first_contact": 90,
+     "first_contact_tile": [
+      42,
+      1
+     ]
+    }
+   ],
+   "eta": [
+    43,
+    113
+   ],
+   "gap_A": 70,
+   "middle_band": true,
+   "contested": true,
+   "deny_value": 4.0,
+   "priority": 0.0,
+   "race_winner": "A",
+   "camps": [
+    [
+     "gold_cluster",
+     15,
+     25
+    ],
+    [
+     "gold_cluster",
+     15,
+     24
+    ]
+   ],
+   "respawn": 50
+  },
+  {
+   "group": 4,
+   "gems": 0,
+   "gold": 40,
+   "value": 4.0,
+   "teams": [
+    {
+     "walk_1": 115,
+     "dash_1": 63,
+     "walk_clear_1": 115,
+     "walk_3": 113,
+     "dash_3": 61,
+     "walk_clear_3": 113,
+     "dist": 116,
+     "first_contact": 90,
+     "first_contact_tile": [
+      37,
+      1
+     ]
+    },
+    {
+     "walk_1": 112,
+     "dash_1": 34,
+     "walk_clear_1": 112,
+     "walk_3": 43,
+     "dash_3": 33,
+     "walk_clear_3": 43,
+     "dist": 113,
+     "first_contact": 111,
+     "first_contact_tile": [
+      60,
+      27
+     ]
+    }
+   ],
+   "eta": [
+    113,
+    43
+   ],
+   "gap_A": -70,
+   "middle_band": true,
+   "contested": true,
+   "deny_value": 4.0,
+   "priority": 0.0,
+   "race_winner": "B",
+   "camps": [
+    [
+     "gold_cluster",
+     64,
+     25
+    ],
+    [
+     "gold_cluster",
+     64,
+     24
+    ]
+   ],
+   "respawn": 50
+  },
+  {
+   "group": 5,
+   "gems": 28,
+   "gold": 0,
+   "value": 28.0,
+   "teams": [
+    {
+     "walk_1": 94,
+     "dash_1": 50,
+     "walk_clear_1": 94,
+     "walk_3": 92,
+     "dash_3": 49,
+     "walk_clear_3": 92,
+     "dist": 95,
+     "first_contact": 90,
+     "first_contact_tile": [
+      37,
+      4
+     ]
+    },
+    {
+     "walk_1": 94,
+     "dash_1": 50,
+     "walk_clear_1": 94,
+     "walk_3": 92,
+     "dash_3": 49,
+     "walk_clear_3": 92,
+     "dist": 95,
+     "first_contact": 90,
+     "first_contact_tile": [
+      42,
+      4
+     ]
+    }
+   ],
+   "eta": [
+    92,
+    92
+   ],
+   "gap_A": 0,
+   "middle_band": true,
+   "contested": true,
+   "deny_value": 28.0,
+   "priority": 28.0,
+   "race_winner": "tie",
+   "camps": [
+    [
+     "gem_cluster",
+     39,
+     11
+    ],
+    [
+     "gem_cluster",
+     40,
+     11
+    ],
+    [
+     "gem_cluster",
+     39,
+     10
+    ],
+    [
+     "gem_cluster",
+     40,
+     10
+    ]
+   ],
+   "respawn": 50
+  },
+  {
+   "group": 6,
+   "gems": 4,
+   "gold": 40,
+   "value": 8.0,
+   "teams": [
+    {
+     "walk_1": 101,
+     "dash_1": 41,
+     "walk_clear_1": 101,
+     "walk_3": 99,
+     "dash_3": 41,
+     "walk_clear_3": 99,
+     "dist": 102,
+     "first_contact": 90,
+     "first_contact_tile": [
+      37,
+      4
+     ]
+    },
+    {
+     "walk_1": 104,
+     "dash_1": 55,
+     "walk_clear_1": 104,
+     "walk_3": 102,
+     "dash_3": 53,
+     "walk_clear_3": 102,
+     "dist": 105,
+     "first_contact": 90,
+     "first_contact_tile": [
+      42,
+      1
+     ]
+    }
+   ],
+   "eta": [
+    99,
+    102
+   ],
+   "gap_A": 3,
+   "middle_band": true,
+   "contested": true,
+   "deny_value": 8.0,
+   "priority": 5.93,
+   "race_winner": "A",
+   "camps": [
+    [
+     "wolf",
+     26,
+     15
+    ]
+   ],
+   "respawn": 40
+  },
+  {
+   "group": 7,
+   "gems": 4,
+   "gold": 40,
+   "value": 8.0,
+   "teams": [
+    {
+     "walk_1": 104,
+     "dash_1": 55,
+     "walk_clear_1": 104,
+     "walk_3": 102,
+     "dash_3": 53,
+     "walk_clear_3": 102,
+     "dist": 105,
+     "first_contact": 90,
+     "first_contact_tile": [
+      37,
+      1
+     ]
+    },
+    {
+     "walk_1": 101,
+     "dash_1": 41,
+     "walk_clear_1": 101,
+     "walk_3": 99,
+     "dash_3": 41,
+     "walk_clear_3": 99,
+     "dist": 102,
+     "first_contact": 90,
+     "first_contact_tile": [
+      42,
+      4
+     ]
+    }
+   ],
+   "eta": [
+    102,
+    99
+   ],
+   "gap_A": -3,
+   "middle_band": true,
+   "contested": true,
+   "deny_value": 8.0,
+   "priority": 5.93,
+   "race_winner": "B",
+   "camps": [
+    [
+     "wolf",
+     53,
+     15
+    ]
+   ],
+   "respawn": 40
+  },
+  {
+   "group": 8,
+   "gems": 4,
+   "gold": 80,
+   "value": 12.0,
+   "teams": [
+    {
+     "walk_1": 177,
+     "dash_1": 30,
+     "walk_clear_1": 177,
+     "walk_3": 175,
+     "dash_3": 28,
+     "walk_clear_3": 175,
+     "dist": 178,
+     "first_contact": 90,
+     "first_contact_tile": [
+      37,
+      4
+     ]
+    },
+    {
+     "walk_1": 177,
+     "dash_1": 57,
+     "walk_clear_1": 177,
+     "walk_3": 175,
+     "dash_3": 55,
+     "walk_clear_3": 175,
+     "dist": 178,
+     "first_contact": 90,
+     "first_contact_tile": [
+      42,
+      4
+     ]
+    }
+   ],
+   "eta": [
+    175,
+    175
+   ],
+   "gap_A": 0,
+   "middle_band": true,
+   "contested": true,
+   "deny_value": 12.0,
+   "priority": 12.0,
+   "race_winner": "tie",
+   "camps": [
+    [
+     "wolf",
+     4,
+     73
+    ],
+    [
+     "gold_cluster",
+     4,
+     72
+    ],
+    [
+     "gold_cluster",
+     5,
+     73
+    ]
+   ],
+   "respawn": 50
+  },
+  {
+   "group": 9,
+   "gems": 4,
+   "gold": 80,
+   "value": 12.0,
+   "teams": [
+    {
+     "walk_1": 177,
+     "dash_1": 57,
+     "walk_clear_1": 177,
+     "walk_3": 175,
+     "dash_3": 55,
+     "walk_clear_3": 175,
+     "dist": 178,
+     "first_contact": 90,
+     "first_contact_tile": [
+      37,
+      4
+     ]
+    },
+    {
+     "walk_1": 177,
+     "dash_1": 30,
+     "walk_clear_1": 177,
+     "walk_3": 175,
+     "dash_3": 28,
+     "walk_clear_3": 175,
+     "dist": 178,
+     "first_contact": 90,
+     "first_contact_tile": [
+      42,
+      4
+     ]
+    }
+   ],
+   "eta": [
+    175,
+    175
+   ],
+   "gap_A": 0,
+   "middle_band": true,
+   "contested": true,
+   "deny_value": 12.0,
+   "priority": 12.0,
+   "race_winner": "tie",
+   "camps": [
+    [
+     "wolf",
+     75,
+     73
+    ],
+    [
+     "gold_cluster",
+     75,
+     72
+    ],
+    [
+     "gold_cluster",
+     74,
+     73
+    ]
+   ],
+   "respawn": 50
+  },
+  {
+   "group": 10,
+   "gems": 200,
+   "gold": 300,
+   "value": 230.0,
+   "teams": [
+    {
+     "walk_1": 80,
+     "dash_1": 57,
+     "walk_clear_1": 80,
+     "walk_3": 78,
+     "dash_3": 56,
+     "walk_clear_3": 78,
+     "dist": 81,
+     "first_contact": 101,
+     "first_contact_tile": [
+      26,
+      4
+     ]
+    },
+    {
+     "walk_1": 101,
+     "dash_1": 59,
+     "walk_clear_1": 101,
+     "walk_3": 99,
+     "dash_3": 57,
+     "walk_clear_3": 99,
+     "dist": 102,
+     "first_contact": 90,
+     "first_contact_tile": [
+      42,
+      0
+     ]
+    }
+   ],
+   "eta": [
+    78,
+    99
+   ],
+   "gap_A": 21,
+   "middle_band": false,
+   "contested": false,
+   "deny_value": 230.0,
+   "priority": 28.16,
+   "race_winner": "A",
+   "camps": [
+    [
+     "monolith",
+     29,
+     7
+    ]
+   ],
+   "respawn": 150
+  },
+  {
+   "group": 11,
+   "gems": 200,
+   "gold": 300,
+   "value": 230.0,
+   "teams": [
+    {
+     "walk_1": 101,
+     "dash_1": 59,
+     "walk_clear_1": 101,
+     "walk_3": 99,
+     "dash_3": 57,
+     "walk_clear_3": 99,
+     "dist": 102,
+     "first_contact": 90,
+     "first_contact_tile": [
+      37,
+      0
+     ]
+    },
+    {
+     "walk_1": 80,
+     "dash_1": 57,
+     "walk_clear_1": 80,
+     "walk_3": 78,
+     "dash_3": 56,
+     "walk_clear_3": 78,
+     "dist": 81,
+     "first_contact": 101,
+     "first_contact_tile": [
+      53,
+      4
+     ]
+    }
+   ],
+   "eta": [
+    99,
+    78
+   ],
+   "gap_A": -21,
+   "middle_band": false,
+   "contested": false,
+   "deny_value": 230.0,
+   "priority": 28.16,
+   "race_winner": "B",
+   "camps": [
+    [
+     "monolith",
+     50,
+     7
+    ]
+   ],
+   "respawn": 150
+  },
+  {
+   "group": 12,
+   "gems": 0,
+   "gold": 40,
+   "value": 4.0,
+   "teams": [
+    {
+     "walk_1": 110,
+     "dash_1": 29,
+     "walk_clear_1": 110,
+     "walk_3": 108,
+     "dash_3": 28,
+     "walk_clear_3": 108,
+     "dist": 111,
+     "first_contact": 111,
+     "first_contact_tile": [
+      19,
+      27
+     ]
+    },
+    {
+     "walk_1": 155,
+     "dash_1": 65,
+     "walk_clear_1": 155,
+     "walk_3": 153,
+     "dash_3": 64,
+     "walk_clear_3": 153,
+     "dist": 156,
+     "first_contact": 90,
+     "first_contact_tile": [
+      42,
+      0
+     ]
+    }
+   ],
+   "eta": [
+    108,
+    153
+   ],
+   "gap_A": 45,
+   "middle_band": false,
+   "contested": false,
+   "deny_value": 4.0,
+   "priority": 0.04,
+   "race_winner": "A",
+   "camps": [
+    [
+     "gold_cluster",
+     15,
+     41
+    ],
+    [
+     "gold_cluster",
+     16,
+     41
+    ]
+   ],
+   "respawn": 50
+  },
+  {
+   "group": 13,
+   "gems": 0,
+   "gold": 40,
+   "value": 4.0,
+   "teams": [
+    {
+     "walk_1": 155,
+     "dash_1": 65,
+     "walk_clear_1": 155,
+     "walk_3": 153,
+     "dash_3": 64,
+     "walk_clear_3": 153,
+     "dist": 156,
+     "first_contact": 90,
+     "first_contact_tile": [
+      37,
+      0
+     ]
+    },
+    {
+     "walk_1": 110,
+     "dash_1": 29,
+     "walk_clear_1": 110,
+     "walk_3": 108,
+     "dash_3": 28,
+     "walk_clear_3": 108,
+     "dist": 111,
+     "first_contact": 110,
+     "first_contact_tile": [
+      62,
+      8
+     ]
+    }
+   ],
+   "eta": [
+    153,
+    108
+   ],
+   "gap_A": -45,
+   "middle_band": false,
+   "contested": false,
+   "deny_value": 4.0,
+   "priority": 0.04,
+   "race_winner": "B",
+   "camps": [
+    [
+     "gold_cluster",
+     64,
+     41
+    ],
+    [
+     "gold_cluster",
+     63,
+     41
+    ]
+   ],
+   "respawn": 50
+  }
+ ],
+ "first_contact": {
+  "round": 90,
+  "tile": [
+   37,
+   0
+  ]
+ },
+ "objectives": [
+  {
+   "group": 10,
+   "kinds": [
+    "monolith"
+   ],
+   "gems": 200,
+   "gold": 300,
+   "range": 5,
+   "ring_tiles": 42,
+   "safe_area_tiles": 104,
+   "team_kill_rounds": 691,
+   "team_kill_trips": 38,
+   "dist": [
+    81,
+    102
+   ]
+  },
+  {
+   "group": 11,
+   "kinds": [
+    "monolith"
+   ],
+   "gems": 200,
+   "gold": 300,
+   "range": 5,
+   "ring_tiles": 42,
+   "safe_area_tiles": 104,
+   "team_kill_rounds": 838,
+   "team_kill_trips": 38,
+   "dist": [
+    102,
+    81
+   ]
+  }
+ ],
+ "conflict": {
+  "lanes": 3,
+  "chokepoints": [],
+  "corridor_width_mean": 2.84,
+  "corridor_width_min_on_routes": 1,
+  "ambush_bushes": 4
+ },
+ "plan4": {
+  "origin": "COMPUTED default formulas; values fitted in step 6 (LEARNED, then SIMULATED)",
+  "spawn_distance": 80,
+  "k_abandon": 10,
+  "p_power": 0.8,
+  "d_regroup": 16,
+  "r_enemies": 8,
+  "bank_margin": 3,
+  "contested_groups": 10,
+  "w_max_rule": "drop a group whose respawn wait exceeds value / (next best group's rate)"
+ },
+ "reference_rosters": [
+  {
+   "picks": [
+    11,
+    1,
+    6,
+    0,
+    2
+   ],
+   "names": [
+    "Heart of Ruin",
+    "Vesper Vale",
+    "Marcella",
+    "Ryth",
+    "Vendetta"
+   ],
+   "origin": "LEARNED"
+  },
+  {
+   "picks": [
+    5,
+    1,
+    6,
+    0,
+    11
+   ],
+   "names": [
+    "Prism",
+    "Vesper Vale",
+    "Marcella",
+    "Ryth",
+    "Heart of Ruin"
+   ],
+   "origin": "LEARNED"
+  },
+  {
+   "picks": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "names": [
+    "Ryth",
+    "Vesper Vale",
+    "Vendetta",
+    "Cassi & Issac",
+    "Stellar"
+   ],
+   "origin": "COMPUTED"
+  }
+ ],
+ "plan1": [
+  {
+   "team": 0,
+   "roster": [
+    "Heart of Ruin",
+    "Vesper Vale",
+    "Marcella",
+    "Ryth",
+    "Vendetta"
+   ],
+   "origin": "LEARNED",
+   "plan1": null
+  },
+  {
+   "team": 1,
+   "roster": [
+    "Heart of Ruin",
+    "Vesper Vale",
+    "Marcella",
+    "Ryth",
+    "Vendetta"
+   ],
+   "origin": "LEARNED",
+   "plan1": null
+  },
+  {
+   "team": 0,
+   "roster": [
+    "Prism",
+    "Vesper Vale",
+    "Marcella",
+    "Ryth",
+    "Heart of Ruin"
+   ],
+   "origin": "LEARNED",
+   "plan1": null
+  },
+  {
+   "team": 1,
+   "roster": [
+    "Prism",
+    "Vesper Vale",
+    "Marcella",
+    "Ryth",
+    "Heart of Ruin"
+   ],
+   "origin": "LEARNED",
+   "plan1": null
+  },
+  {
+   "team": 0,
+   "roster": [
+    "Ryth",
+    "Vesper Vale",
+    "Vendetta",
+    "Cassi & Issac",
+    "Stellar"
+   ],
+   "origin": "COMPUTED",
+   "plan1": null
+  },
+  {
+   "team": 1,
+   "roster": [
+    "Ryth",
+    "Vesper Vale",
+    "Vendetta",
+    "Cassi & Issac",
+    "Stellar"
+   ],
+   "origin": "COMPUTED",
+   "plan1": null
+  }
+ ],
+ "pace": [
+  {
+   "team": 0,
+   "roster": [
+    "Heart of Ruin",
+    "Vesper Vale",
+    "Marcella",
+    "Ryth",
+    "Vendetta"
+   ],
+   "origin": "LEARNED",
+   "pace": 1894,
+   "banked": 1016,
+   "gold_earned": 3364
+  },
+  {
+   "team": 1,
+   "roster": [
+    "Heart of Ruin",
+    "Vesper Vale",
+    "Marcella",
+    "Ryth",
+    "Vendetta"
+   ],
+   "origin": "LEARNED",
+   "pace": 1748,
+   "banked": 1144,
+   "gold_earned": 3171
+  },
+  {
+   "team": 0,
+   "roster": [
+    "Prism",
+    "Vesper Vale",
+    "Marcella",
+    "Ryth",
+    "Heart of Ruin"
+   ],
+   "origin": "LEARNED",
+   "pace": null,
+   "banked": 900,
+   "gold_earned": 3450
+  },
+  {
+   "team": 1,
+   "roster": [
+    "Prism",
+    "Vesper Vale",
+    "Marcella",
+    "Ryth",
+    "Heart of Ruin"
+   ],
+   "origin": "LEARNED",
+   "pace": null,
+   "banked": 804,
+   "gold_earned": 2704
+  },
+  {
+   "team": 0,
+   "roster": [
+    "Ryth",
+    "Vesper Vale",
+    "Vendetta",
+    "Cassi & Issac",
+    "Stellar"
+   ],
+   "origin": "COMPUTED",
+   "pace": 1533,
+   "banked": 1104,
+   "gold_earned": 3285
+  },
+  {
+   "team": 1,
+   "roster": [
+    "Ryth",
+    "Vesper Vale",
+    "Vendetta",
+    "Cassi & Issac",
+    "Stellar"
+   ],
+   "origin": "COMPUTED",
+   "pace": 2087,
+   "banked": 1020,
+   "gold_earned": 3884
+  }
+ ],
+ "per_champion_group": [
+  {
+   "group": 0,
+   "bodies": {
+    "Ryth": {
+     "reaches": [
+      1,
+      5
+     ],
+     "safe_tiles": 96,
+     "safe_nearest_0": [
+      30,
+      70,
+      155
+     ],
+     "safe_nearest_1": [
+      30,
+      70,
+      155
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      34,
+      75
+     ]
+    },
+    "Vesper Vale": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 60,
+     "safe_nearest_0": [
+      32,
+      72,
+      157
+     ],
+     "safe_nearest_1": [
+      32,
+      72,
+      157
+     ],
+     "solo_rounds": 8,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      32,
+      73
+     ]
+    },
+    "Vendetta": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 12,
+     "safe_nearest_0": [
+      34,
+      74,
+      159
+     ],
+     "safe_nearest_1": [
+      34,
+      74,
+      159
+     ],
+     "solo_rounds": 3,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      34,
+      75
+     ]
+    },
+    "Cassi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 77,
+     "safe_nearest_0": [
+      31,
+      71,
+      156
+     ],
+     "safe_nearest_1": [
+      31,
+      71,
+      156
+     ],
+     "solo_rounds": 8,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      32,
+      73
+     ]
+    },
+    "Issac": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 12,
+     "safe_nearest_0": [
+      34,
+      74,
+      159
+     ],
+     "safe_nearest_1": [
+      34,
+      74,
+      159
+     ],
+     "solo_rounds": 8,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      34,
+      75
+     ]
+    },
+    "Stellar": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 96,
+     "safe_nearest_0": [
+      30,
+      70,
+      155
+     ],
+     "safe_nearest_1": [
+      30,
+      70,
+      155
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      32,
+      73
+     ]
+    },
+    "Prism": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 96,
+     "safe_nearest_0": [
+      30,
+      70,
+      155
+     ],
+     "safe_nearest_1": [
+      30,
+      70,
+      155
+     ],
+     "solo_rounds": 4,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      32,
+      73
+     ]
+    },
+    "Marcella": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 77,
+     "safe_nearest_0": [
+      31,
+      71,
+      156
+     ],
+     "safe_nearest_1": [
+      31,
+      71,
+      156
+     ],
+     "solo_rounds": 5,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      34,
+      75
+     ]
+    },
+    "Willow": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 60,
+     "safe_nearest_0": [
+      32,
+      72,
+      157
+     ],
+     "safe_nearest_1": [
+      32,
+      72,
+      157
+     ],
+     "solo_rounds": 8,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      32,
+      73
+     ]
+    },
+    "Ren": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 77,
+     "safe_nearest_0": [
+      31,
+      71,
+      156
+     ],
+     "safe_nearest_1": [
+      31,
+      71,
+      156
+     ],
+     "solo_rounds": 9,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      34,
+      75
+     ]
+    },
+    "Varg": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 12,
+     "safe_nearest_0": [
+      34,
+      74,
+      159
+     ],
+     "safe_nearest_1": [
+      34,
+      74,
+      159
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      34,
+      75
+     ]
+    },
+    "Tavi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 77,
+     "safe_nearest_0": [
+      31,
+      71,
+      156
+     ],
+     "safe_nearest_1": [
+      31,
+      71,
+      156
+     ],
+     "solo_rounds": 5,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      32,
+      73
+     ]
+    },
+    "Heart of Ruin": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 12,
+     "safe_nearest_0": [
+      34,
+      74,
+      159
+     ],
+     "safe_nearest_1": [
+      34,
+      74,
+      159
+     ],
+     "solo_rounds": 1,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      34,
+      75
+     ]
+    }
+   }
+  },
+  {
+   "group": 1,
+   "bodies": {
+    "Ryth": {
+     "reaches": [
+      1,
+      5
+     ],
+     "safe_tiles": 96,
+     "safe_nearest_0": [
+      41,
+      70,
+      155
+     ],
+     "safe_nearest_1": [
+      41,
+      70,
+      155
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      45,
+      75
+     ]
+    },
+    "Vesper Vale": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 60,
+     "safe_nearest_0": [
+      41,
+      72,
+      157
+     ],
+     "safe_nearest_1": [
+      41,
+      72,
+      157
+     ],
+     "solo_rounds": 8,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      42,
+      73
+     ]
+    },
+    "Vendetta": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 12,
+     "safe_nearest_0": [
+      43,
+      74,
+      159
+     ],
+     "safe_nearest_1": [
+      43,
+      74,
+      159
+     ],
+     "solo_rounds": 3,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      45,
+      75
+     ]
+    },
+    "Cassi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 77,
+     "safe_nearest_0": [
+      41,
+      71,
+      156
+     ],
+     "safe_nearest_1": [
+      41,
+      71,
+      156
+     ],
+     "solo_rounds": 8,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      42,
+      73
+     ]
+    },
+    "Issac": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 12,
+     "safe_nearest_0": [
+      43,
+      74,
+      159
+     ],
+     "safe_nearest_1": [
+      43,
+      74,
+      159
+     ],
+     "solo_rounds": 8,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      45,
+      75
+     ]
+    },
+    "Stellar": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 96,
+     "safe_nearest_0": [
+      41,
+      70,
+      155
+     ],
+     "safe_nearest_1": [
+      41,
+      70,
+      155
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      42,
+      73
+     ]
+    },
+    "Prism": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 96,
+     "safe_nearest_0": [
+      41,
+      70,
+      155
+     ],
+     "safe_nearest_1": [
+      41,
+      70,
+      155
+     ],
+     "solo_rounds": 4,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      42,
+      73
+     ]
+    },
+    "Marcella": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 77,
+     "safe_nearest_0": [
+      41,
+      71,
+      156
+     ],
+     "safe_nearest_1": [
+      41,
+      71,
+      156
+     ],
+     "solo_rounds": 5,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      45,
+      75
+     ]
+    },
+    "Willow": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 60,
+     "safe_nearest_0": [
+      41,
+      72,
+      157
+     ],
+     "safe_nearest_1": [
+      41,
+      72,
+      157
+     ],
+     "solo_rounds": 8,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      42,
+      73
+     ]
+    },
+    "Ren": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 77,
+     "safe_nearest_0": [
+      41,
+      71,
+      156
+     ],
+     "safe_nearest_1": [
+      41,
+      71,
+      156
+     ],
+     "solo_rounds": 9,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      45,
+      75
+     ]
+    },
+    "Varg": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 12,
+     "safe_nearest_0": [
+      43,
+      74,
+      159
+     ],
+     "safe_nearest_1": [
+      43,
+      74,
+      159
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      45,
+      75
+     ]
+    },
+    "Tavi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 77,
+     "safe_nearest_0": [
+      41,
+      71,
+      156
+     ],
+     "safe_nearest_1": [
+      41,
+      71,
+      156
+     ],
+     "solo_rounds": 5,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      42,
+      73
+     ]
+    },
+    "Heart of Ruin": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 12,
+     "safe_nearest_0": [
+      43,
+      74,
+      159
+     ],
+     "safe_nearest_1": [
+      43,
+      74,
+      159
+     ],
+     "solo_rounds": 1,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      45,
+      75
+     ]
+    }
+   }
+  },
+  {
+   "group": 2,
+   "bodies": {
+    "Ryth": {
+     "reaches": [
+      1,
+      5
+     ],
+     "safe_tiles": 52,
+     "safe_nearest_0": [
+      35,
+      10,
+      95
+     ],
+     "safe_nearest_1": [
+      36,
+      10,
+      95
+     ],
+     "solo_rounds": 1500,
+     "solo_damage": 12120,
+     "solo_trips": 13,
+     "solo_cleared": false,
+     "solo_tile": [
+      39,
+      14
+     ]
+    },
+    "Vesper Vale": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 10200,
+     "solo_trips": 14,
+     "solo_cleared": false,
+     "solo_tile": [
+      38,
+      14
+     ]
+    },
+    "Vendetta": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 10140,
+     "solo_trips": 14,
+     "solo_cleared": false,
+     "solo_tile": [
+      39,
+      14
+     ]
+    },
+    "Cassi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 6,
+     "safe_nearest_0": [
+      34,
+      14,
+      101
+     ],
+     "safe_nearest_1": [
+      34,
+      14,
+      101
+     ],
+     "solo_rounds": 1500,
+     "solo_damage": 8520,
+     "solo_trips": 14,
+     "solo_cleared": false,
+     "solo_tile": [
+      38,
+      14
+     ]
+    },
+    "Issac": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 10080,
+     "solo_trips": 14,
+     "solo_cleared": false,
+     "solo_tile": [
+      39,
+      14
+     ]
+    },
+    "Stellar": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 52,
+     "safe_nearest_0": [
+      35,
+      10,
+      95
+     ],
+     "safe_nearest_1": [
+      36,
+      10,
+      95
+     ],
+     "solo_rounds": 1500,
+     "solo_damage": 7020,
+     "solo_trips": 14,
+     "solo_cleared": false,
+     "solo_tile": [
+      38,
+      14
+     ]
+    },
+    "Prism": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 52,
+     "safe_nearest_0": [
+      35,
+      10,
+      95
+     ],
+     "safe_nearest_1": [
+      36,
+      10,
+      95
+     ],
+     "solo_rounds": 1500,
+     "solo_damage": 9060,
+     "solo_trips": 14,
+     "solo_cleared": false,
+     "solo_tile": [
+      38,
+      14
+     ]
+    },
+    "Marcella": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 6,
+     "safe_nearest_0": [
+      34,
+      14,
+      101
+     ],
+     "safe_nearest_1": [
+      34,
+      14,
+      101
+     ],
+     "solo_rounds": 1500,
+     "solo_damage": 13020,
+     "solo_trips": 14,
+     "solo_cleared": false,
+     "solo_tile": [
+      39,
+      14
+     ]
+    },
+    "Willow": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 9480,
+     "solo_trips": 14,
+     "solo_cleared": false,
+     "solo_tile": [
+      38,
+      14
+     ]
+    },
+    "Ren": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 6,
+     "safe_nearest_0": [
+      34,
+      14,
+      101
+     ],
+     "safe_nearest_1": [
+      34,
+      14,
+      101
+     ],
+     "solo_rounds": 1500,
+     "solo_damage": 9360,
+     "solo_trips": 14,
+     "solo_cleared": false,
+     "solo_tile": [
+      39,
+      14
+     ]
+    },
+    "Varg": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1258,
+     "solo_damage": 8280,
+     "solo_trips": 11,
+     "solo_cleared": true,
+     "solo_tile": [
+      39,
+      14
+     ]
+    },
+    "Tavi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 6,
+     "safe_nearest_0": [
+      34,
+      14,
+      101
+     ],
+     "safe_nearest_1": [
+      34,
+      14,
+      101
+     ],
+     "solo_rounds": 1500,
+     "solo_damage": 9360,
+     "solo_trips": 14,
+     "solo_cleared": false,
+     "solo_tile": [
+      38,
+      14
+     ]
+    },
+    "Heart of Ruin": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 12420,
+     "solo_trips": 13,
+     "solo_cleared": false,
+     "solo_tile": [
+      39,
+      14
+     ]
+    }
+   }
+  },
+  {
+   "group": 3,
+   "bodies": {
+    "Ryth": {
+     "reaches": [
+      1,
+      5
+     ],
+     "safe_tiles": 107,
+     "safe_nearest_0": [
+      20,
+      28,
+      41
+     ],
+     "safe_nearest_1": [
+      20,
+      19,
+      111
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      16,
+      24
+     ]
+    },
+    "Vesper Vale": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 39,
+     "safe_nearest_0": [
+      18,
+      28,
+      43
+     ],
+     "safe_nearest_1": [
+      18,
+      21,
+      113
+     ],
+     "solo_rounds": 5,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      18,
+      22
+     ]
+    },
+    "Vendetta": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 10,
+     "safe_nearest_0": [
+      16,
+      23,
+      112
+     ],
+     "safe_nearest_1": [
+      16,
+      23,
+      115
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      16,
+      24
+     ]
+    },
+    "Cassi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 66,
+     "safe_nearest_0": [
+      19,
+      27,
+      42
+     ],
+     "safe_nearest_1": [
+      19,
+      20,
+      112
+     ],
+     "solo_rounds": 4,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      18,
+      22
+     ]
+    },
+    "Issac": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 10,
+     "safe_nearest_0": [
+      16,
+      23,
+      112
+     ],
+     "safe_nearest_1": [
+      16,
+      23,
+      115
+     ],
+     "solo_rounds": 5,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      16,
+      24
+     ]
+    },
+    "Stellar": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 107,
+     "safe_nearest_0": [
+      20,
+      28,
+      41
+     ],
+     "safe_nearest_1": [
+      20,
+      19,
+      111
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      18,
+      22
+     ]
+    },
+    "Prism": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 107,
+     "safe_nearest_0": [
+      20,
+      28,
+      41
+     ],
+     "safe_nearest_1": [
+      20,
+      19,
+      111
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      18,
+      22
+     ]
+    },
+    "Marcella": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 66,
+     "safe_nearest_0": [
+      19,
+      27,
+      42
+     ],
+     "safe_nearest_1": [
+      19,
+      20,
+      112
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      16,
+      24
+     ]
+    },
+    "Willow": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 39,
+     "safe_nearest_0": [
+      18,
+      28,
+      43
+     ],
+     "safe_nearest_1": [
+      18,
+      21,
+      113
+     ],
+     "solo_rounds": 5,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      18,
+      22
+     ]
+    },
+    "Ren": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 66,
+     "safe_nearest_0": [
+      19,
+      27,
+      42
+     ],
+     "safe_nearest_1": [
+      19,
+      20,
+      112
+     ],
+     "solo_rounds": 6,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      16,
+      24
+     ]
+    },
+    "Varg": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 10,
+     "safe_nearest_0": [
+      16,
+      23,
+      112
+     ],
+     "safe_nearest_1": [
+      16,
+      23,
+      115
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      16,
+      24
+     ]
+    },
+    "Tavi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 66,
+     "safe_nearest_0": [
+      19,
+      27,
+      42
+     ],
+     "safe_nearest_1": [
+      19,
+      20,
+      112
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      18,
+      22
+     ]
+    },
+    "Heart of Ruin": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 10,
+     "safe_nearest_0": [
+      16,
+      23,
+      112
+     ],
+     "safe_nearest_1": [
+      16,
+      23,
+      115
+     ],
+     "solo_rounds": 1,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      16,
+      24
+     ]
+    }
+   }
+  },
+  {
+   "group": 4,
+   "bodies": {
+    "Ryth": {
+     "reaches": [
+      1,
+      5
+     ],
+     "safe_tiles": 107,
+     "safe_nearest_0": [
+      59,
+      19,
+      111
+     ],
+     "safe_nearest_1": [
+      59,
+      28,
+      41
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      63,
+      24
+     ]
+    },
+    "Vesper Vale": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 39,
+     "safe_nearest_0": [
+      61,
+      21,
+      113
+     ],
+     "safe_nearest_1": [
+      61,
+      28,
+      43
+     ],
+     "solo_rounds": 5,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      61,
+      22
+     ]
+    },
+    "Vendetta": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 10,
+     "safe_nearest_0": [
+      63,
+      23,
+      115
+     ],
+     "safe_nearest_1": [
+      63,
+      23,
+      112
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      63,
+      24
+     ]
+    },
+    "Cassi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 66,
+     "safe_nearest_0": [
+      60,
+      20,
+      112
+     ],
+     "safe_nearest_1": [
+      60,
+      27,
+      42
+     ],
+     "solo_rounds": 4,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      61,
+      22
+     ]
+    },
+    "Issac": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 10,
+     "safe_nearest_0": [
+      63,
+      23,
+      115
+     ],
+     "safe_nearest_1": [
+      63,
+      23,
+      112
+     ],
+     "solo_rounds": 5,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      63,
+      24
+     ]
+    },
+    "Stellar": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 107,
+     "safe_nearest_0": [
+      59,
+      19,
+      111
+     ],
+     "safe_nearest_1": [
+      59,
+      28,
+      41
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      61,
+      22
+     ]
+    },
+    "Prism": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 107,
+     "safe_nearest_0": [
+      59,
+      19,
+      111
+     ],
+     "safe_nearest_1": [
+      59,
+      28,
+      41
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      61,
+      22
+     ]
+    },
+    "Marcella": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 66,
+     "safe_nearest_0": [
+      60,
+      20,
+      112
+     ],
+     "safe_nearest_1": [
+      60,
+      27,
+      42
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      63,
+      24
+     ]
+    },
+    "Willow": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 39,
+     "safe_nearest_0": [
+      61,
+      21,
+      113
+     ],
+     "safe_nearest_1": [
+      61,
+      28,
+      43
+     ],
+     "solo_rounds": 5,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      61,
+      22
+     ]
+    },
+    "Ren": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 66,
+     "safe_nearest_0": [
+      60,
+      20,
+      112
+     ],
+     "safe_nearest_1": [
+      60,
+      27,
+      42
+     ],
+     "solo_rounds": 6,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      63,
+      24
+     ]
+    },
+    "Varg": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 10,
+     "safe_nearest_0": [
+      63,
+      23,
+      115
+     ],
+     "safe_nearest_1": [
+      63,
+      23,
+      112
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      63,
+      24
+     ]
+    },
+    "Tavi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 66,
+     "safe_nearest_0": [
+      60,
+      20,
+      112
+     ],
+     "safe_nearest_1": [
+      60,
+      27,
+      42
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      61,
+      22
+     ]
+    },
+    "Heart of Ruin": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 10,
+     "safe_nearest_0": [
+      63,
+      23,
+      115
+     ],
+     "safe_nearest_1": [
+      63,
+      23,
+      112
+     ],
+     "solo_rounds": 1,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      63,
+      24
+     ]
+    }
+   }
+  },
+  {
+   "group": 5,
+   "bodies": {
+    "Ryth": {
+     "reaches": [
+      1,
+      5
+     ],
+     "safe_tiles": 56,
+     "safe_nearest_0": [
+      38,
+      5,
+      90
+     ],
+     "safe_nearest_1": [
+      41,
+      5,
+      90
+     ],
+     "solo_rounds": 4,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      39,
+      9
+     ]
+    },
+    "Vesper Vale": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 30,
+     "safe_nearest_0": [
+      36,
+      7,
+      92
+     ],
+     "safe_nearest_1": [
+      39,
+      7,
+      92
+     ],
+     "solo_rounds": 10,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      37,
+      8
+     ]
+    },
+    "Vendetta": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 6,
+     "safe_nearest_0": [
+      38,
+      9,
+      94
+     ],
+     "safe_nearest_1": [
+      38,
+      9,
+      94
+     ],
+     "solo_rounds": 4,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      39,
+      9
+     ]
+    },
+    "Cassi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 46,
+     "safe_nearest_0": [
+      37,
+      6,
+      91
+     ],
+     "safe_nearest_1": [
+      40,
+      6,
+      91
+     ],
+     "solo_rounds": 9,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      37,
+      8
+     ]
+    },
+    "Issac": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 6,
+     "safe_nearest_0": [
+      38,
+      9,
+      94
+     ],
+     "safe_nearest_1": [
+      38,
+      9,
+      94
+     ],
+     "solo_rounds": 10,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      39,
+      9
+     ]
+    },
+    "Stellar": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 56,
+     "safe_nearest_0": [
+      38,
+      5,
+      90
+     ],
+     "safe_nearest_1": [
+      41,
+      5,
+      90
+     ],
+     "solo_rounds": 3,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      37,
+      8
+     ]
+    },
+    "Prism": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 56,
+     "safe_nearest_0": [
+      38,
+      5,
+      90
+     ],
+     "safe_nearest_1": [
+      41,
+      5,
+      90
+     ],
+     "solo_rounds": 6,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      37,
+      8
+     ]
+    },
+    "Marcella": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 46,
+     "safe_nearest_0": [
+      37,
+      6,
+      91
+     ],
+     "safe_nearest_1": [
+      40,
+      6,
+      91
+     ],
+     "solo_rounds": 8,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      39,
+      9
+     ]
+    },
+    "Willow": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 30,
+     "safe_nearest_0": [
+      36,
+      7,
+      92
+     ],
+     "safe_nearest_1": [
+      39,
+      7,
+      92
+     ],
+     "solo_rounds": 10,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      37,
+      8
+     ]
+    },
+    "Ren": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 46,
+     "safe_nearest_0": [
+      37,
+      6,
+      91
+     ],
+     "safe_nearest_1": [
+      40,
+      6,
+      91
+     ],
+     "solo_rounds": 13,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      39,
+      9
+     ]
+    },
+    "Varg": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 6,
+     "safe_nearest_0": [
+      38,
+      9,
+      94
+     ],
+     "safe_nearest_1": [
+      38,
+      9,
+      94
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      39,
+      9
+     ]
+    },
+    "Tavi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 46,
+     "safe_nearest_0": [
+      37,
+      6,
+      91
+     ],
+     "safe_nearest_1": [
+      40,
+      6,
+      91
+     ],
+     "solo_rounds": 8,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      37,
+      8
+     ]
+    },
+    "Heart of Ruin": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 6,
+     "safe_nearest_0": [
+      38,
+      9,
+      94
+     ],
+     "safe_nearest_1": [
+      38,
+      9,
+      94
+     ],
+     "solo_rounds": 9,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      39,
+      9
+     ]
+    }
+   }
+  },
+  {
+   "group": 6,
+   "bodies": {
+    "Ryth": {
+     "reaches": [
+      1,
+      5
+     ],
+     "safe_tiles": 54,
+     "safe_nearest_0": [
+      30,
+      13,
+      98
+     ],
+     "safe_nearest_1": [
+      31,
+      13,
+      100
+     ],
+     "solo_rounds": 21,
+     "solo_damage": 340,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      27,
+      14
+     ]
+    },
+    "Vesper Vale": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 22,
+     "solo_damage": 420,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      29,
+      12
+     ]
+    },
+    "Vendetta": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 17,
+     "solo_damage": 320,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      27,
+      14
+     ]
+    },
+    "Cassi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 17,
+     "safe_nearest_0": [
+      30,
+      13,
+      98
+     ],
+     "safe_nearest_1": [
+      30,
+      13,
+      101
+     ],
+     "solo_rounds": 135,
+     "solo_damage": 440,
+     "solo_trips": 1,
+     "solo_cleared": true,
+     "solo_tile": [
+      29,
+      12
+     ]
+    },
+    "Issac": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 30,
+     "solo_damage": 580,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      27,
+      14
+     ]
+    },
+    "Stellar": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 54,
+     "safe_nearest_0": [
+      30,
+      13,
+      98
+     ],
+     "safe_nearest_1": [
+      31,
+      13,
+      100
+     ],
+     "solo_rounds": 22,
+     "solo_damage": 420,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      29,
+      12
+     ]
+    },
+    "Prism": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 54,
+     "safe_nearest_0": [
+      30,
+      13,
+      98
+     ],
+     "safe_nearest_1": [
+      31,
+      13,
+      100
+     ],
+     "solo_rounds": 22,
+     "solo_damage": 360,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      29,
+      12
+     ]
+    },
+    "Marcella": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 17,
+     "safe_nearest_0": [
+      30,
+      13,
+      98
+     ],
+     "safe_nearest_1": [
+      30,
+      13,
+      101
+     ],
+     "solo_rounds": 19,
+     "solo_damage": 360,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      27,
+      14
+     ]
+    },
+    "Willow": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 22,
+     "solo_damage": 420,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      29,
+      12
+     ]
+    },
+    "Ren": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 17,
+     "safe_nearest_0": [
+      30,
+      13,
+      98
+     ],
+     "safe_nearest_1": [
+      30,
+      13,
+      101
+     ],
+     "solo_rounds": 22,
+     "solo_damage": 360,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      27,
+      14
+     ]
+    },
+    "Varg": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 30,
+     "solo_damage": 260,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      27,
+      14
+     ]
+    },
+    "Tavi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 17,
+     "safe_nearest_0": [
+      30,
+      13,
+      98
+     ],
+     "safe_nearest_1": [
+      30,
+      13,
+      101
+     ],
+     "solo_rounds": 18,
+     "solo_damage": 280,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      29,
+      12
+     ]
+    },
+    "Heart of Ruin": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 25,
+     "solo_damage": 180,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      27,
+      14
+     ]
+    }
+   }
+  },
+  {
+   "group": 7,
+   "bodies": {
+    "Ryth": {
+     "reaches": [
+      1,
+      5
+     ],
+     "safe_tiles": 54,
+     "safe_nearest_0": [
+      48,
+      13,
+      100
+     ],
+     "safe_nearest_1": [
+      48,
+      13,
+      98
+     ],
+     "solo_rounds": 21,
+     "solo_damage": 340,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      52,
+      14
+     ]
+    },
+    "Vesper Vale": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 22,
+     "solo_damage": 420,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      50,
+      12
+     ]
+    },
+    "Vendetta": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 17,
+     "solo_damage": 320,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      52,
+      14
+     ]
+    },
+    "Cassi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 17,
+     "safe_nearest_0": [
+      49,
+      13,
+      101
+     ],
+     "safe_nearest_1": [
+      49,
+      13,
+      98
+     ],
+     "solo_rounds": 138,
+     "solo_damage": 440,
+     "solo_trips": 1,
+     "solo_cleared": true,
+     "solo_tile": [
+      50,
+      12
+     ]
+    },
+    "Issac": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 30,
+     "solo_damage": 580,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      52,
+      14
+     ]
+    },
+    "Stellar": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 54,
+     "safe_nearest_0": [
+      48,
+      13,
+      100
+     ],
+     "safe_nearest_1": [
+      48,
+      13,
+      98
+     ],
+     "solo_rounds": 22,
+     "solo_damage": 420,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      50,
+      12
+     ]
+    },
+    "Prism": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 54,
+     "safe_nearest_0": [
+      48,
+      13,
+      100
+     ],
+     "safe_nearest_1": [
+      48,
+      13,
+      98
+     ],
+     "solo_rounds": 22,
+     "solo_damage": 360,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      50,
+      12
+     ]
+    },
+    "Marcella": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 17,
+     "safe_nearest_0": [
+      49,
+      13,
+      101
+     ],
+     "safe_nearest_1": [
+      49,
+      13,
+      98
+     ],
+     "solo_rounds": 19,
+     "solo_damage": 360,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      52,
+      14
+     ]
+    },
+    "Willow": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 22,
+     "solo_damage": 420,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      50,
+      12
+     ]
+    },
+    "Ren": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 17,
+     "safe_nearest_0": [
+      49,
+      13,
+      101
+     ],
+     "safe_nearest_1": [
+      49,
+      13,
+      98
+     ],
+     "solo_rounds": 22,
+     "solo_damage": 360,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      52,
+      14
+     ]
+    },
+    "Varg": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 30,
+     "solo_damage": 260,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      52,
+      14
+     ]
+    },
+    "Tavi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 17,
+     "safe_nearest_0": [
+      49,
+      13,
+      101
+     ],
+     "safe_nearest_1": [
+      49,
+      13,
+      98
+     ],
+     "solo_rounds": 18,
+     "solo_damage": 280,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      50,
+      12
+     ]
+    },
+    "Heart of Ruin": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 25,
+     "solo_damage": 180,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      52,
+      14
+     ]
+    }
+   }
+  },
+  {
+   "group": 8,
+   "bodies": {
+    "Ryth": {
+     "reaches": [
+      1,
+      5
+     ],
+     "safe_tiles": 76,
+     "safe_nearest_0": [
+      10,
+      68,
+      163
+     ],
+     "safe_nearest_1": [
+      10,
+      68,
+      163
+     ],
+     "solo_rounds": 21,
+     "solo_damage": 340,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      5,
+      72
+     ]
+    },
+    "Vesper Vale": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 14,
+     "safe_nearest_0": [
+      8,
+      70,
+      175
+     ],
+     "safe_nearest_1": [
+      8,
+      70,
+      175
+     ],
+     "solo_rounds": 27,
+     "solo_damage": 420,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      7,
+      70
+     ]
+    },
+    "Vendetta": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 19,
+     "solo_damage": 320,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      5,
+      72
+     ]
+    },
+    "Cassi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 48,
+     "safe_nearest_0": [
+      9,
+      70,
+      174
+     ],
+     "safe_nearest_1": [
+      9,
+      70,
+      174
+     ],
+     "solo_rounds": 219,
+     "solo_damage": 440,
+     "solo_trips": 1,
+     "solo_cleared": true,
+     "solo_tile": [
+      7,
+      70
+     ]
+    },
+    "Issac": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 35,
+     "solo_damage": 580,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      5,
+      72
+     ]
+    },
+    "Stellar": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 76,
+     "safe_nearest_0": [
+      10,
+      68,
+      163
+     ],
+     "safe_nearest_1": [
+      10,
+      68,
+      163
+     ],
+     "solo_rounds": 22,
+     "solo_damage": 420,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      7,
+      70
+     ]
+    },
+    "Prism": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 76,
+     "safe_nearest_0": [
+      10,
+      68,
+      163
+     ],
+     "safe_nearest_1": [
+      10,
+      68,
+      163
+     ],
+     "solo_rounds": 22,
+     "solo_damage": 360,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      7,
+      70
+     ]
+    },
+    "Marcella": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 48,
+     "safe_nearest_0": [
+      9,
+      70,
+      174
+     ],
+     "safe_nearest_1": [
+      9,
+      70,
+      174
+     ],
+     "solo_rounds": 25,
+     "solo_damage": 360,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      5,
+      72
+     ]
+    },
+    "Willow": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 14,
+     "safe_nearest_0": [
+      8,
+      70,
+      175
+     ],
+     "safe_nearest_1": [
+      8,
+      70,
+      175
+     ],
+     "solo_rounds": 27,
+     "solo_damage": 420,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      7,
+      70
+     ]
+    },
+    "Ren": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 48,
+     "safe_nearest_0": [
+      9,
+      70,
+      174
+     ],
+     "safe_nearest_1": [
+      9,
+      70,
+      174
+     ],
+     "solo_rounds": 28,
+     "solo_damage": 360,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      5,
+      72
+     ]
+    },
+    "Varg": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 30,
+     "solo_damage": 260,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      5,
+      72
+     ]
+    },
+    "Tavi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 48,
+     "safe_nearest_0": [
+      9,
+      70,
+      174
+     ],
+     "safe_nearest_1": [
+      9,
+      70,
+      174
+     ],
+     "solo_rounds": 23,
+     "solo_damage": 280,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      7,
+      70
+     ]
+    },
+    "Heart of Ruin": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 25,
+     "solo_damage": 180,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      5,
+      72
+     ]
+    }
+   }
+  },
+  {
+   "group": 9,
+   "bodies": {
+    "Ryth": {
+     "reaches": [
+      1,
+      5
+     ],
+     "safe_tiles": 76,
+     "safe_nearest_0": [
+      69,
+      68,
+      163
+     ],
+     "safe_nearest_1": [
+      69,
+      68,
+      163
+     ],
+     "solo_rounds": 21,
+     "solo_damage": 340,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      74,
+      72
+     ]
+    },
+    "Vesper Vale": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 14,
+     "safe_nearest_0": [
+      71,
+      70,
+      175
+     ],
+     "safe_nearest_1": [
+      71,
+      70,
+      175
+     ],
+     "solo_rounds": 27,
+     "solo_damage": 420,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      72,
+      70
+     ]
+    },
+    "Vendetta": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 19,
+     "solo_damage": 320,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      74,
+      72
+     ]
+    },
+    "Cassi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 48,
+     "safe_nearest_0": [
+      70,
+      70,
+      174
+     ],
+     "safe_nearest_1": [
+      70,
+      70,
+      174
+     ],
+     "solo_rounds": 219,
+     "solo_damage": 440,
+     "solo_trips": 1,
+     "solo_cleared": true,
+     "solo_tile": [
+      72,
+      70
+     ]
+    },
+    "Issac": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 35,
+     "solo_damage": 580,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      74,
+      72
+     ]
+    },
+    "Stellar": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 76,
+     "safe_nearest_0": [
+      69,
+      68,
+      163
+     ],
+     "safe_nearest_1": [
+      69,
+      68,
+      163
+     ],
+     "solo_rounds": 22,
+     "solo_damage": 420,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      72,
+      70
+     ]
+    },
+    "Prism": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 76,
+     "safe_nearest_0": [
+      69,
+      68,
+      163
+     ],
+     "safe_nearest_1": [
+      69,
+      68,
+      163
+     ],
+     "solo_rounds": 22,
+     "solo_damage": 360,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      72,
+      70
+     ]
+    },
+    "Marcella": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 48,
+     "safe_nearest_0": [
+      70,
+      70,
+      174
+     ],
+     "safe_nearest_1": [
+      70,
+      70,
+      174
+     ],
+     "solo_rounds": 25,
+     "solo_damage": 360,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      74,
+      72
+     ]
+    },
+    "Willow": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 14,
+     "safe_nearest_0": [
+      71,
+      70,
+      175
+     ],
+     "safe_nearest_1": [
+      71,
+      70,
+      175
+     ],
+     "solo_rounds": 27,
+     "solo_damage": 420,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      72,
+      70
+     ]
+    },
+    "Ren": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 48,
+     "safe_nearest_0": [
+      70,
+      70,
+      174
+     ],
+     "safe_nearest_1": [
+      70,
+      70,
+      174
+     ],
+     "solo_rounds": 28,
+     "solo_damage": 360,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      74,
+      72
+     ]
+    },
+    "Varg": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 30,
+     "solo_damage": 260,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      74,
+      72
+     ]
+    },
+    "Tavi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 48,
+     "safe_nearest_0": [
+      70,
+      70,
+      174
+     ],
+     "safe_nearest_1": [
+      70,
+      70,
+      174
+     ],
+     "solo_rounds": 23,
+     "solo_damage": 280,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      72,
+      70
+     ]
+    },
+    "Heart of Ruin": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 25,
+     "solo_damage": 180,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      74,
+      72
+     ]
+    }
+   }
+  },
+  {
+   "group": 10,
+   "bodies": {
+    "Ryth": {
+     "reaches": [
+      1,
+      5
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 16000,
+     "solo_trips": 16,
+     "solo_cleared": false,
+     "solo_tile": [
+      28,
+      6
+     ]
+    },
+    "Vesper Vale": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 13600,
+     "solo_trips": 17,
+     "solo_cleared": false,
+     "solo_tile": [
+      26,
+      4
+     ]
+    },
+    "Vendetta": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 12800,
+     "solo_trips": 16,
+     "solo_cleared": false,
+     "solo_tile": [
+      28,
+      6
+     ]
+    },
+    "Cassi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 10200,
+     "solo_trips": 17,
+     "solo_cleared": false,
+     "solo_tile": [
+      26,
+      4
+     ]
+    },
+    "Issac": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 12800,
+     "solo_trips": 16,
+     "solo_cleared": false,
+     "solo_tile": [
+      28,
+      6
+     ]
+    },
+    "Stellar": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 10200,
+     "solo_trips": 17,
+     "solo_cleared": false,
+     "solo_tile": [
+      26,
+      4
+     ]
+    },
+    "Prism": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 10200,
+     "solo_trips": 17,
+     "solo_cleared": false,
+     "solo_tile": [
+      26,
+      4
+     ]
+    },
+    "Marcella": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 16000,
+     "solo_trips": 16,
+     "solo_cleared": false,
+     "solo_tile": [
+      28,
+      6
+     ]
+    },
+    "Willow": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 10200,
+     "solo_trips": 17,
+     "solo_cleared": false,
+     "solo_tile": [
+      26,
+      4
+     ]
+    },
+    "Ren": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 12800,
+     "solo_trips": 16,
+     "solo_cleared": false,
+     "solo_tile": [
+      28,
+      6
+     ]
+    },
+    "Varg": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 12000,
+     "solo_trips": 16,
+     "solo_cleared": false,
+     "solo_tile": [
+      28,
+      6
+     ]
+    },
+    "Tavi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 13600,
+     "solo_trips": 17,
+     "solo_cleared": false,
+     "solo_tile": [
+      26,
+      4
+     ]
+    },
+    "Heart of Ruin": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 13600,
+     "solo_trips": 16,
+     "solo_cleared": false,
+     "solo_tile": [
+      28,
+      6
+     ]
+    }
+   }
+  },
+  {
+   "group": 11,
+   "bodies": {
+    "Ryth": {
+     "reaches": [
+      1,
+      5
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 13000,
+     "solo_trips": 13,
+     "solo_cleared": false,
+     "solo_tile": [
+      49,
+      6
+     ]
+    },
+    "Vesper Vale": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 11200,
+     "solo_trips": 14,
+     "solo_cleared": false,
+     "solo_tile": [
+      47,
+      4
+     ]
+    },
+    "Vendetta": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 11200,
+     "solo_trips": 14,
+     "solo_cleared": false,
+     "solo_tile": [
+      49,
+      6
+     ]
+    },
+    "Cassi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 8400,
+     "solo_trips": 14,
+     "solo_cleared": false,
+     "solo_tile": [
+      47,
+      4
+     ]
+    },
+    "Issac": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 11200,
+     "solo_trips": 14,
+     "solo_cleared": false,
+     "solo_tile": [
+      49,
+      6
+     ]
+    },
+    "Stellar": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 8400,
+     "solo_trips": 14,
+     "solo_cleared": false,
+     "solo_tile": [
+      47,
+      4
+     ]
+    },
+    "Prism": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 8400,
+     "solo_trips": 14,
+     "solo_cleared": false,
+     "solo_tile": [
+      47,
+      4
+     ]
+    },
+    "Marcella": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 13000,
+     "solo_trips": 13,
+     "solo_cleared": false,
+     "solo_tile": [
+      49,
+      6
+     ]
+    },
+    "Willow": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 8400,
+     "solo_trips": 14,
+     "solo_cleared": false,
+     "solo_tile": [
+      47,
+      4
+     ]
+    },
+    "Ren": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 10400,
+     "solo_trips": 13,
+     "solo_cleared": false,
+     "solo_tile": [
+      49,
+      6
+     ]
+    },
+    "Varg": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 9750,
+     "solo_trips": 13,
+     "solo_cleared": false,
+     "solo_tile": [
+      49,
+      6
+     ]
+    },
+    "Tavi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 11200,
+     "solo_trips": 14,
+     "solo_cleared": false,
+     "solo_tile": [
+      47,
+      4
+     ]
+    },
+    "Heart of Ruin": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 0,
+     "solo_rounds": 1500,
+     "solo_damage": 11050,
+     "solo_trips": 13,
+     "solo_cleared": false,
+     "solo_tile": [
+      49,
+      6
+     ]
+    }
+   }
+  },
+  {
+   "group": 12,
+   "bodies": {
+    "Ryth": {
+     "reaches": [
+      1,
+      5
+     ],
+     "safe_tiles": 111,
+     "safe_nearest_0": [
+      19,
+      36,
+      42
+     ],
+     "safe_nearest_1": [
+      17,
+      36,
+      142
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      15,
+      40
+     ]
+    },
+    "Vesper Vale": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 54,
+     "safe_nearest_0": [
+      12,
+      38,
+      108
+     ],
+     "safe_nearest_1": [
+      12,
+      38,
+      153
+     ],
+     "solo_rounds": 5,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      13,
+      38
+     ]
+    },
+    "Vendetta": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 10,
+     "safe_nearest_0": [
+      14,
+      40,
+      110
+     ],
+     "safe_nearest_1": [
+      14,
+      40,
+      155
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      15,
+      40
+     ]
+    },
+    "Cassi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 83,
+     "safe_nearest_0": [
+      11,
+      37,
+      107
+     ],
+     "safe_nearest_1": [
+      11,
+      37,
+      152
+     ],
+     "solo_rounds": 4,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      13,
+      38
+     ]
+    },
+    "Issac": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 10,
+     "safe_nearest_0": [
+      14,
+      40,
+      110
+     ],
+     "safe_nearest_1": [
+      14,
+      40,
+      155
+     ],
+     "solo_rounds": 5,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      15,
+      40
+     ]
+    },
+    "Stellar": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 111,
+     "safe_nearest_0": [
+      19,
+      36,
+      42
+     ],
+     "safe_nearest_1": [
+      17,
+      36,
+      142
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      13,
+      38
+     ]
+    },
+    "Prism": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 111,
+     "safe_nearest_0": [
+      19,
+      36,
+      42
+     ],
+     "safe_nearest_1": [
+      17,
+      36,
+      142
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      13,
+      38
+     ]
+    },
+    "Marcella": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 83,
+     "safe_nearest_0": [
+      11,
+      37,
+      107
+     ],
+     "safe_nearest_1": [
+      11,
+      37,
+      152
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      15,
+      40
+     ]
+    },
+    "Willow": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 54,
+     "safe_nearest_0": [
+      12,
+      38,
+      108
+     ],
+     "safe_nearest_1": [
+      12,
+      38,
+      153
+     ],
+     "solo_rounds": 5,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      13,
+      38
+     ]
+    },
+    "Ren": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 83,
+     "safe_nearest_0": [
+      11,
+      37,
+      107
+     ],
+     "safe_nearest_1": [
+      11,
+      37,
+      152
+     ],
+     "solo_rounds": 6,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      15,
+      40
+     ]
+    },
+    "Varg": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 10,
+     "safe_nearest_0": [
+      14,
+      40,
+      110
+     ],
+     "safe_nearest_1": [
+      14,
+      40,
+      155
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      15,
+      40
+     ]
+    },
+    "Tavi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 83,
+     "safe_nearest_0": [
+      11,
+      37,
+      107
+     ],
+     "safe_nearest_1": [
+      11,
+      37,
+      152
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      13,
+      38
+     ]
+    },
+    "Heart of Ruin": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 10,
+     "safe_nearest_0": [
+      14,
+      40,
+      110
+     ],
+     "safe_nearest_1": [
+      14,
+      40,
+      155
+     ],
+     "solo_rounds": 1,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      15,
+      40
+     ]
+    }
+   }
+  },
+  {
+   "group": 13,
+   "bodies": {
+    "Ryth": {
+     "reaches": [
+      1,
+      5
+     ],
+     "safe_tiles": 111,
+     "safe_nearest_0": [
+      60,
+      36,
+      142
+     ],
+     "safe_nearest_1": [
+      60,
+      36,
+      42
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      64,
+      40
+     ]
+    },
+    "Vesper Vale": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 54,
+     "safe_nearest_0": [
+      67,
+      38,
+      153
+     ],
+     "safe_nearest_1": [
+      67,
+      38,
+      108
+     ],
+     "solo_rounds": 5,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      66,
+      38
+     ]
+    },
+    "Vendetta": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 10,
+     "safe_nearest_0": [
+      65,
+      40,
+      155
+     ],
+     "safe_nearest_1": [
+      65,
+      40,
+      110
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      64,
+      40
+     ]
+    },
+    "Cassi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 83,
+     "safe_nearest_0": [
+      68,
+      37,
+      152
+     ],
+     "safe_nearest_1": [
+      68,
+      37,
+      107
+     ],
+     "solo_rounds": 4,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      66,
+      38
+     ]
+    },
+    "Issac": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 10,
+     "safe_nearest_0": [
+      65,
+      40,
+      155
+     ],
+     "safe_nearest_1": [
+      65,
+      40,
+      110
+     ],
+     "solo_rounds": 5,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      64,
+      40
+     ]
+    },
+    "Stellar": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 111,
+     "safe_nearest_0": [
+      60,
+      36,
+      142
+     ],
+     "safe_nearest_1": [
+      60,
+      36,
+      42
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      66,
+      38
+     ]
+    },
+    "Prism": {
+     "reaches": [
+      3,
+      4,
+      5
+     ],
+     "safe_tiles": 111,
+     "safe_nearest_0": [
+      60,
+      36,
+      142
+     ],
+     "safe_nearest_1": [
+      60,
+      36,
+      42
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      66,
+      38
+     ]
+    },
+    "Marcella": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 83,
+     "safe_nearest_0": [
+      68,
+      37,
+      152
+     ],
+     "safe_nearest_1": [
+      68,
+      37,
+      107
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      64,
+      40
+     ]
+    },
+    "Willow": {
+     "reaches": [
+      3
+     ],
+     "safe_tiles": 54,
+     "safe_nearest_0": [
+      67,
+      38,
+      153
+     ],
+     "safe_nearest_1": [
+      67,
+      38,
+      108
+     ],
+     "solo_rounds": 5,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      66,
+      38
+     ]
+    },
+    "Ren": {
+     "reaches": [
+      1,
+      4
+     ],
+     "safe_tiles": 83,
+     "safe_nearest_0": [
+      68,
+      37,
+      152
+     ],
+     "safe_nearest_1": [
+      68,
+      37,
+      107
+     ],
+     "solo_rounds": 6,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      64,
+      40
+     ]
+    },
+    "Varg": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 10,
+     "safe_nearest_0": [
+      65,
+      40,
+      155
+     ],
+     "safe_nearest_1": [
+      65,
+      40,
+      110
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      64,
+      40
+     ]
+    },
+    "Tavi": {
+     "reaches": [
+      3,
+      4
+     ],
+     "safe_tiles": 83,
+     "safe_nearest_0": [
+      68,
+      37,
+      152
+     ],
+     "safe_nearest_1": [
+      68,
+      37,
+      107
+     ],
+     "solo_rounds": 2,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      66,
+      38
+     ]
+    },
+    "Heart of Ruin": {
+     "reaches": [
+      1
+     ],
+     "safe_tiles": 10,
+     "safe_nearest_0": [
+      65,
+      40,
+      155
+     ],
+     "safe_nearest_1": [
+      65,
+      40,
+      110
+     ],
+     "solo_rounds": 1,
+     "solo_damage": 0,
+     "solo_trips": 0,
+     "solo_cleared": true,
+     "solo_tile": [
+      64,
+      40
+     ]
+    }
+   }
+  }
+ ]
+}

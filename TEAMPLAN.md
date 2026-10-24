@@ -523,3 +523,15 @@ Weights live in one versioned parameter set.
   - **Navigation fuel**: the host field limited to radius 3 beats an unrolled wasm BFS (section 6), so `nav.h` uses host fields.
   - **Deferred to step 3**: the check of the risk-matched capturer against the top teams' choices. It needs the Python twin of
     `capture.h` and the 25 raw replays' positions (who else could have captured each reward).
+- **13:55**: step 3, the modules (commit after this line).
+  - **Written**: `tools/teamplan/cpp/teamplan/` = `params.h` (one versioned set, every value labelled), `kit.h`, `sdk_bridge.h` (the only
+    header with the SDK), `capture.h`, `bag.h`, `focus.h`, `timing.h`, `tiebreak.h`, `assign.h`, `swap.h`, `live.h`, `nav.h`, `nav_sdk.h`;
+    Python twins in `tools/teamplan/tp/`; the engine designs in `experiments/results/teamplan/designs_3_0_5.txt` (exact bits, written by
+    the test); the kit table `tools/teamplan/kit_table.py`.
+  - **Engine test** (`tools/teamplan/test_teamplan.py`, test bot `tools/teamplan/cpp/test/main.cpp`): **2,080 results equal the twins bit for
+    bit** on the 40 official maps x 2 teams. Fuel (worst call): all 13 kits 20k (draft), capturer choice 1k, ownership plan 54k on the
+    largest group lists (so it belongs in the draft and in draft memory, not in a champion turn), local detour 9k median / 17k max.
+  - **Found on the way**: the first ownership greedy cost 39k for 12 groups (replaced by list scheduling); fused monolith groups pay more
+    than 255 gems (448); **a visible enemy's priority is readable** (`prev_priority()`, so `timing.h` can use the real rank), its team is
+    `cambc::detail::sdk_my_team()`; ties inside a team act in body-type order (all priorities 0); vision is not shared (an ally out of
+    sight cannot be read); the enhanced attack reset stuns (rules text; counted in `stun`).

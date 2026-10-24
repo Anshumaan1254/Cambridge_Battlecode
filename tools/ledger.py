@@ -56,10 +56,14 @@ RUNS = os.path.join('/tmp', 'ledger_runs')
 
 def src_hash(bot):
 	"""Hash of the bot's sources (what the wasm was built from). A different hash = different code = no reuse."""
+	# Files in sub-folders count too (a header library in src/mapintel/ used to make open() fail on the folder); for a flat src/
+	# the relative path is the base name, so the hashes of every existing bot are unchanged.
 	h = hashlib.sha1()
-	for f in sorted(glob.glob(os.path.join(ROOT, 'bots', bot, 'src', '*'))):
-		h.update(os.path.basename(f).encode())
-		h.update(open(f, 'rb').read())
+	base = os.path.join(ROOT, 'bots', bot, 'src')
+	files = sorted(os.path.relpath(os.path.join(d, f), base).replace(os.sep, '/') for d, _, fs in os.walk(base) for f in fs)
+	for rel in sorted(files, key=lambda r: os.path.join(base, r)):
+		h.update(rel.encode())
+		h.update(open(os.path.join(base, rel), 'rb').read())
 	return h.hexdigest()[:12]
 
 

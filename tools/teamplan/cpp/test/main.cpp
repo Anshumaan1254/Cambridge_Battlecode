@@ -221,7 +221,7 @@ static void game_turn_assign()
 {
 	const auto ag = agroups();
 	const int Gn = static_cast<int>(ag.size());
-	std::vector<std::uint8_t> owner(static_cast<std::size_t>(Gn));
+	std::vector<std::uint8_t> owner(static_cast<std::size_t>(Gn)), runner(static_cast<std::size_t>(Gn));
 	for (int r = 0; r < 3; ++r)
 	{
 		tp::Kit kits[5];
@@ -234,10 +234,10 @@ static void game_turn_assign()
 			const unsigned alive = (1u << team_n) - 1u & ~(v >= 0 ? 1u << v : 0u);
 			double tm[5], vl[5];
 			const long long a0 = fuel();
-			tp::assign_groups(ag.data(), Gn, kits, team_n, alive, C, P, owner.data(), tm, vl);
+			tp::assign_groups(ag.data(), Gn, kits, team_n, alive, C, P, owner.data(), tm, vl, nullptr, nullptr, runner.data());
 			worst = std::max(worst, a0 - fuel());
 			for (int g = 0; g < Gn; ++g)
-				h.i(owner[static_cast<std::size_t>(g)]);
+				h.i(owner[static_cast<std::size_t>(g)]), h.i(runner[static_cast<std::size_t>(g)]);
 			for (int b = 0; b < team_n; ++b)
 				h.d(tm[b]), h.d(vl[b]);
 		}

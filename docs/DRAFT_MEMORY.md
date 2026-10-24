@@ -3,11 +3,13 @@
 This is the specification for the user's new bot (TEAMPLAN.md 8). The mapintel library implements it; the handoff prompt for that is
 given in chat at the end of the team-play session.
 
-**Status**:
-- The layout below is the plan.
-- One block has a working prototype: OWN (version 1, at offset 8 in the GOD v10 test copy, `tools/teamplan/v10_adapter.patch`).
-- mapintel's block (version 1, at 512) is in use.
-- The fuel numbers are measured where a number is given; the rest are marked "to be measured".
+**Status (Oct 24, end of the team-play session)**:
+- The layout below is final for version 2. The other Claude implements it in the mapintel library.
+- **One block has a working prototype**: OWN version 1, written by the GOD v10 test copy at offset 8 (`tools/teamplan/v10_adapter.patch`).
+  - Its draft fuel is measured (section 7).
+  - Its effect is measured on v10: TEAMPLAN.md 11 (SIMULATED (v10)).
+- **mapintel's block** (version 1, at 512) is in use and stays where it is.
+- Fuel numbers are measured where a number is given; the rest are marked "to be measured".
 
 ## 1. The medium (facts; sources in TEAMPLAN.md section 2)
 
@@ -29,20 +31,21 @@ given in chat at the end of the team-play session.
 - Both teams pick at the same time, one pick per round. Our pick in round k sees the enemy's picks of rounds 1..k-1, so **our draft
   never sees the enemy's last pick**.
 - `current_draft(ally)` does not include this turn's pick.
-- **A draft bot that crashes or runs out of fuel before it picks gets random picks.** So pick first, then compute, then write.
+- **A draft bot that crashes or runs out of fuel before it picks gets random picks.** In session 14, draft turns that ran out lost
+  the remaining picks to random draws (AGENTS.md). So **pick first, then compute, then write**, and never let a turn run out after
+  the pick either (the fuel guard, section 7).
 
 ## 2. What goes in
 
 - **Static knowledge about a map goes in the binary**: the catalog table, the model weights.
 - **The draft memory carries only what the draft can produce and a champion cannot cheaply derive**:
-  1. **results too expensive for a champion's 200k first turn**: the ownership plan costs 54k fuel per call on the largest group lists,
-     and the full group list with a spawn field 54-94k (measured, `tools/teamplan/test_teamplan.py`);
+  1. **results too expensive for a champion's turn**: the ownership plan costs up to 56k fuel per call (51 groups, 5 bodies, with
+     the next owners), and a camp-group list with a spawn field 54-94k (both measured, `tools/teamplan/test_teamplan.py`);
   2. **decisions that depend on this game**: our roster, the enemy's visible picks, our side;
   3. **one consistent team decision**: every body reads the same bytes, so nothing has to be agreed in the game.
 - **Not stored**, because every body derives it cheaply and identically at startup:
   - the kits: all 13 designs cost 20k fuel;
-  - the team side: `cambc::detail::sdk_my_team()`;
-  - the roster: allies are in sight on spawn.
+  - the team side: `cambc::detail::sdk_my_team()`.
 - **Data is stored in the form a champion reads it**: fixed offsets and direct indexing, no decode loops. Tiles are `y * W + x` as
   uint16 little-endian.
 
@@ -50,27 +53,27 @@ given in chat at the end of the team-play session.
 
 | Offset | Size | Block | Content |
 |---|---|---|---|
-| 0-3 | 4 | HDR | magic 0x54, layout version 2, flags (bit 0 final: written after our last pick; bit 1 minimal: only the turn-1 blocks), sum of bytes 4-67 mod 256 |
-| 4-67 | 64 | TOC | 8 entries x 8 bytes (section 4) |
-| 68-83 | 16 | TEAM | team decisions (section 5.1) |
-| 84-147 | 64 | OWN | one byte per group (section 5.2) |
-| 148-243 | 96 | BODY | 6 body slots x 16 bytes (section 5.3) |
-| 244-275 | 32 | CONT | contingencies (section 5.4) |
-| 276-307 | 32 | CODE | the codebook the live bytes index into (section 5.5) |
-| 308-323 | 16 | ENEMY | the enemy model from their picks (section 5.6) |
-| 324-387 | 64 | NAV | static navigation hazards for unknown maps (section 5.7) |
-| 388-403 | 16 | DEBUG | draft fuel per turn, builder version (section 5.8) |
-| 404-511 | 108 | free | reserved for later patches |
+| 0-3 | 4 | HDR | byte 0 magic 0x54; byte 1 layout version 2; byte 2 flags (bit 0 final: written after our last pick; bit 1 minimal: only the turn-1 blocks); byte 3 the sum of bytes 4-99 mod 256 |
+| 4-99 | 96 | TOC | 12 entries x 8 bytes: 10 used, 2 spare for later patches (section 4) |
+| 100-115 | 16 | TEAM | team decisions (section 5.1) |
+| 116-179 | 64 | OWN | one byte per group (section 5.2) |
+| 180-275 | 96 | BODY | 6 body slots x 16 bytes (section 5.3) |
+| 276-307 | 32 | CONT | contingencies (section 5.4) |
+| 308-339 | 32 | CODE | the codebook the live bytes index into (section 5.5) |
+| 340-355 | 16 | ENEMY | the enemy model from their picks (section 5.6) |
+| 356-419 | 64 | NAV | static navigation hazards for unknown maps (section 5.7) |
+| 420-435 | 16 | DEBUG | draft fuel per turn, builder version (section 5.8) |
+| 436-511 | 76 | free | reserved for later patches |
 | 512-863 | 352 | MAPINTEL | mapintel's block, version 1, unchanged (`tools/mapintel/cpp/mapintel/dmem.h`): fingerprint, flags, archetype, per group the bank altar and both walks, 16 contested groups, 8 thresholds, plan 1, checksum |
 | 864-999 | 136 | MAPINTEL-DL | mapintel's optional DL outputs (`dl_weights.h`): opening ranking, next-target ranking, champion values |
 | 1000-1023 | 24 | free | |
 
-The total in use is 404 + 352 + 136 = 892 bytes, which leaves 132 free.
+The total in use is 436 + 352 + 136 = 924 bytes, which leaves 100 free.
 
 ## 4. Header and table of contents
 
 **TOC entry** (8 bytes):
-- id (u8; ASCII letter: T, O, B, C, K, E, N, D, M for mapintel, L for mapintel-DL);
+- id (u8; ASCII letter: `T` TEAM, `O` OWN, `B` BODY, `C` CONT, `K` CODE, `E` ENEMY, `N` NAV, `D` DEBUG, `M` mapintel, `L` mapintel-DL);
 - block version (u8);
 - offset (u16 LE);
 - length (u16 LE);
@@ -87,8 +90,11 @@ Unused entries are zero.
 
 **Writer**:
 - One 1,024-byte RAM image.
-- Each draft turn: pick first, update the blocks this turn's fuel allows, recompute their TOC entries and the HDR sum, submit the
-  whole image.
+- Each draft turn:
+  1. pick first;
+  2. update the blocks this turn's fuel allows, under the guard of section 7;
+  3. recompute their TOC entries and the HDR sum;
+  4. submit the whole image.
 - `final` is set on the write after our last pick.
 
 ## 5. Blocks
@@ -101,22 +107,23 @@ Unused entries are zero.
 | 1 | number of OWN variants available (0 = only the base table) |
 | 2 | tiebreak-prone map (bit 0, `tiebreak.h` / mapintel plan 4's mode); bits 1-2 the mapintel tiebreak mode copy |
 | 3 | capture rule (`capture.h` capture_mode) |
-| 4-9 | body types by slot, the same order as OWN and BODY (255 = none), so a body finds its slot without reading the roster |
+| 4-9 | body types by slot, the same order as OWN and BODY (255 = none), so a body finds its slot without reading the roster. Written for the final roster on the last draft turn (cheap). |
 | 10 | groups G covered by OWN |
-| 11-15 | reserved |
+| 11 | bodies covered by OWN: the roster size the OWN table was computed for. Below the roster size means recompute in the game (section 7) |
+| 12-15 | reserved |
 
 ### 5.2 OWN (64 bytes): soft ownership, one byte per group (G <= 64; groups 64+ have no owner)
 
-- Low nibble: the owner slot (15 = none). High nibble: the next owner, who takes the group while the owner is dead (15 = none).
-- Computed by `teamplan::assign_groups` (list scheduling; gem-free groups lean to front bodies) for the bodies picked so far, and again
-  after our last pick.
-- The next owner is the same plan with the owner left out.
+- **Low nibble: the owner slot** (15 = none). Computed by `teamplan::assign_groups` (list scheduling; gem-free groups lean to front
+  bodies) for the bodies picked so far.
+- **High nibble: the next owner**, who takes the group while the owner is dead (15 = none). It is the runner-up body of the same
+  scheduling step: `assign_groups`'s `runner_up` output, added for this layout, so it costs no extra call.
 - **Fuel**:
-  - 54k worst per call (51 groups);
-  - the group list with the spawn field 54-94k (turn 1, cached in RAM);
-  - the next owners need one more call per body (computed only while the turn has fuel; else 15).
+  - the library call: up to 56.1k with the next owners (51 groups, 5 bodies; 54k without them);
+  - in the GOD v10 test, where the adapter also builds its own group list, the whole write cost 138k on draft turn 1 and 48-65k on
+    turns 2-5. It left at least 24.2k of 100k after v10's pick (section 7).
 - **In the game**: a score bonus for the owner (x 1.25 in the v10 test), never a hard rule.
-- **Prototype**: version 1 of this block is written at offset 8 by the v10 test copy. Batteries: TEAMPLAN.md section 11.
+- **Prototype**: version 1 of this block, at offset 8 in the v10 test copy. Batteries: TEAMPLAN.md section 11.
 
 ### 5.3 BODY (6 x 16 bytes): what each body cannot cheaply derive
 
@@ -191,28 +198,50 @@ The live bytes carry 3- to 6-bit indices into these tables instead of raw tiles 
 - **Bits 60-63, written by the lowest alive slot**: the plan cursor (3 bits: the variant in use) and the tiebreak bit (1).
 - **Indices point into OWN, CODE and the variant set**: the draft and the champions computed the same tables.
 
-## 7. Write order across draft turns
+## 7. Write order across draft turns, and the fuel guard
 
-1. **Turn 1 (1,000,000 fuel)**, after the pick:
-   - the group list with the spawn field (cached);
-   - mapintel's block;
-   - NAV;
-   - TEAM with the bodies so far;
-   - write with `minimal` set.
-2. **Turns 2 to the last but one (100,000)**, after the pick: OWN for the bodies so far, ENEMY from their visible picks, CODE. Write.
-3. **Last turn (100,000)**, after our last pick:
-   - OWN for the final roster: 54k worst;
-   - BODY and CONT;
-   - write with `final` set.
-   - Anything that does not fit keeps its earlier valid version: the TOC says which.
+**The guard**:
+- Every optional block measures its own cost (`fuel_remaining()` before and after) on the turn it runs.
+- On a later turn it runs only when the fuel left exceeds **1.25 x its last cost + 10,000**. Otherwise it keeps its earlier valid
+  version, and the TOC and TEAM byte 11 say which version that is.
+- The margin covers growth from one more body: the OWN write grew 10-13% per body in the v10 test (47.9k, 54.0k, 59.2k, 65.1k for
+  2-5 bodies).
+
+**Per turn, with mapintel's measured costs** (`tools/mapintel/README.md`, worst official map):
+
+| Turn (fuel) | Work, in order | Fuel |
+|---|---|---|
+| 1 (1,000,000) | the pick | mapintel's draft signal: under 3k |
+| | mapintel's turn-1 work: view, fingerprint, features, plans 2-4, the first pick's rows, `first_scores()` | at most 777.7k |
+| | the `AGroup` list built from mapintel's view (no second scan of the camp groups) | to be measured |
+| | OWN for the first body (or two, for a two-body pick); NAV; TEAM; write with `minimal` set | to be measured |
+| 2 to the last but one (100,000) | the pick; mapintel's `row()` for the champion just picked | at most 13.5k |
+| | OWN for the bodies so far | at most 56.1k |
+| | ENEMY from their visible picks; CODE; write | to be measured |
+| last (100,000) | the pick; `row()`; mapintel's `plan1` and its block | mapintel leaves at least 28k |
+| | TEAM with the final roster, BODY and CONT; write with `final` set | to be measured |
+| | OWN for the final roster, only under the guard | 56.1k does not fit in 28k on the largest maps |
+
+**OWN for the final roster in the game**:
+- When TEAM byte 11 is below the roster size, every body recomputes OWN once for the full roster (TEAM bytes 4-9), on the map's groups,
+  with the same library call. That costs at most 56.1k.
+- **The inputs are identical in every body** (static map data, the engine's designs, the draft's body list), so every body gets the
+  same table without a message (P3: XSquare 2020, smite).
+- **The recompute waits for a turn with fuel to spare** (a later 100k turn, not the first one). Until then mapintel's plan 1 gives the
+  opening targets (6 bodies x 4 targets).
 
 ## 8. Tests the implementation needs (for the other Claude)
 
 1. **Round trip**: pack in C++, unpack in Python (and back). Bit-equal on 40 maps x 2 teams x 3 rosters.
 2. **Prefix rule**: a shorter write after the image leaves the tail intact, and every champion reads the final image.
-3. **Fuel**: each draft turn's work stays under its limit on the largest official maps. The pick always comes first.
+3. **Fuel**: each draft turn's work stays under its limit on the largest official maps (lanes, big-world, road-of-riches), and the pick
+   always comes first.
 4. **Coexistence**:
    - mapintel's block at 512 (and DL at 864) is byte-identical to `compact.pack`;
    - the TOC entry M points at it;
    - an old reader of mapintel's block still works.
 5. **Fallback**: a corrupted or missing block (wrong checksum, wrong version) makes every reader take its fallback, with no exception.
+6. **The last turn and the in-game OWN**:
+   - with the guard, the last draft turn never runs out on the largest maps;
+   - OWN is either written for the final roster or left at the earlier version (TEAM byte 11 says which);
+   - in the second case, every body's in-game recompute gives the same table (print a hash per body and compare).

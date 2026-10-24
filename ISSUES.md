@@ -140,3 +140,49 @@ Hardcoded on purpose or measured on the current pool / patch; each may need a re
   (`MARGIN`: +0.01 top-n share / top-1, -0.003 log loss) on held-out maps; its weights are fitted on the current pool and ladder
   (T1a / T1b: 599 ladder games; T2: GOD v10's roster battery, SIMULATED v10). The next-target model is meant for a candidate list
   (the test uses the 16 groups nearest the previous capture): all 64 groups cost about 107k fuel, more than a game turn.
+
+## teamplan (session 18c, TEAMPLAN.md; `tools/teamplan/`, library `tools/teamplan/cpp/teamplan/`)
+
+Typed-in values and engine assumptions of the team-play library. Each may need a refresh when the patch, the map pool or the bot
+changes. No champion name or map identity is in the logic: champions enter through their designs, `passive_type` and the SDK constants.
+
+- **ASSUMED values in `params.h`** (starting values; only some were exercised by the batteries, TEAMPLAN.md 11):
+  - `kit.h`: `enhanced_extra` 1.0, `missing_hp_avg` 0.5, `hits_taken` 1.0, `splash_targets` 1.0, `area_targets` 1.0, `fight_rounds` 8,
+    `ranged_front` 0.5, `immune_ehp` 0.15, `dash_escape` 0.2, `reach_escape` 0.05;
+  - economy: `danger_hazard` 0.02; `items_half` 0 (off: the value 12 was contradicted by the top teams' capture choices);
+  - `bag.h`: `bag_fight` 30, `bag_fight_scale` 60 (the `tp_bag` switch on v10 used 60), `hunt_bag` 25, `hunt_bonus` 0.5;
+  - `focus.h`: `kv_ref` 40;
+  - `tiebreak.h`: `tb_period` 25, `tb_enter` 150, `tb_leave` 50, `tb_min_round` 600, `tb_defer_cap` 60 (150 also tried), `tb_safe_dist` 9,
+    `tb_final_margin` 30, `tb_denial_rounds` 60;
+  - `assign.h`: `own_bonus` 0.25 (the v10 test's x 1.25), `gemfree_front` 0.5;
+  - `swap.h`: `swap_period` 50, `swap_hold` 150, `swap_margin` 0.25, `lag_ratio` 0.6. Never run in a game: v10's live bytes have no room
+    for the per-body progress codes.
+- **LEARNED on the current patch** (refit after a patch, commands in `tools/teamplan/README.md`):
+  - `gold_gems` 0.02 (mapintel `econ_learn.py`);
+  - `team_rate` 0.94 and `hazard` 0.0016 (599 ladder games, `roles_ladder.md`);
+  - `capture_mode` 1 (25 raw replays, `capture_check.py`).
+- **Engine-structure assumptions** (re-probe after a patch):
+  - **Pick to body**: the SDK enum order. Picks 0-2 are bodies 0-2, pick 3 is bodies 3 and 4 (two bodies that die together), and picks
+    4-11 are bodies 5-12. This is the v10 adapter's `pick_of_type`, the same mapping mapintel uses.
+  - **Passive to constant** (`sdk_bridge.h` `consts_from_sdk`): the SDK names each passive's constant after the one champion that has the
+    passive today. `kit.h` applies a constant by the design's passive tag, so a passive moved to another champion still works. Two
+    limits:
+    - a new passive tag gets no constant (its kit term is 0);
+    - two champions sharing a tag with different numbers would both get the one constant.
+  - **The team index** comes from `cambc::detail::sdk_my_team()`, a `detail` function that can change without notice.
+  - **Turn order** (`timing.h`), measured on one decoded top-team replay, rounds 30-400:
+    - turns alternate one body at a time;
+    - team A starts odd rounds;
+    - higher priority acts first, and ties act in body-type order.
+  - **The enhanced attack reset stuns for one round** (`enhanced_stun`, COMPUTED from the rules text: the SDK payload has no duration).
+  - **The engine test compares against `experiments/results/teamplan/designs_3_0_5.txt`**: after a patch, run `--dump-designs` first.
+- **The v10 test copy** (`v10_adapter.patch`, cut against `bots/god` = GOD v10):
+  - if `bots/god` changes, the patch stops applying (`prepare_v10.py` exits with a message);
+  - the OWN prototype sits at draft memory offset 8 (magic 0x54, version 1). Its writer rewrites v10's bytes 0-3 as `B7 02 00 00`: v10's
+    team and plan-choice bytes become 0. Nothing in v10 reads them while `dm_plan` is off (the default), and with every switch off the
+    copy plays v10's games 80 of 80;
+  - the final layout (`docs/DRAFT_MEMORY.md`) moves OWN to 84-147.
+- **No fuel guard on the OWN write in the v10 test**. It leaves 24.2k of 100k at worst on the 40 official maps (road-of-riches, 5 bodies).
+  A map with a longer group list could run out after the pick. The final layout adds the guard (`docs/DRAFT_MEMORY.md` 7).
+- **Roster battery opponents** (`tools/mapintel/data/battery_rosters.json`, mapintel's): slots 0-2 are real strong-team rosters (LEARNED)
+  on all 40 official maps, from one ladder snapshot (Oct 24). A new ladder changes them.

@@ -24,12 +24,14 @@ def group_key(g, dps_mean, c):
 	return g.value / (g.walk + clear + c.capture_time)
 
 
-def assign_groups(gs, kits, alive, c, p, cap=64):
-	"""(owner per group, time per body, value per body). cap: groups planned without buffers (the header's 64)."""
+def assign_groups(gs, kits, alive, c, p, cap=64, runner=False):
+	"""(owner per group, time per body, value per body[, runner-up per group]). cap: groups planned without buffers (the header's 64).
+	runner: also return the runner-up body per group (the next owner)."""
 	n, G = len(kits), len(gs)
 	fn = front_norm(kits)
 	used, val = [0.0] * n, [0.0] * n
 	owner = [NO_OWNER] * G
+	run = [NO_OWNER] * G
 	dsum, na = 0.0, 0
 	for b in range(n):
 		if alive >> b & 1:
@@ -42,7 +44,7 @@ def assign_groups(gs, kits, alive, c, p, cap=64):
 		order = sorted(reach, key=lambda g: (-keys[g], g))
 		for gi in order:
 			g = gs[gi]
-			bb, bc, bf = -1, 0.0, 0.0
+			bb, bc, bf, b2, bc2 = -1, 0.0, 0.0, -1, 0.0
 			for b in range(n):
 				if not (alive >> b & 1):
 					continue
@@ -52,8 +54,13 @@ def assign_groups(gs, kits, alive, c, p, cap=64):
 				fin = used[b] + g.walk + clear + c.capture_time
 				cost = fin / pref
 				if bb < 0 or cost < bc:
+					b2, bc2 = bb, bc
 					bb, bc, bf = b, cost, fin
+				elif b2 < 0 or cost < bc2:
+					b2, bc2 = b, cost
 			owner[gi] = bb
+			if b2 >= 0:
+				run[gi] = b2
 			used[bb] = bf
 			val[bb] += g.value
-	return owner, used, val
+	return (owner, used, val, run) if runner else (owner, used, val)

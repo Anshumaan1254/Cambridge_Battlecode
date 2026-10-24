@@ -8,7 +8,7 @@ teams' prints are checked) and recomputes everything with the Python twins (tool
 values' bytes, as the bot prints them):
   * the engine designs and constants equal experiments/results/teamplan/designs_3_0_5.txt (--dump-designs writes that file);
   * params.h's defaults equal tp/params.py's (one hash);
-  * kit.h on all 13 designs; assign.h on the map's groups for 3 test rosters, the plan and one variant per body left out;
+  * kit.h on all 13 designs; assign.h on the map's groups for 3 test rosters (owners and runners-up), the plan and one variant per body left out;
     capture.h on 16 groups per roster (synthetic bags, items, walks and danger); timing.h, bag.h, focus.h, tiebreak.h, swap.h, live.h
     and nav.h on fixed sweeps;
   * nav_sdk.h's local detour returns a neighbouring tile or the body's own;
@@ -135,9 +135,9 @@ def assign_hash(gs, kits_all, r, team_n, C, P):
 	h = HI()
 	for v in range(-1, team_n):
 		alive = ((1 << team_n) - 1) & ~((1 << v) if v >= 0 else 0)
-		owner, tm, vl = assign.assign_groups(ag, kits, alive, C, P)
-		for o in owner:
-			h.i(o)
+		owner, tm, vl, run = assign.assign_groups(ag, kits, alive, C, P, runner=True)
+		for o, u in zip(owner, run):
+			h.i(o), h.i(u)
 		for b in range(team_n):
 			h.d(tm[b]), h.d(vl[b])
 	return h.str()

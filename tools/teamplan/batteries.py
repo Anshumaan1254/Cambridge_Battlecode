@@ -3,6 +3,7 @@
 a rule changes v10's games, not how it plays on the ladder.
 
     python3 -I tools/teamplan/batteries.py [--maps 'maps/official/*.map26a'] [--jobs 4] [--only NAME,...] [--report-only]
+    python3 -I tools/teamplan/batteries.py --confirm [--slots 0,1,2,3,4,5,6,7] [--only _tp_own,_tp_bag]   (the confirmation battery)
 
 Variants (tools/teamplan/prepare_v10.py; each switch alone, then together):
   _tp_foc tp_focus=1 | _tp_bag tp_bag=1 | _tp_tim tp_timing=1 | _tp_tb tp_tiebreak=1 | _tp_tb150 tp_tiebreak=1 tp_tb_cap=150 |
@@ -35,15 +36,18 @@ VARIANTS = [
 	("_tp_all", ["tp_focus=1", "tp_bag=1", "tp_timing=1", "tp_tiebreak=1", "tp_own=1"], "all five"),
 ]
 BASE, FORCED = "_tp_v10ref", "_tp_v10F"
-# --confirm: the two leads of the first battery and their combination, against two more forced rosters (slots 1 and 2 of
-# tools/mapintel/data/battery_rosters.json: the second and third strong-team rosters per map, or COMPUTED kit-balanced ones where fewer
-# real rosters exist), each paired with v10's own games against the same opponent.
+# --confirm: the two leads of the first battery and their combination, against v10 forced to more rosters of
+# tools/mapintel/data/battery_rosters.json (on the 40 official maps slots 0-3 are real strong-team rosters, LEARNED; slots 4-7 COMPUTED,
+# balanced over kit classes), each paired with v10's own games against the same opponent (same map and side).
 CONFIRM = [
 	("_tp_bag", ["tp_bag=1"], "fight bar rises with the bag"),
 	("_tp_own", ["tp_own=1"], "soft group ownership"),
 	("_tp_bo", ["tp_bag=1", "tp_own=1"], "both"),
 ]
-CONFIRM_FORCED = [(FORCED, 0), ("_tp_v10F1", 1), ("_tp_v10F2", 2)]
+
+
+def forced_name(slot):
+	return FORCED if slot == 0 else f"{FORCED}{slot}"
 
 
 def wilson(w, n, z=1.96):
@@ -105,14 +109,17 @@ def cell(bot, opp):
 
 def paired(var, base, opp):
 	a, b = ledger.current_rows(var, opp, True), ledger.current_rows(base, opp, True)
+	ks = sorted(set(a) & set(b))
 	per = {}
-	for k in set(a) & set(b):
+	for k in ks:
 		per.setdefault(k[0], []).append(margin(a[k]) - margin(b[k]))
 	xs = [sum(v) / len(v) for v in per.values()]
-	wa = sum(a[k]["win"] for k in set(a) & set(b))
-	wb = sum(b[k]["win"] for k in set(a) & set(b))
+	wa = sum(a[k]["win"] for k in ks)
+	wb = sum(b[k]["win"] for k in ks)
+	gain = sum(1 for k in ks if a[k]["win"] and not b[k]["win"])
+	loss = sum(1 for k in ks if b[k]["win"] and not a[k]["win"])
 	m, lo, hi = boot(xs)
-	return {"m": m, "lo": lo, "hi": hi, "wa": wa, "wb": wb, "n": len(set(a) & set(b))}
+	return {"m": m, "lo": lo, "hi": hi, "wa": wa, "wb": wb, "n": len(ks), "xs": xs, "gain": gain, "loss": loss}
 
 
 def prepare(name, sets, rebuild):
@@ -135,50 +142,62 @@ def forced(name, slot):
 
 
 def pooled(var, base, opps):
-	"""Paired margin (variant minus v10, same map, side and opponent) pooled over opponents: one value per (map, opponent), bootstrap over
-	those."""
-	xs = []
+	"""Paired results pooled over opponents: the margin per (map, opponent) with a bootstrap interval, and the games the variant turned
+	into wins / losses against v10's own games (same map, side and opponent) with a two-sided sign test."""
+	xs, gain, loss = [], 0, 0
 	for opp in opps:
-		a, b = ledger.current_rows(var, opp, True), ledger.current_rows(base, opp, True)
-		per = {}
-		for k in set(a) & set(b):
-			per.setdefault(k[0], []).append(margin(a[k]) - margin(b[k]))
-		xs += [sum(v) / len(v) for v in per.values()]
-	return boot(xs) + (len(xs),)
+		pm = paired(var, base, opp)
+		xs += pm["xs"]
+		gain += pm["gain"]
+		loss += pm["loss"]
+	m, lo, hi = boot(xs)
+	return {"m": m, "lo": lo, "hi": hi, "n": len(xs), "gain": gain, "loss": loss, "p": sign_p(gain, loss)}
 
 
 def confirm(a):
+	slots = [int(x) for x in a.slots.split(",")]
+	opps = [forced_name(k) for k in slots]
+	vs = [v for v in CONFIRM if not a.only or v[0] in a.only.split(",")]
 	if not a.report_only:
-		for name, sets, _ in CONFIRM:
+		for name, sets, _ in vs:
 			prepare(name, sets, a.rebuild)
-		for name, slot in CONFIRM_FORCED:
-			forced(name, slot)
-		for opp, _ in CONFIRM_FORCED:
+		for k in slots:
+			forced(forced_name(k), k)
+		for opp in opps:
 			run_cell(BASE, opp, a.maps, a.jobs)
-		for name, _, _ in CONFIRM:
+		for name, _, _ in vs:
 			run_cell(name, BASE, a.maps, a.jobs)
-			for opp, _ in CONFIRM_FORCED:
+			for opp in opps:
 				run_cell(name, opp, a.maps, a.jobs)
-	opps = [o for o, _ in CONFIRM_FORCED]
+	origin = {0: "LEARNED", 1: "LEARNED", 2: "LEARNED", 3: "LEARNED"}
 	L = ["# Confirmation battery of the two leads (SIMULATED (v10); tools/teamplan/batteries.py --confirm)", "",
-		 f"Maps `{a.maps}`, both sides, release mode. Opponents: GOD v10 (head-to-head) and v10 forced to roster slots 0, 1, 2 of "
-		 "`tools/mapintel/data/battery_rosters.json` (`_tp_v10F`, `_tp_v10F1`, `_tp_v10F2`). Paired margin = the variant's gem margin minus "
-		 "v10's own against the same opponent, map and side, averaged per map [bootstrap 95%].", "",
-		 "| Variant | Head-to-head vs v10 | " + " | ".join(f"vs `{o}`: wins (v10's), paired margin" for o in opps) + " | Pooled paired margin (maps x 3) |",
-		 "|---|---|" + "---|" * len(opps) + "---|"]
-	for name, _, what in CONFIRM:
+		 f"Maps `{a.maps}`, both sides, release mode. Opponents: GOD v10 (head-to-head) and v10 forced to roster slot k of "
+		 "`tools/mapintel/data/battery_rosters.json` (`_tp_v10F` for slot 0, `_tp_v10F<k>` otherwise; slots 0-3 are real strong-team "
+		 "rosters on all 40 maps, slots 4-7 COMPUTED, balanced over kit classes). Paired = against v10's own games with the same "
+		 "opponent, map and side: the gem margin difference averaged per map [bootstrap 95%], and the games turned into wins / losses "
+		 "(sign test).", "",
+		 "| Variant | Opponent | Wins (v10's) | Paired margin [95%] | Games turned: wins / losses |", "|---|---|---|---|---|"]
+	for name, _, what in vs:
 		c = cell(name, BASE)
-		row = [f"`{name}` ({what})", f"{c['w']}/{c['n']}, {c['m']:+.1f} [{c['ml']:+.1f}, {c['mh']:+.1f}]" if c else "-"]
-		for o in opps:
-			cv, cb = cell(name, o), cell(BASE, o)
+		if c:
+			L.append(f"| `{name}` ({what}) | GOD v10, head-to-head | {c['w']}/{c['n']} (40) | {c['m']:+.1f} [{c['ml']:+.1f}, {c['mh']:+.1f}] | "
+					 f"maps {c['two']} won twice / {c['zero']} lost twice, p {c['p']:.3f} |")
+		for k, opp in zip(slots, opps):
+			cv, cb = cell(name, opp), cell(BASE, opp)
 			if cv and cb:
-				pm = paired(name, BASE, o)
-				row.append(f"{cv['w']} ({cb['w']}), {pm['m']:+.1f} [{pm['lo']:+.1f}, {pm['hi']:+.1f}]")
-			else:
-				row.append("-")
-		m, lo, hi, n = pooled(name, BASE, opps)
-		row.append(f"{m:+.1f} [{lo:+.1f}, {hi:+.1f}] over {n}")
-		L.append("| " + " | ".join(row) + " |")
+				pm = paired(name, BASE, opp)
+				L.append(f"| | slot {k} ({origin.get(k, 'COMPUTED')}) | {cv['w']} ({cb['w']}) | {pm['m']:+.1f} [{pm['lo']:+.1f}, {pm['hi']:+.1f}] | "
+						 f"{pm['gain']} / {pm['loss']}, p {sign_p(pm['gain'], pm['loss']):.3f} |")
+		groups = [("slots " + ",".join(map(str, g)), [forced_name(k) for k in g]) for g in
+				  ([k for k in slots if k <= 3], [k for k in slots if k > 3], slots) if g]
+		seen = set()
+		for label, os_ in groups:
+			if label in seen:
+				continue
+			seen.add(label)
+			q = pooled(name, BASE, os_)
+			L.append(f"| | **pooled, {label}** | | {q['m']:+.1f} [{q['lo']:+.1f}, {q['hi']:+.1f}] over {q['n']} | "
+					 f"**{q['gain']} / {q['loss']}, p {q['p']:.3f}** |")
 	out = os.path.join(ROOT, "experiments", "results", "teamplan", "batteries_v10_confirm.md")
 	open(out, "w").write("\n".join(L) + "\n")
 	print("\n".join(L))
@@ -203,7 +222,8 @@ def main():
 	ap.add_argument("--jobs", type=int, default=4)
 	ap.add_argument("--only", default="")
 	ap.add_argument("--report-only", action="store_true")
-	ap.add_argument("--confirm", action="store_true", help="the confirmation battery (CONFIRM x CONFIRM_FORCED); writes batteries_v10_confirm.md")
+	ap.add_argument("--confirm", action="store_true", help="the confirmation battery (CONFIRM x forced roster slots); writes batteries_v10_confirm.md")
+	ap.add_argument("--slots", default="0,1,2", help="--confirm: the forced roster slots (0-7)")
 	ap.add_argument("--rebuild", action="store_true", help="re-prepare variant copies that exist (their ledger rows then stop counting)")
 	a = ap.parse_args()
 	if a.confirm:

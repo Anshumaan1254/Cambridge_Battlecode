@@ -42,9 +42,11 @@ inline double group_key(const AGroup& g, double dps_mean, const Consts& c)
 // cost 39k fuel for 12 groups in the engine.
 // owner[g] = body slot, or kNoOwner when unreachable or when no body in `alive` (bit mask) is left. Up to 16 bodies, any number of groups.
 // time_out[b] (optional) = the time the plan gives body b; value_out[b] = the value of its groups.
+// runner_up[g] (optional) = the body with the second-lowest cost when g was scheduled (kNoOwner if none): the next owner, who takes the
+// group while the owner is dead (docs/DRAFT_MEMORY.md 5.2), at no extra call.
 inline void assign_groups(const AGroup* gs, int G, const Kit* kits, int n, unsigned alive, const Consts& c, const Params& p,
 						  std::uint8_t* owner, double* time_out = nullptr, double* value_out = nullptr, int* order_buf = nullptr,
-						  double* key_buf = nullptr)
+						  double* key_buf = nullptr, std::uint8_t* runner_up = nullptr)
 {
 	double fn[16], used[16], val[16];
 	front_norm_of(kits, n, fn);
@@ -57,7 +59,11 @@ inline void assign_groups(const AGroup* gs, int G, const Kit* kits, int n, unsig
 			dsum += kits[b].camp_dps, ++na;
 	}
 	for (int g = 0; g < G; ++g)
+	{
 		owner[g] = kNoOwner;
+		if (runner_up)
+			runner_up[g] = kNoOwner;
+	}
 	if (na > 0)
 	{
 		const double dmean = dsum / na;
@@ -83,8 +89,8 @@ inline void assign_groups(const AGroup* gs, int G, const Kit* kits, int n, unsig
 		for (int i = 0; i < m; ++i)
 		{
 			const AGroup& g = gs[ord[i]];
-			int bb = -1;
-			double bc = 0, bf = 0;
+			int bb = -1, b2 = -1;
+			double bc = 0, bf = 0, bc2 = 0;
 			for (int b = 0; b < n; ++b)
 			{
 				if (!(alive >> b & 1u))
@@ -95,9 +101,13 @@ inline void assign_groups(const AGroup* gs, int G, const Kit* kits, int n, unsig
 				const double fin = used[b] + g.walk + clear + c.capture_time;
 				const double cost = fin / pref;
 				if (bb < 0 || cost < bc)
-					bb = b, bc = cost, bf = fin;
+					b2 = bb, bc2 = bc, bb = b, bc = cost, bf = fin;
+				else if (b2 < 0 || cost < bc2)
+					b2 = b, bc2 = cost;
 			}
 			owner[ord[i]] = static_cast<std::uint8_t>(bb);
+			if (runner_up && b2 >= 0)
+				runner_up[ord[i]] = static_cast<std::uint8_t>(b2);
 			used[bb] = bf;
 			val[bb] += g.value;
 		}

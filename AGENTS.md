@@ -3,6 +3,14 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
+- **Session 18f (2026-10-24, from 22:20 UTC): GOD v14 in progress** (the user: "v12 stutters, does not move or moves randomly, walks away
+  from the altar with good gems, does not compete with enemies the right way, monoliths are not killed, wards are thrown at random tiles:
+  throw them into bushes"). Measured (`experiments/behav_oct24/`, `tools/analysis/behav.mjs`, `mono_kills.mjs`, `trace/`): v13 vs the 600
+  ladder replays' teams: back-and-forth walks 32.6 vs 11-15 per 1000 alive body-rounds (v12 37.5), wards 518 vs 150 a game with 6% vs
+  61-65% on a bush, monolith kills 1.6 vs 1.4 a game (later first kills), bag behaviour level. Traced causes (IDLE lines): melee bodies
+  next to a live camp ringed by dead tiles of its own group (the goal excluded group tiles), dash kits waiting at a hole crossing with a
+  ready dash that cannot land, Heart of Ruin's held strike dash, same-speed chases, A-B-A target flips (23% of 262 switches a game).
+  `bots/god14` = v13 + switches (all 0 = v13): `fz_dead`, `fz_dash`, `fz_chase`, `ward_v14`; candidates `_f1*` screening (`$S/bh/q1.sh`).
 - **Session 18e (2026-10-24, 22:10 UTC): SHIPPED GOD v13** (`submissions/god.zip` sha256 125a87c6…, `bots/god13`, history `god_v13_20261024.zip`; doc
   `docs/strategy_v2/20_IC_OCT24.md`). The user: "fetch Intercontinental Fish's data, beat them, improve on v12; combine v10, v12 and the IC data". IC
   (rank 2) analysed from today's ladder archive (300 matches, 73 replays; fetching more needs the user's `cambc login`: `ladder_fetch.py --team ID`).

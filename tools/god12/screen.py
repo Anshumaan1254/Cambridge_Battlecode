@@ -49,13 +49,14 @@ def main():
 	ap = argparse.ArgumentParser()
 	ap.add_argument("variants", nargs="+")
 	ap.add_argument("--slots", default="0")
+	ap.add_argument("--h2h", default="god", help="head-to-head opponent (default god = GOD v10)")
 	a = ap.parse_args()
 	slots = [int(x) for x in a.slots.split(",")]
 	ref_h = json.loads(open(os.path.join(D, "_tp_v10ref_vs__tp_v10F.jsonl")).readline())["bot_hash"]
-	print("| variant | h2h vs v10: wins | margin [95%] | faults | paired vs v10, rosters " + ",".join(map(str, slots)) + ": margin [95%] | turned | games |")
+	print(f"| variant | h2h vs {a.h2h}: wins | margin [95%] | faults | paired vs v10, rosters " + ",".join(map(str, slots)) + ": margin [95%] | turned | games |")
 	print("|---|---|---|---|---|---|---|")
 	for v in a.variants:
-		h = rows(v, "god")
+		h = rows(v, a.h2h)
 		w = sum(1 for r in h.values() if r["win"])
 		m = boot([margin(r) for r in h.values()])
 		faults = sum(int(r.get("faults", 0) or 0) for r in h.values())

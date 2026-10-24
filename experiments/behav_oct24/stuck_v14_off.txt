@@ -1,0 +1,102 @@
+== 80 games (won 50), 515517 body-rounds, alive 459751, eligible 209157 (45.5% of alive), waiting by a respawn 28375
+stuck episodes 1573, 14106 body-rounds (30.68 per 1000 alive body-rounds, 176.3 per game): frozen 902/8522r, jiggle 559/4572r, osc 112/1012r, noprog 0/0r
+by cause (episodes/rounds): no-trace 1131/10162r, ally-adjacent 257/2293r, other-camp 185/1651r
+movement-blocked events 1856 (23.20/game); turn rollovers 1050 (13.13/game, 568 in rounds 1-3)
+per map (games, episodes, stuck rounds, rollovers, blocked):
+  01islands                      2g W0 ep=182 rounds=1774 roll=77 blocked=8
+  01boss-battle                  2g W1 ep=123 rounds=1216 roll=20 blocked=40
+  00lost-world                   2g W2 ep=111 rounds=902 roll=20 blocked=322
+  00gem-fields                   2g W2 ep=86 rounds=709 roll=10 blocked=50
+  01corridors                    2g W0 ep=74 rounds=708 roll=10 blocked=113
+  00great-wall                   2g W2 ep=62 rounds=677 roll=20 blocked=24
+  00stampede                     2g W2 ep=70 rounds=629 roll=16 blocked=24
+  01shortcut                     2g W1 ep=69 rounds=589 roll=40 blocked=9
+  01fracture                     2g W1 ep=70 rounds=582 roll=102 blocked=26
+  01concentrated-wealth          2g W2 ep=56 rounds=464 roll=10 blocked=9
+  00contest                      2g W1 ep=23 rounds=423 roll=0 blocked=42
+  00quadrants                    2g W2 ep=46 rounds=393 roll=20 blocked=511
+  00eight                        2g W0 ep=34 rounds=384 roll=0 blocked=9
+  01starfish                     2g W2 ep=43 rounds=376 roll=22 blocked=53
+  00rushbait-v2                  2g W1 ep=48 rounds=361 roll=8 blocked=1
+  00reverse-spiral               2g W2 ep=37 rounds=343 roll=0 blocked=17
+  01big-world                    2g W1 ep=37 rounds=326 roll=42 blocked=4
+  00ambush                       2g W1 ep=38 rounds=322 roll=28 blocked=18
+  00packs                        2g W2 ep=36 rounds=301 roll=6 blocked=20
+  01starvation                   2g W1 ep=35 rounds=270 roll=10 blocked=28
+  01gold-rush                    2g W1 ep=38 rounds=241 roll=6 blocked=2
+  00road-of-riches               2g W1 ep=26 rounds=197 roll=267 blocked=7
+  00pilgrimage                   2g W2 ep=21 rounds=194 roll=26 blocked=3
+  01elk-arena                    2g W2 ep=22 rounds=183 roll=10 blocked=238
+  00gemfight                     2g W2 ep=22 rounds=174 roll=4 blocked=11
+  01broken-curve                 2g W1 ep=17 rounds=150 roll=6 blocked=22
+  01the-farm                     2g W0 ep=19 rounds=148 roll=18 blocked=0
+  00rows                         2g W1 ep=15 rounds=136 roll=8 blocked=1
+  00interlock                    2g W1 ep=14 rounds=128 roll=0 blocked=20
+  00monolith                     2g W1 ep=14 rounds=120 roll=20 blocked=4
+  01hooks                        2g W1 ep=15 rounds=120 roll=0 blocked=27
+  01yellow-brick-road            2g W0 ep=15 rounds=114 roll=62 blocked=37
+  00expanse                      2g W1 ep=11 rounds=102 roll=30 blocked=0
+  00swirl                        2g W2 ep=10 rounds=93 roll=16 blocked=79
+  00lanes                        2g W2 ep=9 rounds=70 roll=70 blocked=15
+  00elkring                      2g W1 ep=7 rounds=57 roll=0 blocked=15
+  00corners                      2g W1 ep=7 rounds=54 roll=20 blocked=13
+  00fragment                     2g W2 ep=7 rounds=45 roll=0 blocked=27
+  00split                        2g W2 ep=3 rounds=25 roll=20 blocked=7
+  00collision                    2g W0 ep=1 rounds=6 roll=6 blocked=0
+per champion (episodes, stuck rounds per 1000 body-rounds, by class, rollovers):
+  VesperVale ep=473 rounds=3838 (33.62/1000) frozen=2763 jiggle=935 osc=140 roll=258 blocked=303
+  HeartOfRuin ep=364 rounds=3269 (28.63/1000) frozen=1984 jiggle=1069 osc=216 roll=271 blocked=601
+  Vendetta   ep=328 rounds=3129 (34.49/1000) frozen=2411 jiggle=605 osc=113 roll=221 blocked=217
+  Ryth       ep=232 rounds=2219 (22.55/1000) frozen=826 jiggle=1078 osc=315 roll=145 blocked=375
+  Marcella   ep=176 rounds=1651 (16.84/1000) frozen=538 jiggle=885 osc=228 roll=155 blocked=360
+worst episodes:
+  god14_vs__px_ic/00contest_A A Ryth frozen r108-188 (81) at (7,17) -> (7,17) moves=0 tiles=1 blocked=0 cause=other-camp task=?
+      .........
+      .........
+      .........
+      .........
+      ....@....
+      ..CC.....
+      .........
+      .........
+      .........
+  god14_vs__px_ic/00contest_A A Marcella frozen r111-188 (78) at (3,14) -> (3,15) moves=2 tiles=2 blocked=0 cause=ally-adjacent task=?
+       ........
+       ........
+       ........
+       ........
+       ...@....
+       ..a.....
+       ........
+       .......a
+       .....CC.
+  god14_vs__px_ic/00contest_A A Vendetta frozen r111-180 (70) at (2,15) -> (2,15) moves=1 tiles=1 blocked=0 cause=ally-adjacent task=?
+        .......
+        .......
+        .......
+        ...a...
+        ..@....
+        .......
+        .......
+        .....CC
+        .......
+  god14_vs__px_ic/01islands_A A Vendetta frozen r161-217 (57) at (29,17) -> (29,18) moves=2 tiles=2 blocked=0 cause=no-trace task=?
+      oo..oooo.
+      .oo..oooo
+      .ooooo."o
+      .oo...."o
+      oo.x@...o
+      ooo......
+      ..ooooooo
+      .aoo.oooo
+      CC.o..Coo
+  god14_vs__px_ic/00reverse-spiral_B B HeartOfRuin jiggle r458-513 (56) at (22,26) -> (23,27) moves=56 tiles=2 blocked=0 cause=no-trace task=?
+      .....C.#.
+      .......#.
+      ########"
+      .........
+      ....@....
+      .........
+      .........
+      .........
+               

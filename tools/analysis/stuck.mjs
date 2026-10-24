@@ -26,7 +26,7 @@ import { decode, unwrapReplay, findEngineWasms, CHAMP } from '../replay/decode.m
 
 process.removeAllListeners('warning');
 const TASKS = ['none', 'farm', 'capture', 'wait', 'tribute', 'home', 'fight', 'flee'];
-const T_TYPES = ['Ryth', 'VesperVale', 'Vendetta', 'Cassi', 'Issac', 'Stellar', 'Prism', 'Marcella', 'Willow', 'Ren', 'Varg', 'Tavi'];
+const T_TYPES = ['Ryth', 'VesperVale', 'Vendetta', 'Cassi', 'Issac', 'Stellar', 'Prism', 'Marcella', 'Willow', 'Ren', 'Varg', 'Tavi', 'HeartOfRuin'];
 const DASH_ABILITY = 6;
 const cheb = (a, b) => Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]));
 
@@ -187,7 +187,7 @@ async function analyse(file, acc, opts) {
 	const base = path.basename(file).replace(/\.repl26a$/, '');
 	const mapName = base.replace(/_[AB]$/, '');
 	const sideB = /_B\.repl26a$/.test(file);
-	const teams = opts.team === 'both' ? [0, 1] : opts.team === 'A' ? [0] : opts.team === 'B' ? [1] : [sideB ? 1 : 0];
+	const teams = opts.team === 'both' ? [0, 1] : opts.team === 'A' ? [0] : opts.team === 'B' ? [1] : opts.team === 'opp' ? [sideB ? 0 : 1] : [sideB ? 1 : 0];
 	const rep = unwrapReplay(raw);
 	const d = await decode(rep, { every: 1, rollovers: true });
 	const grid = await mapGrid(rep);
@@ -277,7 +277,7 @@ async function analyse(file, acc, opts) {
 		const gameEp = { n: 0, rounds: 0 };
 		for (const b of bodies) {
 			const T = trace ? trace[b.type] || {} : null;
-			dashBody = ['Ren', 'Issac', 'Vendetta', 'VesperVale'].includes(b.type);
+			dashBody = ['Ren', 'Issac', 'Vendetta', 'VesperVale', 'HeartOfRuin'].includes(b.type);
 			const pc = (acc.perChamp[b.type] ||= { bodyRounds: 0, ep: 0, rounds: 0, roll: 0, blocked: 0, byClass: {} });
 			// Build the per-round series.
 			const seq = [];
@@ -463,7 +463,7 @@ async function analyse(file, acc, opts) {
 				acc.worst.push(ep);
 			}
 			acc.worst.sort((x, y) => y.len - x.len);
-			if (acc.worst.length > 200) acc.worst.length = 200;
+			if (!opts.all && acc.worst.length > 200) acc.worst.length = 200;
 		}
 		if (!opts.quiet) {
 			const gems = d.meta.submitted;
@@ -507,6 +507,7 @@ if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith
 		if (a === '--worst') { opts.worst = +argv[++i]; continue; }
 		if (a === '--json') { opts.json = argv[++i]; continue; }
 		if (a === '--quiet') { opts.quiet = true; continue; }
+		if (a === '--all') { opts.all = true; continue; } // keep every episode in --json (not only the 200 longest)
 		if (fs.statSync(a).isDirectory()) { for (const f of fs.readdirSync(a).sort()) if (f.endsWith('.repl26a')) files.push(path.join(a, f)); }
 		else files.push(a);
 	}

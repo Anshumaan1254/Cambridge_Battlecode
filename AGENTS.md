@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- **Session 18 (2026-10-24): MAP ANALYSIS. Read `MAPAnalysis.md` first**: the user's map-analysis requests and corrections, the patch
+- **Session 18 (2026-10-24): MAP ANALYSIS. Read `MAPAnalysis.md` first** (the prompt for the next agent: `docs/HANDOFF_PROMPT_MAPANALYSIS.md`): the user's map-analysis requests and corrections, the patch
   timeline (cambc 3.0.5 = engine v1.0.3 plays exactly as 3.0.4: probe identical, 80/80 games identical; ledger shared), the 40 official
   maps now in `maps/official/` (downloaded with `cambc init`, no login; 21 equal our replay copies, 19 new), the engine's camp and
   champion tables, the full plan (steps 3-9) and where it stopped. Session 17's ladder study is in `god2_session17/README.md`.

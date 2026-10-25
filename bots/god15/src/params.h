@@ -970,6 +970,9 @@ struct Params
 	float g15_lock_hp = 0.35f;	// lock run: health share needed
 	int g15_lock_r = 24;		// lock run: at most this many steps
 	int g15_lock_maxbag = 60;	// lock run: not with a bag this big (bank it)
+	int g15_build = 0;		  // 1 (build_style 2): every body but Cassi & Issac and Willow buys Treasure first in its damage stat, then Jungle and
+							  // Durability in health, Monster, then Power in the damage stat (the ladder teams' carries: Treasure, Jungle and Durability
+							  // passives; with mi_capture 1 Vesper Vale also takes the shared captures: the gold funnel)
 	int g15_stance = -1;	  // >= 0: the team stance is fixed (0 spread, 1 grouped: camps farther than group_radius from the allies' camps cost
 							  // group_far_w rounds a tile; the ladder teams keep 3+ bodies together through r100-600, our isolated deaths 4.5 a
 							  // game against their 1.4); -1 = the stance bandit (v14)

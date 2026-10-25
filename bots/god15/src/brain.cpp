@@ -250,6 +250,19 @@ std::vector<I> build_for(CT t, int bs)
 		rep(v, pw, 300);
 		return v;
 	}
+	if (bs == 2 && P.g15_build && t != CT::cassi && t != CT::issac && t != CT::willow)
+	{
+		// GOD v15 g15_build (the user's 20 ladder games: the four teams' carries end with Treasure, Jungle and Durability passives, and their
+		// Vesper Vale with 103 shard equivalents against our 27): Treasure first in the damage stat (+20% gold, +53% with Vesper's passive),
+		// Jungle and Durability in health, Monster, then Power in the damage stat for the rest of the game. Supports keep the v14 lists.
+		const bool focus = t == CT::ren || t == CT_HOR || t == CT::stellar || t == CT::prism || (t == CT::tavi && !P.tavi_str);
+		rep(v, focus ? I::treasure_shard_of_focus : I::treasure_shard_of_strength, 5);
+		rep(v, I::jungle_shard_of_health, 5);
+		rep(v, I::durability_shard_of_health, 5);
+		rep(v, focus ? I::monster_shard_of_focus : I::monster_shard_of_strength, 5);
+		rep(v, focus ? I::power_shard_of_focus : I::power_shard_of_strength, 300);
+		return v;
+	}
 	if (bs == 2 && P.ic_build && t != CT::cassi && t != CT::issac && t != CT::ryth && t != CT::marcella && t != CT::willow)
 	{
 		// GOD v13 ic_build (Intercontinental Fish, 73 current-patch replays, experiments/ic_oct24): the gold goes to the carries early and

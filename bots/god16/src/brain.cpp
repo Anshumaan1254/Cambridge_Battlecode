@@ -4959,7 +4959,7 @@ void Brain::update_mode()
 		deny_bonus += P.spar_deny;
 		fight_margin = std::max(0.9f, fight_margin + P.spar_fight);
 	}
-	if (P.g16_camp && round >= P.g16_hunt_from && g16_rank() < P.g16_hunt_bodies)
+	if (P.g16_camp && round >= P.g16_hunt_from && g16_rank() < P.g16_hunt_bodies && !(P.g16_gate && world().ally_deaths > world().enemy_deaths + P.g16_gate_margin))
 	{
 		// v16 hunters: bolder fights at their altar and their spawn
 		fight_margin = std::max(0.9f, fight_margin * P.g16_fight_k);
@@ -7187,6 +7187,8 @@ bool Brain::gank_carrier()
 int Brain::g16_rank() const
 {
 	auto order = [](bc::champion_type t) {
+		if (P.g16_carry_camp && t == CT::vesper_vale)
+			return -1;
 		switch (t)
 		{
 		case CT::vendetta: return 0;
@@ -7222,6 +7224,8 @@ int Brain::g16_rank() const
 bool Brain::hunt_camp()
 {
 	auto& W = world();
+	if (P.g16_gate && W.ally_deaths > W.enemy_deaths + P.g16_gate_margin)
+		return false; // v16 gate: the fights are going their way: farm like v15
 	const int rk = g16_rank();
 	if (rk >= P.g16_hunt_bodies || hp < P.g16_hunt_hp * max_hp || static_cast<int>(gems) >= P.g16_hunt_bag || task == T_CAPTURE || reward_here())
 		return false;

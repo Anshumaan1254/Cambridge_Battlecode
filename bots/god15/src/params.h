@@ -966,7 +966,7 @@ struct Params
 							  // bits: bit 7 of bytes 2-5, units of 4 rounds); 4: lock run: a body carrying a lock that reaches placement range
 							  // (2) of that altar before the tribute lands walks there and places the lock (it cancels the channel); 8: within
 							  // range, place the lock on such an altar even when we do not see the tributer (bush)
-	int g15_lock_bag = 20;
+	int g15_lock_bag = 60;		// (the top teams ignore tributes under 60 gems: 11% hit, 1% locked; an_fights rule 7); 16: rallies do not overwrite a posted tribute
 	float g15_lock_hp = 0.35f;	// lock run: health share needed
 	int g15_lock_r = 24;		// lock run: at most this many steps
 	int g15_lock_maxbag = 60;	// lock run: not with a bag this big (bank it)

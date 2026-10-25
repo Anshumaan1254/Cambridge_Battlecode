@@ -3882,7 +3882,7 @@ bool Brain::combat()
 	{
 		last_fight_round = round;
 		if (!(P.alert_prio && comms().fresh(round, 6) && (comms().alert_kind == AL_OPPORTUNITY || (P.escort_bag > 0 && (P.om_sight ? escort_alert() : comms().alert_kind == AL_DANGER)))) &&
-			!((P.g15_lock & 2) && comms().alert_kind == AL_OPPORTUNITY && comms().t4_deadline > round)) // v15: a posted tribute stays up until it lands
+			!((P.g15_lock & 16) && comms().alert_kind == AL_OPPORTUNITY && comms().t4_deadline > round)) // v15 bit 16: a posted tribute stays up until it lands
 			comms().post(AL_RALLY, tgt->pos, round);
 		learner().on_fight(round);
 		task = T_FIGHT;

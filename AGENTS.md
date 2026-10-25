@@ -3,6 +3,16 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
+- **Session 19 (Oct 25, from 06:00 UTC): GOD v15 work, `bots/god15`, doc `docs/strategy_v2/22_GOD_V15.md`** (in progress; nothing shipped yet,
+  `submissions/god.zip` is still GOD v14). The user uploaded 4 match groups of v14 against top ladder teams (0-20, banked 197 a game vs
+  1,110; `experiments/ladder_oct25_v14/`). Measured: the gap is the middle band (3.6 vs 20.1 captures a game) lost at contact (with an
+  enemy within 8 we farm 5.5% of rounds, they 16%; 233 of our 260 back-and-forth walks have an enemy within 8), half their gold and items,
+  12.3 vs 7.0 deaths; the draft and fuel are not causes. New switches (all 0 = v14): `g15_calm`, `g15_fwalk`, `g15_lock`, `g15_sight`,
+  `g15_stance`. Screening facts: local proxies (`_px_*` = GOD v10's brain with a team's draft) farm 1% of their rounds near an enemy (the
+  ladder teams 16%), and v14 was selected on the `_px_ic/_pbg/_pwbg` cells, so paired margins there are biased toward v14; screens moved to
+  h2h vs `_f4ec` (= bots/god14, hash e91d34832e47) and the fresh `_px_cm`, `_px_uos` proxies. Container setup: `pip download` through the
+  proxy (`env -u no_proxy -u NO_PROXY pip download cambc==3.0.5`), toolchain by curl (setup_session.sh's first half), opponents rebuilt
+  with matching ledger hashes (`_e_p10`, `_px_ic/_pbg/_wbg`, `_tp_v10F*`); 2 CPUs: ~0.3 games a second.
 - **Session 18f (Oct 24 22:20 - Oct 25 03:20 UTC): SHIPPED GOD v14** (`submissions/god.zip` sha256 5726664c…, `bots/god14`, history
   `god_v14_20261025.zip`; doc `docs/strategy_v2/21_GOD_V14.md`). The user: "v12 stutters, does not move or moves randomly, walks away
   from the altar with good gems, does not compete with enemies the right way, monoliths are not killed, wards are thrown at random

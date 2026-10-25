@@ -13,7 +13,17 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Current build: **GOD v14** (`submissions/god.zip`, Oct 25): v13 with the stuttering, banking, monolith and ward fixes
+## Current build: **GOD v15** (`submissions/god.zip`, Oct 25): v14 with IC's gold funnel, gold valued higher, and altar locks
+
+GOD v15 (`bots/god15`) = GOD v14 + three switches (`docs/strategy_v2/22_GOD_V15.md`): a shared capture goes to the gold-bonus body
+(`mi_capture` 1: our Vesper Vale ends a game with 166 shard equivalents instead of 56, like Intercontinental Fish's carry), one gold is worth
+0.5 gems instead of 0.33 in target scores (`gold_value`), and every body carries an altar lock, enemy 60+ gem tributes are posted with their
+rounds left and a lock carrier that gets there in time cancels them (`g15_lock` 15). Against GOD v14: **194/334 = 58.1% [52.7, 63.3], +113
+[+35, +180] gems a game** (167 maps both sides), 0 faults; level against the team-draft proxies. The analysis behind it: the user's 20
+ladder losses of v14 (`experiments/ladder_oct25_v14/`) and 1,144 current matches of Intercontinental Fish and Mite
+(`experiments/ladder_oct25_icmite/`). The second bot (hunt at their altar, then camp their spawn) is `bots/god16` (`g16_camp`).
+
+## Previous build: **GOD v14** (Oct 25): v13 with the stuttering, banking, monolith and ward fixes
 
 GOD v14 (`bots/god14`) = GOD v13 + four fixes found by tracing why our bodies stood still or walked back and forth (`docs/strategy_v2/21_GOD_V14.md`): melee bodies close in over dead tiles of their own group (`fz_dead`), wards go into bushes instead of two tiles toward the enemy spawn every 10 rounds (`ward_v14`), a fight we are not yet in starts only within 6 tiles (`fz_engage`), and a chase that does not close in for 4 rounds ends (`fz_chase`). Measured on cambc 3.0.5 (40 official maps x 2 sides): **+210 gems a map [+113, +310] against the 4 real strong-team rosters** (v13 +121, both paired with v10's games), **+171 [+78, +264] over v13 against IC's, prism best girl's and willow best girl's drafts**, head-to-head vs v13 47/80 (+105). In 160 games against IC's and prism best girl's drafts: 126 wins (v13 111), 9.0 deaths a game (11.5), 60 monoliths killed to their 20 (35 to 30), wards on a bush 36% (6%; the ladder teams 61-65%). Measured and left off: a monolith team plan (worse: -55 / -75), the dash-crossing fixes, back-and-forth and flip guards, a shorter unstick clock. Alternative with the best head-to-head vs v13 (57/80, +287): `submissions/candidates/god_v14_wards_dead_20261025.zip`. Previous build GOD v13: `submissions/history/god_v13_20261024.zip`.
 

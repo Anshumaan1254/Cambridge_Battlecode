@@ -8,7 +8,7 @@
 struct Params
 {
 	// Task valuation
-	float gold_value = 0.33f;		 // gem-equivalent value of one gold (patch 3.0: a wolf pays 4 gems + 40 gold, an elk 15 + 90: 0.22 -> 0.33 won 158/170 vs
+	float gold_value = 0.5f;		 // gem-equivalent value of one gold (patch 3.0: a wolf pays 4 gems + 40 gold, an elk 15 + 90: 0.22 -> 0.33 won 158/170 vs
 									 // the 5 proxies (0.22: 145), h2h 20/34 and on the patch-style maps 21/34 vs 0.22; 0.44-0.66 level vs the proxies, worse vs legend_m15)
 	float deny_bonus = 0.043f;		 // extra value for camps on the enemy half (they lose what we take) (ES: 0.55 -> 0.043)
 	float enemy_half_penalty = 10.f; // rounds-equivalent risk cost for enemy-half camps
@@ -901,7 +901,7 @@ struct Params
 	int mi_live = 0;		  // 1: the 8 shared bytes in teamplan's live layout (live.h: claims as place codes, the team alert with its place
 							  // vocabulary, beats, bag flags); 0: GOD v10's own layout (comms.h)
 	int live_bag_flag = 25;	  // ... the bag flag: carrying at least this many gems (teamplan bag.h's hunt threshold)
-	int mi_capture = 0;		  // 1: a shared reward goes to a near ally with a gold bonus first (teamplan capture.h mode 1, LEARNED); v15 2: to the ally it is worth the most gold to (Vesper Vale's bonus on the gold, Marcella's 2 gold a gem when she banks)
+	int mi_capture = 1;		  // 1: a shared reward goes to a near ally with a gold bonus first (teamplan capture.h mode 1, LEARNED); v15 2: to the ally it is worth the most gold to (Vesper Vale's bonus on the gold, Marcella's 2 gold a gem when she banks)
 	int ic_build = 0;		  // GOD v13: Intercontinental Fish's builds on the carries (brain.cpp build_for): Treasure first on a gold-bonus kit,
 							  // Monster, Jungle health, then Power in the damage stat for ever; supports keep the value-model lists
 	int mi_body = 0;		  // 1: the BODY block's bank bag and retreat health (econ model, LEARNED) replace tribute_min / retreat_hp
@@ -961,7 +961,7 @@ struct Params
 							  // (v14 vs IC's draft): 1,522 fight-task walks with an enemy within 8, 671 of them at an unchanged distance with no hit
 							  // within 3 rounds (same-speed chases the target-keyed fz_chase misses when the target changes)
 	int g15_fwalk_off = 12;
-	int g15_lock = 0;		  // bits. Altar locks: 1: every body carries a lock (bought at the first shop visit, not after the first emblem);
+	int g15_lock = 15;		  // bits. Altar locks: 1: every body carries a lock (bought at the first shop visit, not after the first emblem);
 							  // 2: a visible enemy tribute of >= g15_lock_bag gems is posted at its altar tile with the ticks it has left (4 free
 							  // bits: bit 7 of bytes 2-5, units of 4 rounds); 4: lock run: a body carrying a lock that reaches placement range
 							  // (2) of that altar before the tribute lands walks there and places the lock (it cancels the channel); 8: within

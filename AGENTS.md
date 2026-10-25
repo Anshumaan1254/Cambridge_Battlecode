@@ -3,16 +3,16 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- **Session 19 (Oct 25, from 06:00 UTC): GOD v15 work, `bots/god15`, doc `docs/strategy_v2/22_GOD_V15.md`** (in progress; nothing shipped yet,
-  `submissions/god.zip` is still GOD v14). The user uploaded 4 match groups of v14 against top ladder teams (0-20, banked 197 a game vs
-  1,110; `experiments/ladder_oct25_v14/`). Measured: the gap is the middle band (3.6 vs 20.1 captures a game) lost at contact (with an
-  enemy within 8 we farm 5.5% of rounds, they 16%; 233 of our 260 back-and-forth walks have an enemy within 8), half their gold and items,
-  12.3 vs 7.0 deaths; the draft and fuel are not causes. New switches (all 0 = v14): `g15_calm`, `g15_fwalk`, `g15_lock`, `g15_sight`,
-  `g15_stance`. Screening facts: local proxies (`_px_*` = GOD v10's brain with a team's draft) farm 1% of their rounds near an enemy (the
-  ladder teams 16%), and v14 was selected on the `_px_ic/_pbg/_pwbg` cells, so paired margins there are biased toward v14; screens moved to
-  h2h vs `_f4ec` (= bots/god14, hash e91d34832e47) and the fresh `_px_cm`, `_px_uos` proxies. Container setup: `pip download` through the
-  proxy (`env -u no_proxy -u NO_PROXY pip download cambc==3.0.5`), toolchain by curl (setup_session.sh's first half), opponents rebuilt
-  with matching ledger hashes (`_e_p10`, `_px_ic/_pbg/_wbg`, `_tp_v10F*`); 2 CPUs: ~0.3 games a second.
+- **Session 19 (Oct 25, 06:00-11:30 UTC): SHIPPED GOD v15** (`submissions/god.zip` sha256 2b05b91e…, `bots/god15`, history `god_v15_20261025.zip`;
+  doc `docs/strategy_v2/22_GOD_V15.md`). The user: 20 ladder losses of v14 (0-20, banked 197 vs 1,110; `experiments/ladder_oct25_v14/`), "change the
+  strategy and the drafting, share ward outputs, use gold and emblems, use locks, beat their bots and beat or tie v14", then IC's and Mite's data
+  (fetched read-only with the user's CLI login, nothing submitted: `experiments/ladder_oct25_icmite/`, 1,144 matches, 257 replays). GOD v15 = v14 +
+  `mi_capture` 1 (the gold funnel) + `gold_value` 0.5 + `g15_lock` 15: vs v14 194/334 = 58.1% [52.7, 63.3], +113 [+35, +180] over 167 maps, 0 faults.
+  Measured level or worse and off: `g15_calm`, `g15_fwalk`, `g15_sight`, `g15_build`, `mi_capture` 2, `tribute_min` 38, `max_wait` 30, `half_grade` 0.5.
+  Method facts: the `_px_*` proxies (v10's brain) farm 1% near an enemy (ladder 16%) and v14 was selected on them, so pairing with v14's games there is
+  biased; judge on h2h vs `_f4ec` (= bots/god14) over the extended pool. Unranked groups only play the live submission. **Next: the second bot**
+  `bots/god16` (= god15 + `g16_camp`, hunt at their altar then camp their spawn), the user's idea; the IC / Mite drafts on v14's brain (`_d_ic2`,
+  `_d_mite`) are built but not screened. Setup: `env -u no_proxy -u NO_PROXY pip download cambc==3.0.5`, toolchain by curl, 2 CPUs (~0.3 games a second).
 - **Session 18f (Oct 24 22:20 - Oct 25 03:20 UTC): SHIPPED GOD v14** (`submissions/god.zip` sha256 5726664c…, `bots/god14`, history
   `god_v14_20261025.zip`; doc `docs/strategy_v2/21_GOD_V14.md`). The user: "v12 stutters, does not move or moves randomly, walks away
   from the altar with good gems, does not compete with enemies the right way, monoliths are not killed, wards are thrown at random

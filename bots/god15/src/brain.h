@@ -329,6 +329,20 @@ private:
 	int sf_round = -100, sf_since = -100; // P.strike_first: hold rounds
 	std::uint32_t chase_h = 0; // v14 fz_chase: the fight target being chased, its best distance so far and since when
 	int chase_best = 99, chase_since = -100, chase_round = -100, chase_off_until = -100;
+	// GOD v15 (P.g15_calm, P.g15_lock): per enemy index, where we last saw it and when (threat test), whether it is a threat this turn,
+	// and since when we see it tributing with what bag (the ticks it has left).
+	std::array<vec2, 8> g15_epos{};
+	std::array<int, 8> g15_eround{ -100, -100, -100, -100, -100, -100, -100, -100 };
+	std::array<char, 8> g15_threat{};
+	std::array<int, 8> g15_trib_since{ -1, -1, -1, -1, -1, -1, -1, -1 };
+	std::array<int, 8> g15_trib_gems{};
+	int g15_nthreat = 0;
+	int g15_lock_round = -100;
+	void g15_threats();
+	bool g15_is_threat(const Enemy& e) const;
+	bool g15_has_lock() const;
+	bool g15_place_lock(vec2 altar);
+	bool lock_run();
 	bool enemy_near = false;
 	int enemy_near_d = BIG; // nearest recently seen enemy, minus the rounds since we saw it (it may have closed in)
 	bool enemy_near_field = false; // enemy_near, not counting enemies standing on their own spawn

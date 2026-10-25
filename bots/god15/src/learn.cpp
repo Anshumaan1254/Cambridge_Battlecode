@@ -110,6 +110,11 @@ void Learner::tick(int round, bool leader, bool me_alive)
 		enemy_alive[i] = a;
 	}
 
+	if (P.g15_stance >= 0)
+	{
+		stance = P.g15_stance; // v15: a fixed team stance (every body computes the same; the leader still broadcasts it)
+		return;
+	}
 	if (!leader || !P.learn_stance)
 		return;
 	if (round - window_start < P.learn_window)

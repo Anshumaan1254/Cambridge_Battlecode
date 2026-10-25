@@ -978,16 +978,51 @@ void Brain::turn()
 		for (const auto& e : W.enemies)
 			if (e.died_round == round && round - e.seen_round <= 2 && cheb(e.pos, pos) <= 8)
 				L.on_enemy_killed_near(e.pos, round);
+		// GOD v15 g15_lock & 2: since when (and with what bag) we see each enemy tributing: the ticks it has left.
+		if (P.g15_lock & 2)
+			for (std::size_t k = 0; k < W.enemies.size() && k < g15_trib_since.size(); ++k)
+			{
+				const auto& e = W.enemies[k];
+				if (e.visible && e.alive && e.tributing)
+				{
+					if (g15_trib_since[k] < 0)
+						g15_trib_since[k] = round, g15_trib_gems[k] = static_cast<int>(e.gems);
+				}
+				else if (e.visible || !e.alive)
+					g15_trib_since[k] = -1;
+			}
 		// A visible enemy tributing a bag (or recalling with one) is an opportunity for the whole team.
-		for (const auto& e : W.enemies)
+		for (std::size_t k = 0; k < W.enemies.size(); ++k)
+		{
+			const auto& e = W.enemies[k];
 			if (e.visible && e.alive && (e.tributing || (e.recalling && e.gems >= 20) || (race_state == 1 && static_cast<int>(e.gems) >= P.race_carrier)) && e.gems >= 10 &&
 				!W.enemy_spawn.is_set(e.pos))
 			{
+				if ((P.g15_lock & 2) && Comms::t4_free() && e.tributing && static_cast<int>(e.gems) >= P.g15_lock_bag && k < g15_trib_since.size() && g15_trib_since[k] >= 0)
+				{
+					// v15: posted at its altar with the rounds it has left, so a lock carrier knows whether it can get there in time.
+					vec2 altar{ -1, -1 };
+					for (const auto& a : W.altars)
+						if (cheb(a, e.pos) <= 1 && (altar.x < 0 || cheb(a, e.pos) < cheb(altar, e.pos)))
+							altar = a;
+					const int left = (g15_trib_gems[k] + 9) / 10 - (round - g15_trib_since[k]);
+					if (altar.x >= 0 && left >= 2)
+					{
+						C.post(AL_OPPORTUNITY, altar, round);
+						C.write_t4((left + 3) / 4);
+						break;
+					}
+				}
 				C.post(AL_OPPORTUNITY, e.pos, round);
+				if ((P.g15_lock & 2) && Comms::t4_free() && C.t4 != 0)
+					C.write_t4(0);
 				break;
 			}
+		}
 	}
 	build_danger();
+	if (P.g15_calm)
+		g15_threats();
 	if (P.ward_enemy && round % 2 == 0)
 		enemy_wards_update();
 	if (P.death_learn)
@@ -1084,6 +1119,8 @@ void Brain::turn()
 		dbg_path = 11;
 	if (!acted && P.gank && (acted = gank_carrier()))
 		dbg_path = 10;
+	if (!acted && (P.g15_lock & 4) && (acted = lock_run()))
+		dbg_path = 13;
 	if (!acted && (acted = respond_to_alert()))
 		dbg_path = 7;
 	if (!acted && P.mono_fort && W.mono_mode && round < P.mono_fort_until)
@@ -1373,14 +1410,21 @@ void Brain::om_tick()
 			}
 	if (P.om_sight)
 	{
-		const bool busy = C.fresh(round, 6) && (C.alert_kind == AL_RALLY || C.alert_kind == AL_OPPORTUNITY || (C.alert_kind == AL_DANGER && is_altar_tile(C.alert_pos)));
+		const bool busy = (C.fresh(round, 6) && (C.alert_kind == AL_RALLY || C.alert_kind == AL_OPPORTUNITY || (C.alert_kind == AL_DANGER && is_altar_tile(C.alert_pos)))) ||
+						  (C.alert_kind == AL_OPPORTUNITY && C.t4_deadline > round); // v15: a posted tribute stays up until it lands
 		if (!busy)
 		{
 			const Enemy* best = nullptr;
 			for (std::size_t k = 0; k < W.enemies.size(); ++k)
 			{
 				const auto& e = W.enemies[k];
-				if (e.alive && e.visible && om_enemy_ours(k) && (!best || W.dist_home(e.pos) < W.dist_home(best->pos)))
+				if (P.g15_sight)
+				{
+					// v15: anywhere (our body's or our ward's sight), the one nearest to us, not on its own spawn
+					if (e.alive && e.visible && !W.enemy_spawn.is_set(e.pos) && (!best || cheb(e.pos, pos) < cheb(best->pos, pos)))
+						best = &e;
+				}
+				else if (e.alive && e.visible && om_enemy_ours(k) && (!best || W.dist_home(e.pos) < W.dist_home(best->pos)))
 					best = &e;
 			}
 			if (best && !(C.alert_kind == AL_DANGER && C.fresh(round, 2) && cheb(C.alert_pos, best->pos) <= 3))
@@ -1816,7 +1860,7 @@ void Brain::shop()
 		}
 	}
 	// A spare altar lock once the first emblem is done (consumables only on spawn or while dead).
-	if ((on_spawn || !alive) && build_idx >= 5 && gold >= 10)
+	if ((on_spawn || !alive) && (build_idx >= 5 || (P.g15_lock & 1)) && gold >= 10)
 	{
 		try
 		{
@@ -2453,6 +2497,110 @@ void Brain::support_spells()
 	}
 }
 
+// GOD v15 g15_calm: which visible enemies are a threat this turn. The ladder teams farm with an enemy within 8 in 15-19% of rounds,
+// v14 in 4-8%: any enemy in sight stopped our farming (flee steps, chase steps, burst retreats), and 233 of our 260 back-and-forth walks
+// in the user's 20 games had an enemy within 8. A threat is an enemy that can hit us next turn (its reach + 1 step), one that closed in
+// on us since our last turn (within 8), or one that just appeared close (g15_new_r).
+void Brain::g15_threats()
+{
+	auto& W = world();
+	g15_nthreat = 0;
+	for (std::size_t k = 0; k < W.enemies.size() && k < g15_threat.size(); ++k)
+	{
+		const auto& e = W.enemies[k];
+		g15_threat[k] = 0;
+		if (!e.alive || !e.visible)
+			continue;
+		const int d = cheb(e.pos, pos);
+		int reach = e.kit.attack_range + (e.kit.ranged ? 0 : 1) + (e.ready(e.kit.dash) ? 2 : 0);
+		reach = std::max(reach, enemy_spell_reach(e, false));
+		bool t = d <= reach + 1;
+		if (!t && d <= 8)
+		{
+			if (g15_eround[k] >= round - 2)
+				t = cheb(e.pos, pos) < cheb(g15_epos[k], pos); // it moved toward where we stand now
+			else
+				t = d <= P.g15_new_r; // just appeared close
+		}
+		if (W.enemy_spawn.is_set(e.pos) && d > reach)
+			t = false; // healing on its spawn
+		g15_threat[k] = t ? 1 : 0;
+		g15_nthreat += t;
+		g15_epos[k] = e.pos, g15_eround[k] = round;
+	}
+}
+
+bool Brain::g15_is_threat(const Enemy& e) const
+{
+	const auto& W = world();
+	const std::ptrdiff_t k = &e - W.enemies.data();
+	if (k < 0 || k >= static_cast<std::ptrdiff_t>(g15_threat.size()) || k >= static_cast<std::ptrdiff_t>(W.enemies.size()))
+		return true;
+	return g15_threat[static_cast<std::size_t>(k)] != 0;
+}
+
+bool Brain::g15_has_lock() const
+{
+	try
+	{
+		return bc::self().consumables()[bc::consumable_type::altar_lock].count() > 0;
+	}
+	catch (...)
+	{
+	}
+	return false;
+}
+
+bool Brain::g15_place_lock(vec2 altar)
+{
+	if (cheb(altar, pos) > 2 || g15_lock_round == round)
+		return false;
+	try
+	{
+		if (bc::self().consumables()[bc::consumable_type::altar_lock].use(altar))
+		{
+			g15_lock_round = round;
+			return true;
+		}
+	}
+	catch (...)
+	{
+	}
+	return false;
+}
+
+// GOD v15 g15_lock & 4: an enemy tribute an ally posted at its altar (with the rounds it has left) is cancelled by an altar lock placed
+// from 2 tiles: a carrier of a lock that gets there in time walks there and places it. A 10-gold item against a bag (the ladder teams
+// bank 41 gems a tribute on average, the Prism teams 400), and no fight is needed.
+bool Brain::lock_run()
+{
+	auto& W = world();
+	auto& C = comms();
+	if (C.alert_kind != AL_OPPORTUNITY || C.t4_deadline <= round || !is_altar_tile(C.alert_pos))
+		return false;
+	if (hp < P.g15_lock_hp * max_hp || task == T_CAPTURE || reward_here() || static_cast<int>(gems) >= P.g15_lock_maxbag || !g15_has_lock())
+		return false;
+	int ai = -1;
+	for (std::size_t i = 0; i < W.altars.size(); ++i)
+		if (W.altars[i] == C.alert_pos)
+			ai = static_cast<int>(i);
+	if (ai < 0)
+		return false;
+	const vec2 altar = C.alert_pos;
+	if (cheb(pos, altar) <= 2)
+	{
+		task = T_FIGHT;
+		return g15_place_lock(altar);
+	}
+	const int d = nav().altar_dist(ai, pos, true);
+	if (d >= BIG || d > P.g15_lock_r || d - 1 > C.t4_deadline - round)
+		return false;
+	task = T_FIGHT;
+	const bool moved = go_altar(ai); // after_move refreshes pos
+	const bool placed = cheb(pos, altar) <= 2 && g15_place_lock(altar);
+	return moved || placed;
+}
+
 void Brain::use_locks()
 {
 	auto& W = world();
@@ -2477,6 +2625,9 @@ void Brain::use_locks()
 		for (const auto& e : W.enemies)
 			if (e.visible && e.alive && e.tributing && cheb(e.pos, a) <= 1)
 				enemy_tributing = true;
+		// v15 g15_lock & 8: an ally posted a tribute running at this altar (we may not see the tributer: a bush, or out of our sight).
+		if ((P.g15_lock & 8) && !enemy_tributing && comms().alert_kind == AL_OPPORTUNITY && comms().alert_pos == a && comms().t4_deadline > round)
+			enemy_tributing = true;
 		// v9 presets HUNT / DENY: contested altars (about as near their spawn as ours) get a lock too.
 		const bool enemy_side = W.dist_away(a) + 2 < W.dist_home(a) || (P.opp_plan && locks_contested && W.contested(static_cast<int>(i)));
 		bool has_any_lock = false;
@@ -3635,7 +3786,8 @@ bool Brain::combat()
 		if (P.ml2_enter > 0.f && !fight && ml2_p_kill >= P.ml2_enter && ml2_p_die < P.ml2_enter_die && d <= my_reach + 1 &&
 			!(W.enemy_spawn.is_set(tgt->pos) || cheb(tgt->pos, W.enemy_spawn_c) <= 3))
 			fight = true;
-		if (P.ml2_flee > 0.f && !fight && !in_reach && !ml2_kill && ml2_p_die >= (P.anchors && is_anchor ? P.anchor_ml2 : P.ml2_flee) + ml2_sup && nearest_enemy <= P.flee_dist && task != T_CAPTURE)
+		if (P.ml2_flee > 0.f && !fight && !in_reach && !ml2_kill && ml2_p_die >= (P.anchors && is_anchor ? P.anchor_ml2 : P.ml2_flee) + ml2_sup && nearest_enemy <= P.flee_dist && task != T_CAPTURE &&
+			!((P.g15_calm & 1) && g15_nthreat == 0))
 		{
 			ml2_exit_round = round;
 			post_danger(tgt->pos);
@@ -3668,6 +3820,11 @@ bool Brain::combat()
 		if (fight && chase_h == tgt->handle && round <= chase_off_until && !tgt->channeling && !tgt->tributing)
 			fight = false;
 	}
+	// v15 g15_calm & 4: starting a fight we have to walk to needs a target that is coming at us (or one step from our reach), a kill, a
+	// channel or a bag worth chasing; otherwise we keep farming (v14 walked 175 rounds a body toward fights, the ladder teams 73).
+	if ((P.g15_calm & 4) && fight && !in_reach && !killable && last_fight_round < round - 1 && d > my_reach + 1 && !tgt->channeling && !tgt->tributing &&
+		tgt->gems < 40 && !g15_is_threat(*tgt))
+		fight = false;
 	// Early warning: an outnumbering group is visible; allies keep away from it.
 	if (!fight && E.size() >= 3 && adv < 1.f)
 		post_danger(tgt->pos);
@@ -3705,7 +3862,8 @@ bool Brain::combat()
 	if (fight)
 	{
 		last_fight_round = round;
-		if (!(P.alert_prio && comms().fresh(round, 6) && (comms().alert_kind == AL_OPPORTUNITY || (P.escort_bag > 0 && (P.om_sight ? escort_alert() : comms().alert_kind == AL_DANGER)))))
+		if (!(P.alert_prio && comms().fresh(round, 6) && (comms().alert_kind == AL_OPPORTUNITY || (P.escort_bag > 0 && (P.om_sight ? escort_alert() : comms().alert_kind == AL_DANGER)))) &&
+			!((P.g15_lock & 2) && comms().alert_kind == AL_OPPORTUNITY && comms().t4_deadline > round)) // v15: a posted tribute stays up until it lands
 			comms().post(AL_RALLY, tgt->pos, round);
 		learner().on_fight(round);
 		task = T_FIGHT;
@@ -3793,7 +3951,8 @@ bool Brain::combat()
 	const float out_bar = static_cast<int>(E.size()) >= P.outmatch_min_enemies ? P.outmatch_flee_adv : P.outmatch_solo_adv;
 	const bool outmatched = P.outmatch_flee && nearest_enemy <= P.outmatch_flee_dist && out_bar > 0.f &&
 		adv < out_bar + (pair_body ? P.pair_flee_bonus : 0.f);
-	if ((((isolated || reserve) && adv < P.isolated_flee_adv && nearest_enemy <= P.flee_dist) || outmatched) && task != T_CAPTURE)
+	if ((((isolated || reserve) && adv < P.isolated_flee_adv && nearest_enemy <= P.flee_dist) || outmatched) && task != T_CAPTURE &&
+		!((P.g15_calm & 1) && g15_nthreat == 0)) // v15: nobody here is coming at us: keep farming
 	{
 		post_danger(tgt->pos);
 		task = T_FLEE;
@@ -4387,7 +4546,7 @@ bool Brain::safety()
 	{
 		float eb = 0;
 		for (const auto& e : W.enemies)
-			if (e.alive && e.visible && !W.enemy_spawn.is_set(e.pos))
+			if (e.alive && e.visible && !W.enemy_spawn.is_set(e.pos) && !((P.g15_calm & 2) && !g15_is_threat(e)))
 			{
 				const int reach = std::max(e.kit.attack_range + (e.kit.ranged ? 0 : 1), enemy_spell_reach(e, false));
 				const int d = cheb(e.pos, pos);
@@ -5114,6 +5273,10 @@ bool Brain::respond_to_alert()
 		return false;
 	const int d = cheb(C.alert_pos, pos);
 	if (d > max_d || d < 2)
+		return false;
+	// v15 g15_calm & 8: a body working a group (a camp hit in the last 3 rounds, waiting on its respawn) keeps at it unless the rally is
+	// next to it (rallies pulled a quarter of our walking toward fights in the session-17 traces).
+	if ((P.g15_calm & 8) && !opp && d > P.g15_rally_near && (round - target_hit_round <= 3 || task == T_WAIT))
 		return false;
 	task = T_FIGHT;
 	bc::bitboard goal;

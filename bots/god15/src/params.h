@@ -945,6 +945,33 @@ struct Params
 	float mono_clear_max = 70.f;
 	float mono_absorb = 1.5f;
 
+	// ---- GOD v15 (Oct 25, the user's 20 ladder games of v14: 0-20, banked 197 a game against 1,110). Every switch 0 = v14.
+	// Measured on those games (docs/strategy_v2/22_GOD_V15.md): with an enemy within 8 we farm 4-8% of rounds, they farm 15-19%; 233 of our
+	// 260 back-and-forth walks have an enemy within 8 (theirs 39 of 89); middle-band captures 3.6 a game (74 gems) against 20.1 (634).
+	int g15_calm = 0;		  // bits. Contact calm: an enemy is a threat only when it can hit us next turn (its reach + 1), closed in on us
+							  // since our last turn (within 8), or appeared within g15_new_r. 1: the pre-emptive flee exits (alone / half the
+							  // team dead, outmatched, ml2_flee) need a threat; 2: safety()'s burst retreat counts threats only; 4: a proactive
+							  // fight walk (out of reach, no kill, not channelling) needs a threat or the target within our reach + 1;
+							  // 8: a rally is answered only when we are not working a group (no camp hit in 3 rounds, no capture) or it is
+							  // within g15_rally_near
+	int g15_new_r = 6;
+	int g15_rally_near = 5;
+	int g15_lock = 0;		  // bits. Altar locks: 1: every body carries a lock (bought at the first shop visit, not after the first emblem);
+							  // 2: a visible enemy tribute of >= g15_lock_bag gems is posted at its altar tile with the ticks it has left (4 free
+							  // bits: bit 7 of bytes 2-5, units of 4 rounds); 4: lock run: a body carrying a lock that reaches placement range
+							  // (2) of that altar before the tribute lands walks there and places the lock (it cancels the channel); 8: within
+							  // range, place the lock on such an altar even when we do not see the tributer (bush)
+	int g15_lock_bag = 20;
+	float g15_lock_hp = 0.35f;	// lock run: health share needed
+	int g15_lock_r = 24;		// lock run: at most this many steps
+	int g15_lock_maxbag = 60;	// lock run: not with a bag this big (bank it)
+	int g15_stance = -1;	  // >= 0: the team stance is fixed (0 spread, 1 grouped: camps farther than group_radius from the allies' camps cost
+							  // group_far_w rounds a tile; the ladder teams keep 3+ bodies together through r100-600, our isolated deaths 4.5 a
+							  // game against their 1.4); -1 = the stance bandit (v14)
+	int g15_sight = 0;		  // 1 (with om_sight 1): shared sightings from every body and its ward anywhere on the map, not only on our half (each
+							  // body sees only itself and its own ward; the alert slot is the team's only shared view): the nearest enemy we see
+							  // when no RALLY / OPPORTUNITY / ESCORT is fresh; readers: groups within om_sight_r of a fresh one cost om_sight_cost
+
 	// ---- Sparring proxies (testing only, docs/TESTING.md; never on in a submission): a fixed playing style, optionally switching at
 	// set rounds, built from existing GOD mechanisms. 1 farmer (stays home, avoids fights), 2 invader (PUSH: their half free, deny,
 	// lower fight bar), 3 deathball (2 + the whole team follows the lowest living body: P.style 1's blob), 4 objective rusher (heavy

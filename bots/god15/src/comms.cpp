@@ -75,6 +75,14 @@ void Comms::read(int round)
 	// Bit 7 of byte 2 flips on every post: re-posting the same alert (a fight still going on at one tile)
 	// refreshes it for the team instead of letting it expire (P.alert_refresh).
 	const int toggle = P.alert_refresh && !P.opp_model ? (b[2] >> 7) & 1 : 0; // the plan id owns byte 2's bit 7 when the model is on
+	if ((P.g15_lock & 2) && t4_free())
+	{
+		int v = 0;
+		for (int i = 0; i < 4; ++i)
+			v |= ((b[static_cast<std::size_t>(2 + i)] >> 7) & 1) << i;
+		if (v != t4 || raw != last_raw)
+			t4 = v, t4_deadline = v > 0 ? round + 4 * v : -1;
+	}
 	if (raw != last_raw || toggle != last_toggle)
 	{
 		last_raw = raw;
@@ -212,6 +220,21 @@ void Comms::post(int kind, vec2 tile, int round)
 	alert_kind = kind;
 	alert_pos = tile;
 	alert_round = round;
+}
+
+void Comms::write_t4(int v)
+{
+	if (!t4_free())
+		return;
+	v = std::clamp(v, 0, 15);
+	for (int i = 0; i < 4; ++i)
+	{
+		const auto k = static_cast<std::size_t>(2 + i);
+		const std::uint8_t old = bc::shared_memory[k];
+		bc::shared_memory[k] = static_cast<std::uint8_t>((old & 0x7F) | (((v >> i) & 1) << 7));
+	}
+	t4 = v;
+	t4_deadline = v > 0 ? static_cast<int>(bc::round_number()) + 4 * v : -1;
 }
 
 void Comms::write_plan9(int p)

@@ -245,6 +245,8 @@ bc::bitboard Nav::blocked_now(vec2 me)
 	b |= w.ally_occ;
 	b |= w.enemy_occ;
 	b |= w.tele_occ;
+	if (P.fz_wardblock)
+		b |= w.ward_occ;
 	b.set(me, false);
 	return b;
 }

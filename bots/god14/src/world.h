@@ -177,6 +177,7 @@ struct World
 
 	// Per-turn perception
 	bc::bitboard vis, camp_occ, ally_occ, enemy_occ, tele_occ;
+	bc::bitboard ward_occ; // v14 fz_wardblock: the wards we see (ours and theirs): a ward occupies its tile and blocks a step into it
 	bc::bitboard enemy_locks; // visible enemy altar locks
 
 	void init_static();

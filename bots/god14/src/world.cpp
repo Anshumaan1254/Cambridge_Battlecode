@@ -407,6 +407,8 @@ void World::perceive(vec2 me)
 	bc::vision::champion_tiles_into(team::ally, ally_occ);
 	bc::vision::champion_tiles_into(team::enemy, enemy_occ);
 	bc::vision::teleport_tiles_into(tele_occ);
+	if (P.fz_wardblock)
+		bc::vision::ward_tiles_into(ward_occ);
 	try
 	{
 		bc::vision::altar_lock_tiles_into(team::enemy, enemy_locks);

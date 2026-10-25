@@ -10,3 +10,6 @@ inside the bundle; `SRC=bots/god14 tools/variant.sh NAME --define "LEGEND_TRACE 
 - `sw.mjs DIR`: target switches (SW lines): per game, A-B-A returns within 20 rounds, why the old target was dropped (WHY codes in
   group_score).
 - `tr.mjs FILE TYPE R0 R1`: one body's trace lines in a round window, with the enemies within 12.
+- `bagaway.mjs DIR [MIN]`: runs carrying >= MIN gems (default 60) that walked 12+ steps away from the nearest altar, with their traced tasks.
+- `blocked.mjs DIR [N]`: our "Movement blocked" events by what was on the tile (bush, camp tile, a unit at the end of the round); a ward
+  occupies its tile, and allies cannot see each other's wards.

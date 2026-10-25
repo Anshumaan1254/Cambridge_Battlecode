@@ -911,7 +911,7 @@ struct Params
 	// against Intercontinental Fish's draft (tools/analysis/behav.mjs, LEGEND_TRACE IDLE lines): 7.9% of our body-turns idle with
 	// no enemy within 5, short back-and-forth walks 32.6 per 1000 alive body-rounds (the 600 ladder replays' teams 11-15), 518
 	// wards a game with 6% on a bush (ladder 150, 61-65%). Every switch 0 = GOD v13.
-	int fz_dead = 0;		  // 1: farm_group: a live camp whose reach tiles are all dead tiles of its own group (gem-fields' tTt rings) or whose
+	int fz_dead = 1;		  // 1: farm_group: a live camp whose reach tiles are all dead tiles of its own group (gem-fields' tTt rings) or whose
 							  // off-group reach tiles cannot be stepped to: step onto the dead tiles (standable) instead of standing still
 							  // (2,700 idle turns in 80 games: melee bodies two tiles from a live camp inside a ring of dead ones)
 	int fz_dash = 0;		  // bits. 1: at a hole crossing with the dash ready but no landing that gains a step, walk around instead of waiting
@@ -921,10 +921,29 @@ struct Params
 							  // target left alone for fz_chase_off rounds unless it comes into reach (eight: Ryth at 35% health with 37 gems
 							  // chased a Vesper Vale walking away at the same speed for 13 rounds, then walked back)
 	int fz_chase_off = 12;
-	int ward_v14 = 0;		  // 1: wards go into bushes: the best bush tile in placement reach (2), scored by our target group, our altar trip, the
+	int ward_v14 = 1;		  // 1: wards go into bushes: the best bush tile in placement reach (2), scored by our target group, our altar trip, the
 							  // other team's approach and recent sightings; a ward already in a bush near us stays; with no bush in reach the
 							  // ward stays where it is while it is within ward_hold of us (no re-throw every 10 rounds 2 tiles ahead)
+							  // 2: as 1, but with no bush in reach v13's forward ward (2 tiles toward their spawn) instead of holding
 	int ward_hold = 10;
+	int ward_open = 0;		  // > 0 (ward_v14): a bush tile needs at least this many walkable neighbours (of 8) to take a ward: a ward occupies its
+							  // tile and blocks steps into it, and allies cannot see our ward (v14 games: 801 of 1,282 blocked moves were into an
+							  // ally's ward, mostly in one-wide bush corridors)
+	int fz_engage = 0;		  // > 0: a fight we were not in last round, with the target out of reach, starts only when the target is within this
+							  // many tiles (fights are judged on everything within 9; bodies at the 7-9 band flipped fight / farm every round,
+							  // one step in, one step back: v14's traced games, 2,000 such back-and-forth body-rounds in 80 games)
+	int fz_wardblock = 0;	  // 1: the wards we see (ours and theirs) count as blocked tiles in the step searches (v13: 646 of 1,171 blocked
+							  // moves were into a ward tile, most of them the other team's)
+	int fz_osc = 0;			  // > 0: walking back and forth: over the last fz_osc rounds (a walking task, no attack or cast, no enemy within 5,
+							  // off spawn) at least 60% of them moved and we end within 1 tile of where we were: drop the target (blacklisted
+							  // fz_osc_bl rounds) or the bank / home trip, and re-plan (v13: 32.6 such walks per 1000 alive body-rounds, the
+							  // ladder teams 11-15; 23% of target switches went back to the target left within 20 rounds)
+	int fz_osc_bl = 20;
+	int mono_v14 = 0;		  // 1 (with mono_team): monolith groups whose other camps are harmless are team targets too, judged with their own
+							  // limits (mono_clear_max, mono_absorb: bodies rotate in front and heal between turns). The 600 ladder replays'
+							  // teams kill 1.44 monoliths a game on monolith maps (first kill r530-900); v13 dropped every one as too heavy
+	float mono_clear_max = 70.f;
+	float mono_absorb = 1.5f;
 
 	// ---- Sparring proxies (testing only, docs/TESTING.md; never on in a submission): a fixed playing style, optionally switching at
 	// set rounds, built from existing GOD mechanisms. 1 farmer (stays home, avoids fights), 2 invader (PUSH: their half free, deny,

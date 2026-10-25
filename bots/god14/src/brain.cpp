@@ -1139,6 +1139,8 @@ void Brain::turn()
 	update_priority();
 	if (P.unstick_rounds > 0)
 		unstick();
+	if (P.fz_osc > 0)
+		osc_guard();
 	if (P.stall_guard > 0 && W.dash_off_until == round) // hole crossings are back: the plain-walls fields are stale
 		nav().reset_fields();
 	FSP("unstick");
@@ -1643,6 +1645,44 @@ void Brain::unstick()
 	tp_island = -1;
 	ust_anchor = pos;
 	ust_since = round;
+}
+
+void Brain::osc_guard()
+{
+	// v14 fz_osc: a body walking back and forth with nothing to show for it (target flips, a detour that keeps turning, an approach that
+	// gives way and comes back) re-plans with that target out of the way.
+	auto& W = world();
+	const bool walking = task == T_FARM || task == T_CAPTURE || task == T_WAIT || task == T_TRIBUTE || task == T_HOME;
+	const bool quiet = walking && last_act_round < round && !cast_done && enemy_near_d > 5 && !W.ally_spawn.is_set(pos) &&
+		!flag(state, bc::champion_state::recalling) && !flag(state, bc::champion_state::submitting_gems) && !flag(state, bc::champion_state::teleporting);
+	const std::size_t i = static_cast<std::size_t>(round & 15);
+	osc_pos[i] = pos;
+	osc_quiet[i] = quiet ? round : -100;
+	if (!quiet)
+		return;
+	const int n = std::min(15, P.fz_osc);
+	int moves = 0;
+	for (int k = 1; k < n; ++k)
+	{
+		const std::size_t a = static_cast<std::size_t>((round - k) & 15), b = static_cast<std::size_t>((round - k + 1) & 15);
+		if (osc_quiet[a] != round - k)
+			return;
+		moves += osc_pos[a] == osc_pos[b] ? 0 : 1;
+	}
+	if (10 * moves < 6 * (n - 1) || cheb(pos, osc_pos[static_cast<std::size_t>((round - n + 1) & 15)]) > 1)
+		return;
+#ifdef LEGEND_TRACE
+	debug_block({ std::printf("OSC r=%d %d task=%d g=%d pos=(%d,%d) moves=%d\n", round, static_cast<int>(type), task, task_group, pos.x, pos.y, moves); });
+#endif
+	if ((task == T_FARM || task == T_CAPTURE || task == T_WAIT) && task_group >= 0 && task_group < static_cast<int>(W.groups.size()))
+	{
+		blacklist[static_cast<std::size_t>(task_group)] = round + P.fz_osc_bl;
+		task_group = -1;
+	}
+	else if (task == T_TRIBUTE)
+		tribute_cancel_round = round; // no new bank trip for two rounds: farm() re-plans first
+	task = T_NONE;
+	osc_quiet.fill(-100);
 }
 
 void Brain::handle_channel()
@@ -2465,9 +2505,11 @@ void Brain::place_ward(bool force)
 {
 	if (P.ward_v14 && !(P.pxs_style && style_now() == 5))
 	{
-		if (force || round - ward_round >= 10)
-			v14_ward(force);
-		return;
+		if (!force && round - ward_round < 10)
+			return;
+		if (v14_ward(force))
+			return;
+		// ward_v14 2: no bush in reach: v13's forward ward below
 	}
 	// ward_bush_maps 1: bush warding only on lone-monolith maps (contest): there it adds 7-27 points to the blob opening; elsewhere it
 	// lost to the top-team proxies on the official maps (Mite 70.6 vs 82.4, ifish 73.5 vs 79.4) and the ladder confirmed it.
@@ -2542,13 +2584,13 @@ void Brain::place_ward(bool force)
 	ward_round = round; // do not retry every turn
 }
 
-void Brain::v14_ward(bool force)
+bool Brain::v14_ward(bool force)
 {
 	// v14 (P.ward_v14; the user: "wards are thrown at random tiles: throw them into the bushes and use them well"). A ward inside a
 	// bush reveals whoever hides in it (ENGINE_FACTS); outside it adds little to a body's own sight 2 tiles further on. The 600 ladder
 	// replays' teams place 150 wards a game, 61-65% on a bush and 84-86% of them on one when a bush is in reach; v13 placed 518, 6%.
 	if (bc::fuel_remaining() < 20000)
-		return; // late in a heavy turn: the next turn looks again
+		return true; // late in a heavy turn: the next turn looks again
 	auto& W = world();
 	static const bc::bitboard bush = bc::map::bushes(); // static map data
 	const Group* tg = task_group >= 0 && task_group < static_cast<int>(W.groups.size()) ? &W.groups[static_cast<std::size_t>(task_group)] : nullptr;
@@ -2586,6 +2628,18 @@ void Brain::v14_ward(bool force)
 			const vec2 c = pos + vec2{ dx, dy };
 			if (!bc::map::is_in_bounds(c) || !bush.is_set(c) || W.walls.is_set(c) || W.camp_occ.is_set(c) || c == ward_pos)
 				continue;
+			if (P.ward_open > 0)
+			{
+				int open = 0;
+				for (int ey = -1; ey <= 1; ++ey)
+					for (int ex = -1; ex <= 1; ++ex)
+					{
+						const vec2 q = c + vec2{ ex, ey };
+						open += (ex || ey) && bc::map::is_in_bounds(q) && !W.walls.is_set(q); // walls: walls, holes, altars, their spawn
+					}
+				if (open < P.ward_open)
+					continue; // a corridor tile: our ward there would block our own team's walk
+			}
 			const float s = score(c);
 			if (s > bs)
 				bs = s, best = c;
@@ -2611,16 +2665,26 @@ void Brain::v14_ward(bool force)
 		if (cur_bush && cur_d <= P.ward_hold && bs < 1.5f * score(ward_pos))
 		{
 			ward_round = round - 5; // look again in 5 rounds
-			return;
+			return true;
 		}
 		if (put(best))
-			return;
+			return true;
+	}
+	if (P.ward_v14 >= 2)
+	{
+		// 2: a ward in a bush near us keeps watching; otherwise v13's forward ward (early warning toward their side).
+		if (cur_bush && cur_d <= P.ward_hold && !force)
+		{
+			ward_round = round - 5;
+			return true;
+		}
+		return false;
 	}
 	// No bush in reach: the standing ward keeps watching while it is near us; no new throw.
 	if (have && cur_d <= P.ward_hold && !force)
 	{
 		ward_round = round - 5;
-		return;
+		return true;
 	}
 	// Far from our ward (or none yet): a scouting ward ahead of us on the walk toward their spawn (never through a wall).
 	vec2 sc{ -1, -1 };
@@ -2636,8 +2700,9 @@ void Brain::v14_ward(bool force)
 				sa = at, sc = c;
 		}
 	if (sc.x >= 0 && put(sc))
-		return;
+		return true;
 	ward_round = round - 5;
+	return true;
 }
 
 bool Brain::plan_ward(bool force)
@@ -3584,6 +3649,8 @@ bool Brain::combat()
 	engaged = fight || in_reach || nearest_enemy <= 5;
 	(void)stunners;
 
+	if (P.fz_engage > 0 && fight && !in_reach && !killable && last_fight_round < round - 1 && d > P.fz_engage && !tgt->channeling && !tgt->tributing)
+		fight = false; // v14 fz_engage: not yet in a fight and the target is still far: keep doing what we do
 	if (P.fz_chase > 0 && !in_reach)
 	{
 		// v14 fz_chase: a same-speed target walking away is never caught; once the distance has not shrunk for fz_chase rounds the chase
@@ -4273,7 +4340,7 @@ bool Brain::safety()
 		{
 			// Only while no enemy is near: with enemies around the old line stays (gold_mono_48 vs _k1: the two
 			// monoliths are 9 tiles apart; 20 of our 33 deaths were next to ours and they took 2 of our 3 kills).
-			const bool team_g = (W.obj_mode && g.objective) || (task_team && g.id == task_group && ((P.altar_no_camp >= 2 && g.unlock) || (P.mono_team && g.monolith && g.camps.size() == 1)));
+			const bool team_g = (W.obj_mode && g.objective) || (task_team && g.id == task_group && ((P.altar_no_camp >= 2 && g.unlock) || (P.mono_team && mono_group(g))));
 			const bool obj = P.obj_shield && team_g && enemy_near_d > P.obj_shield_enemy_d;
 			for (std::size_t i = 0; i < g.camps.size(); ++i)
 			{
@@ -5307,6 +5374,10 @@ bool Brain::obj_team_ready(const Group& g, float hp_left, float& kill) const
 	if (alive_n < P.obj_min_bodies || dead_n > P.obj_dead_max)
 		return false;
 	kill = hp_left / dps;
+	// v14 mono_v14: a monolith is cleared by bodies taking turns in front (the nearest body takes every hit, obj_shield) and healing at
+	// home between turns, so its limits are its own: a longer clear and more than one health pool of hits.
+	const bool mono = P.mono_v14 && g.monolith;
+	const float clear_max = mono ? P.mono_clear_max : P.obj_clear_max, absorb = mono ? P.mono_absorb : P.obj_absorb;
 	// Camps that hit back die first (obj_attackers_first): each attacker hits until the team's damage has gone
 	// through it and every attacker before it.
 	std::array<float, 16> hs{}, ss{};
@@ -5324,7 +5395,14 @@ bool Brain::obj_team_ready(const Group& g, float hp_left, float& kill) const
 		cum += hs[static_cast<std::size_t>(k)];
 		taken += ss[static_cast<std::size_t>(k)] * cum / dps;
 	}
-	return kill <= P.obj_clear_max && taken <= P.obj_absorb * pool;
+	return kill <= clear_max && taken <= absorb * pool;
+}
+
+bool Brain::mono_group(const Group& g) const
+{
+	// mono_team's groups: a lone monolith; with mono_v14 also a monolith whose other camps do not fight back (split, monolith, fracture:
+	// monolith + gem clusters, 214 gems and 340 gold; the solo plan scored them -1 "too heavy", so nobody ever started one).
+	return g.monolith && (g.camps.size() == 1 || (P.mono_v14 && g.attackers == 1));
 }
 
 float Brain::ring_dps(const Kit& k, float foc, const Group& g) const
@@ -5919,7 +5997,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			share = P.o2_ring_share;
 		}
 		else if (!solo_ok && ((W.obj_mode && g.objective && P.obj_team && g.attackers >= P.obj_team_attackers && (sc_obj_focus < 0 || sc_obj_focus == g.id)) ||
-							  (P.altar_no_camp >= 2 && g.unlock) || (P.mono_team && g.monolith && g.camps.size() == 1 && (!W.obj_mode || g.objective))) &&
+							  (P.altar_no_camp >= 2 && g.unlock) || (P.mono_team && mono_group(g) && (!W.obj_mode || g.objective))) &&
 			obj_team_ready(g, hp_left, team_kill))
 		{
 			// Objective map: too heavy for us and the bodies already on it, but not for the whole team.
@@ -6551,8 +6629,9 @@ void Brain::farm()
 			for (auto& g : W.groups)
 			{
 				int eta = 0;
+				g_why = 0;
 				const float sc = group_score(g, eta);
-				std::printf("S r=%d g=%d ours=%d st=%d gems=%d elk=%d hp=%.0f d=%d ready=%d score=%.3f\n", round, g.id, (int)g.ours, (int)g.st, g.gems, (int)g.elk, g.hp_total, eta, g.ready_round - round, sc);
+				std::printf("S r=%d g=%d ours=%d st=%d gems=%d elk=%d hp=%.0f d=%d ready=%d score=%.3f why=%d\n", round, g.id, (int)g.ours, (int)g.st, g.gems, (int)g.elk, g.hp_total, eta, g.ready_round - round, sc, g_why);
 			}
 	});
 #endif
@@ -7214,7 +7293,7 @@ bool Brain::farm_group(Group& g)
 	auto& W = world();
 	// Team targets outside objective mode (session 14): the camp group that unlocks an altar and lone monoliths (mono_team) use the same
 	// gather / attackers-first / shield rules while the team plan is on.
-	const bool obj = (W.obj_mode && g.objective) || (task_team && ((P.altar_no_camp >= 2 && g.unlock) || (P.mono_team && g.monolith && g.camps.size() == 1)));
+	const bool obj = (W.obj_mode && g.objective) || (task_team && ((P.altar_no_camp >= 2 && g.unlock) || (P.mono_team && mono_group(g))));
 	const bool obj_first = obj && P.obj_attackers_first;
 	IDL();
 	if (contest_tiles(g))

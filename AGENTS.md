@@ -10,7 +10,11 @@ running or unfinished, and what to do next, so a new agent can continue without 
   61-65% on a bush, monolith kills 1.6 vs 1.4 a game (later first kills), bag behaviour level. Traced causes (IDLE lines): melee bodies
   next to a live camp ringed by dead tiles of its own group (the goal excluded group tiles), dash kits waiting at a hole crossing with a
   ready dash that cannot land, Heart of Ruin's held strike dash, same-speed chases, A-B-A target flips (23% of 262 switches a game).
-  `bots/god14` = v13 + switches (all 0 = v13): `fz_dead`, `fz_dash`, `fz_chase`, `ward_v14`; candidates `_f1*` screening (`$S/bh/q1.sh`).
+  `bots/god14` = v13 + switches (all 0 = v13): `fz_dead`, `fz_dash`, `fz_chase`, `fz_osc`, `fz_engage`, `ward_v14` (+ `ward_open`,
+  `fz_wardblock`), `mono_v14`. Screens (doc 21 section 4): best `_f2dw` = `fz_dead` 1 + `ward_v14` 1: h2h vs v13 57/80 +287 [+144, +429],
+  rosters +127 vs v10 (v13 +55), proxies +122 [+26, +217]; the monolith team plan loses (-55 / -75). `bots/god14` params = `_f2dw` now.
+  Found: wards occupy their tile (801 of 1,282 blocked moves in v14 games went into an ally's ward): `_f3*` (no wards on corridor tiles,
+  wards as obstacles) and `_f4*` (`fz_engage` 6) screening (`$S/bh/q7.sh`, `q8.sh`).
 - **Session 18e (2026-10-24, 22:10 UTC): SHIPPED GOD v13** (`submissions/god.zip` sha256 125a87c6…, `bots/god13`, history `god_v13_20261024.zip`; doc
   `docs/strategy_v2/20_IC_OCT24.md`). The user: "fetch Intercontinental Fish's data, beat them, improve on v12; combine v10, v12 and the IC data". IC
   (rank 2) analysed from today's ladder archive (300 matches, 73 replays; fetching more needs the user's `cambc login`: `ladder_fetch.py --team ID`).

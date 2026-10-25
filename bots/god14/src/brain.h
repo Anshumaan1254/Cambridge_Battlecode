@@ -271,7 +271,8 @@ private:
 	bool chain_keep(const Group& g, int recall_t, bool bag, bool rich); // F5: a nearby target beats the home trip
 	bool body_is_anchor(int i) const { return i >= 0 && i < 8 && anchor_now[static_cast<std::size_t>(i)]; }
 	bool plan_ward(bool force); // P.ward_plan
-	void v14_ward(bool force);  // P.ward_v14
+	bool v14_ward(bool force);  // P.ward_v14 (false: ward_v14 2 leaves it to v13's rule)
+	bool mono_group(const Group& g) const; // P.mono_team (+ P.mono_v14)
 	std::array<vec2, 8> ew_pos{};	 // P.ward_enemy: last seen enemy ward per enemy index (owner)
 	std::array<int, 8> ew_round{};
 	std::vector<std::pair<vec2, int>> ew_tiles; // ... owner unknown (2.2.x SDK): tile, last seen round
@@ -365,6 +366,9 @@ private:
 	int last_act_round = -100;
 	vec2 ust_anchor{ -1, -1 };
 	int ust_since = 0;
+	std::array<vec2, 16> osc_pos{};	 // v14 fz_osc: our tile at the end of each of the last 16 rounds
+	std::array<int, 16> osc_quiet{ -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100 }; // ... and the round, when it was a quiet walking round
+	void osc_guard();
 	int left_group = -1, left_round = -1000; // target we last switched away from (flip guard)
 	// no_split: positions at the end of the last turn (ours and the allies we saw)
 	void remember_positions();

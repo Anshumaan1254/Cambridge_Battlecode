@@ -13,7 +13,19 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Current build: **GOD v15** (`submissions/god.zip`, Oct 25): v14 with IC's gold funnel, gold valued higher, and altar locks
+## Current build: **GOD v17** (`submissions/god.zip` = `submissions/god17.zip`, Oct 25): v15 with Mite's recall bait and its antidote
+
+GOD v17 (`bots/god17`) = GOD v15 + two switches (`docs/strategy_v2/24_GOD_V17.md`): every body ends each free turn recalling and cancels
+it at the start of the next (`g17_bait` 1: Mite's trick, 1,100 recalls a body a game on the ladder; bots that treat a recalling carrier
+as a stuck kill walk into our fights), and a team that does it to us is detected by movement (an enemy seen recalling on consecutive
+rounds at different tiles) and its recalls stop counting as channels (`g17_fakerec` 3: v15 posted every recalling Mite carrier as a team
+OPPORTUNITY and walked up to 12 tiles to it). Against GOD v15: **192/334 = 57.5% [52.1, 62.7], +98 [+30, +171] gems a game** (167 maps,
+both sides), deaths 13.9-16.2, 0 faults; level against the team-draft proxies (`_px_cm` 59/80, paired +43; `_px_uos` 58/80, -67). The
+analysis behind it: v15's (website v71) 215 ladder games, its 0-10 against Intercontinental Fish and Mite, and IC's 90 losses
+(`experiments/ladder_oct25_v15/`). The camp bot is `submissions/god16_camp.zip` (`docs/strategy_v2/23_GOD_V16_CAMP.md`). Previous build
+GOD v15: `submissions/history/god_v15_20261025.zip`.
+
+## Previous build: **GOD v15** (Oct 25): v14 with IC's gold funnel, gold valued higher, and altar locks
 
 GOD v15 (`bots/god15`) = GOD v14 + three switches (`docs/strategy_v2/22_GOD_V15.md`): a shared capture goes to the gold-bonus body
 (`mi_capture` 1: our Vesper Vale ends a game with 166 shard equivalents instead of 56, like Intercontinental Fish's carry), one gold is worth

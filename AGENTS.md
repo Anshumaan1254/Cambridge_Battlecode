@@ -3,6 +3,18 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
+- **Session 20 (Oct 25, 10:30-15:00 UTC): SHIPPED GOD v17** (`submissions/god.zip` = `god17.zip` sha256 5d0201bd…, `bots/god17`, history
+  `god_v17_20261025.zip`; doc `docs/strategy_v2/24_GOD_V17.md`) and the camp bot (`submissions/god16_camp.zip`, `bots/god16`, doc 23: level with
+  v15, 48.5% over 334). The user: "get all the matches of our live bot (v71 on the website = GOD v15), see the lost ones, beat IC and Mite 5-0".
+  Data (read-only with the user's CLI login, nothing submitted): `experiments/ladder_oct25_v15/` (our match list, the 10 IC / Mite games, gap
+  tables). Findings: **Mite's bait** (every body recalls at the end of its turn, cancels next turn; v15 posted every recalling Mite carrier as a
+  team OPPORTUNITY); v15 farms half the camp damage of the teams that beat it; unopposed pace 952.7 rounds (vs idle) and on 9 maps no faster
+  than their contested finish. GOD v17 = v15 + `g17_fakerec` 3 + `g17_bait` 1: vs v15 192/334 = 57.5% [52.1, 62.7], +98 [+30, +171], level on the
+  proxies. Measured level or worse and off: squads (`g17_squad`, pace 1,158-1,304), deathball mimics (7/80, 2/80), `g15_calm` + `g15_fwalk`
+  (52.1%), `g15_fwalk` + fakerec (43.2%), grouped stance, `g17_opp_r` 6, fewer shop recalls (pace 980-1,008), IC / Mite / VT / LL / wbg / pbg drafts
+  on our brain. **Method**: `g17_shop_cap` 25 (testing only) makes a body that loses to v15 like v15 loses to IC (330-1,005, deaths 11.8-6.7): the
+  play-from-behind screen; nothing tried there gained more than +15 (`g15_fwalk`). **Next**: the ladder loop (the user submits; unranked groups
+  vs IC / Mite; analyse those games); a squad farm that does not idle the followers; pace work (61% of unopposed body-rounds are walks).
 - **Session 19 (Oct 25, 06:00-11:30 UTC): SHIPPED GOD v15** (`submissions/god.zip` sha256 2b05b91e…, `bots/god15`, history `god_v15_20261025.zip`;
   doc `docs/strategy_v2/22_GOD_V15.md`). The user: 20 ladder losses of v14 (0-20, banked 197 vs 1,110; `experiments/ladder_oct25_v14/`), "change the
   strategy and the drafting, share ward outputs, use gold and emblems, use locks, beat their bots and beat or tie v14", then IC's and Mite's data

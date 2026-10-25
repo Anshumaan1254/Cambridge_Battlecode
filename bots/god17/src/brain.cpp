@@ -1890,7 +1890,7 @@ void Brain::shop()
 		insert_home(build_idx);
 	if (P.build_react > 0.f && alive && enemy_burst_seen > 0.f && max_hp < P.build_react * enemy_burst_seen && gold >= 150)
 		insert_health(build_idx); // build_react: answer the enemy's damage with health before the next planned emblem
-	while (build_idx < build.size() && gold >= 30)
+	while (build_idx < build.size() && gold >= 30 && (P.g17_shop_cap <= 0 || build_idx < static_cast<std::size_t>(P.g17_shop_cap)))
 	{
 		const I item = build[build_idx];
 		std::uint32_t n = 0;

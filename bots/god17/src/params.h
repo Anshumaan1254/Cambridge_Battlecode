@@ -999,9 +999,9 @@ struct Params
 	// ------------------------------------------------------------------------------------------------ GOD v17 (Oct 25)
 	// Mite's bot starts a recall at the end of every turn and cancels it at the start of the next (1,100 recalls a game): every body looks
 	// like it is channelling a recall. v15 posts a "recalling with a bag" enemy as a team OPPORTUNITY and walks up to 12 tiles to it.
-	int g17_fakerec = 0;		// > 0: after this many fake recalls seen (an enemy recalling on consecutive rounds at different tiles: a real recall
+	int g17_fakerec = 3;		// > 0: after this many fake recalls seen (an enemy recalling on consecutive rounds at different tiles: a real recall
 								// cannot move), enemy recalls are never a channel (no OPPORTUNITY post, no stuck-target logic)
-	int g17_bait = 0;			// 1: our bodies end every free turn recalling and cancel it on the next (Mite's bait); 2: only carrying >= g17_bait_bag
+	int g17_bait = 1;			// 1: our bodies end every free turn recalling and cancel it on the next (Mite's bait); 2: only carrying >= g17_bait_bag
 	int g17_bait_bag = 20;
 	int g17_squad = 0;			// > 1: squads of this many bodies by team index farm their leader's (lowest living index) claimed group
 	int g17_squad_until = 2000;	// ... until this round

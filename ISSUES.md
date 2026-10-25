@@ -245,3 +245,14 @@ changes. No champion name or map identity is in the logic: champions enter throu
   IC's execution. Only the ladder can measure that.
 - `ic_build` (off) names no champion but restricts itself to non-support kits by a type list (Cassi & Issac, Ryth, Marcella, Willow keep the
   value-model lists).
+
+## GOD v14 (session 18f, Oct 25; `bots/god14`, `docs/strategy_v2/21_GOD_V14.md`)
+
+- **The ward score is hand-set** (`brain.cpp` `v14_ward`: 10 base, +20 near our target group, +15 near the altar we bank at, +15 toward
+  the last sighting, +4 per step toward their spawn up to 3; keep the standing bush ward unless a candidate scores 1.5x). Chosen from
+  the ladder teams' measured habit (bush wards when one is in reach), not fitted; no map name or champion appears in it.
+- `fz_engage` 6 and `fz_chase` 4 are hand-chosen distances / round counts (one value screened each).
+- **Wards block movement** (a ward occupies its tile; allies cannot see each other's wards): our bush wards add blocked steps for our own
+  team (the engine keeps the movement allowance, so the cost is small). Treating visible wards as obstacles measured worse; open.
+- Monolith groups are still dropped by the solo plan as too heavy until bodies are strong (WHY 7); the team plan that targets them
+  (`mono_v14`) lost locally. Monolith kills rose anyway through fewer deaths.

@@ -3,18 +3,17 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- **Session 18f (2026-10-24, from 22:20 UTC): GOD v14 in progress** (the user: "v12 stutters, does not move or moves randomly, walks away
-  from the altar with good gems, does not compete with enemies the right way, monoliths are not killed, wards are thrown at random tiles:
-  throw them into bushes"). Measured (`experiments/behav_oct24/`, `tools/analysis/behav.mjs`, `mono_kills.mjs`, `trace/`): v13 vs the 600
-  ladder replays' teams: back-and-forth walks 32.6 vs 11-15 per 1000 alive body-rounds (v12 37.5), wards 518 vs 150 a game with 6% vs
-  61-65% on a bush, monolith kills 1.6 vs 1.4 a game (later first kills), bag behaviour level. Traced causes (IDLE lines): melee bodies
-  next to a live camp ringed by dead tiles of its own group (the goal excluded group tiles), dash kits waiting at a hole crossing with a
-  ready dash that cannot land, Heart of Ruin's held strike dash, same-speed chases, A-B-A target flips (23% of 262 switches a game).
-  `bots/god14` = v13 + switches (all 0 = v13): `fz_dead`, `fz_dash`, `fz_chase`, `fz_osc`, `fz_engage`, `ward_v14` (+ `ward_open`,
-  `fz_wardblock`), `mono_v14`. Screens (doc 21 section 4): best `_f2dw` = `fz_dead` 1 + `ward_v14` 1: h2h vs v13 57/80 +287 [+144, +429],
-  rosters +127 vs v10 (v13 +55), proxies +122 [+26, +217]; the monolith team plan loses (-55 / -75). `bots/god14` params = `_f2dw` now.
-  Found: wards occupy their tile (801 of 1,282 blocked moves in v14 games went into an ally's ward): `_f3*` (no wards on corridor tiles,
-  wards as obstacles) and `_f4*` (`fz_engage` 6) screening (`$S/bh/q7.sh`, `q8.sh`).
+- **Session 18f (Oct 24 22:20 - Oct 25 03:20 UTC): SHIPPED GOD v14** (`submissions/god.zip` sha256 5726664c…, `bots/god14`, history
+  `god_v14_20261025.zip`; doc `docs/strategy_v2/21_GOD_V14.md`). The user: "v12 stutters, does not move or moves randomly, walks away
+  from the altar with good gems, does not compete with enemies the right way, monoliths are not killed, wards are thrown at random
+  tiles: throw them into bushes". Measured first (`experiments/behav_oct24/`, `tools/analysis/behav.mjs`, `mono_kills.mjs`, `trace/`)
+  against the 600 ladder replays' teams, traced the causes (LEGEND_TRACE IDLE lines), fixed behind switches (all 0 = v13), screened 22
+  candidates (h2h vs v13 `_e_p10`, 8 roster families paired vs v10, 3 team proxies paired vs v13). GOD v14 = v13 + `fz_dead` 1 (close in
+  over dead group tiles), `ward_v14` 1 (wards into bushes), `fz_engage` 6, `fz_chase` 4: 4 real rosters +209.6 [+113, +310] (v13
+  +120.6), proxies +171 [+78, +264] over v13, h2h vs v13 47/80 +105; 126/160 wins vs IC / prism best girl drafts (v13 111), deaths 9.0
+  (11.5), monoliths 60 to 20 (35 to 30), wards 36% on a bush (6%). Off (measured worse or level): monolith team plan `mono_v14`, `fz_dash`,
+  `fz_osc`, flip margins, unstick 6, `stall_dash_off` 40, `ward_open`, `fz_wardblock`. Wards occupy their tile (allies walk into them).
+  Candidate `submissions/candidates/god_v14_wards_dead_20261025.zip` (`_f2dw`: best h2h vs v13, 57/80 +287). New variants: `SRC=bots/god14`.
 - **Session 18e (2026-10-24, 22:10 UTC): SHIPPED GOD v13** (`submissions/god.zip` sha256 125a87c6…, `bots/god13`, history `god_v13_20261024.zip`; doc
   `docs/strategy_v2/20_IC_OCT24.md`). The user: "fetch Intercontinental Fish's data, beat them, improve on v12; combine v10, v12 and the IC data". IC
   (rank 2) analysed from today's ladder archive (300 matches, 73 replays; fetching more needs the user's `cambc login`: `ladder_fetch.py --team ID`).

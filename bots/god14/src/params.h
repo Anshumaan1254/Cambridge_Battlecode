@@ -917,7 +917,7 @@ struct Params
 	int fz_dash = 0;		  // bits. 1: at a hole crossing with the dash ready but no landing that gains a step, walk around instead of waiting
 							  // (the wait rule waited for ever with a ready dash); 2: Heart of Ruin's strike dash (held near enemies) may cross
 							  // when no walking step improves and no enemy is within 5 (dash kits: 3,300 of 4,600 out-of-range idle turns)
-	int fz_chase = 0;		  // > 0: a fight whose target's distance has not shrunk for this many rounds while out of reach is dropped and the
+	int fz_chase = 4;		  // > 0: a fight whose target's distance has not shrunk for this many rounds while out of reach is dropped and the
 							  // target left alone for fz_chase_off rounds unless it comes into reach (eight: Ryth at 35% health with 37 gems
 							  // chased a Vesper Vale walking away at the same speed for 13 rounds, then walked back)
 	int fz_chase_off = 12;
@@ -929,7 +929,7 @@ struct Params
 	int ward_open = 0;		  // > 0 (ward_v14): a bush tile needs at least this many walkable neighbours (of 8) to take a ward: a ward occupies its
 							  // tile and blocks steps into it, and allies cannot see our ward (v14 games: 801 of 1,282 blocked moves were into an
 							  // ally's ward, mostly in one-wide bush corridors)
-	int fz_engage = 0;		  // > 0: a fight we were not in last round, with the target out of reach, starts only when the target is within this
+	int fz_engage = 6;		  // > 0: a fight we were not in last round, with the target out of reach, starts only when the target is within this
 							  // many tiles (fights are judged on everything within 9; bodies at the 7-9 band flipped fight / farm every round,
 							  // one step in, one step back: v14's traced games, 2,000 such back-and-forth body-rounds in 80 games)
 	int fz_wardblock = 0;	  // 1: the wards we see (ours and theirs) count as blocked tiles in the step searches (v13: 646 of 1,171 blocked

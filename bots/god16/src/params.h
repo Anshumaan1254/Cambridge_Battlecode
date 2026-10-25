@@ -978,14 +978,14 @@ struct Params
 							  // game against their 1.4); -1 = the stance bandit (v14)
 	// ---- GOD v16 (the user's second bot, Oct 25): "farm gold first, then go near their altar and kill all their members, then take our most
 	// powerful champion near their spawn and kill them when they spawn again". Every switch 0 = GOD v15.
-	int g16_camp = 0;		  // 1: hunt-and-camp plan from round g16_hunt_from: the g16_hunt_bodies strongest bodies (by kit: Vendetta, Heart of
+	int g16_camp = 1;		  // 1: hunt-and-camp plan from round g16_hunt_from: the g16_hunt_bodies strongest bodies (by kit: Vendetta, Heart of
 							  // Ruin, Vesper Vale, Marcella, Varg, Ryth, Tavi, ...; every body ranks alike) wait at the altar the enemy banks at
 							  // (most tributes seen, else the one nearest their spawn) and fight whoever comes (locks on); once g16_camp_dead
 							  // enemies are dead at once, the strongest one waits g16_camp_d tiles from their spawn (out of reach of a body
 							  // healing on it) and takes each one that steps out; the other bodies farm and bank as usual
-	int g16_hunt_from = 300;
+	int g16_hunt_from = 200;
 	int g16_hunt_bodies = 3;
-	int g16_camp_dead = 2;
+	int g16_camp_dead = 3;
 	int g16_camp_d = 5;
 	int g16_camp_hold = 150;	// rounds the camp lasts after it started while any enemy is still dead
 	float g16_hunt_hp = 0.55f;	// health share to hunt or camp (below it the body heals and banks as usual)
@@ -994,7 +994,7 @@ struct Params
 	int g16_gate = 0;			// 1: hunt and camp only while the fights go our way: our deaths so far at most theirs + g16_gate_margin (else v15 farming)
 	int g16_gate_margin = 0;
 	int g16_carry_camp = 0;		// 1: the camper is the gold-funnel carry (Vesper Vale first in the kit order: with mi_capture it holds the most items)
-	int g16_only_camp = 0;		// 1: no hunt at their altar: every body farms like v15 until our fights leave g16_camp_dead of them dead, then the camper camps
+	int g16_only_camp = 1;		// 1: no hunt at their altar: every body farms like v15 until our fights leave g16_camp_dead of them dead, then the camper camps
 	int g15_sight = 0;		  // 1 (with om_sight 1): shared sightings from every body and its ward anywhere on the map, not only on our half (each
 							  // body sees only itself and its own ward; the alert slot is the team's only shared view): the nearest enemy we see
 							  // when no RALLY / OPPORTUNITY / ESCORT is fresh; readers: groups within om_sight_r of a fresh one cost om_sight_cost

@@ -338,6 +338,7 @@ private:
 	std::array<int, 8> g15_trib_gems{};
 	int g15_nthreat = 0;
 	int g15_lock_round = -100;
+	int g15_fw_n = 0, g15_fw_round = -100, g15_fw_off = -100; // g15_fwalk: turns in a row walking to a fight without a hit, cooldown end
 	void g15_threats();
 	bool g15_is_threat(const Enemy& e) const;
 	bool g15_has_lock() const;

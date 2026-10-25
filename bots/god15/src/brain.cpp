@@ -3825,6 +3825,25 @@ bool Brain::combat()
 	if ((P.g15_calm & 4) && fight && !in_reach && !killable && last_fight_round < round - 1 && d > my_reach + 1 && !tgt->channeling && !tgt->tributing &&
 		tgt->gems < 40 && !g15_is_threat(*tgt))
 		fight = false;
+	if (P.g15_fwalk > 0)
+	{
+		// v15 g15_fwalk: a fight we keep walking to without getting into reach is a same-speed chase; stop it and farm for a while.
+		const bool exempt = in_reach || killable || tgt->channeling || tgt->tributing;
+		if (fight && !exempt)
+		{
+			if (round <= g15_fw_off)
+				fight = false;
+			else
+			{
+				g15_fw_n = g15_fw_round == round - 1 ? g15_fw_n + 1 : 1;
+				g15_fw_round = round;
+				if (g15_fw_n > P.g15_fwalk)
+					fight = false, g15_fw_off = round + P.g15_fwalk_off, g15_fw_n = 0;
+			}
+		}
+		else if (fight)
+			g15_fw_n = 0; // a real exchange: the walk paid off
+	}
 	// Early warning: an outnumbering group is visible; allies keep away from it.
 	if (!fight && E.size() >= 3 && adv < 1.f)
 		post_danger(tgt->pos);
@@ -5278,6 +5297,19 @@ bool Brain::respond_to_alert()
 	// next to it (rallies pulled a quarter of our walking toward fights in the session-17 traces).
 	if ((P.g15_calm & 8) && !opp && d > P.g15_rally_near && (round - target_hit_round <= 3 || task == T_WAIT))
 		return false;
+	if (P.g15_fwalk > 0 && !opp)
+	{
+		// v15 g15_fwalk: rally walks share the fight-walk budget
+		if (round <= g15_fw_off)
+			return false;
+		g15_fw_n = g15_fw_round == round - 1 ? g15_fw_n + 1 : 1;
+		g15_fw_round = round;
+		if (g15_fw_n > P.g15_fwalk)
+		{
+			g15_fw_off = round + P.g15_fwalk_off, g15_fw_n = 0;
+			return false;
+		}
+	}
 	task = T_FIGHT;
 	bc::bitboard goal;
 	goal.draw_chebyshev(C.alert_pos, static_cast<float>(kit.attack_range));

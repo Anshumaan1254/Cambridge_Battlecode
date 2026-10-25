@@ -956,6 +956,11 @@ struct Params
 							  // within g15_rally_near
 	int g15_new_r = 6;
 	int g15_rally_near = 5;
+	int g15_fwalk = 0;		  // > 0: fight-walk budget: after this many turns in a row walking to a fight (or a rally) without a hit, proactive fights
+							  // and rallies are off for g15_fwalk_off rounds (in reach, a kill, a channel or a tribute still fight). Traced on corners
+							  // (v14 vs IC's draft): 1,522 fight-task walks with an enemy within 8, 671 of them at an unchanged distance with no hit
+							  // within 3 rounds (same-speed chases the target-keyed fz_chase misses when the target changes)
+	int g15_fwalk_off = 12;
 	int g15_lock = 0;		  // bits. Altar locks: 1: every body carries a lock (bought at the first shop visit, not after the first emblem);
 							  // 2: a visible enemy tribute of >= g15_lock_bag gems is posted at its altar tile with the ticks it has left (4 free
 							  // bits: bit 7 of bytes 2-5, units of 4 rounds); 4: lock run: a body carrying a lock that reaches placement range

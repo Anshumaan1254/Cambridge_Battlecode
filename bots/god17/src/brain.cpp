@@ -6669,6 +6669,35 @@ void Brain::farm()
 			return;
 		}
 	}
+	if (P.g17_squad > 1 && round < P.g17_squad_until && W.my_index >= 0)
+	{
+		// v17 squads (IC farms each group with 3 bodies and keeps 2.2 allies within 5 before r300; we farm alone): bodies come in blocks of
+		// g17_squad by team index; the lowest living index of the block farms by its own scores and the others farm the group it claims.
+		auto& C = comms();
+		const int k = P.g17_squad, base = (W.my_index / k) * k;
+		int leader = -1;
+		for (int i = base; i < std::min(base + k, static_cast<int>(W.allies.size())); ++i)
+			if (W.allies[static_cast<std::size_t>(i)].alive)
+			{
+				leader = i;
+				break;
+			}
+		const int lg = leader >= 0 && leader != W.my_index && leader < 6 ? C.claim[static_cast<std::size_t>(leader)] : -1;
+		if (lg >= 0 && lg < static_cast<int>(W.groups.size()) && (static_cast<int>(gems) < P.g17_squad_bag || W.groups[static_cast<std::size_t>(lg)].st == ST_REWARD))
+		{
+			Group& g = W.groups[static_cast<std::size_t>(lg)];
+			if (g.st == ST_ALIVE || g.st == ST_REWARD)
+			{
+				task_group = lg;
+				task = g.st == ST_REWARD ? T_WAIT : T_FARM;
+				if (g.st == ST_REWARD)
+					wait_group(g);
+				else
+					farm_group(g);
+				return;
+			}
+		}
+	}
 	int best = -1, best_eta = BIG;
 	bool best_pair = false, best_team = false, best_ring = false, best_kite = false;
 	float best_s = 0;

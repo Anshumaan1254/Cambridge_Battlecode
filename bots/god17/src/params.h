@@ -1003,6 +1003,7 @@ struct Params
 								// cannot move), enemy recalls are never a channel (no OPPORTUNITY post, no stuck-target logic)
 	int g17_bait = 0;			// 1: our bodies end every free turn recalling and cancel it on the next (Mite's bait); 2: only carrying >= g17_bait_bag
 	int g17_bait_bag = 20;
+	int g17_opp_r = 12;			// respond_to_alert: an OPPORTUNITY (tributing / recalling carrier) is answered from this far (v15 12; endgame 16)
 	int g17_ally_fresh = 1;		// with g17_bait: an ally seen recalling is not counted as channelling (the start / cancel flags are not visible)
 	int g15_sight = 0;		  // 1 (with om_sight 1): shared sightings from every body and its ward anywhere on the map, not only on our half (each
 							  // body sees only itself and its own ward; the alert slot is the team's only shared view): the nearest enemy we see

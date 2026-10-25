@@ -5334,7 +5334,7 @@ bool Brain::respond_to_alert()
 	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
 	const bool their_endgame = theirs >= P.endgame_alarm;
 	float hp_gate = opp ? (their_endgame ? 0.25f : 0.4f) : P.rally_hp;
-	int max_d = opp ? (their_endgame ? 16 : 12) + (P.opp_plan ? opp_add : 0) : P.rally_r + (P.opp_plan ? rally_add : 0); // v9 presets widen the answer radius
+	int max_d = opp ? (their_endgame ? 16 : P.g17_opp_r) + (P.opp_plan ? opp_add : 0) : P.rally_r + (P.opp_plan ? rally_add : 0); // v9 presets widen the answer radius
 	if (P.deny_ramp && opp)
 	{
 		// GOD_Improvement_Plan UPG-4 (dynamic priority): the urgency of a denial grows with their banked total instead of one step at

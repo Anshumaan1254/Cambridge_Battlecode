@@ -1231,6 +1231,16 @@ void Brain::turn()
 			}
 		}
 	}
+#ifdef G17_TRACE
+	{
+		int nd = 99;
+		for (const auto& e : W.enemies)
+			if (e.alive && e.visible)
+				nd = std::min(nd, cheb(e.pos, pos));
+		std::printf("G7 r=%d ch=%d path=%d task=%d nd=%d mv=%d hit=%d hp=%.2f\n", round, static_cast<int>(type), dbg_path, task, nd, static_cast<int>(!can_move),
+			static_cast<int>(round == target_hit_round), hp / std::max(1.f, max_hp));
+	}
+#endif
 	XM(xm_post());
 #ifdef LEGEND_TRACE
 	debug_block({

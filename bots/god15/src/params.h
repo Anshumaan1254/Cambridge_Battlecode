@@ -901,7 +901,7 @@ struct Params
 	int mi_live = 0;		  // 1: the 8 shared bytes in teamplan's live layout (live.h: claims as place codes, the team alert with its place
 							  // vocabulary, beats, bag flags); 0: GOD v10's own layout (comms.h)
 	int live_bag_flag = 25;	  // ... the bag flag: carrying at least this many gems (teamplan bag.h's hunt threshold)
-	int mi_capture = 0;		  // 1: a shared reward goes to a near ally with a gold bonus first (teamplan capture.h mode 1, LEARNED)
+	int mi_capture = 0;		  // 1: a shared reward goes to a near ally with a gold bonus first (teamplan capture.h mode 1, LEARNED); v15 2: to the ally it is worth the most gold to (Vesper Vale's bonus on the gold, Marcella's 2 gold a gem when she banks)
 	int ic_build = 0;		  // GOD v13: Intercontinental Fish's builds on the carries (brain.cpp build_for): Treasure first on a gold-bonus kit,
 							  // Monster, Jungle health, then Power in the damage stat for ever; supports keep the value-model lists
 	int mi_body = 0;		  // 1: the BODY block's bank bag and retreat health (econ model, LEARNED) replace tribute_min / retreat_hp

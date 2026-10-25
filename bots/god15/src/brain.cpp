@@ -5986,7 +5986,13 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			// GOD v12 (teamplan capture.h mode 1, LEARNED: the strong teams' choice in 65% of shared captures): among the living bodies
 			// within gold_rank_d of the reward, the highest gold multiplier (the kit's passive) captures, then the nearest, then the lower
 			// index; the others move on.
-			const double my_gm = tpa::kit_of(static_cast<int>(type)).gold_mult;
+			// GOD v15 mi_capture 2: the gold a reward is worth to the body that takes it: Vesper Vale's bonus on the gold, Marcella's 2 gold
+			// per gem when she banks it (IC's Marcella ends games with 106 shard equivalents, its Vesper with 94, its Cassi & Issac with 9).
+			auto funnel = [&](bc::champion_type ct) {
+				const auto& k = tpa::kit_of(static_cast<int>(ct));
+				return P.mi_capture == 2 ? k.gold_mult * static_cast<double>(g.gold) + k.tribute_gold * static_cast<double>(g.gems) : k.gold_mult;
+			};
+			const double my_gm = funnel(type);
 			for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 8; ++i)
 			{
 				const auto& a = W.allies[static_cast<std::size_t>(i)];
@@ -5995,7 +6001,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 				const int da = nav().group_dist(g, a.pos);
 				if (da > P.gold_rank_d)
 					continue;
-				const double gm = tpa::kit_of(static_cast<int>(a.type)).gold_mult;
+				const double gm = funnel(a.type);
 				if (gm > my_gm + 1e-9 || (std::fabs(gm - my_gm) <= 1e-9 && (da < d_tile || (da == d_tile && i < W.my_index))))
 					{ WHY(4); return -1; }
 			}

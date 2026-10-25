@@ -994,6 +994,7 @@ struct Params
 	int g16_gate = 0;			// 1: hunt and camp only while the fights go our way: our deaths so far at most theirs + g16_gate_margin (else v15 farming)
 	int g16_gate_margin = 0;
 	int g16_carry_camp = 0;		// 1: the camper is the gold-funnel carry (Vesper Vale first in the kit order: with mi_capture it holds the most items)
+	int g16_only_camp = 0;		// 1: no hunt at their altar: every body farms like v15 until our fights leave g16_camp_dead of them dead, then the camper camps
 	int g15_sight = 0;		  // 1 (with om_sight 1): shared sightings from every body and its ward anywhere on the map, not only on our half (each
 							  // body sees only itself and its own ward; the alert slot is the team's only shared view): the nearest enemy we see
 							  // when no RALLY / OPPORTUNITY / ESCORT is fresh; readers: groups within om_sight_r of a fresh one cost om_sight_cost

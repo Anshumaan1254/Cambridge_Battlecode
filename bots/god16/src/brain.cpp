@@ -4959,7 +4959,8 @@ void Brain::update_mode()
 		deny_bonus += P.spar_deny;
 		fight_margin = std::max(0.9f, fight_margin + P.spar_fight);
 	}
-	if (P.g16_camp && round >= P.g16_hunt_from && g16_rank() < P.g16_hunt_bodies && !(P.g16_gate && world().ally_deaths > world().enemy_deaths + P.g16_gate_margin))
+	if (P.g16_camp && round >= P.g16_hunt_from && g16_rank() < P.g16_hunt_bodies && !(P.g16_gate && world().ally_deaths > world().enemy_deaths + P.g16_gate_margin)
+		&& (!P.g16_only_camp || (g16_rank() == 0 && round - g16_camp_start <= P.g16_camp_hold)))
 	{
 		// v16 hunters: bolder fights at their altar and their spawn
 		fight_margin = std::max(0.9f, fight_margin * P.g16_fight_k);
@@ -7235,6 +7236,8 @@ bool Brain::hunt_camp()
 	if (dead >= P.g16_camp_dead && round - g16_camp_start > P.g16_camp_hold)
 		g16_camp_start = round;
 	const bool camping = dead > 0 && round - g16_camp_start <= P.g16_camp_hold;
+	if (P.g16_only_camp && !(rk == 0 && camping))
+		return false; // v16 only_camp: no altar hunt, the others farm like v15
 	if (rk == 0 && camping)
 	{
 		// Wait g16_camp_d tiles from the nearest tile of their spawn: a body healing on it cannot reach us, one that steps out walks to us.

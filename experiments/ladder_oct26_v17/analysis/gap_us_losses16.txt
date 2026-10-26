@@ -1,0 +1,403 @@
+games 16 {'ALL': 16, 'IC': 16}
+
+== OPENING (us / them)
+  team firstHit (median, none=2000)  ALL      10.5 /   11.0 | IC       10.5 /   11.0
+  team firstHit (share <= r100)      ALL    1.00 / 1.00 | IC     1.00 / 1.00
+  team firstHit (share <= r300)      ALL    1.00 / 1.00 | IC     1.00 / 1.00
+  team firstCap (median, none=2000)  ALL      43.0 /   33.5 | IC       43.0 /   33.5
+  team firstCap (share <= r100)      ALL    0.88 / 1.00 | IC     0.88 / 1.00
+  team firstCap (share <= r300)      ALL    0.94 / 1.00 | IC     0.94 / 1.00
+  team firstBank (median, none=2000) ALL     141.5 /  112.5 | IC      141.5 /  112.5
+  team firstBank (share <= r100)     ALL    0.44 / 0.38 | IC     0.44 / 0.38
+  team firstBank (share <= r300)     ALL    0.81 / 0.69 | IC     0.81 / 0.69
+  team firstMidCap (median, none=2000) ALL     400.5 /  394.0 | IC      400.5 /  394.0
+  team firstMidCap (share <= r100)   ALL    0.12 / 0.19 | IC     0.12 / 0.19
+  team firstMidCap (share <= r300)   ALL    0.44 / 0.38 | IC     0.44 / 0.38
+  body first move                    ALL       3.7 /    2.6 | IC        3.7 /    2.6
+  body first camp hit                ALL      22.5 /   18.0 | IC       22.5 /   18.0
+  body first camp hit (median body)  ALL      18.8 /   16.4 | IC       18.8 /   16.4
+  body first hit distance            ALL      15.2 /   14.3 | IC       15.2 /   14.3
+  body first capture (None=600)      ALL     225.6 /  192.0 | IC      225.6 /  192.0
+  body first death r<300 share       ALL    0.31 / 0.34 | IC     0.31 / 0.34
+  first camp-hit kind us {'elk': 27, 'wolf': 36, 'cluster': 10} them {'elk': 37, 'cluster': 9, 'wolf': 29}
+  first kill ALL  : games 16 with a kill 16, by us 10 (wins 0), by them 6 (wins 0); round med us-kill 370.5 them-kill 378.5
+  first kill IC   : games 16 with a kill 16, by us 10 (wins 0), by them 6 (wins 0); round med us-kill 370.5 them-kill 378.5
+  first kill by them: victim [('VesperVale', 2), ('Vendetta', 2), ('HeartOfRuin', 1), ('Marcella', 1)]
+     killer [('Vendetta', 2), ('Marcella', 1), ('VesperVale', 1), ('HeartOfRuin', 1), ('Ryth', 1)]
+     zone (victim-relative) Counter({'T': 4, 'M': 2}) mode Counter({'move': 3, 'farm': 2, 'fight': 1})
+     al6==0 share 0.00  en6>al6+1 share 0.33  myMax/enMax 0.83  bag mean 3.7
+  first kill by us: victim [('Marcella', 2), ('Cassi', 2), ('Ryth', 2), ('Varg', 1), ('Vendetta', 1), ('VesperVale', 1), ('Willow', 1)] killer [('HeartOfRuin', 4), ('VesperVale', 3), ('Ryth', 1), ('Marcella', 1), ('Vendetta', 1)]
+  deaths r<300 ALL   us camp 0.50 champ 1.31 | them camp 0.44 champ 1.88
+  deaths r<300 IC    us camp 0.50 champ 1.31 | them camp 0.44 champ 1.88
+
+== CHECKPOINTS (us / them)
+ r100
+  caps                               ALL       2.1 /    2.7 | IC        2.1 /    2.7
+  capGems                            ALL      28.6 /   46.2 | IC       28.6 /   46.2
+  capGold                            ALL     216.8 /  301.6 | IC      216.8 /  301.6
+  banked                             ALL       8.7 /   10.1 | IC        8.7 /   10.1
+  maxHp                              ALL    5187.5 / 5177.2 | IC     5187.5 / 5177.2
+  se                                 ALL       7.9 /    8.1 | IC        7.9 /    8.1
+  gold                               ALL      54.5 /  178.4 | IC       54.5 /  178.4
+  bag                                ALL      19.9 /   34.8 | IC       19.9 /   34.8
+  deaths                             ALL       0.6 /    0.6 | IC        0.6 /    0.6
+  campDeaths                         ALL       0.2 /    0.2 | IC        0.2 /    0.2
+  kills                              ALL       0.3 /    0.4 | IC        0.3 /    0.4
+  maxHp per body                     ALL    1135.6 / 1106.8 | IC     1135.6 / 1106.8
+ r200
+  caps                               ALL       4.9 /    5.9 | IC        4.9 /    5.9
+  capGems                            ALL      73.2 /   91.3 | IC       73.2 /   91.3
+  capGold                            ALL     557.0 /  663.8 | IC      557.0 /  663.8
+  banked                             ALL      31.6 /   44.7 | IC       31.6 /   44.7
+  maxHp                              ALL    5718.8 / 5888.1 | IC     5718.8 / 5888.1
+  se                                 ALL      20.9 /   23.5 | IC       20.9 /   23.5
+  gold                               ALL      80.7 /  177.1 | IC       80.7 /  177.1
+  bag                                ALL      41.9 /   43.2 | IC       41.9 /   43.2
+  deaths                             ALL       1.2 /    1.3 | IC        1.2 /    1.3
+  campDeaths                         ALL       0.3 /    0.4 | IC        0.3 /    0.4
+  kills                              ALL       0.8 /    0.9 | IC        0.8 /    0.9
+  maxHp per body                     ALL    1246.9 / 1258.7 | IC     1246.9 / 1258.7
+ r300
+  caps                               ALL       7.7 /    8.8 | IC        7.7 /    8.8
+  capGems                            ALL     128.4 /  151.9 | IC      128.4 /  151.9
+  capGold                            ALL     948.2 / 1068.4 | IC      948.2 / 1068.4
+  banked                             ALL      75.2 /   79.7 | IC       75.2 /   79.7
+  maxHp                              ALL    6312.5 / 6519.4 | IC     6312.5 / 6519.4
+  se                                 ALL      38.8 /   38.2 | IC       38.8 /   38.2
+  gold                               ALL      71.5 /  240.1 | IC       71.5 /  240.1
+  bag                                ALL      55.7 /   64.8 | IC       55.7 /   64.8
+  deaths                             ALL       1.8 /    2.3 | IC        1.8 /    2.3
+  campDeaths                         ALL       0.5 /    0.4 | IC        0.5 /    0.4
+  kills                              ALL       1.6 /    1.3 | IC        1.6 /    1.3
+  maxHp per body                     ALL    1374.1 / 1393.3 | IC     1374.1 / 1393.3
+ r400
+  caps                               ALL      10.4 /   12.1 | IC       10.4 /   12.1
+  capGems                            ALL     183.4 /  218.4 | IC      183.4 /  218.4
+  capGold                            ALL    1350.1 / 1537.0 | IC     1350.1 / 1537.0
+  banked                             ALL     114.6 /  139.2 | IC      114.6 /  139.2
+  maxHp                              ALL    6812.5 / 7619.4 | IC     6812.5 / 7619.4
+  se                                 ALL      54.8 /   60.3 | IC       54.8 /   60.3
+  gold                               ALL      79.2 /  158.6 | IC       79.2 /  158.6
+  bag                                ALL      72.4 /   70.7 | IC       72.4 /   70.7
+  deaths                             ALL       2.5 /    2.9 | IC        2.5 /    2.9
+  campDeaths                         ALL       0.6 /    0.6 | IC        0.6 /    0.6
+  kills                              ALL       1.9 /    1.9 | IC        1.9 /    1.9
+  maxHp per body                     ALL    1484.1 / 1636.2 | IC     1484.1 / 1636.2
+ r600
+  caps                               ALL      15.1 /   18.8 | IC       15.1 /   18.8
+  capGems                            ALL     290.8 /  379.3 | IC      290.8 /  379.3
+  capGold                            ALL    2060.1 / 2503.0 | IC     2060.1 / 2503.0
+  banked                             ALL     196.9 /  283.0 | IC      196.9 /  283.0
+  maxHp                              ALL    8050.0 / 9490.6 | IC     8050.0 / 9490.6
+  se                                 ALL      84.5 /  106.4 | IC       84.5 /  106.4
+  gold                               ALL     114.7 /  110.8 | IC      114.7 /  110.8
+  bag                                ALL     102.4 /   68.3 | IC      102.4 /   68.3
+  deaths                             ALL       4.2 /    4.8 | IC        4.2 /    4.8
+  campDeaths                         ALL       0.9 /    0.9 | IC        0.9 /    0.9
+  kills                              ALL       3.2 /    3.3 | IC        3.2 /    3.3
+  maxHp per body                     ALL    1759.6 / 2051.7 | IC     1759.6 / 2051.7
+ r800
+  caps                               ALL      19.2 /   26.1 | IC       19.2 /   26.1
+  capGems                            ALL     430.6 /  585.2 | IC      430.6 /  585.2
+  capGold                            ALL    2707.4 / 3628.1 | IC     2707.4 / 3628.1
+  banked                             ALL     330.0 /  483.1 | IC      330.0 /  483.1
+  maxHp                              ALL    9125.0 /11370.9 | IC     9125.0 /11370.9
+  se                                 ALL     113.3 /  150.2 | IC      113.3 /  150.2
+  gold                               ALL     132.4 /  318.4 | IC      132.4 /  318.4
+  bag                                ALL     117.9 /   60.3 | IC      117.9 /   60.3
+  deaths                             ALL       6.3 /    6.3 | IC        6.3 /    6.3
+  campDeaths                         ALL       1.1 /    1.1 | IC        1.1 /    1.1
+  kills                              ALL       4.5 /    5.2 | IC        4.5 /    5.2
+  maxHp per body                     ALL    2004.0 / 2475.7 | IC     2004.0 / 2475.7
+ r1000
+  caps                               ALL      21.0 /   32.7 | IC       21.0 /   32.7
+  capGems                            ALL     492.6 /  760.3 | IC      492.6 /  760.3
+  capGold                            ALL    3039.8 / 4537.6 | IC     3039.8 / 4537.6
+  banked                             ALL     359.0 /  611.7 | IC      359.0 /  611.7
+  maxHp                              ALL    9976.9 /13681.9 | IC     9976.9 /13681.9
+  se                                 ALL     135.5 /  193.2 | IC      135.5 /  193.2
+  gold                               ALL      85.1 /  437.8 | IC       85.1 /  437.8
+  bag                                ALL     165.1 /   88.0 | IC      165.1 /   88.0
+  deaths                             ALL       9.4 /    9.6 | IC        9.4 /    9.6
+  campDeaths                         ALL       1.4 /    1.3 | IC        1.4 /    1.3
+  kills                              ALL       7.3 /    8.0 | IC        7.3 /    8.0
+  maxHp per body                     ALL    2119.1 / 2894.3 | IC     2119.1 / 2894.3
+  max-HP lead at r200 -> win rate / gem margin
+    ahead   n=4 wins 0 margin -259
+    behind  n=12 wins 0 margin -546
+  captured gems lead at r300 -> wins
+    ahead   n=6 wins 0 margin -294
+    behind  n=10 wins 0 margin -582
+
+== TIME BUDGET (share of body-rounds; us / them)
+ phase 0
+  dead                               ALL    0.070 / 0.083 | IC     0.070 / 0.083
+  farm                               ALL    0.221 / 0.241 | IC     0.221 / 0.241
+  fight                              ALL    0.034 / 0.027 | IC     0.034 / 0.027
+  trib                               ALL    0.008 / 0.008 | IC     0.008 / 0.008
+  recall                             ALL    0.024 / 0.042 | IC     0.024 / 0.042
+  oncamp                             ALL    0.043 / 0.041 | IC     0.043 / 0.041
+  walk                               ALL    0.526 / 0.489 | IC     0.526 / 0.489
+  spawn                              ALL    0.007 / 0.005 | IC     0.007 / 0.005
+  idle                               ALL    0.067 / 0.063 | IC     0.067 / 0.063
+  walkNearEnemy                      ALL    0.112 / 0.085 | IC     0.112 / 0.085
+  nearE                              ALL    0.173 / 0.163 | IC     0.173 / 0.163
+  mid                                ALL    0.094 / 0.087 | IC     0.094 / 0.087
+  mid_farm                           ALL    0.019 / 0.019 | IC     0.019 / 0.019
+  nearE share farm                   ALL    0.070 / 0.238 | IC     0.070 / 0.238
+  nearE share fight                  ALL    0.139 / 0.139 | IC     0.139 / 0.139
+  nearE share walk                   ALL    0.676 / 0.461 | IC     0.676 / 0.461
+  nearE share oncamp                 ALL    0.028 / 0.047 | IC     0.028 / 0.047
+  nearE share idle                   ALL    0.060 / 0.044 | IC     0.060 / 0.044
+  nearE share spawn                  ALL    0.000 / 0.000 | IC     0.000 / 0.000
+  nearE share trib                   ALL    0.016 / 0.024 | IC     0.016 / 0.024
+  nearE share recall                 ALL    0.011 / 0.047 | IC     0.011 / 0.047
+  nearE hp adv share                 ALL    0.677 / 0.662 | IC     0.677 / 0.662
+ phase 1
+  dead                               ALL    0.114 / 0.113 | IC     0.114 / 0.113
+  farm                               ALL    0.149 / 0.213 | IC     0.149 / 0.213
+  fight                              ALL    0.038 / 0.032 | IC     0.038 / 0.032
+  trib                               ALL    0.012 / 0.020 | IC     0.012 / 0.020
+  recall                             ALL    0.030 / 0.045 | IC     0.030 / 0.045
+  oncamp                             ALL    0.038 / 0.038 | IC     0.038 / 0.038
+  walk                               ALL    0.544 / 0.476 | IC     0.544 / 0.476
+  spawn                              ALL    0.003 / 0.003 | IC     0.003 / 0.003
+  idle                               ALL    0.071 / 0.060 | IC     0.071 / 0.060
+  walkNearEnemy                      ALL    0.158 / 0.114 | IC     0.158 / 0.114
+  nearE                              ALL    0.239 / 0.214 | IC     0.239 / 0.214
+  mid                                ALL    0.112 / 0.122 | IC     0.112 / 0.122
+  mid_farm                           ALL    0.023 / 0.034 | IC     0.023 / 0.034
+  nearE share farm                   ALL    0.056 / 0.176 | IC     0.056 / 0.176
+  nearE share fight                  ALL    0.131 / 0.128 | IC     0.131 / 0.128
+  nearE share walk                   ALL    0.637 / 0.502 | IC     0.637 / 0.502
+  nearE share oncamp                 ALL    0.013 / 0.035 | IC     0.013 / 0.035
+  nearE share idle                   ALL    0.073 / 0.049 | IC     0.073 / 0.049
+  nearE share spawn                  ALL    0.005 / 0.004 | IC     0.005 / 0.004
+  nearE share trib                   ALL    0.027 / 0.040 | IC     0.027 / 0.040
+  nearE share recall                 ALL    0.058 / 0.065 | IC     0.058 / 0.065
+  nearE hp adv share                 ALL    0.635 / 0.641 | IC     0.635 / 0.641
+ phase 2
+  dead                               ALL    0.142 / 0.097 | IC     0.142 / 0.097
+  farm                               ALL    0.102 / 0.185 | IC     0.102 / 0.185
+  fight                              ALL    0.047 / 0.035 | IC     0.047 / 0.035
+  trib                               ALL    0.019 / 0.034 | IC     0.019 / 0.034
+  recall                             ALL    0.029 / 0.043 | IC     0.029 / 0.043
+  oncamp                             ALL    0.027 / 0.046 | IC     0.027 / 0.046
+  walk                               ALL    0.577 / 0.510 | IC     0.577 / 0.510
+  spawn                              ALL    0.004 / 0.002 | IC     0.004 / 0.002
+  idle                               ALL    0.053 / 0.048 | IC     0.053 / 0.048
+  walkNearEnemy                      ALL    0.225 / 0.149 | IC     0.225 / 0.149
+  nearE                              ALL    0.320 / 0.280 | IC     0.320 / 0.280
+  mid                                ALL    0.134 / 0.165 | IC     0.134 / 0.165
+  mid_farm                           ALL    0.022 / 0.040 | IC     0.022 / 0.040
+  nearE share farm                   ALL    0.043 / 0.131 | IC     0.043 / 0.131
+  nearE share fight                  ALL    0.148 / 0.124 | IC     0.148 / 0.124
+  nearE share walk                   ALL    0.699 / 0.530 | IC     0.699 / 0.530
+  nearE share oncamp                 ALL    0.009 / 0.046 | IC     0.009 / 0.046
+  nearE share idle                   ALL    0.046 / 0.054 | IC     0.046 / 0.054
+  nearE share spawn                  ALL    0.005 / 0.001 | IC     0.005 / 0.001
+  nearE share trib                   ALL    0.022 / 0.050 | IC     0.022 / 0.050
+  nearE share recall                 ALL    0.028 / 0.063 | IC     0.028 / 0.063
+  nearE hp adv share                 ALL    0.569 / 0.735 | IC     0.569 / 0.735
+ phase 3
+  dead                               ALL    0.236 / 0.109 | IC     0.236 / 0.109
+  farm                               ALL    0.061 / 0.128 | IC     0.061 / 0.128
+  fight                              ALL    0.051 / 0.044 | IC     0.051 / 0.044
+  trib                               ALL    0.015 / 0.077 | IC     0.015 / 0.077
+  recall                             ALL    0.034 / 0.027 | IC     0.034 / 0.027
+  oncamp                             ALL    0.021 / 0.046 | IC     0.021 / 0.046
+  walk                               ALL    0.486 / 0.470 | IC     0.486 / 0.470
+  spawn                              ALL    0.011 / 0.002 | IC     0.011 / 0.002
+  idle                               ALL    0.085 / 0.098 | IC     0.085 / 0.098
+  walkNearEnemy                      ALL    0.206 / 0.145 | IC     0.206 / 0.145
+  nearE                              ALL    0.332 / 0.322 | IC     0.332 / 0.322
+  mid                                ALL    0.117 / 0.224 | IC     0.117 / 0.224
+  mid_farm                           ALL    0.014 / 0.041 | IC     0.014 / 0.041
+  nearE share farm                   ALL    0.018 / 0.111 | IC     0.018 / 0.111
+  nearE share fight                  ALL    0.159 / 0.131 | IC     0.159 / 0.131
+  nearE share walk                   ALL    0.617 / 0.448 | IC     0.617 / 0.448
+  nearE share oncamp                 ALL    0.009 / 0.037 | IC     0.009 / 0.037
+  nearE share idle                   ALL    0.138 / 0.114 | IC     0.138 / 0.114
+  nearE share spawn                  ALL    0.019 / 0.000 | IC     0.019 / 0.000
+  nearE share trib                   ALL    0.015 / 0.103 | IC     0.015 / 0.103
+  nearE share recall                 ALL    0.025 / 0.056 | IC     0.025 / 0.056
+  nearE hp adv share                 ALL    0.473 / 0.817 | IC     0.473 / 0.817
+ whole game, rounds per body
+  dead                               ALL     155.4 /  132.4 | IC      155.4 /  132.4
+  farm                               ALL     166.8 /  241.7 | IC      166.8 /  241.7
+  fight                              ALL      53.1 /   40.9 | IC       53.1 /   40.9
+  trib                               ALL      20.2 /   31.3 | IC       20.2 /   31.3
+  recall                             ALL      37.5 /   50.0 | IC       37.5 /   50.0
+  oncamp                             ALL      41.5 /   54.1 | IC       41.5 /   54.1
+  walk                               ALL     690.6 /  616.4 | IC      690.6 /  616.4
+  spawn                              ALL       7.2 /    3.9 | IC        7.2 /    3.9
+  idle                               ALL      75.8 /   77.5 | IC       75.8 /   77.5
+
+== WALKS r<1000 (walk rounds per body by next action)
+  farm                               ALL       0.3 /  221.0 | IC        0.3 /  221.0
+  fight                              ALL       0.3 /   42.3 | IC        0.3 /   42.3
+  capture                            ALL       0.0 /    6.3 | IC        0.0 /    6.3
+  bank                               ALL       0.0 /   42.2 | IC        0.0 /   42.2
+  recall                             ALL      11.1 /   24.6 | IC       11.1 /   24.6
+  shop                               ALL       0.3 /    4.3 | IC        0.3 /    4.3
+  died                               ALL       0.0 /    4.3 | IC        0.0 /    4.3
+  none                               ALL       0.0 /    6.3 | IC        0.0 /    6.3
+  runs per body                      ALL       8.3 /   36.0 | IC        8.3 /   36.0
+
+== CAPTURES BY ZONE (per game: caps / gems)
+  caps O                             ALL      22.9 /   30.6 | IC       22.9 /   30.6
+  gems O                             ALL     491.7 /  646.7 | IC      491.7 /  646.7
+    gems O ph0                       ALL     111.6 /  131.5 | IC      111.6 /  131.5
+    gems O ph1                       ALL     146.8 /  172.7 | IC      146.8 /  172.7
+    gems O ph2                       ALL     143.1 /  218.2 | IC      143.1 /  218.2
+    gems O ph3                       ALL      90.2 /  124.3 | IC       90.2 /  124.3
+  caps M                             ALL       3.0 /    6.9 | IC        3.0 /    6.9
+  gems M                             ALL     181.6 /  395.2 | IC      181.6 /  395.2
+    gems M ph0                       ALL      14.5 /   14.6 | IC       14.5 /   14.6
+    gems M ph1                       ALL      16.2 /   38.7 | IC       16.2 /   38.7
+    gems M ph2                       ALL      86.2 /  161.7 | IC       86.2 /  161.7
+    gems M ph3                       ALL      64.6 /  180.2 | IC       64.6 /  180.2
+  caps T                             ALL       0.6 /    4.5 | IC        0.6 /    4.5
+  gems T                             ALL      14.4 /  107.1 | IC       14.4 /  107.1
+    gems T ph0                       ALL       0.9 /    5.8 | IC        0.9 /    5.8
+    gems T ph1                       ALL       0.7 /   16.0 | IC        0.7 /   16.0
+    gems T ph2                       ALL       6.6 /   52.8 | IC        6.6 /   52.8
+    gems T ph3                       ALL       6.2 /   32.5 | IC        6.2 /   32.5
+
+== CAPTURES BY GROUP KIND (per game)
+  caps cluster                       ALL       0.8 /    1.3 | IC        0.8 /    1.3
+  gems cluster                       ALL      10.1 /   17.1 | IC       10.1 /   17.1
+  gold cluster                       ALL       2.5 /   12.0 | IC        2.5 /   12.0
+  caps wolf                          ALL      10.8 /   16.2 | IC       10.8 /   16.2
+  gems wolf                          ALL     118.8 /  176.9 | IC      118.8 /  176.9
+  gold wolf                          ALL    1033.6 / 1589.2 | IC     1033.6 / 1589.2
+  caps elk                           ALL      13.9 /   20.9 | IC       13.9 /   20.9
+  gems elk                           ALL     414.9 /  676.2 | IC      414.9 /  676.2
+  gold elk                           ALL    2639.0 / 3844.2 | IC     2639.0 / 3844.2
+  caps golem                         ALL       0.7 /    3.2 | IC        0.7 /    3.2
+  gems golem                         ALL      44.1 /  166.2 | IC       44.1 /  166.2
+  gold golem                         ALL     181.4 /  755.6 | IC      181.4 /  755.6
+  caps monolith                      ALL       0.3 /    0.4 | IC        0.3 /    0.4
+  gems monolith                      ALL     100.0 /  112.5 | IC      100.0 /  112.5
+  gold monolith                      ALL     181.7 /  233.8 | IC      181.7 /  233.8
+  maps with golem: 7 games; caps us 1.57 them 7.29; first cap us 682.5 them 502.0; hits us 91 them 273; hitter-50r-windows us 13.0 them 28.7
+     maps ['00dunes', '00great_wall', '00oasis', '02geodes', '02harvest']
+  maps with monolith: 5 games; caps us 1.00 them 1.40; first cap us 737.0 them 966.0; hits us 84 them 93; hitter-50r-windows us 11.6 them 13.6
+     maps ['00great_wall', '01boss_battle', '01broken_curve', '01fracture', '01gold_rush']
+
+== FARMING CYCLES (per completed cycle: wait / kill / capture / respawn; medians, means)
+  O us   n=  284 (17.8/game) wait med 32.0 mean 105 | kill med 18.5 mean 47 | cap med 7.0 | respawn med 60.0
+  O them n=  373 (23.3/game) wait med 29 mean 71 | kill med 19 mean 34 | cap med 6 | respawn med 60
+  M us   n=   41 (2.6/game) wait med 89 mean 189 | kill med 22 mean 63 | cap med 7 | respawn med 60.0
+  M them n=   72 (4.5/game) wait med 33.0 mean 138 | kill med 35.0 mean 87 | cap med 6.0 | respawn med 60.0
+  T us   n=    9 (0.6/game) wait med 28 mean 156 | kill med 24 mean 68 | cap med 7 | respawn med 50.0
+  T them n=   53 (3.3/game) wait med 28 mean 66 | kill med 22 mean 51 | cap med 6 | respawn med 60
+  kind cluster  us   n=   12 kill med 4.5 mean 38 | wait med 57.0
+  kind cluster  them n=   21 kill med 2 mean 3 | wait med 46
+  kind wolf     us   n=  159 kill med 19 mean 39 | wait med 36
+  kind wolf     them n=  189 kill med 18 mean 29 | wait med 29
+  kind elk      us   n=  151 kill med 19 mean 58 | wait med 27
+  kind elk      them n=  246 kill med 23.5 mean 48 | wait med 28.0
+  kind golem    us   n=    8 kill med 31.5 mean 92 | wait med 141.5
+  kind golem    them n=   35 kill med 43 mean 82 | wait med 35
+  kind monolith us   n=    4 kill med 46.5 mean 112 | wait med 237.0
+  kind monolith them n=    7 kill med 64 mean 202 | wait med 73
+
+== CAMP EFFORTS (per game)
+  own                                ALL      25.2 /   41.2 | IC       25.2 /   41.2
+    r<300 own                        ALL       8.1 /    9.5 | IC        8.1 /    9.5
+  stolen                             ALL       2.0 /    0.4 | IC        2.0 /    0.4
+    r<300 stolen                     ALL       0.4 /    0.2 | IC        0.4 /    0.2
+  aband                              ALL      16.6 /   17.9 | IC       16.6 /   17.9
+    r<300 aband                      ALL       5.2 /    5.2 | IC        5.2 /    5.2
+  hitsOwn                            ALL     713.4 / 1132.3 | IC      713.4 / 1132.3
+    r<300 hitsOwn                    ALL     323.9 /  357.3 | IC      323.9 /  357.3
+  hitsAband                          ALL     155.4 /  194.7 | IC      155.4 /  194.7
+    r<300 hitsAband                  ALL      42.1 /   50.2 | IC       42.1 /   50.2
+  hitsStolen                         ALL      34.1 /    8.2 | IC       34.1 /    8.2
+    r<300 hitsStolen                 ALL       8.5 /    2.1 | IC        8.5 /    2.1
+  abandEnemyNear                     ALL       5.5 /    8.6 | IC        5.5 /    8.6
+    r<300 abandEnemyNear             ALL       1.1 /    2.0 | IC        1.1 /    2.0
+  abandDied                          ALL       0.9 /    1.6 | IC        0.9 /    1.6
+    r<300 abandDied                  ALL       0.2 /    0.2 | IC        0.2 /    0.2
+  abandCampOnly                      ALL      11.1 /    8.8 | IC       11.1 /    8.8
+    r<300 abandCampOnly              ALL       4.1 /    3.2 | IC        4.1 /    3.2
+  captured share of efforts          ALL    0.522 / 0.710 | IC     0.522 / 0.710
+
+== MOVEMENT (per body per game)
+  aba                                ALL     47.62 /  30.36 | IC      47.62 /  30.36
+  abaE                               ALL     30.11 /  23.70 | IC      30.11 /  23.70
+  loops                              ALL     59.55 /  32.27 | IC      59.55 /  32.27
+  loopsE                             ALL     34.68 /  24.16 | IC      34.68 /  24.16
+  idleRuns                           ALL     26.32 /  53.49 | IC      26.32 /  53.49
+  stand40                            ALL      0.15 /   0.12 | IC       0.15 /   0.12
+  stand40r                           ALL     12.54 /   7.91 | IC      12.54 /   7.91
+  stand40camp                        ALL      0.11 /   0.00 | IC       0.11 /   0.00
+  spawnIdle                          ALL      1.52 /   0.63 | IC       1.52 /   0.63
+  stand40max (per game)              ALL      22.1 /   26.1 | IC       22.1 /   26.1
+
+== RECALLS (per game)
+  starts                             ALL      28.6 /   48.9 | IC       28.6 /   48.9
+  done                               ALL       3.2 /   37.5 | IC        3.2 /   37.5
+  killed                             ALL       0.5 /    1.0 | IC        0.5 /    1.0
+  interrupted                        ALL      24.8 /   10.4 | IC       24.8 /   10.4
+  nearE                              ALL       5.1 /    8.3 | IC        5.1 /    8.3
+  nearE_done                         ALL       0.8 /    3.0 | IC        0.8 /    3.0
+
+== BANKING (per game)
+  tribStarts                         ALL      17.3 /   31.5 | IC       17.3 /   31.5
+  tribDone                           ALL      15.6 /   26.0 | IC       15.6 /   26.0
+  banks                              ALL      15.6 /   26.0 | IC       15.6 /   26.0
+  banked                             ALL     514.4 /  988.6 | IC      514.4 /  988.6
+  lostAtDeath                        ALL      72.3 /  140.9 | IC       72.3 /  140.9
+  bag50                              ALL     575.5 /  550.5 | IC      575.5 /  550.5
+  bag100                             ALL     289.1 /  224.9 | IC      289.1 /  224.9
+  bag200                             ALL     160.2 /  140.0 | IC      160.2 /  140.0
+  maxBag                             ALL     225.9 /  139.4 | IC      225.9 /  139.4
+  mean bank size                     ALL      37.3 /   53.5 | IC       37.3 /   53.5
+  first bank (none=2000)             ALL     207.4 /  255.6 | IC      207.4 /  255.6
+  tribute cancelled                  ALL       1.8 /    5.5 | IC        1.8 /    5.5
+
+== DEATHS (per game)
+  deaths                             ALL      11.4 /   10.8 | IC       11.4 /   10.8
+    deaths ph0                       ALL       1.8 /    2.3 | IC        1.8 /    2.3
+    deaths ph1                       ALL       2.4 /    2.4 | IC        2.4 /    2.4
+    deaths ph2                       ALL       4.0 /    3.2 | IC        4.0 /    3.2
+    deaths ph3                       ALL       3.2 /    2.8 | IC        3.2 /    2.8
+  to camps                           ALL       1.3 /    1.3 | IC        1.3 /    1.3
+  zone O                             ALL       6.1 /    5.1 | IC        6.1 /    5.1
+  zone M                             ALL       3.1 /    2.7 | IC        3.1 /    2.7
+  zone T                             ALL       2.1 /    2.1 | IC        2.1 /    2.1
+  zone TS                            ALL       0.1 /    0.9 | IC        0.1 /    0.9
+  mode fight (champion kills)        ALL       6.8 /    5.5 | IC        6.8 /    5.5
+  mode farm (champion kills)         ALL       0.5 /    0.4 | IC        0.5 /    0.4
+  mode move (champion kills)         ALL       2.4 /    2.5 | IC        2.4 /    2.5
+  mode channel (champion kills)      ALL       0.2 /    0.8 | IC        0.2 /    0.8
+  mode idle (champion kills)         ALL       0.1 /    0.2 | IC        0.1 /    0.2
+  isolated (no ally within 6)        ALL       2.2 /    2.4 | IC        2.2 /    2.4
+  outnumbered (en6 > al6+1)          ALL       3.2 /    3.9 | IC        3.2 /    3.9
+  bag lost                           ALL      72.3 /  140.9 | IC       72.3 /  140.9
+  bag lost to champions              ALL      52.4 /  134.5 | IC       52.4 /  134.5
+  deaths with bag >= 50              ALL       0.4 /    0.8 | IC        0.4 /    0.8
+  victim max / killers mean max      ALL     0.65 /  1.02 | IC      0.65 /  1.02
+  local hp within 8 ours/theirs      ALL     0.96 /  1.21 | IC      0.96 /  1.21
+  hp3 share                          ALL     0.48 /  0.34 | IC      0.48 /  0.34
+  our deaths by victim type [('Vendetta', 50), ('HeartOfRuin', 41), ('Marcella', 40), ('VesperVale', 29), ('Ryth', 23)]
+  their deaths by victim type [('HeartOfRuin', 29), ('Ryth', 28), ('VesperVale', 23), ('Marcella', 22), ('Vendetta', 20), ('Cassi', 19), ('Issac', 19), ('Varg', 7), ('Willow', 5)]
+  our deaths by killer [('VesperVale', 56), ('Vendetta', 50), ('HeartOfRuin', 22), ('camp', 21), ('Marcella', 20), ('Ryth', 7), ('Varg', 4), ('Cassi', 2), ('Issac', 1)]
+
+== PER MAP (us/them): banked, capGems r300, maxHp/body r300, deaths, kills, mid gems, walk%, farm%, aba/body
+  01boss_battle          w0  365/ 384 cg300 220/200 hp300 1800/1380 d  6.0/23.0 mid 1216/808 walk 0.57/0.50 farm 0.16/0.14 dead 0.04/0.14 aba 158/211
+  01broken_curve         w0  951/1014 cg300 112/127 hp300 1333/1433 d  1.0/ 1.0 mid 466/332 walk 0.44/0.42 farm 0.31/0.33 dead 0.01/0.02 aba   9/  4
+  02harvest              w0  924/1026 cg300 194/184 hp300 1360/1310 d  2.0/ 3.5 mid 108/302 walk 0.64/0.59 farm 0.19/0.20 dead 0.02/0.04 aba  14/ 12
+  01fracture             w0  852/1015 cg300 158/111 hp300 1320/1460 d  6.0/ 1.0 mid  12/204 walk 0.61/0.55 farm 0.18/0.24 dead 0.05/0.01 aba  37/ 12
+  02geodes               w0  685/1000 cg300 215/211 hp300 1280/1380 d  3.0/ 6.0 mid  92/368 walk 0.66/0.53 farm 0.16/0.23 dead 0.02/0.07 aba  21/  3
+  00dunes                w0  659/1069 cg300 112/158 hp300 1300/1340 d 12.0/23.0 mid 184/276 walk 0.69/0.54 farm 0.06/0.12 dead 0.10/0.18 aba  77/ 24
+  02gift_wrapping        w0  561/1003 cg300 272/224 hp300 1740/1640 d 13.0/ 7.0 mid 172/344 walk 0.47/0.43 farm 0.22/0.30 dead 0.14/0.08 aba  21/ 16
+  00corners              w0  547/1015 cg300 206/227 hp300 1480/1200 d  2.0/ 1.0 mid 134/ 44 walk 0.60/0.52 farm 0.21/0.27 dead 0.03/0.01 aba  35/ 14
+  00great_wall           w0  564/1091 cg300 125/306 hp300 1280/1440 d  6.0/ 6.0 mid   0/  0 walk 0.60/0.57 farm 0.17/0.23 dead 0.07/0.06 aba  39/  9
+  01islands              w0  303/1004 cg300  53/178 hp300 1260/1480 d  6.0/ 1.0 mid  87/464 walk 0.45/0.60 farm 0.13/0.23 dead 0.08/0.01 aba  22/  9
+  01starfish             w0  314/1034 cg300  56/ 40 hp300 1380/1317 d 27.0/44.0 mid 229/1022 walk 0.54/0.35 farm 0.07/0.14 dead 0.22/0.31 aba  93/ 16
+  00oasis                w0  159/1017 cg300  46/ 80 hp300 1312/1388 d 30.0/14.5 mid   0/288 walk 0.41/0.46 farm 0.06/0.15 dead 0.32/0.14 aba  55/ 44
+  01gold_rush            w0  220/1080 cg300  44/ 56 hp300 1167/1228 d 13.0/18.0 mid  77/754 walk 0.50/0.42 farm 0.10/0.20 dead 0.18/0.20 aba  51/ 20
+  01hooks                w0   44/1023 cg300   0/ 66 hp300 1300/1600 d 24.0/ 5.0 mid  22/528 walk 0.56/0.45 farm 0.02/0.15 dead 0.27/0.06 aba  62/ 35

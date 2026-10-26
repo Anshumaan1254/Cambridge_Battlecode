@@ -9,7 +9,8 @@
 # Needs Python 3.10-3.13 (64-bit), an NVIDIA driver 570 or newer (RTX 50-series need it), about 6 GB of free disk for torch, internet.
 # A virtual environment mapintel_work/dlvenv gets numpy and a CUDA build of torch (CUDA 12.8, else 12.9, else 13.0: all have RTX 50
 # kernels); the script runs a small computation on the GPU and stops with an error if the GPU does not work, instead of using the CPU.
-# Input: experiments/results/mapintel/dl_data/dataset.npz (committed). Output: mapintel_dl_<UTC stamp>.tar.gz in the repository root
+# Input: experiments/results/mapintel/dl_data/dataset.npz (committed; printed first: "maps": 70 after the patch-2.0.0 refresh, see
+# docs/strategy_v2/26_MAP_REFRESH_RUNBOOK.md). Output: mapintel_dl_<UTC stamp>.tar.gz in the repository root
 # (.part01, .part02 ... when over 20 MB): upload it. Nothing else in the repository changes.
 set -e
 cd "$(dirname "$0")/../../.."
@@ -36,6 +37,7 @@ if [ -z "$PY" ]; then
 fi
 echo "python: $PY ($($PY -c 'import sys; print(sys.version.split()[0])'))"
 [ -f experiments/results/mapintel/dl_data/dataset.npz ] || { echo "ERROR: experiments/results/mapintel/dl_data/dataset.npz is missing: git pull" >&2; exit 1; }
+echo "dataset: $($PY -c "import json; m = json.load(open('experiments/results/mapintel/dl_data/meta.json')); print(json.dumps(m['sizes']), '|', m['origin'].get('t2', ''))" 2>/dev/null || echo '(no meta.json)')"
 if [ "$CPU" = 0 ]; then
 	if command -v nvidia-smi > /dev/null 2>&1; then
 		nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader || true

@@ -12,55 +12,72 @@ your new bot, from the batteries below).
   - keep your folder and give it a drive letter (Command Prompt, until the next reboot): `subst X: "C:\Users\Your Name\Cambridge_Battlecode"`,
     then in Git Bash `cd /x/` and run the scripts there (`subst X: /D` removes it);
   - or a junction (Command Prompt): `mklink /J C:\cb "C:\Users\Your Name\Cambridge_Battlecode"`, then run from `/c/cb` in Git Bash.
-- **Fuel of the first draft turn (1,000,000):** the library takes at most **735,414** on the worst official map (big-world:
-  `load_view`, `fingerprint`, `compute_features`, plans 2-4 and the first pick's rows), plus at most **85,540** if `first_scores()`
-  (the opening ranking) runs on the same turn: **777,699** in all on the worst map (`test_library.py` measures it); leave room for
-  your bot's own first-turn work. Later draft turns (100,000): `row()` <= 13.5k per pick; the plan-1 turn (the remaining picks' rows,
-  `plan1(picks, P, rank)` <= 43k, the block's pack and write) leaves at least 28k.
+- **Fuel of the first draft turn (10,000,000 since patch 2.0.0, 100x a draft turn; 1,000,000 before):** the library takes at most
+  **735,414** on the worst official map (big-world: `load_view`, `fingerprint`, `compute_features`, plans 2-4 and the first pick's
+  rows), plus at most **85,540** if `first_scores()` (the opening ranking) runs on the same turn: **777,699** in all on the worst map
+  (`test_library.py` measures it; measured on the 40 official maps with cambc 3.0.5); leave room for your bot's own first-turn work.
+  Later draft turns (100,000): `row()` <= 13.5k per pick; the plan-1 turn (the remaining picks' rows, `plan1(picks, P, rank)` <= 43k,
+  the block's pack and write) leaves at least 28k.
 - **Your bot's own draft memory must stay below offset 512.** The mapintel block lives at 512-863 (352 bytes, checksummed); a shorter
   write of your bytes from offset 0 keeps it (tested). With draft memory version 2 (`dmem2.h`, next section) the whole 1,024 bytes have
   one layout (`docs/DRAFT_MEMORY.md`): the bot's blocks at 0-435, the free bytes 436-511, mapintel at 512, its DL outputs at 864.
 
 ## Laptop scripts (run on your machine; upload the archive they print)
 
+Patch 2.0.0 (Sprint 3): **cambc 4.0.0** (engine 2.0.0) and the **70-map pool of `maps/s3`** (the 40 maps of `maps/official` + 30 new;
+platform names use `_` where some files use `-`). The scripts install cambc 4.0.0 when needed and use the 70 maps without extra flags.
+The whole refresh step by step (what to run, what to upload, what we do with it): `docs/strategy_v2/26_MAP_REFRESH_RUNBOOK.md`.
+
 ### 1. Ladder data now: `fetch_ladder.sh`
 ```bash
 cd Cambridge_Battlecode
 git pull --no-rebase origin main
-pip install cambc==3.0.5
+pip install cambc==4.0.0                     # the script also installs it when cambc is missing or older
 cambc login                                  # you, once (the script never handles credentials)
 bash tools/mapintel/fetch_ladder.sh          # Linux, macOS, Windows Git Bash
 ```
-- Fetches the ladder, the recent ranked matches of the top 50 teams, keeps the matches where **both** teams ran engine >= 1.0.3 on the 40
-  official maps, and downloads up to 15 replays per map (strong vs strong first, then strong vs anyone; strong = the 20 best ratings).
+- Fetches the ladder, the recent ranked matches of the top 50 teams, keeps the matches where **both** teams ran engine >= **2.0.0** (the
+  platform's `engineVersion` is `1.0.3` for the old patch and `2.0.0` now, so only current-patch games pass) on the **70 maps of
+  `maps/s3`**, and downloads up to 15 replays per map (strong vs strong first, then strong vs anyone; strong = the 20 best ratings),
+  round-robin over the maps so a `--max-mb` cut keeps every map covered.
 - Output: `mapintel_ladder_<UTC stamp>.tar.gz` (ladder, every team's list, the filtered matches = the draft dataset, team strengths, the
-  selection, the replays). About 20-25 MB (`--max-mb 60` caps it). Runtime about 5-15 minutes (platform rate limits). A cut run resumes.
-- Options: `--top N --strong N --per-map K --max-mb M --min-engine 1.0.3 --kinds ranked[,unranked]`, `--no-fetch` (reuse the lists),
-  `--dry-run --ladder FILE LIST.jsonl...` (no platform calls).
+  selection, the replays). About 40-45 MB for 70 x 15 = 1,050 replays (`--max-mb 60` caps the replays); over 20 MB it is also cut into
+  `.part00`, `.part01`, ... (upload all parts). Runtime about 10-25 minutes (platform rate limits). A cut run resumes.
+- Options: `--top N --strong N --per-map K --max-mb M --min-engine 2.0.0 --kinds ranked[,unranked] --maps-dir maps/s3`, `--no-fetch`
+  (reuse the lists), `--dry-run --ladder FILE LIST.jsonl...` (no platform calls). Step 5 prints the replays per map: if new maps get
+  few, add `--kinds ranked,unranked` (match groups count too).
 
 ### 2. Simulation batteries later, for your bot: `run_battery.sh --bot NAME`
 Prerequisite in your bot (`bots/NAME`): copy `tools/mapintel/cpp/mapintel/` into `bots/NAME/src/mapintel/` and make this the first thing
-of the draft turn:
+of the draft pick:
 ```cpp
 #include "mapintel/force_roster.h"
 ...
 if (const int p = mapintel::forced_pick(); p >= 0) { cambc::draft::pick(static_cast<cambc::champion_draft>(p)); return; }
 ```
-In a normal build (no generated `mi_roster.h`) `forced_pick()` returns -1 at once and costs nothing.
+In a normal build (no generated `mi_roster.h`) `forced_pick()` returns -1 at once and costs nothing. If your draft writes draft memory
+after its pick, put the call where the pick is made so that work still runs for the forced roster. For a GOD bot, `--from god18 --bot
+_mi_v18` makes the copy `bots/_mi_v18` itself (`prepare_bot.py`: the call goes first into `play_draft_pick()` and picks through
+`note_pick()`, so `play_draft()` still writes v18's draft memory; `bots/god18` is not changed).
 ```bash
 git pull --no-rebase origin main
-bash tools/mapintel/run_battery.sh --bot NAME --quick   # ~1 minute: function test (3 maps, 2 roster slots, idle opponent)
-bash tools/mapintel/run_battery.sh --bot NAME           # the batteries
+bash tools/mapintel/run_battery.sh --from god18 --bot _mi_v18 --quick   # ~3-6 minutes: function test (00elkring, 01hooks, 02arena; 2 roster slots, idle opponent)
+bash tools/mapintel/run_battery.sh --from god18 --bot _mi_v18          # the batteries (your own bot: --bot NAME)
 ```
 - **Outcome battery**: your bot (its own draft) against `--opps self,idle,starter` (itself, an idle bot = your unopposed pace, the cambc
-  3.0.5 starter; any bot folder name also works) on the 40 official maps x 2 sides: 240 games.
+  4.0.0 starter; any bot folder name also works) on the 70 maps x 2 sides: 420 games.
 - **Roster battery**: both teams' rosters forced, your bot playing both teams. Per map 8 candidate rosters
-  (`tools/mapintel/data/battery_rosters.json`: the rosters strong teams drafted there in current-patch games = LEARNED, and rosters
-  balanced over the four kit classes = COMPUTED); every pair of candidates on every map and both sides: 28 x 80 = 2,240 games. The script
-  checks every game's engine draft against the forced rosters and stops with an error if your bot ignores them.
-- Runtime on 18 cores: about 10-15 minutes for 2,480 games (depends on your bot's speed). Output:
-  `mapintel_battery_<NAME>_<UTC stamp>.tar.gz` (ledger rows, compact statistics, replays; ~25 KB a game, `--no-replays` to drop them).
-- Options: `--opps`, `--maps`, `--jobs` (default: CPUs - 1), `--per-map C`, `--skip-outcome`, `--skip-roster`, `--no-replays`.
+  (`tools/mapintel/data/battery_rosters.json`): on the 40 old maps 4 LEARNED (what strong teams drafted there, engine 1.0.3 games) + 4
+  COMPUTED (balanced over the four kit classes); on the 30 new maps 8 COMPUTED (no ladder data of them yet: `meta.computed_only`). Every
+  pair of candidates on every map and both sides: 28 x 70 x 2 = 3,920 games. The script checks every game's engine draft against the
+  forced rosters and stops with an error if your bot ignores them.
+- Runtime on 18 cores (17 jobs): about 20-35 minutes: 4,340 games (GOD v18: ~3.5 s a game per core, measured on 2 busy cores) and 9
+  builds of the bot (~1-1.5 minutes each). Output: `mapintel_battery_<NAME>_<UTC stamp>.tar.gz` (ledger rows, `games.csv`, compact
+  statistics, replays): about 100 MB with the replays (~22 KB a game; cut into 20 MB parts: upload all), about 5 MB with `--no-replays`
+  (enough for the draft values and the DL data; the replays are for behaviour analysis).
+- Options: `--opps`, `--maps` (comma list of globs; default `maps/s3/*.map26a`), `--jobs` (default: CPUs - 1), `--per-map C`,
+  `--skip-outcome`, `--skip-roster`, `--no-replays`, `--from SRC`. It also compares `maps/s3` with the platform's current pool (from
+  `cambc init`) and warns when they differ.
 - The repository path must not contain spaces (`cambc run-batch` manifests are split on spaces): see "Before you start" for the Windows workaround.
 
 ### 3. Deep learning (step 7) on your GPU: `dl/run_dl.sh`
@@ -74,8 +91,10 @@ bash tools/mapintel/dl/run_dl.sh            # the run: 4 tasks x 3 seeds, leave-
   GPU and **stops with an error if the GPU does not work** (it never falls back to the CPU silently). `--cpu` = no GPU (hours).
   `PYTHON="py -3.12" bash ...` picks the interpreter.
 - Input: `experiments/results/mapintel/dl_data/dataset.npz` (committed; rebuilt by `dl/make_dataset.py` from the ladder summaries,
-  the battery's `games.csv` and the map dumps). Output: `mapintel_dl_<UTC stamp>.tar.gz` (report, metrics, weights, out-of-fold heat
-  maps; ~2-5 MB). Upload it.
+  the battery's `games.csv` and the map dumps of all 70 maps: a new map gets the archetype a bot computes for it and an
+  archetype-stratified fold, `pool.py`; `make_dataset.py --check` builds it without writing). The script first prints the dataset's
+  sizes (`dataset: {...}`): after a refresh, run it once the rebuilt dataset is pushed (`"maps": 70`, your battery's `t2`). Output: `mapintel_dl_<UTC
+  stamp>.tar.gz` (report, metrics, weights, out-of-fold heat maps; ~2-5 MB). Upload it.
 - What it trains (each against the step-6 model on the same held-out maps): T1a opening targets, T1b a body's next target (behaviour
   cloning of the top teams), T2 champion values per map (on the roster battery), T3 heat maps (where the top teams farm, fight, capture,
   die: a U-Net, research only). Small MLPs are exported to `cpp/mapintel/dl_weights.h` only when they beat the step-6 bar
@@ -192,9 +211,10 @@ is a host call; stdout costs ~90 fuel per byte.
 
 | path | what | origin |
 |---|---|---|
-| `fetch_ladder.sh`, `ladder_fetch.py` | ladder download (laptop) | - |
-| `run_battery.sh`, `battery.py` | simulation batteries for any bot (laptop) | - |
-| `battery_rosters.py`, `data/battery_rosters.json` | candidate rosters per map for the roster battery | LEARNED + COMPUTED |
+| `fetch_ladder.sh`, `ladder_fetch.py` | ladder download (laptop): engine >= 2.0.0, the 70 maps of `maps/s3` | - |
+| `run_battery.sh`, `battery.py`, `prepare_bot.py` | simulation batteries for any bot (laptop; 70 maps); a battery-ready copy of a bot (`--from`) | - |
+| `battery_rosters.py`, `data/battery_rosters.json` | candidate rosters per map for the roster battery (70 maps; the 30 new maps COMPUTED only, `meta.computed_only`) | LEARNED + COMPUTED |
+| `pool.py` | the 70-map pool for the leave-maps-out learners: a map outside the catalog gets its runtime z, `archetype_of()` and an archetype-stratified fold (`make_dataset.py`, `draft_learn.py`) | COMPUTED |
 | `dump_maps.py` | runtime dump of maps through the probe bot (`cpp/probe`) | COMPUTED |
 | `engine.py` | engine facts parsed from the engine probe's output (`experiments/results/probe_v3_0_5/engine_3_0_5.txt`) | COMPUTED |
 | `cpp/mapintel/` | the header-only C++ library a bot includes (section above) | - |
@@ -212,11 +232,11 @@ is a host call; stdout costs ~90 fuel per byte.
 | `dl/dl_train.py`, `dl/run_dl.sh` | step 7 training (torch; laptop GPU): MLP, group-graph attention, distillation, U-Net; leave-maps-out | LEARNED / SIMULATED |
 | `dl/dl_ref.py`, `dl/dl_export.py` | the exported models' Python reference (same evaluation order as the C++) and the header generator | - |
 | `battery_games.py` | a battery archive -> `games.csv` (rosters from the kept statistics) for `draft_learn.py --battery` | SIMULATED |
-| `replays.py` | ladder replays -> per-game summaries (captures, banks, deaths, standing tiles) | LEARNED |
+| `replays.py` | ladder replays -> per-game summaries (captures, banks, deaths, standing tiles); maps matched among all 70 dumps | LEARNED |
 | `replay_tracks.py` | ladder replays -> per-game tracks (positions, health, bags, gold, camp health per round, events; `mapintel_work/tracks/`) | LEARNED |
 | `econ_learn.py` | the economy model's constants (retreat, heal, bank bag, shop gold, gold weight, damage scale, opposition share) measured / fitted on the replays; `economy.econ()` reads `experiments/results/mapintel/economy/constants.json` | LEARNED |
 | `plan1_learn.py` | plan 1 against the top teams' openings per kit class (held out); writes the table's first targets (`experiments/results/mapintel/plan1/table_first.json`) | LEARNED |
 | `heat_features.py` | the U-Net's out-of-fold heat maps -> per-group / per-bank-route fight and death densities; tested on plans 3 and 4 (no gain: not in the table) | LEARNED |
 | `plan4_learn.py`, `p4model.py` | plan 4's thresholds from the top teams' decisions (abandon, regroup, bank abort, respawn wait); `p4model.py` = `model_weights.h` `p4_thresholds()` | LEARNED |
 | `cpp/probe/`, `cpp/idle/` | probe bot and idle opponent sources (fresh, from the 3.0.5 starter) | - |
-| `../../experiments/results/mapintel/dump/` | `<map>.txt` runtime dumps and `fingerprints.txt` | COMPUTED |
+| `../../experiments/results/mapintel/dump/` | `<map>.txt` runtime dumps, `fingerprints.txt` (the 40 official maps: `mapdata.official_names()`) and `fingerprints_s3_new.txt` (the 30 new maps; all 70: `mapdata.pool_names()`) | COMPUTED |

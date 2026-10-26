@@ -3,24 +3,28 @@
 
     cambc login                                            # the user, once (never scripted)
     python3 tools/mapintel/ladder_fetch.py [--top 50] [--strong 20] [--max-per-team 300] [--per-map 15] [--max-mb 60]
-                                           [--min-engine 1.0.3] [--kinds ranked] [--work DIR] [--out-dir DIR] [--jobs 3]
+                                           [--min-engine 2.0.0] [--kinds ranked] [--maps-dir maps/s3] [--work DIR] [--out-dir DIR]
+                                           [--jobs 3]
     python3 tools/mapintel/ladder_fetch.py --dry-run --ladder LADDER.json LIST.jsonl [...]   # no platform calls
 
 Steps (each prints what it did; a step that produces nothing stops the script with an error):
   1. the ladder (`cambc ladder --json`, pages of 100) -> WORK/ladder.json; the top --top teams;
   2. each team's recent matches (`cambc matches list --team ID --kind K --json`, paginated, at most --max-per-team), merged by
      matchId -> WORK/lists/<teamId8>.jsonl (re-runs merge, so a cut run resumes);
-  3. filter: finished, kind in --kinds, map in maps/official (platform names use '_' where the files use '-'), and BOTH teams'
-     engineVersion >= --min-engine -> WORK/matches_current.jsonl (the draft dataset: picks, sides, results, end reasons);
+  3. filter: finished, kind in --kinds, map in the pool (--maps-dir, default maps/s3: the 70 maps of patch 2.0.0 / sprint 3; platform
+     names use '_' where the files use '-'), and BOTH teams' engineVersion >= --min-engine (the platform writes '1.0.3' for the old
+     patch and '2.0.0' for patch 2.0.0, so the default keeps current-patch games only) -> WORK/matches_current.jsonl (the draft dataset:
+     picks, sides, results, end reasons; mapFile = the pool's file name);
   4. team strength on those games -> WORK/teams.json; the --strong strongest teams by ladder rating form the strong set;
-  5. replay selection, spread over the 40 maps: per map at most --per-map games, games between two strong teams first, then games
-     with one strong team, newest first; maps are filled round-robin so every map gets games before any map gets many;
+  5. replay selection, spread over the pool's maps: per map at most --per-map games, games between two strong teams first, then games
+     with one strong team, newest first; maps are filled round-robin so every map gets games before any map gets many (and a
+     --max-mb cut keeps that spread: the downloads follow the same order);
   6. replay downloads (`cambc matches download ID -o FILE`, --jobs threads, existing files skipped) -> WORK/replays/, stopping once
      the gzip-compressed total passes --max-mb;
   7. one archive OUT_DIR/mapintel_ladder_<UTC stamp>.tar.gz (ladder, lists, the filtered matches, teams, the selection, replays) and
      its size. Upload that file.
 
-Standard library only; works with Python 3.8+ on Linux, macOS and Windows (Git Bash / MSYS, cmd)."""
+Needs cambc 4.0.0 (engine 2.0.0). Standard library only; works with Python 3.8+ on Linux, macOS and Windows (Git Bash / MSYS, cmd)."""
 import argparse
 import concurrent.futures as cf
 import gzip
@@ -39,6 +43,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), 
 _lock = threading.Lock()
 _last = [0.0]
 MIN_GAP = float(os.environ.get("LIVE_MIN_GAP", "0.35"))
+CAMBC = "4.0.0"  # the CLI of patch 2.0.0 (engine 2.0.0)
 
 
 def die(msg, code=1):
@@ -58,7 +63,7 @@ def cambc(args, retries=40):
 		try:
 			r = subprocess.run(["cambc"] + list(args), capture_output=True, text=True, encoding="utf-8", errors="replace")
 		except FileNotFoundError:
-			die("`cambc` is not on PATH (pip install cambc==3.0.5)")
+			die("`cambc` is not on PATH (pip install cambc==%s)" % CAMBC)
 		msg = (r.stderr or "") + (r.stdout if r.returncode else "")
 		low = msg.lower()
 		busy = r.returncode != 0 and ("429" in msg or "503" in msg or "busy" in low or "rate limit" in low or "unavailable" in low)
@@ -73,11 +78,11 @@ def norm_map(name):
 	return name.lower().replace("-", "_")
 
 
-def official_maps():
-	d = os.path.join(ROOT, "maps", "official")
+def pool_maps(maps_dir):
+	d = os.path.join(ROOT, maps_dir)
 	names = sorted(f[:-7] for f in os.listdir(d) if f.endswith(".map26a")) if os.path.isdir(d) else []
 	if not names:
-		die("no maps in maps/official (git pull the repository first)")
+		die("no maps in %s (git pull the repository first)" % maps_dir)
 	return {norm_map(n): n for n in names}
 
 
@@ -163,8 +168,9 @@ def main():
 	ap.add_argument("--max-per-team", type=int, default=300)
 	ap.add_argument("--per-map", type=int, default=15)
 	ap.add_argument("--max-mb", type=float, default=60.0, help="stop downloading once the gzip-compressed replays pass this")
-	ap.add_argument("--min-engine", default="1.0.3")
+	ap.add_argument("--min-engine", default="2.0.0", help="both teams' engineVersion at least this ('2.0.0' = patch 2.0.0 only)")
 	ap.add_argument("--kinds", default="ranked", help="comma list of match kinds to keep (ranked, unranked, tournament)")
+	ap.add_argument("--maps-dir", default="maps/s3", help="the map pool (repository-relative): matches on other maps are dropped")
 	ap.add_argument("--work", default=os.path.join(ROOT, "mapintel_work", "ladder"))
 	ap.add_argument("--out-dir", default=ROOT)
 	ap.add_argument("--jobs", type=int, default=3)
@@ -179,16 +185,16 @@ def main():
 	minv = vtuple(a.min_engine)
 	os.makedirs(os.path.join(a.work, "lists"), exist_ok=True)
 	os.makedirs(os.path.join(a.work, "replays"), exist_ok=True)
-	offi = official_maps()
-	print("official maps in the repository: %d" % len(offi))
+	offi = pool_maps(a.maps_dir)
+	print("map pool %s: %d maps; engine >= %s; kinds %s" % (a.maps_dir, len(offi), a.min_engine, ",".join(sorted(kinds))))
 
 	# 0. cambc version and login (the ladder call needs a login; the user runs `cambc login` themself)
 	if not a.dry_run:
 		rc, so, se = cambc(["--version"])
 		ver = so.strip().split()[-1] if so.strip() else "?"
 		print("cambc %s" % ver)
-		if vtuple(ver) < (3, 0, 5):
-			print("WARNING: cambc %s is older than 3.0.5 (pip install cambc==3.0.5); continuing" % ver)
+		if vtuple(ver) < vtuple(CAMBC):
+			print("WARNING: cambc %s is older than %s (pip install cambc==%s); continuing" % (ver, CAMBC, CAMBC))
 
 	# 1. ladder
 	if a.ladder:
@@ -240,7 +246,7 @@ def main():
 	if not rows:
 		die("no matches fetched")
 
-	# 3. filter: current engine on both sides, official maps, kinds, finished
+	# 3. filter: current engine on both sides, pool maps, kinds, finished
 	why = {"status": 0, "kind": 0, "map": 0, "engine": 0}
 	cur = []
 	for m in rows:
@@ -262,9 +268,9 @@ def main():
 	with open(os.path.join(a.work, "matches_current.jsonl"), "w", encoding="utf-8") as f:
 		for m in cur:
 			f.write(json.dumps(m, ensure_ascii=False) + "\n")
-	print("3. kept %d current-patch matches on official maps (dropped: %s)" % (len(cur), why))
+	print("3. kept %d current-patch matches on %d of the %d pool maps (dropped: %s)" % (len(cur), len({m["mapFile"] for m in cur}), len(offi), why))
 	if not cur:
-		die("no match passed the filter (engine >= %s, kinds %s, official maps)" % (a.min_engine, sorted(kinds)))
+		die("no match passed the filter (engine >= %s, kinds %s, maps of %s)" % (a.min_engine, sorted(kinds), a.maps_dir))
 
 	# 4. team strength on the kept games
 	rank = {t["teamId"]: t for t in teams}

@@ -1,0 +1,408 @@
+games 20 {'ALL': 20, 'IC': 10, 'Mite': 10}
+
+== OPENING (us / them)
+  team firstHit (median, none=2000)  ALL       6.0 /    8.0 | IC        4.5 /    8.0 | Mite      7.5 /   15.5
+  team firstHit (share <= r100)      ALL    1.00 / 1.00 | IC     1.00 / 1.00 | Mite   1.00 / 1.00
+  team firstHit (share <= r300)      ALL    1.00 / 1.00 | IC     1.00 / 1.00 | Mite   1.00 / 1.00
+  team firstCap (median, none=2000)  ALL      32.0 /   31.0 | IC       25.5 /   27.0 | Mite     42.5 /   47.5
+  team firstCap (share <= r100)      ALL    0.95 / 0.90 | IC     1.00 / 1.00 | Mite   0.90 / 0.80
+  team firstCap (share <= r300)      ALL    1.00 / 1.00 | IC     1.00 / 1.00 | Mite   1.00 / 1.00
+  team firstBank (median, none=2000) ALL      56.5 /   90.0 | IC       45.5 /   75.5 | Mite     91.5 /  102.5
+  team firstBank (share <= r100)     ALL    0.70 / 0.50 | IC     0.90 / 0.60 | Mite   0.50 / 0.40
+  team firstBank (share <= r300)     ALL    1.00 / 0.80 | IC     1.00 / 0.80 | Mite   1.00 / 0.80
+  team firstMidCap (median, none=2000) ALL      55.5 /  109.5 | IC       53.5 /   72.0 | Mite     55.5 /  119.5
+  team firstMidCap (share <= r100)   ALL    0.65 / 0.45 | IC     0.70 / 0.60 | Mite   0.60 / 0.30
+  team firstMidCap (share <= r300)   ALL    0.80 / 0.85 | IC     0.80 / 0.80 | Mite   0.80 / 0.90
+  body first move                    ALL       1.8 /    2.5 | IC        1.4 /    2.7 | Mite      2.1 /    2.2
+  body first camp hit                ALL      23.8 /   43.6 | IC       12.1 /   21.5 | Mite     35.5 /   65.8
+  body first camp hit (median body)  ALL      17.8 /   38.6 | IC       10.7 /   16.6 | Mite     25.0 /   60.8
+  body first hit distance            ALL      13.0 /   15.6 | IC        8.8 /   10.1 | Mite     17.3 /   21.0
+  body first capture (None=600)      ALL     185.9 /  183.5 | IC      216.6 /  117.3 | Mite    155.2 /  249.8
+  body first death r<300 share       ALL    0.33 / 0.38 | IC     0.40 / 0.42 | Mite   0.25 / 0.34
+  first camp-hit kind us {'elk': 47, 'cluster': 30, 'wolf': 23} them {'elk': 24, 'wolf': 27, 'cluster': 32, 'golem': 6}
+  first kill ALL  : games 20 with a kill 20, by us 9 (wins 9), by them 11 (wins 11); round med us-kill 90 them-kill 118
+  first kill IC   : games 10 with a kill 10, by us 4 (wins 4), by them 6 (wins 6); round med us-kill 67.0 them-kill 102.0
+  first kill Mite : games 10 with a kill 10, by us 5 (wins 5), by them 5 (wins 5); round med us-kill 200 them-kill 120
+  first kill by them: victim [('Vendetta', 6), ('VesperVale', 4), ('Marcella', 1)]
+     killer [('Marcella', 4), ('Vendetta', 2), ('VesperVale', 2), ('Prism', 1), ('Ryth', 1), ('HeartOfRuin', 1)]
+     zone (victim-relative) Counter({'M': 6, 'O': 3, 'T': 2}) mode Counter({'fight': 6, 'move': 3, 'farm': 1, 'channel': 1})
+     al6==0 share 0.18  en6>al6+1 share 0.36  myMax/enMax 1.02  bag mean 9.5
+  first kill by us: victim [('HeartOfRuin', 3), ('Vendetta', 2), ('Marcella', 1), ('Ryth', 1), ('Tavi', 1), ('Cassi', 1)] killer [('VesperVale', 4), ('Issac', 1), ('Vendetta', 1), ('Willow', 1), ('Marcella', 1), ('HeartOfRuin', 1)]
+  deaths r<300 ALL   us camp 0.40 champ 1.65 | them camp 0.25 champ 2.05
+  deaths r<300 IC    us camp 0.40 champ 2.10 | them camp 0.50 champ 2.00
+  deaths r<300 Mite  us camp 0.40 champ 1.20 | them camp 0.00 champ 2.10
+
+== CHECKPOINTS (us / them)
+ r100
+  caps                               ALL       3.4 /    2.6 | IC        3.6 /    4.0 | Mite      3.1 /    1.2
+  capGems                            ALL      68.0 /   33.8 | IC       81.7 /   58.8 | Mite     54.2 /    8.7
+  capGold                            ALL     266.6 /  133.2 | IC      287.3 /  181.0 | Mite    245.8 /   85.5
+  banked                             ALL      33.6 /   13.9 | IC       44.0 /   24.0 | Mite     23.3 /    3.9
+  maxHp                              ALL    5143.8 / 4711.2 | IC     5570.0 / 4752.5 | Mite   4717.5 / 4670.0
+  se                                 ALL       9.1 /    4.2 | IC       10.4 /    5.3 | Mite      7.7 /    3.2
+  gold                               ALL     147.3 /   78.8 | IC      147.8 /   80.5 | Mite    146.9 /   77.2
+  bag                                ALL      30.4 /   23.2 | IC       30.0 /   41.7 | Mite     30.9 /    4.8
+  deaths                             ALL       0.3 /    0.8 | IC        0.4 /    0.9 | Mite      0.2 /    0.6
+  campDeaths                         ALL       0.1 /    0.1 | IC        0.1 /    0.3 | Mite      0.0 /    0.0
+  kills                              ALL       0.6 /    0.2 | IC        0.6 /    0.3 | Mite      0.6 /    0.2
+  maxHp per body                     ALL    1029.9 / 1063.5 | IC     1032.3 / 1052.0 | Mite   1027.5 / 1075.0
+ r200
+  caps                               ALL       6.9 /    6.3 | IC        7.1 /    8.5 | Mite      6.7 /    4.1
+  capGems                            ALL     150.3 /   99.0 | IC      170.7 /  136.4 | Mite    129.9 /   61.7
+  capGold                            ALL     526.9 /  342.9 | IC      553.5 /  379.6 | Mite    500.3 /  306.1
+  banked                             ALL     102.9 /   51.4 | IC      134.8 /   77.3 | Mite     71.0 /   25.4
+  maxHp                              ALL    5626.2 / 4975.8 | IC     6140.0 / 5031.5 | Mite   5112.5 / 4920.0
+  se                                 ALL      23.2 /   14.3 | IC       25.3 /   15.0 | Mite     21.1 /   13.6
+  gold                               ALL     135.6 /  100.8 | IC      122.2 /  113.2 | Mite    149.0 /   88.5
+  bag                                ALL      44.4 /   50.4 | IC       38.9 /   55.3 | Mite     49.8 /   45.4
+  deaths                             ALL       1.2 /    1.6 | IC        1.5 /    1.6 | Mite      1.0 /    1.5
+  campDeaths                         ALL       0.3 /    0.2 | IC        0.4 /    0.4 | Mite      0.2 /    0.0
+  kills                              ALL       1.4 /    0.8 | IC        1.2 /    0.9 | Mite      1.5 /    0.7
+  maxHp per body                     ALL    1122.2 / 1125.5 | IC     1128.7 / 1113.8 | Mite   1115.8 / 1137.3
+ r300
+  caps                               ALL      10.7 /    9.9 | IC       11.1 /   13.1 | Mite     10.3 /    6.8
+  capGems                            ALL     243.7 /  153.4 | IC      268.5 /  208.1 | Mite    218.8 /   98.8
+  capGold                            ALL     863.1 /  550.5 | IC      883.2 /  633.2 | Mite    843.1 /  467.8
+  banked                             ALL     199.9 /   96.2 | IC      237.4 /  136.1 | Mite    162.5 /   56.2
+  maxHp                              ALL    6083.8 / 5228.5 | IC     6800.0 / 5445.5 | Mite   5367.5 / 5011.5
+  se                                 ALL      36.0 /   22.7 | IC       37.9 /   26.3 | Mite     34.1 /   19.1
+  gold                               ALL     274.0 /  157.4 | IC      248.8 /  138.3 | Mite    299.2 /  176.6
+  bag                                ALL      44.5 /   51.0 | IC       34.2 /   61.5 | Mite     54.8 /   40.5
+  deaths                             ALL       2.0 /    2.3 | IC        2.5 /    2.5 | Mite      1.6 /    2.1
+  campDeaths                         ALL       0.4 /    0.2 | IC        0.4 /    0.5 | Mite      0.4 /    0.0
+  kills                              ALL       2.0 /    1.3 | IC        2.0 /    1.6 | Mite      2.1 /    1.0
+  maxHp per body                     ALL    1219.8 / 1183.6 | IC     1250.0 / 1204.0 | Mite   1189.5 / 1163.2
+ r400
+  caps                               ALL      15.2 /   13.3 | IC       16.0 /   17.6 | Mite     14.5 /    9.1
+  capGems                            ALL     338.9 /  216.8 | IC      375.9 /  286.1 | Mite    301.8 /  147.4
+  capGold                            ALL    1238.7 /  729.8 | IC     1273.9 /  830.1 | Mite   1203.5 /  629.4
+  banked                             ALL     292.9 /  136.2 | IC      352.3 /  185.6 | Mite    233.6 /   86.7
+  maxHp                              ALL    6944.2 / 5637.0 | IC     7650.0 / 5976.0 | Mite   6238.5 / 5298.0
+  se                                 ALL      57.4 /   33.6 | IC       57.8 /   38.7 | Mite     57.0 /   28.6
+  gold                               ALL     197.7 /  131.8 | IC      194.2 /   84.2 | Mite    201.2 /  179.4
+  bag                                ALL      54.8 /   63.7 | IC       45.9 /   69.7 | Mite     63.6 /   57.7
+  deaths                             ALL       3.2 /    3.4 | IC        4.3 /    3.3 | Mite      2.1 /    3.4
+  campDeaths                         ALL       0.8 /    0.2 | IC        1.0 /    0.5 | Mite      0.5 /    0.0
+  kills                              ALL       3.1 /    1.9 | IC        2.8 /    2.4 | Mite      3.4 /    1.4
+  maxHp per body                     ALL    1395.5 / 1285.8 | IC     1398.0 / 1330.8 | Mite   1393.0 / 1240.8
+ r600
+  caps                               ALL      22.5 /   17.8 | IC       20.8 /   21.1 | Mite     23.9 /   15.2
+  capGems                            ALL     520.3 /  322.2 | IC      494.0 /  384.6 | Mite    541.4 /  272.3
+  capGold                            ALL    2115.1 / 1275.4 | IC     2014.9 / 1469.2 | Mite   2195.2 / 1120.4
+  banked                             ALL     473.0 /  244.3 | IC      472.2 /  308.8 | Mite    473.6 /  192.7
+  maxHp                              ALL    8364.7 / 6384.7 | IC     8816.9 / 6632.5 | Mite   8003.0 / 6186.5
+  se                                 ALL      94.9 /   56.1 | IC       88.6 /   63.9 | Mite    100.0 /   49.8
+  gold                               ALL     300.6 /  172.0 | IC      332.5 /  152.6 | Mite    275.0 /  187.5
+  bag                                ALL      82.8 /   33.5 | IC       66.1 /   20.9 | Mite     96.2 /   43.6
+  deaths                             ALL       4.5 /    5.6 | IC        6.6 /    5.9 | Mite      2.8 /    5.4
+  campDeaths                         ALL       0.9 /    0.3 | IC        1.4 /    0.6 | Mite      0.5 /    0.0
+  kills                              ALL       5.3 /    2.8 | IC        5.2 /    3.9 | Mite      5.4 /    2.0
+  maxHp per body                     ALL    1733.4 / 1481.7 | IC     1642.8 / 1511.7 | Mite   1805.9 / 1457.7
+ r800
+  caps                               ALL      31.8 /   23.3 | IC       26.0 /   25.3 | Mite     35.7 /   22.0
+  capGems                            ALL     672.9 /  379.5 | IC      603.2 /  396.8 | Mite    719.3 /  367.9
+  capGold                            ALL    3529.9 / 1908.5 | IC     3306.2 / 2071.5 | Mite   3679.1 / 1799.8
+  banked                             ALL     625.1 /  287.9 | IC      538.2 /  305.5 | Mite    683.0 /  276.1
+  maxHp                              ALL   10633.3 / 7705.3 | IC    11265.0 / 7944.2 | Mite  10212.2 / 7546.1
+  se                                 ALL     151.9 /   82.8 | IC      148.8 /   89.7 | Mite    154.0 /   78.2
+  gold                               ALL     430.6 /  136.3 | IC      524.0 /  177.3 | Mite    368.3 /  109.0
+  bag                                ALL      85.3 /   41.5 | IC      107.5 /   30.0 | Mite     70.6 /   49.1
+  deaths                             ALL       5.3 /    7.1 | IC        8.8 /    7.8 | Mite      3.0 /    6.7
+  campDeaths                         ALL       0.9 /    0.5 | IC        1.5 /    1.0 | Mite      0.6 /    0.1
+  kills                              ALL       6.6 /    3.3 | IC        6.8 /    5.2 | Mite      6.4 /    2.0
+  maxHp per body                     ALL    2239.9 / 1823.0 | IC     2104.9 / 1821.6 | Mite   2329.9 / 1824.0
+ r1000
+  caps                               ALL      36.2 /   29.2 | IC       35.4 /   33.8 | Mite     37.7 /   21.7
+  capGems                            ALL     776.8 /  491.5 | IC      810.4 /  575.4 | Mite    720.7 /  351.7
+  capGold                            ALL    4458.8 / 2486.2 | IC     4139.2 / 2822.0 | Mite   4991.3 / 1926.7
+  banked                             ALL     795.9 /  378.9 | IC      840.6 /  442.4 | Mite    721.3 /  273.0
+  maxHp                              ALL   13325.0 / 8853.8 | IC    12746.0 / 9444.0 | Mite  14290.0 / 7870.0
+  se                                 ALL     217.4 /  114.9 | IC      198.6 /  124.0 | Mite    248.7 /   99.7
+  gold                               ALL     255.4 /  170.6 | IC      323.4 /  160.2 | Mite    142.0 /  188.0
+  bag                                ALL      48.5 /   30.0 | IC       42.8 /   36.0 | Mite     58.0 /   20.0
+  deaths                             ALL       8.5 /    9.9 | IC       10.6 /    8.0 | Mite      5.0 /   13.0
+  campDeaths                         ALL       0.9 /    0.5 | IC        1.4 /    0.6 | Mite      0.0 /    0.3
+  kills                              ALL       9.4 /    5.5 | IC        7.4 /    6.6 | Mite     12.7 /    3.7
+  maxHp per body                     ALL    2789.0 / 2153.9 | IC     2424.9 / 2228.4 | Mite   3395.8 / 2029.8
+  max-HP lead at r200 -> win rate / gem margin
+    ahead   n=8 wins 8 margin 603
+    behind  n=12 wins 12 margin 608
+  captured gems lead at r300 -> wins
+    ahead   n=16 wins 16 margin 629
+    behind  n=4 wins 4 margin 515
+
+== TIME BUDGET (share of body-rounds; us / them)
+ phase 0
+  dead                               ALL    0.068 / 0.091 | IC     0.081 / 0.100 | Mite   0.054 / 0.081
+  farm                               ALL    0.222 / 0.177 | IC     0.218 / 0.182 | Mite   0.226 / 0.172
+  fight                              ALL    0.039 / 0.037 | IC     0.040 / 0.039 | Mite   0.039 / 0.035
+  trib                               ALL    0.020 / 0.010 | IC     0.023 / 0.014 | Mite   0.016 / 0.005
+  recall                             ALL    0.048 / 0.076 | IC     0.043 / 0.086 | Mite   0.053 / 0.067
+  oncamp                             ALL    0.061 / 0.058 | IC     0.059 / 0.072 | Mite   0.062 / 0.045
+  walk                               ALL    0.507 / 0.493 | IC     0.519 / 0.441 | Mite   0.495 / 0.545
+  spawn                              ALL    0.004 / 0.009 | IC     0.004 / 0.013 | Mite   0.005 / 0.005
+  idle                               ALL    0.032 / 0.050 | IC     0.013 / 0.054 | Mite   0.050 / 0.045
+  walkNearEnemy                      ALL    0.188 / 0.196 | IC     0.215 / 0.188 | Mite   0.161 / 0.203
+  nearE                              ALL    0.354 / 0.363 | IC     0.345 / 0.369 | Mite   0.362 / 0.357
+  mid                                ALL    0.353 / 0.294 | IC     0.401 / 0.287 | Mite   0.304 / 0.301
+  mid_farm                           ALL    0.102 / 0.067 | IC     0.111 / 0.061 | Mite   0.092 / 0.073
+  nearE share farm                   ALL    0.164 / 0.126 | IC     0.130 / 0.139 | Mite   0.202 / 0.112
+  nearE share fight                  ALL    0.107 / 0.100 | IC     0.109 / 0.099 | Mite   0.106 / 0.102
+  nearE share walk                   ALL    0.533 / 0.543 | IC     0.608 / 0.506 | Mite   0.450 / 0.585
+  nearE share oncamp                 ALL    0.056 / 0.041 | IC     0.053 / 0.043 | Mite   0.060 / 0.039
+  nearE share idle                   ALL    0.050 / 0.062 | IC     0.024 / 0.063 | Mite   0.080 / 0.061
+  nearE share spawn                  ALL    0.005 / 0.010 | IC     0.005 / 0.019 | Mite   0.004 / 0.001
+  nearE share trib                   ALL    0.023 / 0.011 | IC     0.027 / 0.017 | Mite   0.018 / 0.005
+  nearE share recall                 ALL    0.061 / 0.106 | IC     0.043 / 0.116 | Mite   0.081 / 0.095
+  nearE hp adv share                 ALL    0.759 / 0.613 | IC     0.764 / 0.638 | Mite   0.753 / 0.586
+ phase 1
+  dead                               ALL    0.094 / 0.152 | IC     0.132 / 0.152 | Mite   0.056 / 0.151
+  farm                               ALL    0.186 / 0.142 | IC     0.170 / 0.140 | Mite   0.203 / 0.144
+  fight                              ALL    0.036 / 0.038 | IC     0.038 / 0.041 | Mite   0.034 / 0.034
+  trib                               ALL    0.031 / 0.015 | IC     0.033 / 0.016 | Mite   0.028 / 0.015
+  recall                             ALL    0.048 / 0.076 | IC     0.040 / 0.081 | Mite   0.056 / 0.070
+  oncamp                             ALL    0.085 / 0.064 | IC     0.094 / 0.082 | Mite   0.076 / 0.045
+  walk                               ALL    0.482 / 0.459 | IC     0.471 / 0.422 | Mite   0.493 / 0.496
+  spawn                              ALL    0.003 / 0.007 | IC     0.005 / 0.010 | Mite   0.002 / 0.005
+  idle                               ALL    0.034 / 0.048 | IC     0.016 / 0.055 | Mite   0.052 / 0.041
+  walkNearEnemy                      ALL    0.187 / 0.186 | IC     0.211 / 0.186 | Mite   0.162 / 0.185
+  nearE                              ALL    0.345 / 0.357 | IC     0.356 / 0.374 | Mite   0.335 / 0.340
+  mid                                ALL    0.361 / 0.292 | IC     0.389 / 0.275 | Mite   0.332 / 0.309
+  mid_farm                           ALL    0.081 / 0.052 | IC     0.071 / 0.046 | Mite   0.090 / 0.059
+  nearE share farm                   ALL    0.144 / 0.117 | IC     0.139 / 0.126 | Mite   0.149 / 0.107
+  nearE share fight                  ALL    0.102 / 0.101 | IC     0.094 / 0.105 | Mite   0.109 / 0.097
+  nearE share walk                   ALL    0.544 / 0.531 | IC     0.579 / 0.489 | Mite   0.508 / 0.574
+  nearE share oncamp                 ALL    0.063 / 0.047 | IC     0.070 / 0.060 | Mite   0.056 / 0.033
+  nearE share idle                   ALL    0.055 / 0.064 | IC     0.027 / 0.071 | Mite   0.083 / 0.056
+  nearE share spawn                  ALL    0.004 / 0.011 | IC     0.005 / 0.018 | Mite   0.002 / 0.005
+  nearE share trib                   ALL    0.029 / 0.023 | IC     0.038 / 0.023 | Mite   0.019 / 0.024
+  nearE share recall                 ALL    0.060 / 0.106 | IC     0.048 / 0.108 | Mite   0.073 / 0.104
+  nearE hp adv share                 ALL    0.756 / 0.577 | IC     0.728 / 0.644 | Mite   0.783 / 0.509
+ phase 2
+  dead                               ALL    0.102 / 0.162 | IC     0.180 / 0.114 | Mite   0.039 / 0.200
+  farm                               ALL    0.163 / 0.127 | IC     0.170 / 0.137 | Mite   0.157 / 0.118
+  fight                              ALL    0.026 / 0.030 | IC     0.033 / 0.037 | Mite   0.021 / 0.025
+  trib                               ALL    0.057 / 0.016 | IC     0.035 / 0.019 | Mite   0.075 / 0.013
+  recall                             ALL    0.070 / 0.079 | IC     0.040 / 0.088 | Mite   0.095 / 0.072
+  oncamp                             ALL    0.079 / 0.053 | IC     0.073 / 0.074 | Mite   0.084 / 0.036
+  walk                               ALL    0.461 / 0.483 | IC     0.450 / 0.465 | Mite   0.469 / 0.498
+  spawn                              ALL    0.002 / 0.005 | IC     0.003 / 0.008 | Mite   0.001 / 0.002
+  idle                               ALL    0.040 / 0.045 | IC     0.016 / 0.058 | Mite   0.059 / 0.034
+  walkNearEnemy                      ALL    0.171 / 0.182 | IC     0.186 / 0.213 | Mite   0.160 / 0.158
+  nearE                              ALL    0.333 / 0.328 | IC     0.318 / 0.377 | Mite   0.344 / 0.290
+  mid                                ALL    0.306 / 0.259 | IC     0.279 / 0.274 | Mite   0.328 / 0.246
+  mid_farm                           ALL    0.063 / 0.040 | IC     0.057 / 0.038 | Mite   0.067 / 0.042
+  nearE share farm                   ALL    0.129 / 0.078 | IC     0.124 / 0.069 | Mite   0.133 / 0.086
+  nearE share fight                  ALL    0.085 / 0.086 | IC     0.111 / 0.097 | Mite   0.064 / 0.077
+  nearE share walk                   ALL    0.509 / 0.591 | IC     0.552 / 0.570 | Mite   0.475 / 0.608
+  nearE share oncamp                 ALL    0.061 / 0.033 | IC     0.050 / 0.040 | Mite   0.070 / 0.028
+  nearE share idle                   ALL    0.058 / 0.061 | IC     0.041 / 0.066 | Mite   0.072 / 0.058
+  nearE share spawn                  ALL    0.002 / 0.007 | IC     0.005 / 0.012 | Mite   0.001 / 0.003
+  nearE share trib                   ALL    0.066 / 0.029 | IC     0.060 / 0.031 | Mite   0.071 / 0.027
+  nearE share recall                 ALL    0.089 / 0.115 | IC     0.057 / 0.115 | Mite   0.115 / 0.115
+  nearE hp adv share                 ALL    0.782 / 0.534 | IC     0.671 / 0.663 | Mite   0.870 / 0.431
+ phase 3
+  dead                               ALL    0.033 / 0.226 | IC     0.046 / 0.172 | Mite   0.011 / 0.315
+  farm                               ALL    0.177 / 0.087 | IC     0.178 / 0.082 | Mite   0.176 / 0.095
+  fight                              ALL    0.086 / 0.097 | IC     0.109 / 0.127 | Mite   0.048 / 0.047
+  trib                               ALL    0.056 / 0.016 | IC     0.058 / 0.017 | Mite   0.052 / 0.015
+  recall                             ALL    0.074 / 0.037 | IC     0.073 / 0.040 | Mite   0.076 / 0.032
+  oncamp                             ALL    0.085 / 0.065 | IC     0.080 / 0.091 | Mite   0.093 / 0.023
+  walk                               ALL    0.449 / 0.414 | IC     0.427 / 0.402 | Mite   0.486 / 0.433
+  spawn                              ALL    0.013 / 0.018 | IC     0.021 / 0.025 | Mite   0.000 / 0.005
+  idle                               ALL    0.027 / 0.041 | IC     0.008 / 0.044 | Mite   0.058 / 0.036
+  walkNearEnemy                      ALL    0.175 / 0.178 | IC     0.182 / 0.198 | Mite   0.163 / 0.145
+  nearE                              ALL    0.428 / 0.362 | IC     0.464 / 0.413 | Mite   0.369 / 0.277
+  mid                                ALL    0.333 / 0.208 | IC     0.325 / 0.248 | Mite   0.347 / 0.141
+  mid_farm                           ALL    0.091 / 0.025 | IC     0.093 / 0.033 | Mite   0.087 / 0.012
+  nearE share farm                   ALL    0.137 / 0.058 | IC     0.151 / 0.043 | Mite   0.113 / 0.083
+  nearE share fight                  ALL    0.189 / 0.161 | IC     0.213 / 0.168 | Mite   0.149 / 0.148
+  nearE share walk                   ALL    0.414 / 0.550 | IC     0.422 / 0.545 | Mite   0.400 / 0.559
+  nearE share oncamp                 ALL    0.046 / 0.083 | IC     0.036 / 0.118 | Mite   0.064 / 0.026
+  nearE share idle                   ALL    0.046 / 0.056 | IC     0.026 / 0.047 | Mite   0.080 / 0.070
+  nearE share spawn                  ALL    0.023 / 0.028 | IC     0.036 / 0.041 | Mite   0.000 / 0.005
+  nearE share trib                   ALL    0.070 / 0.017 | IC     0.073 / 0.019 | Mite   0.066 / 0.013
+  nearE share recall                 ALL    0.074 / 0.048 | IC     0.042 / 0.019 | Mite   0.128 / 0.095
+  nearE hp adv share                 ALL    0.740 / 0.463 | IC     0.637 / 0.626 | Mite   0.913 / 0.192
+ whole game, rounds per body
+  dead                               ALL      75.7 /  124.0 | IC      103.2 /  112.0 | Mite     48.2 /  136.0
+  farm                               ALL     179.9 /  136.6 | IC      170.0 /  137.2 | Mite    189.8 /  135.9
+  fight                              ALL      33.9 /   34.2 | IC       36.2 /   36.7 | Mite     31.6 /   31.7
+  trib                               ALL      27.2 /   12.6 | IC       26.9 /   14.6 | Mite     27.6 /   10.6
+  recall                             ALL      50.0 /   68.5 | IC       38.3 /   72.1 | Mite     61.8 /   64.9
+  oncamp                             ALL      71.7 /   54.5 | IC       69.2 /   69.3 | Mite     74.3 /   39.7
+  walk                               ALL     460.4 /  453.7 | IC      451.1 /  409.8 | Mite    469.6 /  497.6
+  spawn                              ALL       5.3 /    8.7 | IC        8.0 /   13.3 | Mite      2.5 /    4.1
+  idle                               ALL      33.1 /   44.3 | IC       12.6 /   50.3 | Mite     53.7 /   38.4
+
+== WALKS r<1000 (walk rounds per body by next action)
+  farm                               ALL     121.3 /   66.5 | IC      242.5 /   24.3 | Mite      0.1 /  108.7
+  fight                              ALL      42.4 /   47.3 | IC       84.2 /   12.9 | Mite      0.5 /   81.7
+  capture                            ALL       7.0 /    1.8 | IC       14.0 /    1.0 | Mite      0.0 /    2.7
+  bank                               ALL      21.2 /   10.8 | IC       42.4 /    5.5 | Mite      0.0 /   16.1
+  recall                             ALL      12.7 /   36.5 | IC       14.5 /   28.7 | Mite     10.9 /   44.3
+  shop                               ALL       1.2 /    1.2 | IC        1.7 /    0.2 | Mite      0.6 /    2.1
+  died                               ALL       2.7 /    3.1 | IC        5.5 /    0.9 | Mite      0.0 /    5.2
+  none                               ALL       2.7 /    3.0 | IC        5.5 /    0.5 | Mite      0.0 /    5.5
+  runs per body                      ALL      32.6 /   28.0 | IC       55.1 /   23.7 | Mite     10.0 /   32.3
+
+== CAPTURES BY ZONE (per game: caps / gems)
+  caps O                             ALL      19.6 /   16.6 | IC       19.0 /   20.7 | Mite     20.1 /   12.5
+  gems O                             ALL     357.6 /  285.8 | IC      381.7 /  367.4 | Mite    333.5 /  204.1
+    gems O ph0                       ALL      86.0 /   84.8 | IC      101.4 /  121.4 | Mite     70.5 /   48.3
+    gems O ph1                       ALL     124.8 /   93.6 | IC      128.2 /  122.8 | Mite    121.4 /   64.4
+    gems O ph2                       ALL     128.2 /   90.8 | IC      121.5 /   98.7 | Mite    134.8 /   82.8
+    gems O ph3                       ALL      18.7 /   16.6 | IC       30.6 /   24.5 | Mite      6.8 /    8.6
+  caps M                             ALL      16.9 /   10.8 | IC       15.7 /   12.4 | Mite     18.1 /    9.3
+  gems M                             ALL     522.8 /  217.3 | IC      495.8 /  227.8 | Mite    549.7 /  206.8
+    gems M ph0                       ALL     144.9 /   55.1 | IC      158.5 /   68.1 | Mite    131.3 /   42.2
+    gems M ph1                       ALL     172.2 /   77.1 | IC      156.7 /   55.9 | Mite    187.7 /   98.3
+    gems M ph2                       ALL     163.2 /   63.5 | IC      135.6 /   62.3 | Mite    190.9 /   64.8
+    gems M ph3                       ALL      42.4 /   21.5 | IC       45.0 /   41.5 | Mite     39.8 /    1.5
+  caps T                             ALL       4.3 /    2.5 | IC        3.3 /    3.1 | Mite      5.4 /    2.0
+  gems T                             ALL     103.7 /   44.6 | IC       85.2 /   57.2 | Mite    122.2 /   32.0
+    gems T ph0                       ALL       9.2 /   13.4 | IC        8.6 /   18.6 | Mite      9.9 /    8.3
+    gems T ph1                       ALL      22.1 /   13.8 | IC       23.5 /   16.7 | Mite     20.6 /   10.8
+    gems T ph2                       ALL      58.8 /   15.9 | IC       53.1 /   21.9 | Mite     64.4 /    9.9
+    gems T ph3                       ALL      13.7 /    1.5 | IC        0.0 /    0.0 | Mite     27.3 /    3.0
+
+== CAPTURES BY GROUP KIND (per game)
+  caps cluster                       ALL      10.3 /   11.1 | IC       14.4 /   18.2 | Mite      6.2 /    4.0
+  gems cluster                       ALL     230.7 /  176.4 | IC      270.9 /  256.9 | Mite    190.4 /   95.9
+  gold cluster                       ALL      15.4 /   20.6 | IC       30.9 /   41.3 | Mite      0.0 /    0.0
+  caps wolf                          ALL      14.3 /    9.3 | IC        6.7 /    7.6 | Mite     22.0 /   11.0
+  gems wolf                          ALL     163.8 /  103.9 | IC       85.3 /   95.6 | Mite    242.4 /  112.2
+  gold wolf                          ALL    1275.4 /  886.7 | IC      961.1 /  928.3 | Mite   1589.7 /  845.1
+  caps elk                           ALL      15.3 /    9.0 | IC       15.8 /    9.5 | Mite     14.9 /    8.5
+  gems elk                           ALL     526.0 /  227.8 | IC      525.5 /  248.3 | Mite    526.6 /  207.2
+  gold elk                           ALL    2884.1 / 1217.5 | IC     2822.3 / 1300.0 | Mite   2945.8 / 1135.1
+  caps golem                         ALL       0.8 /    0.6 | IC        1.0 /    0.9 | Mite      0.5 /    0.3
+  gems golem                         ALL      53.5 /   39.6 | IC       61.0 /   51.6 | Mite     46.0 /   27.6
+  gold golem                         ALL     186.3 /  142.4 | IC      279.4 /  234.4 | Mite     93.2 /   50.4
+  caps monolith                      ALL       0.1 /    0.0 | IC        0.1 /    0.0 | Mite      0.0 /    0.0
+  gems monolith                      ALL      10.0 /    0.0 | IC       20.0 /    0.0 | Mite      0.0 /    0.0
+  gold monolith                      ALL      21.4 /    0.0 | IC       42.9 /    0.0 | Mite      0.0 /    0.0
+  maps with golem: 4 games; caps us 3.75 them 3.00; first cap us 498 them 404; hits us 253 them 147; hitter-50r-windows us 26.2 them 13.8
+     maps ['00reverse_spiral', '00road_of_riches', '02famine', '02geodes']
+  maps with monolith: 4 games; caps us 0.25 them 0.00; first cap us 938 them nan; hits us 48 them 0; hitter-50r-windows us 4.2 them 0.0
+     maps ['00road_of_riches', '01broken_curve', '01starvation', '02famine']
+
+== FARMING CYCLES (per completed cycle: wait / kill / capture / respawn; medians, means)
+  O us   n=  291 (14.6/game) wait med 22 mean 52 | kill med 11 mean 20 | cap med 6 | respawn med 60.0
+  O them n=  248 (12.4/game) wait med 26.5 mean 63 | kill med 11.0 mean 25 | cap med 6.0 | respawn med 60
+  M us   n=  250 (12.5/game) wait med 24.5 mean 63 | kill med 16.0 mean 35 | cap med 6.0 | respawn med 111
+  M them n=  178 (8.9/game) wait med 32.5 mean 61 | kill med 13.0 mean 32 | cap med 6.0 | respawn med 50.0
+  T us   n=   62 (3.1/game) wait med 29.5 mean 110 | kill med 12.0 mean 43 | cap med 6.0 | respawn med 60.0
+  T them n=   46 (2.3/game) wait med 46.5 mean 133 | kill med 11.0 mean 31 | cap med 6.0 | respawn med 50.0
+  kind cluster  us   n=  151 kill med 3 mean 5 | wait med 20
+  kind cluster  them n=  182 kill med 1.0 mean 4 | wait med 24.5
+  kind wolf     us   n=  227 kill med 15 mean 30 | wait med 27
+  kind wolf     them n=  160 kill med 20.0 mean 40 | wait med 35.5
+  kind elk      us   n=  213 kill med 18 mean 38 | wait med 24
+  kind elk      them n=  122 kill med 18.0 mean 49 | wait med 29.5
+  kind golem    us   n=   11 kill med 50 mean 103 | wait med 69
+  kind golem    them n=    8 kill med 22.5 mean 44 | wait med 75.0
+  kind monolith us   n=    1 kill med 186 mean 186 | wait med 745
+
+== CAMP EFFORTS (per game)
+  own                                ALL      37.3 /   25.1 | IC       33.4 /   28.2 | Mite     41.2 /   22.0
+    r<300 own                        ALL      10.6 /    8.8 | IC       10.7 /   10.6 | Mite     10.5 /    7.0
+  stolen                             ALL       1.4 /    3.4 | IC        1.7 /    3.0 | Mite      1.0 /    3.8
+    r<300 stolen                     ALL       0.6 /    0.9 | IC        0.8 /    0.6 | Mite      0.3 /    1.3
+  aband                              ALL      13.4 /   12.4 | IC       12.4 /   10.3 | Mite     14.5 /   14.6
+    r<300 aband                      ALL       5.2 /    5.6 | IC        3.7 /    4.6 | Mite      6.7 /    6.6
+  hitsOwn                            ALL     907.5 /  543.2 | IC      946.5 /  595.0 | Mite    868.6 /  491.4
+    r<300 hitsOwn                    ALL     346.6 /  215.2 | IC      389.0 /  252.5 | Mite    304.3 /  178.0
+  hitsAband                          ALL     133.8 /  126.2 | IC      155.0 /  114.4 | Mite    112.7 /  138.0
+    r<300 hitsAband                  ALL      50.0 /   56.1 | IC       46.0 /   48.3 | Mite     54.0 /   63.9
+  hitsStolen                         ALL      13.4 /   46.1 | IC       16.5 /   43.6 | Mite     10.4 /   48.6
+    r<300 hitsStolen                 ALL       7.5 /   16.2 | IC       10.5 /   12.8 | Mite      4.5 /   19.6
+  abandEnemyNear                     ALL       5.5 /    5.1 | IC        5.3 /    4.9 | Mite      5.8 /    5.3
+    r<300 abandEnemyNear             ALL       2.2 /    2.2 | IC        1.6 /    1.8 | Mite      2.8 /    2.6
+  abandDied                          ALL       0.6 /    0.5 | IC        0.7 /    0.4 | Mite      0.4 /    0.5
+    r<300 abandDied                  ALL       0.3 /    0.1 | IC        0.4 /    0.1 | Mite      0.2 /    0.1
+  abandCampOnly                      ALL       7.7 /    7.2 | IC        6.9 /    5.2 | Mite      8.5 /    9.2
+    r<300 abandCampOnly              ALL       2.9 /    3.4 | IC        2.0 /    2.7 | Mite      3.8 /    4.0
+  captured share of efforts          ALL    0.747 / 0.621 | IC     0.727 / 0.691 | Mite   0.768 / 0.552
+
+== MOVEMENT (per body per game)
+  aba                                ALL     20.85 /  28.25 | IC      23.77 /  27.86 | Mite    17.93 /  28.64
+  abaE                               ALL     16.30 /  22.20 | IC      18.27 /  23.95 | Mite    14.33 /  20.45
+  loops                              ALL     20.91 /  30.17 | IC      24.24 /  25.83 | Mite    17.57 /  34.51
+  loopsE                             ALL     15.54 /  21.43 | IC      18.42 /  20.37 | Mite    12.67 /  22.49
+  idleRuns                           ALL     19.19 /  20.17 | IC      21.83 /  15.57 | Mite    16.55 /  24.78
+  stand40                            ALL      0.12 /   0.11 | IC       0.15 /   0.20 | Mite     0.10 /   0.03
+  stand40r                           ALL      8.99 /   7.26 | IC      11.43 /  13.44 | Mite     6.54 /   1.07
+  stand40camp                        ALL      0.10 /   0.11 | IC       0.15 /   0.20 | Mite     0.04 /   0.03
+  spawnIdle                          ALL      7.74 /   7.05 | IC      15.44 /  13.48 | Mite     0.04 /   0.62
+  stand40max (per game)              ALL      17.7 /    7.3 | IC       27.5 /   10.3 | Mite      7.9 /    4.3
+
+== RECALLS (per game)
+  starts                             ALL      53.4 /   62.4 | IC       39.6 /   72.9 | Mite     67.1 /   51.9
+  done                               ALL      25.2 /   18.2 | IC       35.6 /   19.2 | Mite     14.8 /   17.3
+  killed                             ALL       0.6 /    1.1 | IC        0.6 /    1.1 | Mite      0.6 /    1.2
+  interrupted                        ALL      27.6 /   43.0 | IC        3.4 /   52.6 | Mite     51.7 /   33.4
+  nearE                              ALL      14.0 /   17.2 | IC        9.5 /   20.9 | Mite     18.5 /   13.6
+  nearE_done                         ALL       4.8 /    4.5 | IC        7.1 /    5.6 | Mite      2.6 /    3.5
+
+== BANKING (per game)
+  tribStarts                         ALL      30.9 /   15.2 | IC       28.2 /   19.0 | Mite     33.6 /   11.5
+  tribDone                           ALL      28.4 /   13.6 | IC       27.6 /   16.6 | Mite     29.2 /   10.5
+  banks                              ALL      28.4 /   13.6 | IC       27.6 /   16.6 | Mite     29.2 /   10.5
+  banked                             ALL    1014.8 /  408.9 | IC     1019.2 /  501.3 | Mite   1010.4 /  316.4
+  lostAtDeath                        ALL      56.7 /  125.5 | IC       82.0 /  167.7 | Mite     31.4 /   83.2
+  bag50                              ALL     296.0 /  210.2 | IC      217.3 /  245.9 | Mite    374.7 /  174.6
+  bag100                             ALL      52.5 /   52.5 | IC       59.5 /   30.8 | Mite     45.4 /   74.1
+  bag200                             ALL      15.9 /   14.3 | IC       31.8 /    0.0 | Mite      0.0 /   28.6
+  maxBag                             ALL     132.2 /   95.8 | IC      161.8 /   93.7 | Mite    102.7 /   97.9
+  mean bank size                     ALL      41.7 /   34.3 | IC       40.7 /   31.6 | Mite     42.6 /   36.8
+  first bank (none=2000)             ALL      79.0 /  227.7 | IC       57.9 /  297.9 | Mite    100.1 /  157.5
+  tribute cancelled                  ALL       2.5 /    1.7 | IC        0.6 /    2.4 | Mite      4.4 /    1.0
+
+== DEATHS (per game)
+  deaths                             ALL       6.5 /    9.6 | IC        9.3 /    8.7 | Mite      3.8 /   10.4
+    deaths ph0                       ALL       2.0 /    2.3 | IC        2.5 /    2.5 | Mite      1.6 /    2.1
+    deaths ph1                       ALL       2.4 /    3.2 | IC        3.5 /    3.2 | Mite      1.2 /    3.3
+    deaths ph2                       ALL       1.8 /    2.9 | IC        2.6 /    2.2 | Mite      0.9 /    3.6
+    deaths ph3                       ALL       0.4 /    1.1 | IC        0.7 /    0.8 | Mite      0.1 /    1.4
+  to camps                           ALL       0.9 /    0.5 | IC        1.3 /    0.8 | Mite      0.5 /    0.1
+  zone O                             ALL       2.0 /    2.9 | IC        2.7 /    2.7 | Mite      1.3 /    3.1
+  zone M                             ALL       2.4 /    3.7 | IC        2.9 /    3.6 | Mite      1.9 /    3.8
+  zone T                             ALL       0.6 /    1.6 | IC        0.9 /    1.6 | Mite      0.3 /    1.5
+  zone TS                            ALL       0.2 /    0.4 | IC        0.5 /    0.2 | Mite      0.0 /    0.6
+  mode fight (champion kills)        ALL       2.8 /    5.0 | IC        4.5 /    4.2 | Mite      1.1 /    5.9
+  mode farm (champion kills)         ALL       0.6 /    0.7 | IC        0.6 /    0.6 | Mite      0.6 /    0.8
+  mode move (champion kills)         ALL       1.8 /    2.4 | IC        2.4 /    2.1 | Mite      1.2 /    2.7
+  mode channel (champion kills)      ALL       0.3 /    0.5 | IC        0.4 /    0.5 | Mite      0.3 /    0.5
+  mode idle (champion kills)         ALL       0.1 /    0.5 | IC        0.1 /    0.5 | Mite      0.1 /    0.4
+  isolated (no ally within 6)        ALL       2.0 /    4.2 | IC        2.9 /    3.7 | Mite      1.1 /    4.6
+  outnumbered (en6 > al6+1)          ALL       1.8 /    4.7 | IC        2.4 /    4.2 | Mite      1.1 /    5.2
+  bag lost                           ALL      56.7 /  125.5 | IC       82.0 /  167.7 | Mite     31.4 /   83.2
+  bag lost to champions              ALL      52.4 /  115.8 | IC       80.9 /  148.3 | Mite     23.8 /   83.2
+  deaths with bag >= 50              ALL       0.5 /    0.8 | IC        0.7 /    1.3 | Mite      0.2 /    0.4
+  victim max / killers mean max      ALL     0.95 /  0.81 | IC      0.95 /  0.84 | Mite    0.94 /  0.78
+  local hp within 8 ours/theirs      ALL     1.09 /  0.77 | IC      1.08 /  0.80 | Mite    1.11 /  0.73
+  hp3 share                          ALL     0.40 /  0.35 | IC      0.42 /  0.32 | Mite    0.38 /  0.37
+  our deaths by victim type [('Cassi', 33), ('Issac', 33), ('VesperVale', 17), ('HeartOfRuin', 17), ('Vendetta', 17), ('Marcella', 7), ('Tavi', 5), ('Willow', 2)]
+  their deaths by victim type [('Vendetta', 51), ('Marcella', 35), ('HeartOfRuin', 31), ('VesperVale', 27), ('Ryth', 18), ('Tavi', 12), ('Prism', 11), ('Willow', 2), ('Varg', 2), ('Cassi', 1), ('Issac', 1)]
+  our deaths by killer [('VesperVale', 38), ('Marcella', 27), ('camp', 18), ('HeartOfRuin', 16), ('Vendetta', 12), ('Tavi', 8), ('Prism', 7), ('Ryth', 4), ('Varg', 1)]
+
+== PER MAP (us/them): banked, capGems r300, maxHp/body r300, deaths, kills, mid gems, walk%, farm%, aba/body
+  00road_of_riches       w1 1029/   0 cg300 455/248 hp300 1200/1165 d  0.0/ 4.0 mid 675/131 walk 0.40/0.47 farm 0.32/0.15 dead 0.00/0.08 aba   8/  6
+  01concentrated_wealth  w2 1002/  52 cg300 257/ 36 hp300 1222/1080 d  2.0/10.5 mid 446/ 44 walk 0.52/0.65 farm 0.19/0.11 dead 0.02/0.12 aba  12/ 27
+  01starfish             w1 1036/ 180 cg300 217/ 44 hp300 1250/1200 d  8.0/17.0 mid 980/ 92 walk 0.52/0.37 farm 0.27/0.12 dead 0.09/0.22 aba  24/ 44
+  01starvation           w1 1032/ 184 cg300  12/124 hp300 1075/1073 d  6.0/23.0 mid 572/252 walk 0.65/0.66 farm 0.10/0.04 dead 0.05/0.19 aba  17/ 19
+  00swirl                w2 1018/ 229 cg300  72/ 80 hp300 1200/1342 d 16.0/19.0 mid 331/212 walk 0.37/0.34 farm 0.22/0.18 dead 0.19/0.26 aba  38/ 33
+  00rushbait_v2          w1 1005/ 231 cg300 247/ 64 hp300 1060/1025 d  0.0/ 4.0 mid 1034/591 walk 0.49/0.54 farm 0.28/0.20 dead 0.00/0.07 aba  12/ 56
+  adgato_gemcombat5      w1 1036/ 280 cg300 469/ 56 hp300 1120/1020 d  5.0/15.0 mid 1064/343 walk 0.51/0.56 farm 0.10/0.04 dead 0.10/0.27 aba  15/ 18
+  00quarry               w1 1000/ 252 cg300 262/128 hp300 1020/1325 d  8.0/ 6.0 mid 482/ 32 walk 0.45/0.43 farm 0.14/0.07 dead 0.11/0.10 aba  24/ 48
+  01yellow_brick_road    w1 1024/ 494 cg300 102/ 91 hp300 1683/1295 d  8.0/10.0 mid 195/103 walk 0.25/0.23 farm 0.25/0.22 dead 0.08/0.11 aba  19/ 24
+  00collision            w1 1002/ 509 cg300 136/ 86 hp300 1400/1400 d  0.0/ 6.0 mid 504/150 walk 0.40/0.45 farm 0.28/0.22 dead 0.00/0.11 aba  32/ 38
+  00gem_fields           w1 1024/ 553 cg300 505/348 hp300 1350/1340 d  7.0/ 6.0 mid 818/249 walk 0.55/0.39 farm 0.17/0.17 dead 0.12/0.12 aba   9/  8
+  01broken_curve         w1 1001/ 531 cg300 192/ 79 hp300 1500/1267 d  3.0/ 3.0 mid 132/178 walk 0.38/0.41 farm 0.25/0.25 dead 0.07/0.07 aba  11/  5
+  00elkring              w1 1013/ 618 cg300 330/309 hp300 1383/1113 d  8.0/ 8.0 mid   0/  0 walk 0.45/0.43 farm 0.28/0.24 dead 0.10/0.13 aba  18/ 16
+  00reverse_spiral       w1 1026/ 654 cg300 103/101 hp300 1100/1300 d 17.0/21.0 mid 974/785 walk 0.49/0.44 farm 0.12/0.09 dead 0.14/0.21 aba  41/ 57
+  adgato_gemcombat1      w1 1008/ 693 cg300 273/273 hp300 1233/1000 d  2.0/ 1.0 mid 210/336 walk 0.61/0.59 farm 0.09/0.10 dead 0.04/0.02 aba  51/ 82
+  02famine               w1 1010/ 736 cg300 149/163 hp300 1100/1180 d 11.0/ 1.0 mid 220/ 44 walk 0.69/0.67 farm 0.14/0.13 dead 0.07/0.01 aba   9/  7
+  02geodes               w1 1003/ 847 cg300 280/310 hp300 1175/1000 d  2.0/ 2.0 mid 460/276 walk 0.55/0.51 farm 0.25/0.25 dead 0.03/0.02 aba   7/  6
+  adgato_gemcombat3      w1 1008/ 854 cg300 483/413 hp300  900/1125 d 10.0/ 5.0 mid 581/273 walk 0.56/0.47 farm 0.09/0.10 dead 0.18/0.11 aba  21/ 12

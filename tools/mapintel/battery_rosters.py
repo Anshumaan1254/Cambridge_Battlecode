@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Candidate rosters per official map for the roster battery (tools/mapintel/run_battery.sh).
+"""Candidate rosters per map of the pool (every dumped map: the 70 of patch 2.0.0) for the roster battery (tools/mapintel/run_battery.sh).
 
     python3 -I tools/mapintel/battery_rosters.py LIST.jsonl [...] [--real 4] [--total 8] [--teams TEAMS.json] [--exclude-team NAME]
                                                   [--out tools/mapintel/data/battery_rosters.json]
@@ -12,10 +12,18 @@ Per map, C = --total rosters (both teams of a battery game get one of them):
   * COMPUTED: rosters balanced over the four kit classes (attack range 1 / 3 x dash or not, read from the engine probe), the same set for
     every map of a team size, filling the list up to C: greedy, at least three of the four classes in each roster (all four would force
     Vesper Vale, the only ranged dash kit, into every roster), then the champions used least so far, then one class not dominating.
-Each map's entry holds its fingerprint (experiments/results/mapintel/dump/fingerprints.txt, from the C++ function in the engine)."""
+    A map without LEARNED rows (the 30 maps new in patch 2.0.0 until a ladder download of that patch is fed in) gets COMPUTED rosters
+    only; meta.computed_only lists those maps and their entries say so.
+Each map's entry holds its fingerprint (experiments/results/mapintel/dump/fingerprints.txt and fingerprints_s3_new.txt, from the C++
+function in the engine).
+Regenerate the committed file (40 maps LEARNED from session 17's groups, i.e. engine 1.0.3; the 30 new maps COMPUTED):
+    python3 -I tools/mapintel/battery_rosters.py god2_session17/findings/live/groups_matches.jsonl
+With a patch-2.0.0 download instead (LEARNED wherever its strong teams played; fetch_ladder.sh's files):
+    python3 -I tools/mapintel/battery_rosters.py mapintel_work/ladder/matches_current.jsonl --teams mapintel_work/ladder/teams.json"""
 import argparse, collections, itertools, json, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import mapdata  # noqa: E402
 from engine import Engine, PICK_NAMES, pick_bodies  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
@@ -51,10 +59,7 @@ def main():
 	ap.add_argument("--out", default=os.path.join(ROOT, "tools/mapintel/data/battery_rosters.json"))
 	a = ap.parse_args()
 	E = Engine()
-	fps = {}
-	for line in open(os.path.join(DUMP, "fingerprints.txt")):
-		m, fp, ts = line.split()
-		fps[m] = (fp, int(ts))
+	fps = mapdata.fingerprints()
 	by_norm = {norm(m): m for m in fps}
 	rows = []
 	for f in a.lists:
@@ -84,9 +89,13 @@ def main():
 			order[mp].setdefault(key, collections.Counter())[tuple(picks)] += 1
 			used += 1
 	bal = {n: balanced(E, n, a.total) for n in sorted({ts for _, ts in fps.values()})}
-	out = {"meta": {"sources": [os.path.relpath(f, ROOT) for f in a.lists], "rows": len(rows), "team_sides_used": used,
+	computed_only = sorted(mp for mp in fps if not seen[mp])
+	out = {"meta": {"sources": [os.path.relpath(f, ROOT).replace(os.sep, "/") for f in a.lists], "rows": len(rows), "team_sides_used": used,
 					"excluded_teams": sorted(excl), "real": a.real, "total": a.total,
-					"note": "LEARNED rosters: current-patch real games of strong teams; COMPUTED: balanced over kit classes (engine probe)"},
+					"note": "LEARNED rosters: real games of strong teams in the sources; COMPUTED: balanced over kit classes (engine probe). "
+							"Maps in computed_only had no LEARNED rows in the sources (the maps new in patch 2.0.0 have no ladder data here "
+							"yet): COMPUTED rosters only",
+					"computed_only": computed_only},
 		   "maps": {}}
 	for mp, (fp, ts) in sorted(fps.items()):
 		ros = []
@@ -101,11 +110,13 @@ def main():
 			ros.append({"picks": picks, "names": [PICK_NAMES[p] for p in picks], "origin": "COMPUTED", "classes":
 						sorted(E.kit_class(b) for p in picks for b in pick_bodies(p))})
 		out["maps"][mp] = {"fingerprint": fp, "team_size": ts, "rosters": ros}
+		if mp in computed_only:
+			out["maps"][mp]["note"] = "no LEARNED rosters in the sources: COMPUTED (balanced over kit classes) only"
 	os.makedirs(os.path.dirname(a.out), exist_ok=True)
 	json.dump(out, open(a.out, "w"), indent=1)
 	nl = sum(sum(r["origin"] == "LEARNED" for r in v["rosters"]) for v in out["maps"].values())
 	print(f"{len(out['maps'])} maps, {nl} LEARNED + {sum(len(v['rosters']) for v in out['maps'].values()) - nl} COMPUTED rosters "
-		  f"({used} team-sides of {len(rows)} rows; excluded {sorted(excl)}) -> {os.path.relpath(a.out, ROOT)}")
+		  f"({used} team-sides of {len(rows)} rows; excluded {sorted(excl)}; {len(computed_only)} maps COMPUTED only) -> {os.path.relpath(a.out, ROOT)}")
 
 
 if __name__ == "__main__":

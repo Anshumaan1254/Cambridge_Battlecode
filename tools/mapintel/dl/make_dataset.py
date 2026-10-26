@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """Step 7 (MAPAnalysis.md 5.7), the data: one file the laptop's deep-learning run needs (numpy + torch only there).
 
-    python3 -I tools/mapintel/dl/make_dataset.py [--out experiments/results/mapintel/dl_data]
+    python3 -I tools/mapintel/dl/make_dataset.py [--out experiments/results/mapintel/dl_data] [--summaries DIR] [--battery GAMES.CSV]
+                                                 [--battery-label NAME] [--check]
 
-Inputs (all committed): the runtime dumps of the 40 official maps (mapdata), the catalog's archetypes and folds (maps/catalog), the
-decoded current-patch ladder games (experiments/results/mapintel/ladder_20261024: LEARNED) and GOD v10's roster battery
-(experiments/results/mapintel/sim_v10/games.csv: SIMULATED v10). Everything is team-relative: index mt = 2 x map + team (team 0 = A).
+Inputs (all committed): the runtime dumps of every map of the pool (mapdata.pool_names(): the 70 maps of patch 2.0.0, maps/s3), the
+catalog's archetypes and folds (maps/catalog: the 40 official maps; a map outside the catalog gets the archetype a bot computes for it and
+an archetype-stratified fold: tools/mapintel/pool.py), the decoded ladder games (--summaries, replays.py's output; default
+experiments/results/mapintel/ladder_20261024, engine 1.0.3: LEARNED) and a roster battery (--battery: run_battery.sh's games.csv, any
+maps of the pool; default GOD v10's, experiments/results/mapintel/sim_v10/games.csv: SIMULATED). Everything is team-relative: index
+mt = 2 x map + team (team 0 = A). --check: build every array and print the sizes, without the baselines and without writing.
 
 dataset.npz
-  maps          [M] names (official order); fold [M] (the 5 archetype-stratified folds of splits.json); arch [M]
+  maps          [M] names (sorted); fold [M] (the 5 archetype-stratified folds of splits.json, extended by pool.py); arch [M]
   grid          [2M, C, 100, 100] float32 map tensors, padded: 0 valid, 1 wall, 2 hole, 3 bush, 4 altar, 5 own spawn, 6 enemy spawn,
                 7-12 camp type one-hot (wolf, elk, gem cluster, gold cluster, monolith, golem), 13 group gems / 100 on its camps,
                 14 group gold / 100, 15 camp health / 5000, 16 our walk / 100 (BFS fc; 1.5 = not reached), 17 their walk / 100
@@ -33,6 +37,7 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 import compact as CP  # noqa: E402
+import pool as PL  # noqa: E402
 import economy as EC  # noqa: E402
 import export_headers as EH  # noqa: E402
 import features as FT  # noqa: E402
@@ -109,13 +114,14 @@ def main():
 	ap.add_argument("--out", default=os.path.join(ROOT, "experiments/results/mapintel/dl_data"))
 	ap.add_argument("--summaries", default=os.path.join(ROOT, "experiments/results/mapintel/ladder_20261024"))
 	ap.add_argument("--battery", default=os.path.join(ROOT, "experiments/results/mapintel/sim_v10/games.csv"))
+	ap.add_argument("--battery-label", default="GOD v10")
+	ap.add_argument("--check", action="store_true", help="build the arrays and print the sizes; no baselines, nothing written")
 	a = ap.parse_args()
-	os.makedirs(a.out, exist_ok=True)
-	names = mapdata.official_names()
+	names = mapdata.pool_names()
 	idx = {n: i for i, n in enumerate(names)}
 	arche = json.load(open(os.path.join(ROOT, "maps/catalog/archetypes.json")))
-	folds = json.load(open(os.path.join(ROOT, "maps/catalog/splits.json")))["folds"]
-	fold = np.array([next(k for k, f in enumerate(folds) if n in f) for n in names], np.int64)
+	P = PL.extend(arche, json.load(open(os.path.join(ROOT, "maps/catalog/splits.json")))["folds"], names)
+	fold = np.array([P.fold_of[n] for n in names], np.int64)
 	MM = {n: mapdata.load(n) for n in names}
 	NM = len(names)
 	grid = np.zeros((2 * NM, len(CHANNELS), SZ, SZ), np.float32)
@@ -183,8 +189,15 @@ def main():
 	# roster battery
 	t2 = []
 	nm = {nn: i for i, nn in enumerate(PICK_NAMES)}
+	skip = defaultdict(int)
 	for r in csv.DictReader(open(a.battery)):
-		if r["battery"] != "roster" or r["map"] not in idx:
+		if r["battery"] != "roster":
+			continue
+		if r["map"] not in idx:
+			skip["map not in the pool: " + r["map"]] += 1
+			continue
+		if not r["roster_bot"] or not r["roster_opp"]:
+			skip["no kept statistics (empty rosters)"] += 1
 			continue
 		us, them = np.zeros(12, np.float32), np.zeros(12, np.float32)
 		for nn in r["roster_bot"].split("/"):
@@ -193,7 +206,7 @@ def main():
 			them[nm[nn]] = 1
 		t2.append((idx[r["map"]], 1.0 if r["side"] == "A" else -1.0, us - them, int(r["win"]), us, them))
 	arrays = dict(
-		maps=np.array(names), fold=fold, arch=np.array([arche["labels"][n] for n in names], np.int64), grid=grid, z=z, gfeat=gfeat,
+		maps=np.array(names), fold=fold, arch=np.array([P.labels[n] for n in names], np.int64), grid=grid, z=z, gfeat=gfeat,
 		gmask=gmask, gdist=gdist,
 		t1a_mt=np.array([s[0] for s in t1a], np.int64), t1a_n=np.array([s[1] for s in t1a], np.int64), t1a_first=np.array([s[2] for s in t1a]),
 		t1b_mt=np.array([s[0] for s in t1b], np.int64), t1b_prev=np.array([s[1] for s in t1b], np.int64),
@@ -202,13 +215,23 @@ def main():
 		t2_map=np.array([s[0] for s in t2], np.int64), t2_side=np.array([s[1] for s in t2], np.float32), t2_diff=np.array([s[2] for s in t2]),
 		t2_win=np.array([s[3] for s in t2], np.float32), t2_us=np.array([s[4] for s in t2]), t2_them=np.array([s[5] for s in t2]),
 		heat=heat, heat_games=heat_games)
+	sizes = {"maps": NM, "maps_outside_catalog": len(P.added), "t1a": len(t1a), "t1b": len(t1b), "t2": len(t2), "games": ngames,
+			 "maps_with_games": int((heat_games[::2] > 0).sum()), "maps_with_t2": len(set(s[0] for s in t2))}
+	if skip:
+		print("t2 rows skipped: " + "; ".join(f"{k}: {v}" for k, v in sorted(skip.items())))
+	if a.check:
+		print("check (nothing written):", json.dumps(sizes), "| grid", grid.shape, "| folds", np.bincount(fold).tolist(),
+			  "| archetypes", np.bincount(arrays["arch"]).tolist())
+		return
+	os.makedirs(a.out, exist_ok=True)
 	np.savez_compressed(os.path.join(a.out, "dataset.npz"), **arrays)
 	base = baselines(arrays)
-	meta = {"origin": {"grid, z, gfeat, gdist": "COMPUTED (runtime dumps, catalog)", "t1a, t1b, heat": f"LEARNED ({ngames} current-patch ladder games)",
-					   "t2": "SIMULATED (GOD v10 roster battery, both rosters forced)"},
+	meta = {"origin": {"grid, z, gfeat, gdist": "COMPUTED (runtime dumps, catalog; maps outside the catalog: pool.py)",
+					   "t1a, t1b, heat": f"LEARNED ({ngames} ladder games: {os.path.relpath(a.summaries, ROOT)})",
+					   "t2": f"SIMULATED ({a.battery_label} roster battery, both rosters forced: {os.path.relpath(a.battery, ROOT)})"},
+			"maps_outside_catalog": {n: {"archetype": int(P.labels[n]), "fold": P.fold_of[n]} for n in P.added},
 			"channels": CHANNELS, "gfeats": GFEATS, "zfeats": arche["features"], "body_names": BODY_NAMES, "pick_names": PICK_NAMES,
-			"sizes": {"maps": NM, "t1a": len(t1a), "t1b": len(t1b), "t2": len(t2), "games": ngames},
-			"baselines": base}
+			"sizes": sizes, "baselines": base}
 	json.dump(meta, open(os.path.join(a.out, "meta.json"), "w"), indent=1)
 	print(json.dumps(meta["sizes"]), json.dumps(base, indent=1))
 

@@ -78,8 +78,35 @@ def load(name, dump=DUMP):
 	return M
 
 
+def _dumped():
+	return sorted(f[:-4] for f in os.listdir(DUMP) if f.endswith(".txt") and f.count(".") == 1 and not f.startswith("fingerprints"))
+
+
 def official_names():
-	return sorted(f[:-4] for f in os.listdir(DUMP) if f.endswith(".txt") and f.count(".") == 1 and f != "fingerprints.txt")
+	"""The 40 maps of the sprint 1-2 pool (maps/official, DUMP/fingerprints.txt): the maps the catalog (maps/catalog), known_maps.h and
+	the step-6 learners cover."""
+	p = os.path.join(DUMP, "fingerprints.txt")
+	if not os.path.exists(p):
+		return _dumped()
+	return sorted(line.split()[0] for line in open(p) if line.strip())
+
+
+def pool_names():
+	"""Every dumped map: the current pool (patch 2.0.0, sprint 3, maps/s3: 70 maps = the 40 official ones + the 30 of
+	DUMP/fingerprints_s3_new.txt)."""
+	return _dumped()
+
+
+def fingerprints():
+	"""{map: (fingerprint hex, team size)} of every dumped map (fingerprints.txt and fingerprints_*.txt: the C++ function in the engine)."""
+	out = {}
+	for f in sorted(os.listdir(DUMP)):
+		if f.startswith("fingerprints") and f.endswith(".txt"):
+			for line in open(os.path.join(DUMP, f)):
+				if line.strip():
+					m, fp, ts = line.split()[:3]
+					out[m] = (fp, int(ts))
+	return out
 
 
 if __name__ == "__main__":

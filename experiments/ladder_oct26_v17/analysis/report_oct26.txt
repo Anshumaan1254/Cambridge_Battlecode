@@ -1,0 +1,435 @@
+######## items.py — our 16 ranked losses (us = HouseOfCoders v17)
+games 16
+r 200
+  fam_bruiser        us    3.0  them    2.3
+  fam_capture        us    0.0  them    0.9
+  fam_durability     us    0.6  them    2.8
+  fam_jungle         us    7.4  them    5.2
+  fam_monster        us    6.3  them    1.0
+  fam_power          us    0.0  them    0.3
+  fam_prospector     us    0.0  them    0.8
+  fam_treasure       us    3.6  them   10.1
+  foc                us    1.6  them    2.6
+  hp                 us    7.9  them   10.2
+  str                us   11.4  them   10.7
+r 400
+  fam_bruiser        us   12.6  them   16.4
+  fam_capture        us    0.0  them    2.3
+  fam_durability     us    4.2  them    9.4
+  fam_home           us    0.0  them    0.8
+  fam_jungle         us   15.3  them   11.4
+  fam_monster        us   13.2  them    1.2
+  fam_power          us    0.0  them    2.4
+  fam_prospector     us    0.0  them    0.9
+  fam_treasure       us    9.4  them   15.4
+  foc                us    6.9  them    9.3
+  hp                 us   17.7  them   25.9
+  str                us   30.2  them   25.1
+r 600
+  fam_bruiser        us   29.9  them   47.5
+  fam_capture        us    0.0  them    2.8
+  fam_durability     us    8.2  them   12.9
+  fam_home           us    0.0  them    1.1
+  fam_jungle         us   17.2  them   15.1
+  fam_monster        us   16.9  them    2.7
+  fam_power          us    1.1  them    5.7
+  fam_prospector     us    0.0  them    1.2
+  fam_treasure       us   11.2  them   17.4
+  foc                us   11.4  them   19.0
+  hp                 us   27.6  them   40.3
+  str                us   45.4  them   47.1
+r 800
+  fam_bruiser        us   45.6  them   78.1
+  fam_capture        us    0.0  them    3.2
+  fam_durability     us   11.9  them   15.0
+  fam_home           us    0.0  them    1.2
+  fam_jungle         us   19.6  them   18.2
+  fam_monster        us   18.9  them    3.2
+  fam_power          us    4.2  them   11.2
+  fam_prospector     us    0.0  them    1.2
+  fam_treasure       us   13.1  them   18.4
+  fam_tribute        us    0.0  them    0.3
+  foc                us   15.5  them   27.3
+  hp                 us   36.4  them   55.8
+  str                us   61.4  them   67.1
+emblems by r800 us [('bruiser_str', 76), ('monster_str', 45), ('jungle_hp', 36), ('bruiser_hp', 35), ('durability_hp', 34), ('treasure_str', 26), ('jungle_str', 20), ('bruiser_foc', 19), ('treasure_foc', 13), ('power_str', 13), ('monster_foc', 12)]
+emblems by r800 them [('bruiser_str', 106), ('bruiser_hp', 77), ('bruiser_foc', 48), ('durability_hp', 41), ('power_str', 32), ('jungle_str', 31), ('treasure_hp', 29), ('treasure_str', 19), ('jungle_foc', 17), ('jungle_hp', 8), ('treasure_foc', 7), ('monster_hp', 6)]
+######## nearwalk.py — our 16 ranked losses (us = HouseOfCoders v17)
+games 16
+early ALL  | us n/g  205.6 hit:0.29 trib:0.00 away:0.23 toward:0.32 side:0.09 stand:0.07 | them n/g  193.2 hit:0.35 trib:0.01 away:0.24 toward:0.20 side:0.06 stand:0.14
+early adv  | us n/g  109.2 hit:0.26 trib:0.00 away:0.17 toward:0.44 side:0.07 stand:0.06 | them n/g  103.1 hit:0.34 trib:0.01 away:0.17 toward:0.26 side:0.07 stand:0.16
+early even | us n/g   51.3 hit:0.31 trib:0.00 away:0.25 toward:0.25 side:0.12 stand:0.06 | them n/g   45.8 hit:0.37 trib:0.01 away:0.26 toward:0.17 side:0.05 stand:0.15
+early dis  | us n/g   45.0 hit:0.33 trib:0.00 away:0.35 toward:0.11 side:0.09 stand:0.12 | them n/g   44.3 hit:0.38 trib:0.01 away:0.38 toward:0.08 side:0.05 stand:0.10
+mid   ALL  | us n/g  479.5 hit:0.24 trib:0.00 away:0.27 toward:0.31 side:0.09 stand:0.09 | them n/g  450.9 hit:0.33 trib:0.01 away:0.21 toward:0.23 side:0.07 stand:0.15
+mid   adv  | us n/g  229.6 hit:0.23 trib:0.00 away:0.18 toward:0.42 side:0.08 stand:0.08 | them n/g  265.1 hit:0.35 trib:0.01 away:0.14 toward:0.27 side:0.07 stand:0.16
+mid   even | us n/g  101.6 hit:0.24 trib:0.00 away:0.34 toward:0.26 side:0.09 stand:0.07 | them n/g   81.9 hit:0.32 trib:0.00 away:0.23 toward:0.25 side:0.07 stand:0.13
+mid   dis  | us n/g  148.2 hit:0.25 trib:0.00 away:0.36 toward:0.17 side:0.12 stand:0.10 | them n/g  103.9 hit:0.31 trib:0.00 away:0.36 toward:0.12 side:0.06 stand:0.14
+late  ALL  | us n/g  785.8 hit:0.20 trib:0.00 away:0.32 toward:0.28 side:0.08 stand:0.12 | them n/g  725.4 hit:0.27 trib:0.01 away:0.22 toward:0.25 side:0.05 stand:0.19
+late  adv  | us n/g  334.3 hit:0.19 trib:0.00 away:0.25 toward:0.38 side:0.07 stand:0.12 | them n/g  502.6 hit:0.26 trib:0.01 away:0.18 toward:0.28 side:0.05 stand:0.21
+late  even | us n/g  178.2 hit:0.20 trib:0.00 away:0.32 toward:0.24 side:0.08 stand:0.16 | them n/g  118.2 hit:0.29 trib:0.01 away:0.30 toward:0.22 side:0.05 stand:0.13
+late  dis  | us n/g  273.2 hit:0.21 trib:0.00 away:0.41 toward:0.17 side:0.11 stand:0.10 | them n/g  104.6 hit:0.29 trib:0.00 away:0.37 toward:0.13 side:0.05 stand:0.16
+######## chase.py — our 16 ranked losses (us = HouseOfCoders v17)
+games 16
+early us   episodes/g  27.4 rounds/g   66.2 | champ:  11.2 ep  27.3 r kills 1.25 camp:   5.3 ep  12.9 r kills 0.00 none:  10.8 ep  26.0 r kills 0.06
+early them episodes/g  19.7 rounds/g   38.8 | champ:   7.1 ep  14.7 r kills 0.62 camp:   6.0 ep  11.6 r kills 0.06 none:   6.6 ep  12.5 r kills 0.06
+mid   us   episodes/g  63.4 rounds/g  148.8 | champ:  21.6 ep  57.5 r kills 2.25 camp:  11.2 ep  30.9 r kills 0.06 none:  30.6 ep  60.3 r kills 0.31
+mid   them episodes/g  51.2 rounds/g  104.9 | champ:  16.4 ep  34.1 r kills 2.00 camp:  14.2 ep  29.7 r kills 0.12 none:  20.5 ep  41.2 r kills 0.31
+late  us   episodes/g 111.6 rounds/g  215.6 | champ:  30.9 ep  70.2 r kills 3.12 camp:  18.4 ep  38.1 r kills 0.19 none:  62.2 ep 107.3 r kills 0.19
+late  them episodes/g 107.4 rounds/g  182.8 | champ:  21.8 ep  44.5 r kills 3.38 camp:  29.1 ep  52.2 r kills 0.19 none:  56.6 ep  86.1 r kills 0.31
+######## opening.py — our 16 ranked losses (us = HouseOfCoders v17)
+== 00corners 4b9408e4 final 820
+  us   cap150   90g  696$ | Hear mv4 hit4@2 cap50/15 shop50 | Vesp mv4 hit4@3 cap43/4 shop127 | Vend mv4 hit4@3 cap29/22 shop30 | Marc mv4 hit16@11 cap160/4 shop160 | Ryth mv4 hit14@11 cap75/4 shop75
+  them cap150   93g  622$ | Marc mv5 hit13@11 cap62/8 shop136 | Vesp mv5 hit5@3 cap109/22 shop79 | Vend mv5 hit5@2 cap78/4 shop148 | Hear mv5 hit5@3 cap34/22 shop63 | Will mv5 hit13@10 cap-/- shop-
+== 00dunes 648af237 final 1533
+  us   cap150   51g  219$ | Hear mv3 hit3@2 cap168/43 shop119 | Vesp mv3 hit3@3 cap53/15 shop55 | Vend mv3 hit3@4 cap53/14 shop114 | Marc mv3 hit41@35 cap103/4 shop103 | Ryth mv3 hit55@32 cap53/14 shop152
+  them cap150   97g  223$ | Vend mv1 hit1@1 cap246/9 shop320 | Vesp mv1 hit1@4 cap59/18 shop116 | Marc mv1 hit40@32 cap52/43 shop110 | Ryth mv1 hit38@32 cap131/18 shop161 | Hear mv1 hit1@2 cap246/9 shop177
+== 00great_wall 36a94752 final 1078
+  us   cap150   87g  426$ | Hear mv4 hit4@2 cap79/14 shop145 | Vesp mv4 hit4@2 cap29/15 shop65 | Vend mv4 hit4@2 cap67/14 shop239 | Marc mv4 hit16@4 cap134/8 shop97 | Ryth mv4 hit63@9 cap223/8 shop224
+  them cap150  103g  530$ | Hear mv2 hit12@2 cap33/15 shop34 | Ryth mv2 hit11@4 cap104/15 shop105 | Marc mv2 hit26@19 cap214/14 shop68 | Vend mv2 hit25@14 cap92/14 shop224 | Varg mv2 hit11@4 cap81/29 shop87
+== 00oasis 0d7f4baf final 1192
+  us   cap150   26g  179$ | Hear mv2 hit2@2 cap-/- shop133 | Vesp mv2 hit2@3 cap25/22 shop91 | Marc mv2 hit11@10 cap43/4 shop43 | Vend mv2 hit2@3 cap986/4 shop50
+  them cap150   48g  249$ | Vend mv2 hit2@2 cap30/22 shop51 | Marc mv2 hit12@10 cap62/4 shop123 | Hear mv2 hit2@4 cap368/22 shop168 | Varg mv2 hit9@10 cap153/4 shop158
+== 00oasis fef3e506 final 1707
+  us   cap150   44g  238$ | Hear mv2 hit2@2 cap430/22 shop35 | Vesp mv2 hit2@3 cap25/22 shop56 | Marc mv2 hit11@10 cap1025/4 shop55 | Vend mv2 hit2@3 cap622/22 shop69
+  them cap150   52g  319$ | Ryth mv2 hit10@10 cap24/22 shop45 | Vesp mv2 hit2@3 cap78/4 shop53 | Vend mv2 hit2@2 cap122/4 shop160 | Hear mv2 hit2@3 cap304/36 shop164
+== 01boss_battle 8536293e final 2000
+  us   cap150   76g  943$ | Ryth mv4 hit21@17 cap313/30 shop314 | Vesp mv4 hit4@2 cap41/8 shop41 | Hear mv4 hit4@2 cap155/8 shop155 | Marc mv4 hit12@15 cap279/8 shop280 | Vend mv4 hit4@2 cap1015/19 shop72
+  them cap150  105g  952$ | Hear mv4 hit4@2 cap125/15 shop125 | Vesp mv3 hit4@3 cap52/45 shop53 | Ryth mv3 hit19@15 cap83/15 shop83 | Marc mv3 hit16@14 cap83/15 shop83 | Will mv8 hit21@13 cap-/- shop-
+== 01broken_curve 94c9cee4 final 957
+  us   cap150   34g  319$ | Hear mv3 hit3@2 cap44/15 shop46 | Vesp mv3 hit3@2 cap92/4 shop92 | Vend mv3 hit3@2 cap306/4 shop64
+  them cap150   34g  383$ | Hear mv1 hit2@2 cap119/4 shop130 | Ryth mv2 hit1@2 cap217/13 shop199 | Vesp mv1 hit1@1 cap34/4 shop72
+== 01fracture 46481228 final 1360
+  us   cap150   60g  505$ | Hear mv5 hit5@2 cap151/22 shop151 | Vesp mv5 hit5@2 cap52/22 shop52 | Vend mv5 hit5@4 cap40/4 shop40 | Marc mv4 hit19@19 cap64/4 shop64 | Ryth mv4 hit33@32 cap263/4 shop263
+  them cap150   31g  429$ | Hear mv2 hit20@20 cap117/4 shop205 | Ryth mv2 hit17@20 cap72/15 shop78 | Ren mv3 hit3@4 cap266/4 shop299 | Marc mv2 hit15@19 cap754/2 shop755 | Vesp mv2 hit2@3 cap28/4 shop98
+== 01gold_rush 5ddf2b03 final 1363
+  us   cap150   33g  133$ | Hear mv3 hit3@2 cap50/11 shop89 | Vesp mv3 hit3@3 cap66/11 shop98 | Vend mv3 hit3@4 cap102/11 shop131
+  them cap150   44g  160$ | Ryth mv2 hit8@8 cap35/11 shop87 | Vesp mv2 hit2@2 cap254/12 shop63 | Cass mv2 hit46@17 cap427/12 shop69 | Issa mv3 hit3@1 cap48/11 shop53
+== 01hooks 26b2c8f5 final 1323
+  us   cap150    0g    0$ | Hear mv2 hit2@2 cap-/- shop37 | Vesp mv2 hit2@3 cap376/22 shop303 | Ryth mv2 hit253@11 cap-/- shop515 | Marc mv2 hit14@12 cap-/- shop297
+  them cap150   44g  180$ | Ryth mv2 hit22@12 cap680/22 shop62 | Vesp mv2 hit2@2 cap251/11 shop131 | Vend mv2 hit2@4 cap107/22 shop43 | Hear mv2 hit2@3 cap85/22 shop53
+== 01islands 669a13bf final 853
+  us   cap150    0g    0$ | Hear mv9 hit12@3 cap248/4 shop674 | Vesp mv9 hit11@3 cap167/4 shop257 | Vend mv9 hit12@3 cap183/4 shop232 | Ryth mv7 hit9@4 cap-/- shop122 | Marc mv7 hit8@4 cap443/58 shop171
+  them cap150   60g  462$ | Hear mv3 hit14@4 cap312/30 shop59 | Ryth mv3 hit34@27 cap286/58 shop70 | Marc mv3 hit33@24 cap199/30 shop200 | Vend mv3 hit32@26 cap94/30 shop95 | Varg mv3 hit24@23 cap752/30 shop536
+== 01starfish e7d9336f final 1430
+  us   cap150   48g  273$ | Hear mv5 hit5@2 cap647/51 shop85 | Vesp mv5 hit5@3 cap87/4 shop51 | Marc mv3 hit14@15 cap116/36 shop117 | Ryth mv3 hit17@15 cap60/8 shop60 | Vend mv5 hit5@3 cap687/4 shop268
+  them cap150   16g  356$ | Hear mv1 hit15@11 cap370/8 shop160 | Ryth mv1 hit14@14 cap443/8 shop472 | Cass mv1 hit10@14 cap288/8 shop298 | Issa mv1 hit1@1 cap618/8 shop685 | Marc mv1 hit11@14 cap122/4 shop160 | Vesp mv1 hit1@3 cap27/8 shop51
+== 02geodes 41602edc final 1014
+  us   cap150   84g  342$ | Vend mv3 hit3@2 cap34/11 shop71 | Vesp mv3 hit3@3 cap49/22 shop49 | Hear mv3 hit3@4 cap189/29 shop189 | Marc mv3 hit37@30 cap68/11 shop151 | Ryth mv3 hit32@30 cap76/29 shop77
+  them cap150   98g  342$ | Vend mv1 hit1@1 cap65/6 shop122 | Vesp mv1 hit1@1 cap24/11 shop96 | Marc mv1 hit30@21 cap53/29 shop54 | Ryth mv1 hit47@32 cap170/6 shop214 | Hear mv1 hit1@5 cap65/5 shop134
+== 02gift_wrapping 0a822068 final 1000
+  us   cap150   72g 1417$ | Hear mv5 hit5@2 cap132/16 shop134 | Vesp mv4 hit4@2 cap43/16 shop58 | Vend mv4 hit4@2 cap249/16 shop255 | Ryth mv4 hit8@6 cap221/16 shop225 | Marc mv4 hit5@6 cap282/64 shop282
+  them cap150  108g 1376$ | Hear mv2 hit4@3 cap215/8 shop236 | Marc mv2 hit6@6 cap114/6 shop177 | Vend mv2 hit2@4 cap494/8 shop519 | Ryth mv2 hit5@6 cap27/8 shop107 | Vesp mv2 hit3@3 cap27/8 shop115
+== 02harvest 22360404 final 1153
+  us   cap150   81g  512$ | Hear mv4 hit4@2 cap44/15 shop44 | Vesp mv4 hit4@3 cap134/15 shop134 | Vend mv4 hit4@4 cap165/11 shop165 | Marc mv4 hit19@18 cap43/11 shop103 | Ryth mv4 hit22@18 cap272/29 shop273
+  them cap150   88g  463$ | Hear mv1 hit1@1 cap44/15 shop77 | Vesp mv1 hit1@4 cap93/11 shop94 | Ryth mv1 hit25@18 cap152/7 shop153 | Marc mv1 hit17@19 cap33/11 shop34 | Vend mv1 hit1@1 cap224/11 shop225
+== 02harvest 2df62634 final 1204
+  us   cap150   81g  512$ | Hear mv4 hit4@2 cap44/15 shop44 | Vesp mv4 hit4@3 cap134/15 shop134 | Vend mv4 hit4@4 cap165/11 shop165 | Marc mv4 hit19@18 cap43/11 shop103 | Ryth mv4 hit22@18 cap215/15 shop215
+  them cap150   70g  495$ | Marc mv9 hit23@18 cap44/11 shop126 | Vesp mv10 hit9@2 cap55/15 shop142 | Vend mv10 hit9@4 cap993/15 shop1095 | Hear mv9 hit28@23 cap368/7 shop488 | Will mv12 hit25@15 cap177/29 shop251
+us mean first move 3.8 hit 13.4 cap 193.0 | cap150 gems 54.2 gold 419.6
+them mean first move 2.7 hit 11.8 cap 184.5 | cap150 gems 68.2 gold 471.3
+######## campdmg.py — our 16 ranked losses (us = HouseOfCoders v17)
+games 16
+ALL          dmg/g us   104023 them   143287 | camp hits/g us  922.1 them 1348.1 | dmg/hit us  112.8 them  106.3
+VesperVale   dmg/g us    38312 them    39354 | camp hits/g us  200.2 them  253.1 | dmg/hit us  191.3 them  155.5
+Vendetta     dmg/g us    21760 them    21480 | camp hits/g us  202.8 them  206.1 | dmg/hit us  107.3 them  104.2
+Ryth         dmg/g us    16164 them    23661 | camp hits/g us  165.9 them  243.4 | dmg/hit us   97.4 them   97.2
+Marcella     dmg/g us    14003 them    21204 | camp hits/g us  188.4 them  231.1 | dmg/hit us   74.3 them   91.7
+HeartOfRuin  dmg/g us    13785 them    25064 | camp hits/g us  164.7 them  253.4 | dmg/hit us   83.7 them   98.9
+Ren          dmg/g us        0 them     1840 | camp hits/g us    0.0 them   26.0 | dmg/hit us    0.0 them   70.8
+Issac        dmg/g us        0 them     1611 | camp hits/g us    0.0 them   31.0 | dmg/hit us    0.0 them   52.0
+Willow       dmg/g us        0 them     1745 | camp hits/g us    0.0 them   25.4 | dmg/hit us    0.0 them   68.8
+Cassi        dmg/g us        0 them     1594 | camp hits/g us    0.0 them   29.1 | dmg/hit us    0.0 them   54.9
+Varg         dmg/g us        0 them     5734 | camp hits/g us    0.0 them   49.6 | dmg/hit us    0.0 them  115.7
+######## budget.py — our 16 ranked losses (us = HouseOfCoders v17)
+games 16 (body-rounds per game)
+type                  dead          camp         champ         walkE          walk        standE         stand         spawn
+ALL             667/638       633/943       645/602      1039/772      2059/1999      143/255       461/632        40/20    
+HeartOfRuin     153/109       131/196       178/168       243/142       393/377        29/42        109/124        12/4     
+VesperVale      106/86        139/185       178/150       242/152       387/297        65/61        121/120         9/2     
+Marcella        144/82        127/155        74/47        241/114       442/394        14/28         54/90          7/4     
+Ryth             86/104       108/156        52/70        156/185       441/399        18/40         59/91          3/3     
+Vendetta        178/74        128/133       163/103       156/94        396/271        17/33        118/92         10/4     
+Varg              0/22          0/32          0/19          0/25          0/76          0/6           0/16          0/0     
+Cassi             0/71          0/25          0/6           0/20          0/37          0/5           0/10          0/0     
+Ren               0/0           0/23          0/6           0/2           0/29          0/2           0/23          0/0     
+Issac             0/71          0/22          0/16          0/19          0/28          0/8           0/10          0/0     
+Willow            0/19          0/17          0/17          0/18          0/91          0/29          0/56          0/3     
+######## contact.py — our 16 ranked losses (us = HouseOfCoders v17)
+games 16
+us   ALL  contacts/g   5.3 | farm: 0.21 (die 0.11 cap 0.17) fight: 0.49 (die 0.14 cap 0.07) leave: 0.22 (die 0.05 cap 0.11) other: 0.07 (die 0.00 cap 0.50)
+us   adv  contacts/g   3.6 | farm: 0.21 (die 0.08 cap 0.17) fight: 0.49 (die 0.14 cap 0.07) leave: 0.25 (die 0.00 cap 0.07) other: 0.05 (die 0.00 cap 0.33)
+us   even contacts/g   0.9 | farm: 0.33 (die 0.20 cap 0.00) fight: 0.47 (die 0.14 cap 0.00) leave: 0.13 (die 0.50 cap 0.00) other: 0.07 (die 0.00 cap 1.00)
+us   dis  contacts/g   0.8 | farm: 0.08 (die 0.00 cap 1.00) fight: 0.54 (die 0.14 cap 0.14) leave: 0.23 (die 0.00 cap 0.33) other: 0.15 (die 0.00 cap 0.50)
+them ALL  contacts/g  13.1 | farm: 0.49 (die 0.05 cap 0.18) fight: 0.33 (die 0.09 cap 0.10) leave: 0.07 (die 0.07 cap 0.14) other: 0.11 (die 0.04 cap 0.43)
+them adv  contacts/g  11.6 | farm: 0.48 (die 0.06 cap 0.20) fight: 0.34 (die 0.06 cap 0.11) leave: 0.08 (die 0.07 cap 0.14) other: 0.11 (die 0.05 cap 0.45)
+them even contacts/g   0.9 | farm: 0.57 (die 0.00 cap 0.00) fight: 0.21 (die 0.00 cap 0.00) leave: 0.00 (die 0.00 cap 0.00) other: 0.21 (die 0.00 cap 0.33)
+them dis  contacts/g   0.7 | farm: 0.55 (die 0.00 cap 0.17) fight: 0.45 (die 0.40 cap 0.00) leave: 0.00 (die 0.00 cap 0.00) other: 0.00 (die 0.00 cap 0.00)
+######## items.py — ic's 10 recent ranked wins (us = ic)
+games 10
+r 200
+  fam_bruiser        us    3.7  them    3.0
+  fam_durability     us    1.0  them    0.9
+  fam_hunter         us    0.0  them    1.8
+  fam_jungle         us    5.6  them    3.0
+  fam_monster        us    1.9  them    1.1
+  fam_power          us    1.1  them    0.2
+  fam_prospector     us    0.0  them    0.5
+  fam_treasure       us   12.0  them    4.5
+  foc                us    2.7  them    4.1
+  hp                 us   11.2  them    4.4
+  str                us   11.4  them    6.5
+r 400
+  fam_bruiser        us   19.6  them    9.7
+  fam_durability     us    4.6  them    2.5
+  fam_hunter         us    0.0  them    3.2
+  fam_jungle         us   11.7  them    9.1
+  fam_monster        us    2.6  them    3.6
+  fam_power          us    4.8  them    1.5
+  fam_prospector     us    0.0  them    0.5
+  fam_treasure       us   14.5  them    8.6
+  foc                us    4.7  them   11.5
+  hp                 us   24.9  them   13.8
+  str                us   28.2  them   13.4
+r 600
+  fam_bruiser        us   43.8  them   21.3
+  fam_durability     us    7.1  them    4.0
+  fam_home           us    0.0  them    0.5
+  fam_hunter         us    0.0  them    3.4
+  fam_jungle         us   13.2  them   11.4
+  fam_monster        us    3.0  them    4.8
+  fam_power          us    7.7  them    3.2
+  fam_prospector     us    0.0  them    0.5
+  fam_treasure       us   16.3  them   10.3
+  foc                us    7.3  them   17.2
+  hp                 us   33.3  them   20.3
+  str                us   50.5  them   21.9
+r 800
+  fam_bruiser        us   82.0  them   41.1
+  fam_durability     us    9.0  them    4.7
+  fam_home           us    0.0  them    1.0
+  fam_hunter         us    0.0  them    3.6
+  fam_jungle         us   14.1  them   12.0
+  fam_monster        us    3.0  them    6.5
+  fam_power          us    8.3  them    3.7
+  fam_prospector     us    0.0  them    0.5
+  fam_treasure       us   16.8  them    9.8
+  foc                us    7.9  them   23.4
+  hp                 us   44.3  them   27.9
+  str                us   81.0  them   31.6
+emblems by r800 us [('bruiser_str', 108), ('bruiser_hp', 48), ('treasure_hp', 19), ('jungle_str', 17), ('durability_hp', 14), ('treasure_str', 14), ('power_str', 8), ('jungle_hp', 5), ('jungle_foc', 4), ('power_foc', 4), ('monster_str', 4), ('durability_foc', 3)]
+emblems by r800 them [('bruiser_hp', 26), ('bruiser_str', 25), ('bruiser_foc', 23), ('jungle_foc', 10), ('monster_str', 7), ('power_str', 7), ('jungle_str', 7), ('treasure_str', 7), ('durability_hp', 6), ('treasure_foc', 5), ('treasure_hp', 5), ('jungle_hp', 4)]
+######## nearwalk.py — ic's 10 recent ranked wins (us = ic)
+games 10
+early ALL  | us n/g  399.0 hit:0.28 trib:0.01 away:0.24 toward:0.24 side:0.09 stand:0.15 | them n/g  366.0 hit:0.28 trib:0.00 away:0.23 toward:0.22 side:0.09 stand:0.17
+early adv  | us n/g  227.0 hit:0.27 trib:0.01 away:0.22 toward:0.27 side:0.08 stand:0.14 | them n/g  187.3 hit:0.30 trib:0.01 away:0.19 toward:0.26 side:0.08 stand:0.16
+early even | us n/g   70.5 hit:0.28 trib:0.00 away:0.23 toward:0.25 side:0.09 stand:0.14 | them n/g   74.1 hit:0.25 trib:0.01 away:0.27 toward:0.21 side:0.09 stand:0.18
+early dis  | us n/g  101.5 hit:0.30 trib:0.00 away:0.28 toward:0.15 side:0.12 stand:0.16 | them n/g  104.6 hit:0.25 trib:0.00 away:0.28 toward:0.15 side:0.11 stand:0.20
+mid   ALL  | us n/g  579.5 hit:0.30 trib:0.00 away:0.21 toward:0.23 side:0.11 stand:0.15 | them n/g  544.3 hit:0.27 trib:0.01 away:0.24 toward:0.24 side:0.09 stand:0.16
+mid   adv  | us n/g  339.1 hit:0.31 trib:0.01 away:0.18 toward:0.27 side:0.09 stand:0.14 | them n/g  261.1 hit:0.31 trib:0.01 away:0.20 toward:0.30 side:0.07 stand:0.13
+mid   even | us n/g   87.5 hit:0.24 trib:0.00 away:0.29 toward:0.18 side:0.15 stand:0.14 | them n/g  100.5 hit:0.25 trib:0.01 away:0.23 toward:0.25 side:0.08 stand:0.18
+mid   dis  | us n/g  152.9 hit:0.29 trib:0.00 away:0.26 toward:0.16 side:0.12 stand:0.17 | them n/g  182.7 hit:0.22 trib:0.00 away:0.31 toward:0.15 side:0.12 stand:0.20
+late  ALL  | us n/g  365.4 hit:0.28 trib:0.01 away:0.18 toward:0.19 side:0.14 stand:0.21 | them n/g  312.5 hit:0.21 trib:0.00 away:0.24 toward:0.22 side:0.12 stand:0.21
+late  adv  | us n/g  202.4 hit:0.29 trib:0.01 away:0.15 toward:0.21 side:0.13 stand:0.21 | them n/g  137.9 hit:0.23 trib:0.01 away:0.21 toward:0.29 side:0.11 stand:0.15
+late  even | us n/g   60.0 hit:0.23 trib:0.01 away:0.26 toward:0.17 side:0.15 stand:0.18 | them n/g   60.3 hit:0.21 trib:0.00 away:0.22 toward:0.17 side:0.13 stand:0.26
+late  dis  | us n/g  103.0 hit:0.29 trib:0.00 away:0.20 toward:0.15 side:0.13 stand:0.22 | them n/g  114.3 hit:0.19 trib:0.00 away:0.28 toward:0.15 side:0.12 stand:0.26
+######## campdmg.py — ic's 10 recent ranked wins (us = ic)
+games 10
+ALL          dmg/g us    98075 them    64550 | camp hits/g us 1135.6 them  775.4 | dmg/hit us   86.4 them   83.2
+VesperVale   dmg/g us    23677 them    13784 | camp hits/g us  207.7 them  149.1 | dmg/hit us  114.0 them   92.4
+Vendetta     dmg/g us    20699 them    14878 | camp hits/g us  202.6 them  181.1 | dmg/hit us  102.2 them   82.2
+Cassi        dmg/g us    15701 them        0 | camp hits/g us  208.9 them    0.0 | dmg/hit us   75.2 them    0.0
+HeartOfRuin  dmg/g us    15555 them     9428 | camp hits/g us  217.1 them  131.8 | dmg/hit us   71.7 them   71.5
+Issac        dmg/g us    11063 them        0 | camp hits/g us  181.2 them    0.0 | dmg/hit us   61.1 them    0.0
+Marcella     dmg/g us     7978 them    12583 | camp hits/g us   69.9 them  153.1 | dmg/hit us  114.1 them   82.2
+Willow       dmg/g us     2273 them     1643 | camp hits/g us   34.5 them   24.6 | dmg/hit us   65.9 them   66.8
+Varg         dmg/g us     1130 them        0 | camp hits/g us   13.7 them    0.0 | dmg/hit us   82.5 them    0.0
+Prism        dmg/g us        0 them     6457 | camp hits/g us    0.0 them   60.5 | dmg/hit us    0.0 them  106.7
+Tavi         dmg/g us        0 them     3824 | camp hits/g us    0.0 them   46.3 | dmg/hit us    0.0 them   82.6
+Ryth         dmg/g us        0 them     1951 | camp hits/g us    0.0 them   28.9 | dmg/hit us    0.0 them   67.5
+######## budget.py — ic's 10 recent ranked wins (us = ic)
+games 10 (body-rounds per game)
+type                  dead          camp         champ         walkE          walk        standE         stand         spawn
+ALL             548/500       814/522       523/436       895/808      1345/1077      200/201       417/403       131/113   
+HeartOfRuin      78/87        170/102       136/118       195/164       223/212        47/39         57/79         10/11    
+VesperVale       73/65        150/107       132/132       169/191       209/181        43/51         82/85         58/26    
+Vendetta         54/153       118/97         97/112       167/180       204/210        41/49        128/87          4/27    
+Cassi           150/0         174/0          37/0         128/0         260/0          12/0          32/0          19/0     
+Marcella         30/102        47/101        26/38         74/179       173/248        30/36         59/70         25/38    
+Issac           150/0         123/0          82/0         151/0         219/0          24/0          51/0          14/0     
+Prism             0/26          0/46          0/10          0/32          0/43          0/6           0/13          0/2     
+Willow           12/12         24/17         10/7           8/9          35/25          2/0           2/6           0/1     
+Tavi              0/18          0/33          0/11          0/28          0/107         0/16          0/55          0/8     
+Ryth              0/36          0/18          0/7           0/25          0/51          0/3           0/8           0/1     
+Varg              0/0           8/0           4/0           4/0          22/0           2/0           6/0           1/0     
+######## contact.py — ic's 10 recent ranked wins (us = ic)
+games 10
+us   ALL  contacts/g  17.0 | farm: 0.46 (die 0.00 cap 0.26) fight: 0.30 (die 0.06 cap 0.08) leave: 0.09 (die 0.06 cap 0.19) other: 0.15 (die 0.00 cap 0.40)
+us   adv  contacts/g  14.2 | farm: 0.47 (die 0.00 cap 0.22) fight: 0.27 (die 0.03 cap 0.05) leave: 0.11 (die 0.07 cap 0.20) other: 0.15 (die 0.00 cap 0.43)
+us   even contacts/g   1.6 | farm: 0.44 (die 0.00 cap 0.29) fight: 0.38 (die 0.17 cap 0.33) leave: 0.00 (die 0.00 cap 0.00) other: 0.19 (die 0.00 cap 0.00)
+us   dis  contacts/g   1.2 | farm: 0.33 (die 0.00 cap 0.75) fight: 0.50 (die 0.17 cap 0.00) leave: 0.08 (die 0.00 cap 0.00) other: 0.08 (die 0.00 cap 1.00)
+them ALL  contacts/g  13.5 | farm: 0.35 (die 0.04 cap 0.19) fight: 0.32 (die 0.00 cap 0.09) leave: 0.15 (die 0.00 cap 0.15) other: 0.19 (die 0.04 cap 0.48)
+them adv  contacts/g  10.3 | farm: 0.36 (die 0.03 cap 0.16) fight: 0.30 (die 0.00 cap 0.10) leave: 0.16 (die 0.00 cap 0.06) other: 0.18 (die 0.00 cap 0.47)
+them even contacts/g   2.0 | farm: 0.40 (die 0.00 cap 0.38) fight: 0.30 (die 0.00 cap 0.17) leave: 0.10 (die 0.00 cap 0.50) other: 0.20 (die 0.25 cap 0.50)
+them dis  contacts/g   1.2 | farm: 0.17 (die 0.50 cap 0.00) fight: 0.50 (die 0.00 cap 0.00) leave: 0.17 (die 0.00 cap 0.50) other: 0.17 (die 0.00 cap 0.50)
+######## items.py — mite's 10 recent ranked wins (us = mite)
+games 10
+r 200
+  fam_bruiser        us    0.2  them    2.1
+  fam_durability     us    0.6  them    0.8
+  fam_hunter         us    0.0  them    0.6
+  fam_jungle         us    2.6  them    3.5
+  fam_monster        us    0.6  them    1.4
+  fam_prospector     us    0.0  them    0.4
+  fam_treasure       us   17.1  them    4.8
+  foc                us    4.3  them    2.1
+  hp                 us    6.4  them    3.5
+  str                us   10.4  them    8.0
+r 400
+  fam_bruiser        us    9.5  them    7.7
+  fam_durability     us    4.9  them    1.6
+  fam_hunter         us    0.0  them    1.0
+  fam_jungle         us   10.4  them    7.6
+  fam_monster        us    6.0  them    1.6
+  fam_power          us    4.1  them    1.0
+  fam_prospector     us    0.0  them    0.5
+  fam_treasure       us   22.1  them    7.6
+  foc                us   13.1  them    7.0
+  hp                 us   17.3  them    6.7
+  str                us   26.6  them   14.9
+r 600
+  fam_bruiser        us   30.3  them   17.2
+  fam_durability     us   11.1  them    4.5
+  fam_home           us    0.0  them    0.5
+  fam_hunter         us    0.0  them    1.0
+  fam_jungle         us   15.1  them   12.2
+  fam_monster        us   13.3  them    2.6
+  fam_power          us    7.3  them    1.3
+  fam_prospector     us    0.0  them    0.5
+  fam_treasure       us   22.9  them   10.0
+  foc                us   22.1  them   11.4
+  hp                 us   33.0  them   15.0
+  str                us   44.9  them   23.4
+r 800
+  fam_bruiser        us   65.1  them   33.2
+  fam_durability     us   15.6  them    8.7
+  fam_home           us    0.0  them    1.5
+  fam_hunter         us    0.0  them    1.0
+  fam_jungle         us   16.2  them   13.1
+  fam_monster        us   17.0  them    3.5
+  fam_power          us    8.6  them    1.5
+  fam_prospector     us    0.0  them    0.5
+  fam_treasure       us   23.5  them   10.5
+  foc                us   30.4  them   16.3
+  hp                 us   49.7  them   25.3
+  str                us   65.9  them   31.9
+emblems by r800 us [('bruiser_str', 50), ('bruiser_hp', 48), ('treasure_str', 25), ('monster_str', 23), ('durability_hp', 22), ('bruiser_foc', 21), ('jungle_foc', 14), ('power_str', 13), ('treasure_hp', 11), ('monster_foc', 10), ('jungle_str', 9), ('jungle_hp', 8)]
+emblems by r800 them [('bruiser_str', 23), ('bruiser_foc', 17), ('bruiser_hp', 16), ('durability_hp', 13), ('treasure_str', 13), ('jungle_str', 12), ('jungle_foc', 7), ('monster_str', 6), ('jungle_hp', 6), ('treasure_foc', 4), ('power_str', 3), ('home_hp', 3)]
+######## nearwalk.py — mite's 10 recent ranked wins (us = mite)
+games 10
+early ALL  | us n/g  422.3 hit:0.38 trib:0.01 away:0.17 toward:0.21 side:0.06 stand:0.17 | them n/g  355.1 hit:0.26 trib:0.00 away:0.27 toward:0.25 side:0.11 stand:0.12
+early adv  | us n/g  265.5 hit:0.38 trib:0.01 away:0.15 toward:0.22 side:0.06 stand:0.18 | them n/g  134.4 hit:0.29 trib:0.01 away:0.22 toward:0.30 side:0.10 stand:0.08
+early even | us n/g   90.7 hit:0.42 trib:0.01 away:0.17 toward:0.19 side:0.07 stand:0.14 | them n/g   85.8 hit:0.24 trib:0.00 away:0.28 toward:0.25 side:0.11 stand:0.12
+early dis  | us n/g   66.1 hit:0.35 trib:0.00 away:0.25 toward:0.18 side:0.07 stand:0.15 | them n/g  134.9 hit:0.24 trib:0.00 away:0.31 toward:0.19 side:0.11 stand:0.15
+mid   ALL  | us n/g  541.3 hit:0.31 trib:0.01 away:0.18 toward:0.22 side:0.08 stand:0.19 | them n/g  499.6 hit:0.26 trib:0.01 away:0.26 toward:0.22 side:0.11 stand:0.14
+mid   adv  | us n/g  377.7 hit:0.33 trib:0.01 away:0.15 toward:0.23 side:0.08 stand:0.20 | them n/g  193.8 hit:0.27 trib:0.01 away:0.19 toward:0.29 side:0.10 stand:0.14
+mid   even | us n/g   73.1 hit:0.33 trib:0.01 away:0.18 toward:0.22 side:0.09 stand:0.16 | them n/g   95.3 hit:0.26 trib:0.01 away:0.27 toward:0.21 side:0.12 stand:0.13
+mid   dis  | us n/g   90.5 hit:0.25 trib:0.01 away:0.30 toward:0.19 side:0.08 stand:0.18 | them n/g  210.5 hit:0.26 trib:0.00 away:0.32 toward:0.17 side:0.11 stand:0.14
+late  ALL  | us n/g  246.4 hit:0.30 trib:0.01 away:0.16 toward:0.22 side:0.08 stand:0.23 | them n/g  200.9 hit:0.27 trib:0.00 away:0.23 toward:0.25 side:0.12 stand:0.14
+late  adv  | us n/g  195.1 hit:0.30 trib:0.01 away:0.15 toward:0.22 side:0.07 stand:0.25 | them n/g   64.9 hit:0.21 trib:0.01 away:0.22 toward:0.30 side:0.13 stand:0.14
+late  even | us n/g   24.8 hit:0.30 trib:0.02 away:0.18 toward:0.26 side:0.09 stand:0.16 | them n/g   29.5 hit:0.22 trib:0.00 away:0.21 toward:0.30 side:0.16 stand:0.11
+late  dis  | us n/g   26.5 hit:0.24 trib:0.00 away:0.25 toward:0.16 side:0.13 stand:0.23 | them n/g  106.5 hit:0.32 trib:0.00 away:0.24 toward:0.20 side:0.10 stand:0.14
+######## campdmg.py — mite's 10 recent ranked wins (us = mite)
+games 10
+ALL          dmg/g us   101231 them    54568 | camp hits/g us 1010.6 them  691.7 | dmg/hit us  100.2 them   78.9
+Vendetta     dmg/g us    36397 them    10591 | camp hits/g us  252.4 them  118.2 | dmg/hit us  144.2 them   89.6
+VesperVale   dmg/g us    25643 them    10007 | camp hits/g us  258.7 them  126.4 | dmg/hit us   99.1 them   79.2
+HeartOfRuin  dmg/g us    16939 them     7438 | camp hits/g us  207.5 them  117.2 | dmg/hit us   81.6 them   63.5
+Marcella     dmg/g us     7240 them    12516 | camp hits/g us   95.9 them  147.1 | dmg/hit us   75.5 them   85.1
+Tavi         dmg/g us     5587 them     1717 | camp hits/g us   69.3 them   27.7 | dmg/hit us   80.6 them   62.0
+Issac        dmg/g us     5003 them     1114 | camp hits/g us   64.9 them   20.7 | dmg/hit us   77.1 them   53.8
+Cassi        dmg/g us     4423 them     1249 | camp hits/g us   61.9 them   21.6 | dmg/hit us   71.4 them   57.8
+Varg         dmg/g us        0 them     1275 | camp hits/g us    0.0 them   15.6 | dmg/hit us    0.0 them   81.7
+Ryth         dmg/g us        0 them     4497 | camp hits/g us    0.0 them   62.5 | dmg/hit us    0.0 them   71.9
+Prism        dmg/g us        0 them     4164 | camp hits/g us    0.0 them   34.7 | dmg/hit us    0.0 them  120.0
+######## budget.py — mite's 10 recent ranked wins (us = mite)
+games 10 (body-rounds per game)
+type                  dead          camp         champ         walkE          walk        standE         stand         spawn
+ALL             229/596       726/473       512/393       689/776      1508/1519      253/169       448/248        31/12    
+VesperVale       30/90        189/91        150/102       150/125       280/252        54/30         99/53          6/1     
+HeartOfRuin      24/83        162/90        161/91        164/107       275/241        65/20        104/37          5/1     
+Vendetta         48/148       162/68        122/74        134/111       292/150        66/34        128/44          7/2     
+Marcella         12/96         62/99         17/46         58/189       261/349        13/42         45/52          1/6     
+Cassi            42/6          54/19          9/0          65/0          82/47         15/0          18/8           4/0     
+Tavi             30/50         52/17         20/17         51/56        268/14         13/7          34/4           1/0     
+Issac            42/6          44/14         33/8          66/2          50/36         27/0          20/13          7/0     
+Ryth              0/72          0/40          0/41          0/125         0/209         0/24          0/15          0/2     
+Prism             0/32          0/26          0/10          0/41          0/102         0/9           0/11          0/0     
+Varg              0/12          0/10          0/6           0/20          0/117         0/2           0/11          0/0     
+######## contact.py — mite's 10 recent ranked wins (us = mite)
+games 10
+us   ALL  contacts/g  16.1 | farm: 0.52 (die 0.01 cap 0.29) fight: 0.27 (die 0.05 cap 0.19) leave: 0.05 (die 0.00 cap 0.38) other: 0.17 (die 0.00 cap 0.41)
+us   adv  contacts/g  13.7 | farm: 0.52 (die 0.01 cap 0.30) fight: 0.25 (die 0.03 cap 0.24) leave: 0.05 (die 0.00 cap 0.29) other: 0.18 (die 0.00 cap 0.44)
+us   even contacts/g   1.4 | farm: 0.57 (die 0.00 cap 0.00) fight: 0.36 (die 0.20 cap 0.00) leave: 0.00 (die 0.00 cap 0.00) other: 0.07 (die 0.00 cap 0.00)
+us   dis  contacts/g   1.0 | farm: 0.40 (die 0.00 cap 0.75) fight: 0.40 (die 0.00 cap 0.00) leave: 0.10 (die 0.00 cap 1.00) other: 0.10 (die 0.00 cap 0.00)
+them ALL  contacts/g   7.6 | farm: 0.42 (die 0.06 cap 0.22) fight: 0.18 (die 0.07 cap 0.29) leave: 0.21 (die 0.00 cap 0.19) other: 0.18 (die 0.00 cap 0.50)
+them adv  contacts/g   4.5 | farm: 0.40 (die 0.00 cap 0.28) fight: 0.16 (die 0.00 cap 0.29) leave: 0.20 (die 0.00 cap 0.22) other: 0.24 (die 0.00 cap 0.55)
+them even contacts/g   1.6 | farm: 0.50 (die 0.12 cap 0.12) fight: 0.19 (die 0.33 cap 0.33) leave: 0.25 (die 0.00 cap 0.00) other: 0.06 (die 0.00 cap 0.00)
+them dis  contacts/g   1.5 | farm: 0.40 (die 0.17 cap 0.17) fight: 0.27 (die 0.00 cap 0.25) leave: 0.20 (die 0.00 cap 0.33) other: 0.13 (die 0.00 cap 0.50)
+######## deaths.py — our 16 ranked losses
+games 16
+us   ALL          deaths/g 11.44 | alone 0.21 en>=2 0.70 hp_lt_0.8 0.63 hp_gt_1.2 0.22 fighting 0.85 farming 0.03 by_camp 0.11 bag 6
+us   Vendetta     deaths/g 3.12 | alone 0.14 en>=2 0.68 hp_lt_0.8 0.48 hp_gt_1.2 0.30 fighting 0.86 farming 0.02 by_camp 0.14 bag 5
+us   HeartOfRuin  deaths/g 2.56 | alone 0.20 en>=2 0.73 hp_lt_0.8 0.63 hp_gt_1.2 0.27 fighting 0.95 farming 0.02 by_camp 0.12 bag 9
+us   Marcella     deaths/g 2.50 | alone 0.15 en>=2 0.65 hp_lt_0.8 0.68 hp_gt_1.2 0.15 fighting 0.78 farming 0.03 by_camp 0.10 bag 1
+us   VesperVale   deaths/g 1.81 | alone 0.34 en>=2 0.76 hp_lt_0.8 0.79 hp_gt_1.2 0.17 fighting 0.69 farming 0.03 by_camp 0.17 bag 9
+us   Ryth         deaths/g 1.44 | alone 0.35 en>=2 0.70 hp_lt_0.8 0.70 hp_gt_1.2 0.17 fighting 0.96 farming 0.04 by_camp 0.00 bag 10
+them ALL          deaths/g 10.75 | alone 0.24 en>=2 0.72 hp_lt_0.8 0.42 hp_gt_1.2 0.41 fighting 0.79 farming 0.06 by_camp 0.12 bag 13
+them HeartOfRuin  deaths/g 1.81 | alone 0.31 en>=2 0.76 hp_lt_0.8 0.45 hp_gt_1.2 0.45 fighting 0.93 farming 0.00 by_camp 0.17 bag 16
+them Ryth         deaths/g 1.75 | alone 0.32 en>=2 0.93 hp_lt_0.8 0.68 hp_gt_1.2 0.14 fighting 0.89 farming 0.04 by_camp 0.11 bag 13
+them VesperVale   deaths/g 1.44 | alone 0.22 en>=2 0.70 hp_lt_0.8 0.30 hp_gt_1.2 0.39 fighting 0.87 farming 0.00 by_camp 0.13 bag 27
+them Marcella     deaths/g 1.38 | alone 0.32 en>=2 0.73 hp_lt_0.8 0.45 hp_gt_1.2 0.36 fighting 0.73 farming 0.23 by_camp 0.05 bag 16
+them Vendetta     deaths/g 1.25 | alone 0.35 en>=2 0.80 hp_lt_0.8 0.60 hp_gt_1.2 0.35 fighting 0.80 farming 0.00 by_camp 0.05 bag 10
+them Cassi        deaths/g 1.19 | alone 0.05 en>=2 0.47 hp_lt_0.8 0.16 hp_gt_1.2 0.74 fighting 0.47 farming 0.05 by_camp 0.11 bag 1
+them Issac        deaths/g 1.19 | alone 0.00 en>=2 0.68 hp_lt_0.8 0.26 hp_gt_1.2 0.47 fighting 0.79 farming 0.11 by_camp 0.11 bag 0
+them Varg         deaths/g 0.44 | alone 0.29 en>=2 0.43 hp_lt_0.8 0.29 hp_gt_1.2 0.57 fighting 0.71 farming 0.14 by_camp 0.43 bag 31
+them Willow       deaths/g 0.31 | alone 0.20 en>=2 0.40 hp_lt_0.8 0.40 hp_gt_1.2 0.60 fighting 0.60 farming 0.00 by_camp 0.20 bag 0
+######## deaths.py — ic wins
+games 10
+us   ALL          deaths/g 9.30 | alone 0.33 en>=2 0.58 hp_lt_0.8 0.51 hp_gt_1.2 0.35 fighting 0.77 farming 0.09 by_camp 0.14 bag 9
+us   Cassi        deaths/g 2.60 | alone 0.15 en>=2 0.46 hp_lt_0.8 0.38 hp_gt_1.2 0.42 fighting 0.65 farming 0.19 by_camp 0.15 bag 6
+us   Issac        deaths/g 2.60 | alone 0.23 en>=2 0.46 hp_lt_0.8 0.35 hp_gt_1.2 0.50 fighting 0.77 farming 0.04 by_camp 0.15 bag 7
+us   HeartOfRuin  deaths/g 1.30 | alone 0.69 en>=2 0.69 hp_lt_0.8 0.69 hp_gt_1.2 0.08 fighting 0.85 farming 0.08 by_camp 0.08 bag 4
+us   VesperVale   deaths/g 1.20 | alone 0.33 en>=2 1.00 hp_lt_0.8 0.83 hp_gt_1.2 0.08 fighting 1.00 farming 0.00 by_camp 0.00 bag 8
+us   Vendetta     deaths/g 0.90 | alone 0.56 en>=2 0.56 hp_lt_0.8 0.78 hp_gt_1.2 0.22 fighting 0.78 farming 0.00 by_camp 0.00 bag 35
+us   Marcella     deaths/g 0.50 | alone 0.60 en>=2 0.60 hp_lt_0.8 0.40 hp_gt_1.2 0.60 fighting 0.60 farming 0.20 by_camp 0.40 bag 0
+us   Willow       deaths/g 0.20 | alone 0.00 en>=2 0.50 hp_lt_0.8 0.00 hp_gt_1.2 1.00 fighting 1.00 farming 0.00 by_camp 1.00 bag 0
+them ALL          deaths/g 8.70 | alone 0.44 en>=2 0.69 hp_lt_0.8 0.67 hp_gt_1.2 0.16 fighting 0.82 farming 0.02 by_camp 0.09 bag 19
+them Vendetta     deaths/g 2.60 | alone 0.31 en>=2 0.73 hp_lt_0.8 0.50 hp_gt_1.2 0.23 fighting 0.77 farming 0.04 by_camp 0.08 bag 18
+them Marcella     deaths/g 1.80 | alone 0.61 en>=2 0.56 hp_lt_0.8 0.72 hp_gt_1.2 0.06 fighting 0.83 farming 0.00 by_camp 0.06 bag 19
+them HeartOfRuin  deaths/g 1.60 | alone 0.69 en>=2 0.81 hp_lt_0.8 0.88 hp_gt_1.2 0.06 fighting 0.88 farming 0.00 by_camp 0.00 bag 22
+them VesperVale   deaths/g 1.10 | alone 0.55 en>=2 0.55 hp_lt_0.8 0.73 hp_gt_1.2 0.27 fighting 0.82 farming 0.00 by_camp 0.18 bag 24
+them Ryth         deaths/g 0.60 | alone 0.00 en>=2 0.83 hp_lt_0.8 0.50 hp_gt_1.2 0.33 fighting 0.83 farming 0.00 by_camp 0.17 bag 1
+them Prism        deaths/g 0.50 | alone 0.20 en>=2 0.60 hp_lt_0.8 0.40 hp_gt_1.2 0.20 fighting 0.80 farming 0.20 by_camp 0.20 bag 47
+them Tavi         deaths/g 0.30 | alone 0.00 en>=2 0.67 hp_lt_0.8 1.00 hp_gt_1.2 0.00 fighting 0.67 farming 0.00 by_camp 0.33 bag 2
+them Willow       deaths/g 0.20 | alone 0.50 en>=2 1.00 hp_lt_0.8 1.00 hp_gt_1.2 0.00 fighting 1.00 farming 0.00 by_camp 0.00 bag 0
+######## deaths.py — mite wins
+games 10
+us   ALL          deaths/g 3.80 | alone 0.26 en>=2 0.63 hp_lt_0.8 0.42 hp_gt_1.2 0.45 fighting 0.74 farming 0.24 by_camp 0.13 bag 8
+us   Vendetta     deaths/g 0.80 | alone 0.00 en>=2 0.62 hp_lt_0.8 0.38 hp_gt_1.2 0.50 fighting 0.75 farming 0.25 by_camp 0.25 bag 5
+us   Cassi        deaths/g 0.70 | alone 0.29 en>=2 1.00 hp_lt_0.8 0.43 hp_gt_1.2 0.57 fighting 0.43 farming 0.57 by_camp 0.14 bag 7
+us   Issac        deaths/g 0.70 | alone 0.14 en>=2 0.71 hp_lt_0.8 0.14 hp_gt_1.2 0.71 fighting 0.71 farming 0.29 by_camp 0.14 bag 0
+us   VesperVale   deaths/g 0.50 | alone 0.40 en>=2 0.20 hp_lt_0.8 1.00 hp_gt_1.2 0.00 fighting 1.00 farming 0.00 by_camp 0.00 bag 28
+us   Tavi         deaths/g 0.50 | alone 0.40 en>=2 0.60 hp_lt_0.8 0.40 hp_gt_1.2 0.40 fighting 1.00 farming 0.00 by_camp 0.00 bag 0
+us   HeartOfRuin  deaths/g 0.40 | alone 0.75 en>=2 0.50 hp_lt_0.8 0.50 hp_gt_1.2 0.25 fighting 0.75 farming 0.25 by_camp 0.25 bag 20
+us   Marcella     deaths/g 0.20 | alone 0.00 en>=2 0.50 hp_lt_0.8 0.00 hp_gt_1.2 0.50 fighting 0.50 farming 0.00 by_camp 0.00 bag 2
+them ALL          deaths/g 10.40 | alone 0.45 en>=2 0.76 hp_lt_0.8 0.78 hp_gt_1.2 0.12 fighting 0.88 farming 0.00 by_camp 0.01 bag 8
+them Vendetta     deaths/g 2.50 | alone 0.32 en>=2 0.80 hp_lt_0.8 0.68 hp_gt_1.2 0.12 fighting 0.76 farming 0.00 by_camp 0.00 bag 5
+them Marcella     deaths/g 1.70 | alone 0.59 en>=2 0.82 hp_lt_0.8 0.82 hp_gt_1.2 0.06 fighting 0.94 farming 0.00 by_camp 0.06 bag 5
+them VesperVale   deaths/g 1.60 | alone 0.50 en>=2 0.69 hp_lt_0.8 0.81 hp_gt_1.2 0.12 fighting 0.94 farming 0.00 by_camp 0.00 bag 17
+them HeartOfRuin  deaths/g 1.50 | alone 0.53 en>=2 0.73 hp_lt_0.8 0.73 hp_gt_1.2 0.20 fighting 0.93 farming 0.00 by_camp 0.00 bag 9
+them Ryth         deaths/g 1.20 | alone 0.50 en>=2 0.58 hp_lt_0.8 0.83 hp_gt_1.2 0.17 fighting 1.00 farming 0.00 by_camp 0.00 bag 2
+them Tavi         deaths/g 0.90 | alone 0.33 en>=2 1.00 hp_lt_0.8 0.89 hp_gt_1.2 0.00 fighting 0.89 farming 0.00 by_camp 0.00 bag 0
+them Prism        deaths/g 0.60 | alone 0.50 en>=2 0.83 hp_lt_0.8 0.83 hp_gt_1.2 0.00 fighting 1.00 farming 0.00 by_camp 0.00 bag 16
+them Varg         deaths/g 0.20 | alone 0.00 en>=2 1.00 hp_lt_0.8 1.00 hp_gt_1.2 0.00 fighting 0.50 farming 0.00 by_camp 0.00 bag 22
+them Cassi        deaths/g 0.10 | alone 0.00 en>=2 0.00 hp_lt_0.8 0.00 hp_gt_1.2 1.00 fighting 0.00 farming 0.00 by_camp 0.00 bag 7
+them Issac        deaths/g 0.10 | alone 1.00 en>=2 0.00 hp_lt_0.8 1.00 hp_gt_1.2 0.00 fighting 0.00 farming 0.00 by_camp 0.00 bag 22

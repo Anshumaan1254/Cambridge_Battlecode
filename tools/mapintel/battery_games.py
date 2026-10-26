@@ -4,9 +4,11 @@
     python3 -I tools/mapintel/battery_games.py BATTERY_DIR [--out BATTERY_DIR/games.csv]
     (BATTERY_DIR = the archive's battery/ folder: meta.json, ledger/*.jsonl, keep/<bot>_vs_<opp>/<map>_<side>.json)
 
-One row per ledger game: battery (roster when the meta lists the cell as a roster cell, else outcome), bot, opp, map, side, the two
-rosters as the engine drafted them (from the kept statistics: champions in draft-pick order, Cassi and Issac as one pick), win, loss,
-rounds, gems, gold, deaths, kills, faults. Rows whose statistics were not kept get empty rosters (draft_learn.py skips them)."""
+One row per ledger game of the cells the meta lists (every ledger file when the meta lists none): battery (roster when the meta lists
+the cell as a roster cell, else outcome), bot, opp, map, side, the two rosters as the engine drafted them (from the kept statistics:
+champions in draft-pick order, Cassi and Issac as one pick), win, loss, rounds, gems, gold, deaths, kills, faults. Per (map, side) the
+LAST ledger row counts (the ledger's latest game: a --quick run's rows of an earlier build come first). Rows whose statistics were not
+kept get empty rosters (draft_learn.py and make_dataset.py skip them)."""
 import argparse, csv, glob, json, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -37,15 +39,17 @@ def main():
 	a = ap.parse_args()
 	meta = json.load(open(os.path.join(a.dir, "meta.json")))
 	kind = {(c["bot"], c["opp"]): c["battery"] for c in meta["cells"]}
+	cells = {f"{b}_vs_{o}.jsonl" for b, o in kind}
 	rows, missing = [], 0
 	for f in sorted(glob.glob(os.path.join(a.dir, "ledger", "*.jsonl"))):
-		seen = set()
+		if cells and os.path.basename(f) not in cells:
+			continue
+		last = {}
 		for line in open(f):
-			r = json.loads(line)
-			key = (r["map"], r["side"])
-			if key in seen:
-				continue
-			seen.add(key)
+			if line.strip():
+				r = json.loads(line)
+				last[(r["map"], r["side"])] = r
+		for _, r in sorted(last.items()):
 			sp = os.path.join(a.dir, "keep", f"{r['bot']}_vs_{r['opp']}", f"{r['map']}_{r['side']}.json")
 			ra = rb = ""
 			if os.path.exists(sp):

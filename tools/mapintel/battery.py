@@ -1,27 +1,32 @@
 #!/usr/bin/env python3
 """Simulation batteries of MAPAnalysis.md 5.5 for ANY bot (the user's new bot; nothing here assumes a bot from bots/). SIMULATED labels.
 
-    python3 tools/mapintel/battery.py --bot NAME [--opps self,idle,starter] [--maps 'maps/official/*.map26a'] [--jobs N]
+    python3 tools/mapintel/battery.py --bot NAME [--from SRC] [--opps self,idle,starter] [--maps 'maps/s3/*.map26a'] [--jobs N]
                                       [--rosters tools/mapintel/data/battery_rosters.json] [--per-map 8] [--skip-outcome]
                                       [--skip-roster] [--no-replays] [--quick] [--work mapintel_work/battery] [--out-dir .]
 
+Patch 2.0.0: cambc 4.0.0 (engine 2.0.0); the default maps are the 70 of maps/s3 (the sprint-3 pool: the 40 official maps + 30 new).
 Batteries (every game both sides, release mode as on the platform, through tools/ledger.py run ... --keep):
   * outcome: NAME (its own draft) against each opponent of --opps on every map: wins, gem margin, deaths, pace, tiebreak share.
     Opponent tokens: 'self' (NAME against itself), 'idle' (tools/mapintel/cpp/idle: drafts, never acts: NAME's unopposed pace),
-    'starter' (the cambc 3.0.5 starter bot from a scratch `cambc init`), or the name of any bot folder in bots/.
+    'starter' (the cambc 4.0.0 starter bot from a scratch `cambc init`), or the name of any bot folder in bots/.
   * roster: both teams' rosters forced. Per map the C = --per-map candidate rosters of --rosters (LEARNED: what strong teams drafted on
-    that map; COMPUTED: balanced over kit classes; tools/mapintel/battery_rosters.py), every pair (i < j) of candidates against each other
-    with NAME playing both teams: roster i vs roster j on every map and both sides. The rosters are forced by the bot under test: its
+    that map; COMPUTED: balanced over kit classes, the only kind on the 30 new maps; tools/mapintel/battery_rosters.py), every pair
+    (i < j) of candidates against each other with NAME playing both teams: roster i vs roster j on every map and both sides (8 per map:
+    28 pairs x 70 maps x 2 sides = 3,920 games). The rosters are forced by the bot under test: its
     draft must call mapintel::forced_pick() (tools/mapintel/cpp/mapintel/force_roster.h; README); the script writes mi_roster.h beside
-    that header in one copy of the bot per roster slot (bots/_mib_<NAME>_r<k>) and checks on three maps that the engine's drafts equal
-    the forced rosters (it stops with an error if they do not).
+    that header in one copy of the bot per roster slot (bots/_mib_<NAME>_r<k>) and checks in every kept game that the engine's drafts
+    equal the forced rosters (it stops with an error if they do not).
 Output: one archive OUT_DIR/mapintel_battery_<NAME>_<UTC stamp>.tar.gz (ledger rows, compact statistics, replays unless --no-replays,
 the rosters used, meta). Upload that file. A cut run resumes: the ledger skips games already played on the same sources."""
-import argparse, glob, json, os, platform, re, shutil, subprocess, sys, tarfile, tempfile, time, zipfile
+import argparse, filecmp, glob, json, os, platform, re, shutil, subprocess, sys, tarfile, tempfile, time, zipfile
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from engine import PICK_NAMES, BODY_NAMES, pick_bodies  # noqa: E402
+
+CAMBC = "4.0.0"  # the CLI of patch 2.0.0 (engine 2.0.0): the platform's engine
+QUICK = ("00elkring", "01hooks", "02arena")  # --quick: two maps of the old pool and one new one (02arena: 30 x 30, 3 a side)
 
 
 def die(msg):
@@ -47,6 +52,16 @@ def copy_bot(src, dst):
 	return d
 
 
+def same_tree(a, b):
+	"""True when folders a and b hold the same files with the same bytes."""
+	def files(d):
+		return {os.path.relpath(os.path.join(r, f), d) for r, _, fs in os.walk(d) for f in fs}
+	if not os.path.isdir(b):
+		return False
+	fa = files(a)
+	return fa == files(b) and all(filecmp.cmp(os.path.join(a, f), os.path.join(b, f), shallow=False) for f in fa)
+
+
 def bodynorm(s):
 	return re.sub(r"[^a-z]", "", s.lower())
 
@@ -69,15 +84,15 @@ def main():
 	ap.add_argument("--bot", required=True)
 	ap.add_argument("--from", dest="from_bot", default="", help="first make bots/BOT a battery-ready copy of bots/FROM (prepare_bot.py)")
 	ap.add_argument("--opps", default="self,idle,starter")
-	ap.add_argument("--maps", default="maps/official/*.map26a")
+	ap.add_argument("--maps", default="maps/s3/*.map26a", help="comma list of globs (repository-relative); default: the 70-map pool")
 	ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 1))
 	ap.add_argument("--rosters", default="tools/mapintel/data/battery_rosters.json")
 	ap.add_argument("--per-map", type=int, default=8)
 	ap.add_argument("--skip-outcome", action="store_true")
 	ap.add_argument("--skip-roster", action="store_true")
 	ap.add_argument("--no-replays", action="store_true")
-	ap.add_argument("--quick", action="store_true", help="function test: 3 maps, 2 roster slots, opponents idle only")
-	ap.add_argument("--work", default=os.path.join(ROOT, "mapintel_work", "battery"))
+	ap.add_argument("--quick", action="store_true", help="function test: 3 maps (2 old, 1 new), 2 roster slots, opponents idle only")
+	ap.add_argument("--work", default=os.path.join(ROOT, "mapintel_work", "battery"), help="work folder (resumable; one per cambc version)")
 	ap.add_argument("--out-dir", default=ROOT)
 	ap.add_argument("--split-mb", type=float, default=20.0, help="also cut the archive into parts of this size for uploading (0 = no parts)")
 	a = ap.parse_args()
@@ -94,17 +109,25 @@ def main():
 	r = run(["cambc", "--version"])
 	ver = r.stdout.strip().split()[-1] if r.stdout.strip() else "?"
 	print(f"cambc {ver}; {os.cpu_count()} CPUs, {a.jobs} jobs; {platform.platform()}")
-	if ver != "3.0.5":
-		print(f"WARNING: cambc {ver} (expected 3.0.5: pip install cambc==3.0.5)")
-	maps = sorted(glob.glob(os.path.join(ROOT, a.maps)))
+	if ver != CAMBC:
+		print(f"WARNING: cambc {ver} (expected {CAMBC}, the platform's engine: pip install cambc=={CAMBC})")
+	maps = sorted({m for g in a.maps.split(",") if g for m in glob.glob(os.path.join(ROOT, g)) if not os.path.basename(m).startswith("zz_")})
 	if a.quick:
-		maps = [m for m in maps if any(k in m for k in ("00elkring", "00fragment", "01hooks"))] or maps[:3]
+		maps = [m for m in maps if os.path.splitext(os.path.basename(m))[0] in QUICK] or maps[:3]
 		a.per_map = min(a.per_map, 2)
 		a.opps = "idle"
 	if not maps:
 		die(f"no maps match {a.maps}")
 	work = os.path.abspath(a.work)
+	# the ledger reuses games by the bots' source hashes only: a work folder of another cambc (engine) is moved aside, never reused
+	mark = os.path.join(work, "cambc.txt")
+	old = open(mark).read().strip() if os.path.exists(mark) else "3.0.5 or older" if os.path.isdir(os.path.join(work, "ledger")) else ver
+	if old != ver:
+		aside = work + "_cambc_" + re.sub(r"[^0-9A-Za-z]+", "_", old).strip("_") + time.strftime("_%Y%m%d_%H%M%S")
+		os.rename(work, aside)
+		print(f"   {work} held games of cambc {old}: moved to {aside}")
 	os.makedirs(work, exist_ok=True)
+	open(mark, "w").write(ver + "\n")
 	maps_glob = ",".join(os.path.relpath(m, ROOT).replace(os.sep, "/") for m in maps)
 	env = dict(os.environ, LEDGER_DIR=os.path.join(work, "ledger"), PYTHONIOENCODING="utf-8")
 	keep = stats_keep = os.path.join(work, "keep")  # compact statistics always (roster check); replays archived unless --no-replays
@@ -115,13 +138,25 @@ def main():
 	run(["cambc", "init", "--yes", "."], cwd=init)
 	for d in ("sdk", "cmake"):
 		if os.path.isdir(os.path.join(init, d)):
-			shutil.rmtree(os.path.join(ROOT, d), ignore_errors=True)
-			shutil.copytree(os.path.join(init, d), os.path.join(ROOT, d))
+			if not same_tree(os.path.join(init, d), os.path.join(ROOT, d)):  # replace only when different (a running build keeps its files)
+				shutil.rmtree(os.path.join(ROOT, d), ignore_errors=True)
+				shutil.copytree(os.path.join(init, d), os.path.join(ROOT, d))
+				print(f"   {d}/ replaced by cambc {ver}'s")
 		elif not os.path.isdir(os.path.join(ROOT, d)):
 			die(f"`cambc init` wrote no {d}/ and the repository has none (network?)")
+	pm, pool = os.path.join(init, "maps"), os.path.join(ROOT, "maps", "s3")
+	plat = sorted(f for f in os.listdir(pm) if f.endswith(".map26a")) if os.path.isdir(pm) else []
+	if plat and os.path.isdir(pool):  # `cambc init` downloads the platform's current pool: is maps/s3 still that pool?
+		new = [f for f in plat if not os.path.exists(os.path.join(pool, f)) or not filecmp.cmp(os.path.join(pm, f), os.path.join(pool, f), shallow=False)]
+		gone = sorted(f for f in os.listdir(pool) if f.endswith(".map26a") and f not in plat)
+		if new or gone:
+			print(f"WARNING: the platform's map pool ({len(plat)} maps) differs from maps/s3: new or changed {new or '-'}, gone {gone or '-'}"
+				  " (git pull; or say so when you upload the archive)")
+		else:
+			print(f"   the platform's map pool = maps/s3 ({len(plat)} maps)")
 	build(a.bot)
 	print(f"1. bots/{a.bot} builds (release)")
-	meta = {"bot": a.bot, "cambc": ver, "cpus": os.cpu_count(), "jobs": a.jobs, "platform": platform.platform(), "args": vars(a),
+	meta = {"bot": a.bot, "cambc": ver, "cpus": os.cpu_count(), "jobs": a.jobs, "platform": platform.platform(), "args": vars(a), "maps": len(maps),
 			"started": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "cells": []}
 	sys.path.insert(0, os.path.join(ROOT, "tools"))
 	import ledger  # noqa: E402
@@ -249,6 +284,7 @@ def main():
 						nrep += 1
 	if os.path.exists(os.path.join(work, "_tmp.repl26a")):
 		os.remove(os.path.join(work, "_tmp.repl26a"))
+	shutil.rmtree(init, ignore_errors=True)
 	games = sum(c["games"] for c in meta["cells"])
 	if games == 0:
 		die("no games were played")

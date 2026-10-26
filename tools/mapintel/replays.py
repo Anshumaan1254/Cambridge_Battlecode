@@ -5,7 +5,8 @@
                                          [--index index.jsonl]     (fetch_ladder.sh's replays/index.jsonl: team names, ids, sides)
 
 Each replay is decoded with tools/replay/decode.mjs (the engine's own wasm; replays of engine 1.0.3 decode with v1_0_3) and summarised:
-  map             matched exactly to one of the 40 official maps by its camp layout (positions and types) and size
+  map             matched exactly to one of the dumped maps (mapdata.pool_names(): the 70 of the patch-2.0.0 pool) by its camp layout
+                  (positions and types) and size
   drafts, winner, final round, submitted gems, end ('gems' or 'tiebreak'), engine, team names / ids when the index has them
   banked          each team's banked gems every 25 rounds
   captures        (round, team, champion, group id, gems, gold, tile)   group ids = the runtime dump's (mapdata) group index
@@ -34,7 +35,7 @@ def official():
 	global _maps
 	if _maps is None:
 		_maps = {}
-		for n in mapdata.official_names():
+		for n in mapdata.pool_names():
 			M = mapdata.load(n)
 			_maps[n] = (M, frozenset((c[0], c[1], c[2]) for c in M.camp_list))
 	return _maps

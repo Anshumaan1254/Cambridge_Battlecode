@@ -4,8 +4,10 @@
     python3 -I tools/mapintel/draft_learn.py [--matches experiments/ladder_oct24/mapintel_20261024_0836/matches_current.jsonl]
                                              [--teams .../teams.json] [--out experiments/results/mapintel/draft_model]
 
-Data: the ladder's current-patch ranked games on the 40 official maps (both teams on engine >= 1.0.3, so both sides are real teams'
-drafts). The draft is simultaneous (both teams pick in each round, seeing the other's earlier rounds), champions unique within a team.
+Data: the ladder's current-patch ranked games (fetch_ladder.sh: both teams on the current engine, so both sides are real teams' drafts),
+on the maps of the pool (mapdata.pool_names(), the 70 of patch 2.0.0; a map outside the catalog gets its runtime z, the archetype a bot
+computes for it and an archetype-stratified fold: tools/mapintel/pool.py). The draft is simultaneous (both teams pick in each round,
+seeing the other's earlier rounds), champions unique within a team.
 
 1. Per-map prior (for the exact-match table; maps/catalog/draft_prior.json): games, pick rate of every champion among all teams and
    among the strong teams (top 20 ratings), its rate per pick round, its win rate when picked (with a Wilson 95% interval) and the
@@ -36,6 +38,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import log_loss, roc_auc_score
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import pool as PL  # noqa: E402
 from archetypes import CLUSTER_FEATURES, transform  # noqa: E402
 from engine import PICK_NAMES  # noqa: E402
 
@@ -190,9 +193,15 @@ def cv(games, model, Z, arch, pairs, folds, Cs):
 def battery(path, Z, mu, sd, arch, folds, out, label):
 	"""Section 4: the roster battery (games.csv of run_battery.sh / sim_v10): side + champion differences, leave-maps-out."""
 	nm = {n: i for i, n in enumerate(PICK_NAMES)}
-	G = []
+	G, skip = [], Counter()
 	for r in csv.DictReader(open(path)):
 		if r["battery"] != "roster":
+			continue
+		if r["map"] not in Z:
+			skip["map not in the pool: " + r["map"]] += 1
+			continue
+		if not r["roster_bot"] or not r["roster_opp"]:
+			skip["no kept statistics (empty rosters)"] += 1
 			continue
 		d = np.zeros(NC)
 		for n in r["roster_bot"].split("/"):
@@ -200,6 +209,10 @@ def battery(path, Z, mu, sd, arch, folds, out, label):
 		for n in r["roster_opp"].split("/"):
 			d[nm[n]] -= 1
 		G.append((r["map"], 1.0 if r["side"] == "A" else -1.0, d, int(r["win"])))
+	if skip:
+		print("battery rows skipped: " + "; ".join(f"{k}: {v}" for k, v in sorted(skip.items())))
+	if not G:
+		sys.exit(f"no roster-battery games in {path}")
 
 	def X_(gs, model):
 		X = []
@@ -250,8 +263,9 @@ def battery(path, Z, mu, sd, arch, folds, out, label):
 			v = v + coef[1 + NC + arch[mp] * NC:1 + NC + (arch[mp] + 1) * NC]
 		vals[mp] = {PICK_NAMES[c]: round(float(v[c]), 4) for c in range(NC)}
 	w["per_map_values"] = vals
+	w["maps"] = len({g[0] for g in G})
 	json.dump(w, open(os.path.join(out, "weights_sim.json"), "w"), indent=1)
-	L = [f"\n## Roster battery ({label}, {len(G)} games, both rosters forced), leave-maps-out\n", "| model | C | log loss | AUC |", "|---|---|---|---|"]
+	L = [f"\n## Roster battery ({label}, {len(G)} games on {w['maps']} maps, both rosters forced), leave-maps-out\n", "| model | C | log loss | AUC |", "|---|---|---|---|"]
 	L += [f"| M{k[0]} | {k[1]} | {v[0]:.4f} | {v[1]:.4f} |" for k, v in sorted(res.items())]
 	L += [f"\nUsed: M{use}, C = {C}. Champion values (log-odds per champion difference):"]
 	L += [f"- {PICK_NAMES[c]}: {w['w'][c]:+.3f}" for c in np.argsort(-np.array(w["w"]))]
@@ -277,11 +291,12 @@ def main():
 			  open(os.path.join(a.catalog, "draft_prior.json"), "w"), indent=1)
 	Z, mu, sd = map_z(a.catalog)
 	arche = json.load(open(os.path.join(a.catalog, "archetypes.json")))
-	arch = arche["labels"]
-	folds = json.load(open(os.path.join(a.catalog, "splits.json")))["folds"]
+	# the pool's maps outside the catalog (patch 2.0.0's new maps): runtime z, archetype_of(), an archetype-stratified fold (pool.py)
+	P = PL.extend(arche, json.load(open(os.path.join(a.catalog, "splits.json")))["folds"], z=Z)
+	Z, arch, folds = P.z, P.labels, P.folds
 	missing = sorted({g["map"] for g in games} - set(Z))
 	if missing:
-		sys.exit(f"maps not in the catalog: {missing}")
+		sys.exit(f"maps neither in the catalog nor in the pool (no runtime dump): {missing}")
 	pc = Counter()
 	for g in games:
 		for t in (g["a"], g["b"]):

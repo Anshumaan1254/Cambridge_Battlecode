@@ -781,7 +781,7 @@ struct Params
 	// tools/ml/ml2_*.py). P(this body dies within 8 rounds) from a logistic model on what the body sees (ml2_model.h),
 	// trained on 160 ladder games (ours vs ladder teams and top teams vs each other). All 0 = legend_m14_commit.
 	float ml2_leave = 0.2f;		// a fight we can walk away from (no kill now) is dropped when P(die8) >= this
-	float ml2_flee = 0.2f;		// not in reach, not fighting: walk away when P(die8) >= this and an enemy is within flee_dist
+	float ml2_flee = 0.35f;		// not in reach, not fighting: walk away when P(die8) >= this and an enemy is within flee_dist
 	float ml2_enter = 0.f;		// not fighting: fight when P(kill8) >= this and P(die8) < ml2_enter_die (target within reach + 1)
 	float ml2_enter_die = 0.15f;
 	int ml2_hold = 0;			// after a model exit, keep out (no proactive fight) for this many rounds
@@ -891,7 +891,7 @@ struct Params
 	// docs/DRAFT_MEMORY.md). The draft side (mi_draft.cpp) writes the 1,024-byte image under the fuel guard; the champion side (mi_game.cpp)
 	// reads it. Every use in play is behind its own switch (0 = GOD v10's play).
 	int mi_dmem = 1;		  // 1: the draft writes draft memory v2 (mapintel's plans, TEAM, OWN, BODY, CONT, CODE, ENEMY, NAV, DEBUG, L)
-	int mi_pick = 1;		  // 1: the pick value adds mi_prior_w x the strong teams' pick prior (LEARNED; ln(rate + 0.05), centred)
+	int mi_pick = 0;		  // 1: the pick value adds mi_prior_w x the strong teams' pick prior (LEARNED; ln(rate + 0.05), centred)
 	float mi_prior_w = 1.0f;
 	float mi_own = 0.f;		  // > 0: groups the OWN block gives this body score x (1 + mi_own) (soft ownership, teamplan assign.h)
 	int mi_own_maxg = 30;	  // ... only on maps with at most this many groups (on v10 the switch lost on maps with more than 30)
@@ -929,7 +929,7 @@ struct Params
 	int ward_open = 0;		  // > 0 (ward_v14): a bush tile needs at least this many walkable neighbours (of 8) to take a ward: a ward occupies its
 							  // tile and blocks steps into it, and allies cannot see our ward (v14 games: 801 of 1,282 blocked moves were into an
 							  // ally's ward, mostly in one-wide bush corridors)
-	int fz_engage = 6;		  // > 0: a fight we were not in last round, with the target out of reach, starts only when the target is within this
+	int fz_engage = 4;		  // > 0: a fight we were not in last round, with the target out of reach, starts only when the target is within this
 							  // many tiles (fights are judged on everything within 9; bodies at the 7-9 band flipped fight / farm every round,
 							  // one step in, one step back: v14's traced games, 2,000 such back-and-forth body-rounds in 80 games)
 	int fz_wardblock = 0;	  // 1: the wards we see (ours and theirs) count as blocked tiles in the step searches (v13: 646 of 1,171 blocked
@@ -948,7 +948,7 @@ struct Params
 	// ---- GOD v15 (Oct 25, the user's 20 ladder games of v14: 0-20, banked 197 a game against 1,110). Every switch 0 = v14.
 	// Measured on those games (docs/strategy_v2/22_GOD_V15.md): with an enemy within 8 we farm 4-8% of rounds, they farm 15-19%; 233 of our
 	// 260 back-and-forth walks have an enemy within 8 (theirs 39 of 89); middle-band captures 3.6 a game (74 gems) against 20.1 (634).
-	int g15_calm = 0;		  // bits. Contact calm: an enemy is a threat only when it can hit us next turn (its reach + 1), closed in on us
+	int g15_calm = 5;		  // bits. Contact calm: an enemy is a threat only when it can hit us next turn (its reach + 1), closed in on us
 							  // since our last turn (within 8), or appeared within g15_new_r. 1: the pre-emptive flee exits (alone / half the
 							  // team dead, outmatched, ml2_flee) need a threat; 2: safety()'s burst retreat counts threats only; 4: a proactive
 							  // fight walk (out of reach, no kill, not channelling) needs a threat or the target within our reach + 1;
@@ -1017,12 +1017,12 @@ struct Params
 	int g18_greed = 0;			// 1: the endless Power tail (1.2 shards of stats a shard) becomes Greed (35 for 25: 1.4) in the same stat
 	int g18_tribute = 0;		// 1: a Tribute emblem (damage stat) for the gold-bonus body after its first emblems (slot g18_tribute_pos)
 	int g18_tribute_pos = 2;
-	int g18_osc = 0;			// > 0: a body back on the tile it stood on two turns ago while descending a field (A-B-A) descends plainly (no danger
+	int g18_osc = 6;			// > 0: a body back on the tile it stood on two turns ago while descending a field (A-B-A) descends plainly (no danger
 								// / stuck detour, no sideways exit) for this many rounds (treasure-box: a 125-gem bag walked in place for 200+ rounds)
 	int g18_capt_slack = 0;		// ... the recall lands this many rounds after the countdown ends (probe PROBE18: the reward lands at round + timer)
 	int g18_capt_timer = 0;		// 1: recall-while-capturing times the recall on the engine's capture countdown (capture_state().timer: 3 with
 								// a Capture emblem) instead of the fixed 5-turn capture time
-	int g18_fast_init = 0;		// 1: cheaper World::init_static, same tables: one camp_groups() call instead of two, the altar-approach camp lookup
+	int g18_fast_init = 1;		// 1: cheaper World::init_static, same tables: one camp_groups() call instead of two, the altar-approach camp lookup
 								// only for approach tiles that are camp tiles (islands: ~255k fuel, 2.5 rounds), the 1-wide hole crossings from
 								// shifted bitboards instead of a per-hole scan (islands, dash kits: ~180k), no cluster loop for one-camp groups
 	int g17_opp_r = 12;			// respond_to_alert: an OPPORTUNITY (tributing / recalling carrier) is answered from this far (v15 12; endgame 16)

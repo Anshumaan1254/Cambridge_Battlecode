@@ -106,6 +106,7 @@ private:
 	int g21_flee_round = -1000; // g21_lock: last round combat() fled
 	vec2 g21_start_pos{ -1, -1 }, g21_last_pos{ -1, -1 }; // g21_noback: this / last turn's start tile
 	int g21_start_round = -1000;
+	int g21_fort_since = -1000, g21_fort_last = -1000; // g21_fort: holding the spawn since / last round
 	int epack_round = -1000; // g20_adapt: last round we saw an enemy pack
 	bool pk_map_on = false;	 // g20_pack_maps: this map is in the pack table
 	bool pk_mode() const;

@@ -1065,6 +1065,12 @@ struct Params
 	int g21_lock = 0;			// > 0: for this many rounds after a flee, no non-fight step may end nearer a visible enemy (within g21_lock_r) than
 								// we stand, and combat does not walk back into a non-kill fight
 	int g21_lock_r = 8;
+	int g21_fort = 0;			// > 0: from round g21_fort, a body within g21_fort_r walking steps of spawn that sees more enemies within 8 than it has
+								// allies within 6 (itself included, g21_fort_min enemies at least) goes home and fights from the spawn tiles (full heal
+								// every round there); it does not step off spawn while that holds. Ranked v18 / v20 losses: 52% of the deaths after
+								// r500 were within 15 tiles of our own spawn, two or more enemies near
+	int g21_fort_r = 15;
+	int g21_fort_min = 2;
 	int g21_noback = 0;			// 1: no non-fight step (bank, farm, alert, shop, home trip) onto the tile this body stood on at the start of last turn:
 								// a two-step walk in place needs a combat decision for its return step (traced: 60% of our far A-B-A steps were
 								// two farm walks, a target switch and back)			// 1: also on lone-monolith and objective maps (their own team plans otherwise: mono_follow, obj_team)

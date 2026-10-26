@@ -1179,8 +1179,45 @@ void Brain::turn()
 	FSP("start");
 	if (P.mono_rg && regroup_active() && (P.mono_rg_fight_r <= 0 || enemies_within(P.mono_rg_fight_r) == 0))
 		acted = go_home(), dbg_path = 9;
+	bool g21_fort_on = false;
+	bc::bitboard g21_off_spawn;
+	if (!acted && P.g21_fort > 0 && round >= P.g21_fort)
+	{
+		// v21 g21_fort: outnumbered near home: fight from the spawn tiles, where we heal fully every round
+		auto& WF = world();
+		const int dh = WF.dist_home(pos);
+		if (dh <= P.g21_fort_r)
+		{
+			int ne = 0, na = 1;
+			for (const auto& e : WF.enemies)
+				if (e.alive && e.visible && cheb(e.pos, pos) <= 8 && WF.dist_home(e.pos) + 4 < WF.dist_away(e.pos))
+					++ne; // invaders only: on maps where the spawns are close the enemy is always near
+			if (round - g21_fort_last > 1 && round - g21_fort_since >= 50)
+				g21_fort_since = round; // a new hold may start 20 rounds after the last one ended
+			if (round - g21_fort_since >= 30)
+				ne = 0; // 30 rounds holding is enough: farm again (they camp outside, or the count is wrong)
+			for (const auto& a : WF.allies)
+				if (a.handle != self && a.alive && a.visible && cheb(a.pos, pos) <= 6)
+					++na;
+			if (ne >= P.g21_fort_min && ne > na && gems < 40)
+			{
+				g21_fort_on = true, g21_fort_last = round;
+				if (!WF.ally_spawn.is_set(pos))
+					acted = go_home(), dbg_path = 15;
+				else
+				{
+					g21_off_spawn = ~WF.ally_spawn;
+					g_veto = &g21_off_spawn;
+				}
+			}
+		}
+	}
 	if (!acted)
 		acted = combat();
+	if (g21_fort_on && !acted && world().ally_spawn.is_set(pos))
+		acted = true, dbg_path = 15; // hold the spawn: no farming walk while they are here
+	if (g_veto == &g21_off_spawn)
+		g_veto = nullptr;
 	FSP("combat");
 	// pocket_fix 2: in a pocket no walk leaves (dist_home unreachable) a dash kit dashes out as soon as its dash is up, whatever the task:
 	// the fields route into such pockets over one-wide hole crossings, and staying cost a body hundreds of rounds (nx100x100).

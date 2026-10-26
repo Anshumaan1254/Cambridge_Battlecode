@@ -107,3 +107,28 @@ Per-map margins are dominated by chaos: an inert code change (fuel spent elsewhe
 selection (the `g20_pack_maps` table) does not survive; only pooled effects of 100+ gems are visible in 140 games. Unopposed
 opening pace (captured by r150 / r250, 70 maps alone): v18 114 / 207, always-pack 102 / 185, pack only for 80+ gem groups 112 / 204
 (vault 379 -> 698, the-line 370 -> 511; quadrants 449 -> 239).
+
+## 7. The candidate sweep (big pool = s3 70 + var17 51 + gen2 24 maps, 290 games against v18; 140 against the pack bot `_pk3` and v17)
+
+Margins are gems a game; "paired" = the candidate's games minus v18's games against the same opponent, map and side.
+
+| candidate | vs v18 (290) | vs pack bot, paired | vs IC clone `_icc2`, paired | vs v17, paired with the null control |
+|---|---|---|---|---|
+| **null control** (`bots/god20`, every switch off: v18's play + inert code) | 145/290, +10 [-14, +33] | | | (-43 vs v18's own games) |
+| adaptive pack `_pkA` | 144/290, -20 [-74, +33] | +80 [-33, +192] | +25 [-66, +118] | -4 |
+| adaptive, 4-body trigger `_pkA4` | 139/290, -24 | +86 | | |
+| adaptive, own sightings only `_pkA1` | 145/290, -14 | +70 | | -25 |
+| adaptive, 30-round memory `_pkAm30` | 137/290, -37 [-84, +8] | **+116 [+15, +223]** | | -24 |
+| adaptive until r250 / whole game | 134 / 133 of 290, -23 / -34 | +50 / +55 | | |
+| middle pull 8 / 16 (`g20_mid_pull`) | 133 / 147 of 290, -26 / -4 | 0 / +16 | | |
+| captures to Marcella (`mi_capture` 2) | 145/290, +17 [-23, +57] | -6 | | -48 |
+| join rich harmless groups (`g18_rich` 1) | 142/290, -8 [-36, +21] | +34 | | -32 |
+| split 100+ gem rewards (`g20_split` 100) | 147/290, +14 [-14, +42] | +37 | | -32 |
+| `_v20c` = `_pkA1` + Marcella + rich | 146/290, -12 | +54 | -7 | -89 |
+| **`_v20d` = `_pkAm30` (DANGER alerts too) + Marcella + rich** | **150/290, +23 [-27, +73]** | **+87 [-21, +202]** | **+27 [-76, +121]** | -45 [-153, +64] |
+| `_v20e` = `_v20c` + split | 146/290, -15 | +62 | -9 | -86 |
+| `_v20n` = Marcella + rich + split, no pack | 144/290, +7 | +12 | +40 | -59 |
+
+The null control shows the noise floor: v18's own play with a few unused lines of code moves the big-pool margin by +10 and the v17
+margin by -43 (v18's +154 against v17 is partly a lucky draw: any code change reshuffles those games). No candidate is clearly better
+than v18 against v18 or v17; the pack variants are consistently better against a pack opponent.

@@ -903,7 +903,7 @@ struct Params
 	int mi_live = 0;		  // 1: the 8 shared bytes in teamplan's live layout (live.h: claims as place codes, the team alert with its place
 							  // vocabulary, beats, bag flags); 0: GOD v10's own layout (comms.h)
 	int live_bag_flag = 25;	  // ... the bag flag: carrying at least this many gems (teamplan bag.h's hunt threshold)
-	int mi_capture = 1;		  // 1: a shared reward goes to a near ally with a gold bonus first (teamplan capture.h mode 1, LEARNED); v15 2: to the ally it is worth the most gold to (Vesper Vale's bonus on the gold, Marcella's 2 gold a gem when she banks)
+	int mi_capture = 2;		  // 1: a shared reward goes to a near ally with a gold bonus first (teamplan capture.h mode 1, LEARNED); v15 2: to the ally it is worth the most gold to (Vesper Vale's bonus on the gold, Marcella's 2 gold a gem when she banks)
 	int ic_build = 0;		  // GOD v13: Intercontinental Fish's builds on the carries (brain.cpp build_for): Treasure first on a gold-bonus kit,
 							  // Monster, Jungle health, then Power in the damage stat for ever; supports keep the value-model lists
 	int mi_body = 0;		  // 1: the BODY block's bank bag and retreat health (econ model, LEARNED) replace tribute_min / retreat_hp
@@ -1027,7 +1027,7 @@ struct Params
 	int g18_fast_init = 1;		// 1: cheaper World::init_static, same tables: one camp_groups() call instead of two, the altar-approach camp lookup
 								// only for approach tiles that are camp tiles (islands: ~255k fuel, 2.5 rounds), the 1-wide hole crossings from
 								// shifted bitboards instead of a per-hole scan (islands, dash kits: ~180k), no cluster loop for one-camp groups
-	int g18_rich = 0;			// 1: a harmless group worth at least g18_rich_gems is joinable like a heavy pack (up to max_join extra bodies), joiners credited
+	int g18_rich = 1;			// 1: a harmless group worth at least g18_rich_gems is joinable like a heavy pack (up to max_join extra bodies), joiners credited
 	int g18_rich_gems = 80;		// g18_rich_share of its value (IC takes vault's 343-gem centre and the-line's 161 with the whole team in the opening)
 	float g18_rich_share = 0.8f;
 	int g18_calm_mono = 0;		// 1: on lone-monolith maps (World::mono_mode) contact discipline is off: g15_calm 0, ml2_flee and fz_engage below;
@@ -1038,18 +1038,18 @@ struct Params
 	// pack clears a group in a few rounds, one body (Marcella) captures while the rest walk on, and the pack holds the rich middle groups
 	// and the altar next to them, retaking each group on its respawn (corners: G27, G26, G29, G28 every ~60 rounds, all banked at the
 	// central altar). Our bodies spread one per group, meet the pack one at a time and leave or die.
-	int g20_pack = 0;			// 1: followers farm the group the pack leader claims (pk_leader); the leader plans with the pack's damage
+	int g20_pack = 2;			// 1: followers farm the group the pack leader claims (pk_leader); the leader plans with the pack's damage
 	int g20_pack_until = 400;	// ... until this round
 	int g20_pack_r = 10;		// allies within this many tiles of the leader are its pack (their damage, their health in the threat checks)
 	int g20_pack_rew = 6;		// a follower may still take a reward this many steps away (the capture rules pick who), else only the leader's group
 	float g20_pack_risk = 1.f;	// with 3+ pack bodies: enemy-half penalty and mid risk x this
 	int g20_pack_min = 2;		// the pack plan needs at least this many bodies within g20_pack_r of the leader (else farm as before)
-	float g20_safe = 0.f;		// v3 (> 0): the pack skips a group whose camps would deal more than its spare health / g20_safe while it clears it
-	int g20_leash = 0;			// v3 (> 0): in pack mode, no walking after a target more than this many steps deeper in their half than ours
+	float g20_safe = 1.f;		// v3 (> 0): the pack skips a group whose camps would deal more than its spare health / g20_safe while it clears it
+	int g20_leash = 4;			// v3 (> 0): in pack mode, no walking after a target more than this many steps deeper in their half than ours
 	int g20_farm_first = 0;		// 1: a body that hit a live camp in the last 2 rounds keeps farming instead of walking to a fight that cannot reach it
-	int g20_adapt = 0;			// 1: the pack plan only while an enemy pack was seen in the last g20_adapt_mem rounds (2: or an ally's fresh DANGER alert)
+	int g20_adapt = 2;			// 1: the pack plan only while an enemy pack was seen in the last g20_adapt_mem rounds (2: or an ally's fresh DANGER alert)
 	int g20_adapt_n = 3;
-	int g20_adapt_mem = 60;
+	int g20_adapt_mem = 30;
 	int g20_worthy = 0;			// > 0: the pack forms only for groups worth at least this many gems (or a monolith); smaller ones are farmed alone
 	int g20_worthy_rich = 0;	// > 0 (with g20_worthy): also any group worth this many gems, harmless or not
 	int g20_pack_maps = 0;		// 1: the pack plan only on the maps of pack_maps.h (sprint-3 maps where it beat v18 locally); 2: always there,

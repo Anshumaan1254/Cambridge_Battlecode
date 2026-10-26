@@ -58,7 +58,7 @@ The gem gap is 2x already at r50 and grows linearly.
 | flee bars (`outmatch_flee` 0, `outmatch_flee_adv` 0.6, `isolated_flee_adv` 1.2, `ml2_flee` 0.5, `ml2_leave` 0.3, `flee_dist` 3) | flee less (ladder: farming on contact dies 5%, leaving 5%, fighting 9%; outmatched: fight 44% of contacts, 27% die) | `outmatch_flee` 0: 44%, -135; `outmatch_flee_adv` 0.6 + `ml2_flee` 0.5 (`_fl1`): 53%, +29 |
 | `fight_back_margin` 1.0 (`_fb1`) | fight back only at even odds | 53%, +16 |
 | `_F1` = `_fl1` + C&I for Marcella (pair space 2, caution 0.3, low hp 0.4) | the two together | **82/140, +72** vs v18; held out level (gen2 +10, gold3 -25, var17 -16); **vs v17 48.6%, -24 (v18: 60.7%, +154)** |
-| `_F4` = `_F1` + `fight_back_margin` 1.0 | | 82/140, +81 vs v18 |
+| `_F4` = `_F1` + `fight_back_margin` 1.0 | | 82/140, +81 vs v18; held out gen2 +44, gold3 21/56 -140, var17 +8; vs v17 50%, -14 |
 
 **Non-transitive.** Every variant that beats v18 gives up most of v18's edge over v17 (`_fl1` +22, C&I +27, `_fb1` +66 vs v17; v18 +154).
 On the panel {v18, v17} v18 stays the best version: what wins against v18 exploits v18's own habits, not a general weakness.

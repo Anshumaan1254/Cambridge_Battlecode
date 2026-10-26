@@ -29,7 +29,7 @@ const SNAP_OLD = 40152, SNAP_V2 = 42840; // engine 2.0.0 (patch 2.0.0, sprint 3)
 export function findEngineWasms() {
   if (process.env.CAMBC_ENGINE_WASM) return [process.env.CAMBC_ENGINE_WASM];
   const home = process.env.HOME || '/root';
-  const root = process.env.CAMBC_CACHE || path.join(home, '.cache', 'cambc', 'assets');
+  const root = process.env.CAMBC_CACHE || (process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'cambc', 'assets') : path.join(home, '.cache', 'cambc', 'assets'));
   const found = [];
   if (fs.existsSync(root)) for (const hash of fs.readdirSync(root)) {
     for (const sub of ['visualiser', 'mapeditor']) {

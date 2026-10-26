@@ -3,6 +3,16 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
+- **Session 22 (Oct 26, 11:00 UTC- , the user's Windows PC `C:\battlecode\Cambridge_Battlecode`, 8 cores; IN PROGRESS): GOD v19 work** (`bots/god19` = v18 +
+  switches, all off = v18). **Rules now: never `cambc submit` / `submissions activate` (the user submits); unranked match groups with the live bot are
+  allowed; the bot handed over must be final.** Live = v74 = `god18.zip` (the user's upload). Ladder study of v74 (200 games, 95 vs the top 10: 9 wins)
+  and 349 top-12 games: doc `docs/strategy_v2/28_V74_LADDER_STUDY.md`. Key: unopposed, v18 farms as fast as IC does against us (equal per 100 rounds
+  r0-900); vs IC we get half from r50 on (the middle band: 56 of 108 gems by r150 unopposed, 11 vs IC; vs ranks 11-80 our wins had 49 middle gems by
+  r300, our losses 18); when locally outmatched we choose to fight 44% (they 31%) and die in 27% of those. Local bench (`tools/abbench.py` on
+  `cambc run-batch`, 140 games in ~2.5 min; deterministic: v18 vs v18 = 70/140, v18 vs v17 = 85/140 +154 as on Linux), variants via
+  `tools/mkvariant.py`. Screens vs v18 so far all level or worse: builds (`g19_build`), farm-through contact (`g19_hold`), team targets
+  (`g19_team`), middle priority (`g19_mid`), opening deathball, C&I for Marcella with pair caution (+16..+41 on s3, level held out), flee
+  thresholds; the 25-shard "behind" screen moves none of them. Patch notes text: `docs/patch_notes/week4_20261026.txt` (engine-checked).
 - **Session 21 (Oct 26, 07:30-13:00 UTC): SHIPPED GOD v18** (`submissions/god.zip` = `god18.zip` sha256 bc6abe19…, `bots/god18`, history `god_v18_20261026.zip`; doc `docs/strategy_v2/25_GOD_V18.md`). Patch 2.0.0 (Sprint 3): CLI 4.0.0 / engine 2.0.0 (`sdk/` = 4.0.0; the 84-item backpack), 70-map pool `maps/s3` (40 old + 30 new), replay decoder for the 42,840-byte snapshots, ledger rows in `experiments/results/ledger_v4_0_0/`. Ladder study of v17 after the patch (`experiments/ladder_oct26_v17/analysis/`: 16 losses, 10 IC and 10 Mite wins): mirror drafts; the gap is camp hits (922 vs 1,348 a game, damage per hit equal) lost to near-enemy walking; strong teams keep farming through contact. v18 = v17 + contact discipline + `g18_osc` + `g18_fast_init` + `mi_pick` 3: vs v17 85/140, +154 [+55, +248] on `maps/s3`. Level or worse (off): every new emblem, Ren / Varg / C&I swaps (Varg for HoR and Tavi for Ryth: see doc 25), more middle camps, the prior everywhere (new maps -85) or nowhere (contest copies -254). Map-refresh laptop flows ported to 4.0.0 / 70 maps (runbook doc 26). Never submitted or activated.
 - **Session 20 (Oct 25, 10:30-15:00 UTC): SHIPPED GOD v17** (`submissions/god.zip` = `god17.zip` sha256 5d0201bd…, `bots/god17`, history
   `god_v17_20261025.zip`; doc `docs/strategy_v2/24_GOD_V17.md`) and the camp bot (`submissions/god16_camp.zip`, `bots/god16`, doc 23: level with

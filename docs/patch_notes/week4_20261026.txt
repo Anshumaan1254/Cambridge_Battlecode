@@ -1,0 +1,35 @@
+Patch 2.0.0 Notes - Sprint 3 (26 Oct 2026, randomuserhi). Engine 2.0.0, CLI 4.0.0. Text from the user's PDF (Oct 26).
+
+Champion changes (shown as nerfs / buffs on the page):
+  Ryth            Strength per shard 5 -> 4.5
+  Vesper Vale     Strength 55 -> 45
+  Cassi           Focus 70 -> 100
+  Issac           Strength 40 -> 45
+  Stellar         Focus per shard 7 -> 8.5
+  Prism           Health per shard 60 -> 65
+  Marcella        Strength per shard 5 -> 4.5; Focus per shard 15 -> 14
+  Willow          Focus 120 -> 140
+  Ren             Stun damage (S1) 0.75 x Focus -> 1.1 x Focus
+  Varg            Strength 40 -> 45
+  Tavi            Stun damage (S2) 1.4 x Focus -> 1.6 x Focus
+  Heart of Ruin   Strength per shard 3.5 -> 3; Focus per shard 12 -> 10
+Emblems changed:
+  Treasure   bonus gold 20% -> 10%
+  Monster    bonus damage to camps 10% -> 15%
+New emblem families:
+  Tribute     tribute time reduced by 33% (rounded up, minimum one turn)
+  Capture     capture time 5 -> 3 turns (when at least one allied capturer owns it as the capture begins)
+  Prospector  +25% gold and gems from Gold / Gem Cluster camps only; each capturer owning it gets 25% of their own share extra, rounded down separately
+  Hunter      +50 gold per champion kill (to the killer, before gold-income bonuses)
+  Skirmish    +5% damage to champions
+  Greed       no passive; combines at 25 shards (750 gold) to give 35 shards worth of stat points
+  Collectors  +1% damage per unique completed emblem family owned (counts itself; duplicates / stat variants count once; shards do not)
+System: draft first-turn fuel limit x10.
+CLI 4.0.0: `cambc match-groups create OPPONENT_TEAM_UUID --source-group MATCH_GROUP_ID` (opponent's historical bot version);
+  `cambc submissions list [--before N --json]`, `activate N|latest`.
+SDK: item backpack 42 -> 84 item types (env.champion_items writes 84 u32, 336 bytes); camp capture state (timer + state: ally capturing,
+  contested, enemy capturing, capture available, no capture available; the group must be in vision, the capturer need not);
+  cambc::get_item_enum(item_family, item_stat, bool shard = true).
+
+Checked against the engine on Oct 26 with tools/probe/champion_stats_main.cpp on cambc 4.0.0: every champion number above matches
+(experiments/results/probe_v4_0_0/engine_4_0_0.txt). The bots read these from champion_designs at runtime, so nothing is hardcoded.

@@ -891,7 +891,7 @@ struct Params
 	// docs/DRAFT_MEMORY.md). The draft side (mi_draft.cpp) writes the 1,024-byte image under the fuel guard; the champion side (mi_game.cpp)
 	// reads it. Every use in play is behind its own switch (0 = GOD v10's play).
 	int mi_dmem = 1;		  // 1: the draft writes draft memory v2 (mapintel's plans, TEAM, OWN, BODY, CONT, CODE, ENEMY, NAV, DEBUG, L)
-	int mi_pick = 0;		  // 1: the pick value adds mi_prior_w x the strong teams' pick prior (LEARNED; ln(rate + 0.05), centred)
+	int mi_pick = 3;		  // 1: the pick value adds mi_prior_w x the strong teams' pick prior (LEARNED; ln(rate + 0.05), centred)
 							  // 2 (GOD v18): only on maps with a monolith or an objective group (the draft's own map analysis: F.mono, MP.objective)
 							  // 3: 2 + on the maps known_maps.h knows (the 40 old maps: the map's own strong-team pick rate)
 	float mi_prior_w = 1.0f;

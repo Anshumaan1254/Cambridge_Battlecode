@@ -13,7 +13,11 @@ benchmark against sparring archetypes, tune by self-play and analyse ladder matc
 | [docs/FEEDBACK_LOOP.md](docs/FEEDBACK_LOOP.md) | how to play the top teams, decode the replays and re-tune |
 | [docs/LEARNING.md](docs/LEARNING.md) | reward/punishment learning: offline evolution-strategies training and the in-match learners |
 
-## Current build: **GOD v17** (`submissions/god.zip` = `submissions/god17.zip`, Oct 25): v15 with Mite's recall bait and its antidote
+## Current build: **GOD v18** (`submissions/god.zip` = `submissions/god18.zip`, Oct 26): patch 2.0.0 (Sprint 3), contact discipline
+
+GOD v18 (`bots/god18`) = GOD v17 rebuilt on CLI 4.0.0 / engine 2.0.0 + four switches (`docs/strategy_v2/25_GOD_V18.md`): contact discipline (`g15_calm` 5, `ml2_flee` 0.35, `fz_engage` 4: a body keeps farming when an enemy is near but not coming at it and walks to a fight only for a threat, a kill, a channel or a 40+ bag; the ladder's strong teams keep farming 46-52% of such contacts, v17 21%), the A-B-A walking breaker (`g18_osc` 6), the cheaper opening setup (`g18_fast_init`: islands first move r4 vs r7-9) and the pre-patch strong-team pick prior only on the 40 known maps and on monolith / objective maps (`mi_pick` 3). Against GOD v17 on the 70-map sprint-3 pool (`maps/s3`): **85/140 = 60.7%, +154 [+55, +248] gems a game** (old 40 maps +185, new 30 maps +112), 0 faults. The patch's new emblems (Capture, Tribute, Greed) and the champion swaps (Ren, Varg, Cassi & Issac) measured level or worse and stay off. Map refresh for the user: `docs/strategy_v2/26_MAP_REFRESH_RUNBOOK.md`. Previous build GOD v17: `submissions/history/god_v17_20261025.zip`.
+
+## Previous build: **GOD v17** (`submissions/god.zip` = `submissions/god17.zip`, Oct 25): v15 with Mite's recall bait and its antidote
 
 GOD v17 (`bots/god17`) = GOD v15 + two switches (`docs/strategy_v2/24_GOD_V17.md`): every body ends each free turn recalling and cancels
 it at the start of the next (`g17_bait` 1: Mite's trick, 1,100 recalls a body a game on the ladder; bots that treat a recalling carrier

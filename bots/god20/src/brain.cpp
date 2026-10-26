@@ -6512,6 +6512,13 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 		const float fade = std::min(1.f, static_cast<float>(P.mid_risk_until - round) / static_cast<float>(std::max(1, P.mid_risk_fade)));
 		time += P.mid_risk * mid * mid * fade * (pk_n >= 2 && pk_leader >= 0 ? P.g20_pack_risk : 1.f);
 	}
+	if (P.g20_mid_pull > 0.f && round < P.g20_mid_until && g.d_ally < BIG && g.d_enemy < BIG && g.d_ally + g.d_enemy > 0)
+	{
+		// g20_mid_pull (ranked study: the middle's captures decide 70% of our losses; IC and the teams that beat us take it from the
+		// opening): a group about as near to them as to us costs up to g20_mid_pull rounds less before g20_mid_until (never below 60%).
+		const float mid = 1.f - static_cast<float>(std::abs(g.d_ally - g.d_enemy)) / static_cast<float>(g.d_ally + g.d_enemy);
+		time = std::max(0.6f * time, time - P.g20_mid_pull * mid * mid);
+	}
 	if (sc_alert && alert_zone.is_set(g.center))
 		time += 25.f;
 	if (P.om_sight && sc_sight.x >= 0 && cheb(g.center, sc_sight) <= P.om_sight_r)

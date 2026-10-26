@@ -1056,6 +1056,8 @@ struct Params
 								// adaptive (g20_adapt) elsewhere
 	int g20_split = 0;			// > 0: a reward worth this many gems is captured by every body that gets onto its tiles (split, banked in parallel)
 	int g20_max_area = 0;		// > 0: no pack plan on maps larger than this many tiles
+	float g20_mid_pull = 0.f;	// > 0: before g20_mid_until, a middle group costs up to this many rounds less (pulls the opening to the middle)
+	int g20_mid_until = 300;
 	int g20_hold = 3;			// v2: followers wait this many rounds next to the leader's dead group for its next choice
 	int g20_modes = 0;			// 1: also on lone-monolith and objective maps (their own team plans otherwise: mono_follow, obj_team)
 	int g17_opp_r = 12;			// respond_to_alert: an OPPORTUNITY (tributing / recalling carrier) is answered from this far (v15 12; endgame 16)

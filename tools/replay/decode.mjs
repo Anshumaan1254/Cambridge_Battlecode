@@ -23,7 +23,8 @@ export const CHAMP = ['Ryth', 'VesperVale', 'Vendetta', 'Cassi', 'Issac', 'Stell
 export const DRAFT = ['Ryth', 'VesperVale', 'Vendetta', 'CassiAndIssac', 'Stellar', 'Prism', 'Marcella', 'Willow', 'Ren', 'Varg', 'Tavi', 'HeartOfRuin'];
 export const STEP = 'Phase.Respawn.Capture.Tick.Move.Attack.Cast ability.Input.End turn.Set priority..Recall.Submit gems.Shop.Place ward.Consumable.Cancel channel.Sandbox.Gems submitted.Draft champion.Place altar lock.Teleport channel.Teleport complete.Movement blocked.Resign.Sell item.Turn rollover.Bot error'.split('.');
 export const CAMP = ['wolf', 'elk', 'gem', 'gold', 'monolith'];
-const ITEM_COUNT = 42; // Hn.length in the visualiser (7 families x 3 stats x shard/emblem)
+const ITEM_COUNT = 42; // Hn.length in the visualiser (7 families x 3 stats x shard/emblem); engine 2.0.0: 84 (14 families)
+const SNAP_OLD = 40152, SNAP_V2 = 42840; // engine 2.0.0 (patch 2.0.0, sprint 3): champion records +168 bytes (84 item counts), later tables +2688
 
 export function findEngineWasms() {
   if (process.env.CAMBC_ENGINE_WASM) return [process.env.CAMBC_ENGINE_WASM];
@@ -72,26 +73,27 @@ function readHeader(e, t, draftBase) {
   };
 }
 
-function readTimeline(e, t) {
+function readTimeline(e, t, snapSize = SNAP_OLD) {
   const h = readHeader(e, t, 120);
+  const v2 = snapSize === SNAP_V2, ci = v2 ? 168 : 0, ta = v2 ? 2688 : 0, nItems = v2 ? 84 : ITEM_COUNT;
   const u = (n) => e.getUint32(t + n, true), i = (n) => e.getInt32(t + n, true), f = (n) => e.getFloat32(t + n, true);
   const table = (countOff, dataOff, stride, cap, fn) => {
     const n = u(countOff); if (n > cap) throw new Error('bad snapshot count');
     const r = new Array(n); for (let k = 0; k < n; ++k) r[k] = fn(dataOff + k * stride); return r;
   };
-  h.champions = table(172, 196, 252, 16, (n) => {
-    const items = []; for (let k = 0; k < ITEM_COUNT; ++k) { const q = u(n + 48 + k * 4); if (q) items.push([k, q]); }
+  h.champions = table(172, 196, 252 + ci, 16, (n) => {
+    const items = []; for (let k = 0; k < nItems; ++k) { const q = u(n + 48 + k * 4); if (q) items.push([k, q]); }
     return {
       index: u(n + 4), team: u(n + 8), type: u(n + 12),
       x: i(n + 16), y: i(n + 20), hp: f(n + 24), maxHp: f(n + 28), alive: !!u(n + 32),
       gold: u(n + 36), gems: u(n + 40), kills: u(n + 44), items,
-      cons: [u(n + 216), u(n + 220), u(n + 224), u(n + 228)],
-      stunned: !!u(n + 248),
+      cons: [u(n + ci + 216), u(n + ci + 220), u(n + ci + 224), u(n + ci + 228)],
+      stunned: !!u(n + ci + 248),
     };
   });
-  h.camps = table(176, 4228, 28, 500, (n) => ({ index: u(n + 4), team: u(n + 8), type: u(n + 12), x: i(n + 16), y: i(n + 20), hp: f(n + 24) }));
-  h.groups = table(180, 18228, 8, 500, (n) => ({ reward: !!u(n), captureTeam: u(n + 4) }));
-  h.wards = table(184, 22228, 8, 128, (n) => ({ team: u(n), disabled: !!u(n + 4) }));
+  h.camps = table(176, 4228 + ta, 28, 500, (n) => ({ index: u(n + 4), team: u(n + 8), type: u(n + 12), x: i(n + 16), y: i(n + 20), hp: f(n + 24) }));
+  h.groups = table(180, 18228 + ta, 8, 500, (n) => ({ reward: !!u(n), captureTeam: u(n + 4) }));
+  h.wards = table(184, 22228 + ta, 8, 128, (n) => ({ team: u(n), disabled: !!u(n + 4) }));
   return h;
 }
 
@@ -135,8 +137,9 @@ async function decodeWith(wasmPath, buf, opts) {
   chk(X.Game_FromReplayFileBytes(p, buf.length, out), 'load replay');
   const game = dv().getBigUint64(out, true);
   X.Engine_Free(p);
-  if (X.Game_Visualiser_TimelineSnapshotSize() !== 40152) throw new Error('unsupported timeline snapshot layout');
-  const snap = X.Engine_Malloc(40152);
+  const snapSize = X.Game_Visualiser_TimelineSnapshotSize();
+  if (snapSize !== SNAP_OLD && snapSize !== SNAP_V2) throw new Error('unsupported timeline snapshot layout');
+  const snap = X.Engine_Malloc(snapSize);
   const args = X.Engine_Malloc(128);
 
   chk(X.Game_GetBitboardMetadata(game, out), 'metadata');
@@ -150,7 +153,7 @@ async function decodeWith(wasmPath, buf, opts) {
   const size = dv().getUint32(args, true);
   chk(X.Game_Visualiser_Timeline_Seek(game, main, 0, 0), 'seek');
 
-  const read = () => { chk(X.Game_Visualiser_ReadTimelineState(game, snap), 'read'); return readTimeline(dv(), snap); };
+  const read = () => { chk(X.Game_Visualiser_ReadTimelineState(game, snap), 'read'); return readTimeline(dv(), snap, snapSize); };
   const every = opts.every || 1;
   const rounds = [];
   const events = [];

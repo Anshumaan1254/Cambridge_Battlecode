@@ -28,6 +28,15 @@ struct Detour
 	int start_v = 0;  // field value where the detour started; below it we are past the blocker
 };
 Detour detour;
+// GOD v18 g18_osc: A-B-A breaker. The tiles this body stood on one and two turns ago when it last stepped along a field, and the
+// round until which the plain descent (no danger detour, no stuck detour, no sideways exit) is used.
+struct OscState
+{
+	int round = -10;
+	vec2 p1{ -1, -1 }, p2{ -1, -1 };
+	int plain_until = -1;
+};
+OscState g_osc;
 } // namespace
 
 void Nav::init()
@@ -305,6 +314,19 @@ bool Nav::step_field(vec2& pos, const Field& field, int stop_at, const bc::bitbo
 	int here = field.get(pos);
 	if (here <= stop_at)
 		return false;
+	bool plain = false;
+	if (P.g18_osc)
+	{
+		const int r0 = static_cast<int>(bc::round_number());
+		if (g_osc.round != r0)
+		{
+			// back on the tile of two turns ago while descending a field: a walk-in-place; descend plainly for g18_osc rounds
+			if (g_osc.round == r0 - 1 && pos == g_osc.p2 && !(pos == g_osc.p1))
+				g_osc.plain_until = r0 + P.g18_osc;
+			g_osc.p2 = g_osc.p1, g_osc.p1 = pos, g_osc.round = r0;
+		}
+		plain = r0 <= g_osc.plain_until;
+	}
 	const bc::bitboard blocked = blocked_now(pos);
 	bool moved = here - stop_at >= 2 && try_dash(pos, here, [&](vec2 p) { return field.get(p); }, blocked, avoid, dash_slot);
 	if (moved)
@@ -316,7 +338,7 @@ bool Nav::step_field(vec2& pos, const Field& field, int stop_at, const bc::bitbo
 	if (!can_move)
 		return moved;
 	const int rnd = static_cast<int>(bc::round_number());
-	if (P.stuck_detour && detour.field == &field)
+	if (P.stuck_detour && detour.field == &field && !plain)
 	{
 		// Still going around a blocker: keep following the dynamic search until the field value drops below
 		// where the detour started (past the blocker), or the hold expires.
@@ -340,12 +362,12 @@ bool Nav::step_field(vec2& pos, const Field& field, int stop_at, const bc::bitbo
 		const int v = field.get(p);
 		if (v >= here)
 			continue;
-		const int key = v * 4 + (avoid && avoid->is_set(p) ? 2 : 0) + (g_soft_avoid && g_soft_avoid->is_set(p) ? 1 : 0);
+		const int key = plain ? v * 4 : v * 4 + (avoid && avoid->is_set(p) ? 2 : 0) + (g_soft_avoid && g_soft_avoid->is_set(p) ? 1 : 0);
 		cand[static_cast<std::size_t>(n++)] = { key, d };
 	}
 	// flee_exit: we stand inside the avoided area (enemy reach, an awake camp) and every improving step stays in it: a sideways
 	// step (same field value) that leaves it comes first (ladder fragment: our Ren fled home past an awake elk for 8 rounds, 740 -> 0).
-	if (g_exit_first && avoid && avoid->is_set(pos) && (n == 0 || (cand[0].first & 2) == 2))
+	if (!plain && g_exit_first && avoid && avoid->is_set(pos) && (n == 0 || (cand[0].first & 2) == 2))
 		for (auto d : DIRS)
 		{
 			const vec2 p = pos + d;
@@ -360,7 +382,7 @@ bool Nav::step_field(vec2& pos, const Field& field, int stop_at, const bc::bitbo
 	// the static field only breaks ties on danger, so bodies walked into enemies just to shorten the route
 	// (ladder audit P1). Try the avoiding dynamic search first; it falls back to the plain route when no safe
 	// path exists, so this never deadlocks.
-	if (P.danger_detour && avoid && n > 0 && (cand[0].first & 2) == 2 && !avoid->is_set(pos) && !fallback_goals.is_empty() &&
+	if (!plain && P.danger_detour && avoid && n > 0 && (cand[0].first & 2) == 2 && !avoid->is_set(pos) && !fallback_goals.is_empty() &&
 		bc::fuel_remaining() > static_cast<std::uint64_t>(P.danger_detour_fuel))
 	{
 		if (step_to(pos, fallback_goals, avoid, -1, true))
@@ -375,7 +397,16 @@ bool Nav::step_field(vec2& pos, const Field& field, int stop_at, const bc::bitbo
 				pos = pos + cand[static_cast<std::size_t>(i)].second;
 				return true;
 			}
+#ifdef PROBE18T
+			std::printf("  MOVEFAIL r=%d (%d,%d)+(%d,%d) false\n", static_cast<int>(bc::round_number()), pos.x, pos.y, cand[static_cast<std::size_t>(i)].second.x, cand[static_cast<std::size_t>(i)].second.y);
+#endif
 		}
+#ifdef PROBE18T
+		catch (const std::exception& ex)
+		{
+			std::printf("  MOVEFAIL r=%d (%d,%d)+(%d,%d) ex=%s\n", static_cast<int>(bc::round_number()), pos.x, pos.y, cand[static_cast<std::size_t>(i)].second.x, cand[static_cast<std::size_t>(i)].second.y, ex.what());
+		}
+#endif
 		catch (...)
 		{
 		}

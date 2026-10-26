@@ -1017,6 +1017,8 @@ struct Params
 	int g18_greed = 0;			// 1: the endless Power tail (1.2 shards of stats a shard) becomes Greed (35 for 25: 1.4) in the same stat
 	int g18_tribute = 0;		// 1: a Tribute emblem (damage stat) for the gold-bonus body after its first emblems (slot g18_tribute_pos)
 	int g18_tribute_pos = 2;
+	int g18_osc = 0;			// > 0: a body back on the tile it stood on two turns ago while descending a field (A-B-A) descends plainly (no danger
+								// / stuck detour, no sideways exit) for this many rounds (treasure-box: a 125-gem bag walked in place for 200+ rounds)
 	int g18_capt_slack = 0;		// ... the recall lands this many rounds after the countdown ends (probe PROBE18: the reward lands at round + timer)
 	int g18_capt_timer = 0;		// 1: recall-while-capturing times the recall on the engine's capture countdown (capture_state().timer: 3 with
 								// a Capture emblem) instead of the fixed 5-turn capture time

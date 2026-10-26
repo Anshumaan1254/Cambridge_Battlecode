@@ -5283,8 +5283,32 @@ bool Brain::tribute(bool force)
 	}
 	task = T_TRIBUTE;
 	const vec2 altar = W.altars[static_cast<std::size_t>(a)];
+#ifdef PROBE18T
+	const vec2 p0 = pos;
+#endif
 	if (cheb(pos, altar) > 1)
 		go_altar(a);
+#ifdef PROBE18T
+	{
+		auto& N = nav();
+		const bool fok = N.ensure_altar(a, P.target_field_fuel);
+		std::printf("TB r=%d ch=%d pos=(%d,%d)->(%d,%d) altar=(%d,%d) fok=%d f=%d dang=%d campd=%d alert=%d canmove=%d\n", round, static_cast<int>(type), p0.x, p0.y, pos.x, pos.y, altar.x, altar.y,
+			static_cast<int>(fok), fok ? N.altar_fields[static_cast<std::size_t>(a)].get(p0) : -1, static_cast<int>(danger.is_set(p0)), static_cast<int>(camp_danger.is_set(p0)),
+			static_cast<int>(alert_zone.is_set(p0)), static_cast<int>(can_move));
+		if (fok)
+		{
+			const bc::bitboard bl = Nav::blocked_now(p0);
+			for (int dy = -1; dy <= 1; ++dy)
+				for (int dx = -1; dx <= 1; ++dx)
+				{
+					const vec2 q{ p0.x + dx, p0.y + dy };
+					if ((dx || dy) && bc::map::is_in_bounds(q))
+						std::printf("  N (%d,%d) f=%d wall=%d blk=%d camp=%d\n", q.x, q.y, N.altar_fields[static_cast<std::size_t>(a)].get(q), static_cast<int>(W.walls.is_set(q)),
+							static_cast<int>(bl.is_set(q)), static_cast<int>(W.camp_occ.is_set(q)));
+				}
+		}
+	}
+#endif
 	if (cheb(pos, altar) <= 1)
 	{
 		try

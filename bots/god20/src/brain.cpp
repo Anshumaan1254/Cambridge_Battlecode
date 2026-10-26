@@ -6761,6 +6761,8 @@ bool Brain::pk_mode() const
 	const auto& W = world();
 	if (!P.g20_pack || round >= P.g20_pack_until || (!P.g20_modes && (W.mono_mode || W.obj_mode)) || (P.g20_pack_maps == 1 && !pk_map_on))
 		return false;
+	if (P.g20_max_area > 0 && W.W * W.H > P.g20_max_area)
+		return false; // a pack walks every trip together: on large maps (s3, 18 maps over 60x60) it lost 72-237 gems a game
 	if (!P.g20_adapt || (P.g20_pack_maps == 2 && pk_map_on))
 		return true; // g20_pack_maps 2: always on the table's maps, adaptive (g20_adapt) on the others
 	if (round - epack_round <= P.g20_adapt_mem)

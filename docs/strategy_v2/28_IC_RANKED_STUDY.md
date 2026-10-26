@@ -71,3 +71,39 @@ against our 0.7.
 - **Bring numbers where the gems are.** Rushbait (ranked loss, mirror draft): the other team's four bodies clear the small groups of
   one lane one after another (G1 r6-15, G3 r16-25, G5 r26-40 ...), while ours walk 25 rounds to a far elk group and Vesper solos a wolf
   for 40 rounds (4 gems). Pilgrimage (v18 alone, no enemy): no body touches the 33-gem elk groups or the 88-gem centre in 250 rounds.
+
+## 6. GOD v20 work: the pack (`bots/god20`, every switch off by default = v18)
+
+- **`g20_pack` 1** (v1): followers farm the group the lowest-index living claimant ("leader") claims, the leader plans with the
+  damage of the allies within 10. It hardly packed (largest pack 2.4 bodies in p0; IC 3.4): followers left the leader's group on
+  the join-reach rule (223 of 815 follower turns on corners), on "too heavy for us" (54), and every body picked its own target the
+  moment the pack's group died.
+- **`g20_pack` 2** (v2): a claim on a dead group still leads unless that ally stands on the reward; followers hold next to it up to
+  3 rounds (`g20_hold`); a new leader first rejoins the group most others claim; join-reach and the solo heavy check do not apply to
+  the pack's group. Corners trace: G18 x5, G16 x4, middle G26 x5, G28 x5, G27 x4, captures banked at the central altar, as IC does.
+- **v3** (`g20_safe` 1, `g20_leash` 4): the pack skips a group whose camps would deal more than its spare health while it clears it
+  (starfish: 3 of 4 died to the 6-elk centre), and a body in pack mode does not walk after a target more than 4 steps deeper in their
+  half (crater: five of ours chased to their spawn from r16 to r61).
+- **`g20_adapt` 2**: the pack plan only while an enemy pack (3+ bodies within 3 tiles of one of them) was seen in the last 60 rounds,
+  or an ally posted DANGER. **`g20_max_area`**: no pack on maps larger than 60x60.
+- Lone-monolith and objective maps keep their own team plans (`g20_modes` 0).
+
+Results against GOD v18 on the 70-map pool (140 games, margin = our banked gems minus theirs a game, bootstrap 95%):
+
+| variant | wins | margin |
+|---|---|---|
+| v1 (`_pk1`) | 64/140 | -57 [-143, +30] |
+| v2 (`_pk2`) | 61/140 | -93 [-181, -12] |
+| v3 (`_pk3`) | 65/140 | -28 [-121, +69] |
+| v3 until r200 (`_pk3u2`) | 68/140 | -6 [-88, +78] |
+| adaptive (`_pkA`) | 72/140 | -22 [-111, +66] |
+| farm-first (`_ff`: keep hitting a live camp while no enemy can reach us) | 69/140 | -44 [-113, +20] |
+| IC's rosters on the v1 pack (`_icc`) | 51/140 | -142 |
+
+Against a pack opponent (`_pk3`): v18 75/140 (+28), adaptive `_pkA` **85/140, +107 [+18, +194]** (paired with v18's games: +80
+[-33, +192]). v18 beats the IC clone with the v2 pack (`_icc2`) 85/140, +154: our brain with IC's drafts and a pack is not IC.
+
+Per-map margins are dominated by chaos: an inert code change (fuel spent elsewhere) moves single maps by +-900 gems, so per-map
+selection (the `g20_pack_maps` table) does not survive; only pooled effects of 100+ gems are visible in 140 games. Unopposed
+opening pace (captured by r150 / r250, 70 maps alone): v18 114 / 207, always-pack 102 / 185, pack only for 80+ gem groups 112 / 204
+(vault 379 -> 698, the-line 370 -> 511; quadrants 449 -> 239).

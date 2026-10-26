@@ -688,7 +688,12 @@ double pd_score_model(D c, const std::vector<D>& team, const std::vector<D>& ene
 double pd_score(D c, const std::vector<D>& team, const std::vector<D>& enemy)
 {
 	if (P.pd_stat >= 3)
-		return pd_score_model(c, team, enemy) + (P.mi_pick ? P.mi_prior_w * mi_prior(static_cast<int>(c)) : 0.0);
+	{
+		// mi_pick 2 (GOD v18): the strong teams' pre-patch prior only on monolith and objective maps. Without it the pick order changed on the
+		// contest copies (ct2: 17/48, -283, 44 deaths to 8 in one game with the same five champions); with it everywhere the 30 new maps lost.
+		const bool prior = P.mi_pick == 1 || (P.mi_pick == 2 && (F.mono > 0 || MP.objective));
+		return pd_score_model(c, team, enemy) + (prior ? P.mi_prior_w * mi_prior(static_cast<int>(c)) : 0.0);
+	}
 	double v = stat_prior(c);
 	// Map fit.
 	if (MP.objective)

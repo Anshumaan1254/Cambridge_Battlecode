@@ -53,3 +53,27 @@ The gem gap is 2x already at r50 and grows linearly.
 | `g19_hold` 1 / 3 | in reach but not fighting, keep hitting the camp in range (and stay on a reward) | 46-49%, -39 to -78, deaths +1: off |
 | `g19_team` | team targets on any map (rich group cleared by the whole team) | pace 918-947 (v18 927), h2h 45-49%: off |
 | C&I for Marcella (`pd_sub_from 6 pd_sub_to 3`) + pair caution | IC's extra body | 54-57%, +16 to +41 on the pool; held-out gen2 / gold3 / var17 level (-176 on gold3) |
+| `deathball_until` 60 / 100 / 150 | follow the lowest-index body in the opening (IC's opening cohesion, crudely) | 32-35%, -141 to -222: off |
+| `g19_mid` 1 / 3 / 7 / 15 | middle band worth more / joinable / lower fight and flee bars there before r300 | 44-47%, +11 to -61: off |
+| flee bars (`outmatch_flee` 0, `outmatch_flee_adv` 0.6, `isolated_flee_adv` 1.2, `ml2_flee` 0.5, `ml2_leave` 0.3, `flee_dist` 3) | flee less (ladder: farming on contact dies 5%, leaving 5%, fighting 9%; outmatched: fight 44% of contacts, 27% die) | `outmatch_flee` 0: 44%, -135; `outmatch_flee_adv` 0.6 + `ml2_flee` 0.5 (`_fl1`): 53%, +29 |
+| `fight_back_margin` 1.0 (`_fb1`) | fight back only at even odds | 53%, +16 |
+| `_F1` = `_fl1` + C&I for Marcella (pair space 2, caution 0.3, low hp 0.4) | the two together | **82/140, +72** vs v18; held out level (gen2 +10, gold3 -25, var17 -16); **vs v17 48.6%, -24 (v18: 60.7%, +154)** |
+| `_F4` = `_F1` + `fight_back_margin` 1.0 | | 82/140, +81 vs v18 |
+
+**Non-transitive.** Every variant that beats v18 gives up most of v18's edge over v17 (`_fl1` +22, C&I +27, `_fb1` +66 vs v17; v18 +154).
+On the panel {v18, v17} v18 stays the best version: what wins against v18 exploits v18's own habits, not a general weakness.
+
+**The 25-shard "behind" screen** (our candidate capped at 25 shards vs full v18: 7% wins, -594, close to v18 vs IC) moves by at most +46
+(C&I + hold); none of the contact or middle switches changes it.
+
+**Ghost opponent** (`tools/ghost/`, test only): a bot that replays IC's recorded actions from the ladder replays on the same map for 400
+rounds. Exact replay fails at round 1 (our draft order on the platform depends on draft memory carried between the games of a group);
+the robust version (step toward the recorded tile, nearest target of the recorded kind) is open loop and v18 kills it 35-0 on
+gem-fields: IC's strength is its reactions, which no script reproduces. Not usable as an evaluator.
+
+## 5. Conclusion and the ladder test
+
+Local play cannot measure what loses to the top teams (the contested middle under IC's / Mite's reactions). The only real test is the
+ladder: `tools/paired_groups.py` re-creates v74's 43 distinct unranked groups (215 games, 15 vs IC) against the same opponent versions on
+the same maps and sides once a new version is live (deterministic: a map-by-map comparison), and `cambc submissions activate 74` restores
+v74 without a new upload.

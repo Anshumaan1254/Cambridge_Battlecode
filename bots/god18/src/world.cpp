@@ -42,10 +42,23 @@ void World::init_static()
 	// altar_no_camp: a camp's spawn tile is not standable while the camp lives (and the group never respawns while a body stands on it),
 	// so it is no approach tile (nx50x41: the one altar's only non-hole neighbour is a monolith's tile).
 	bc::bitboard camp_tiles;
+	// g18_fast_init: one camp_groups() call (it builds every camp object: ~13-37k fuel) serves this loop and the group table below
+	std::vector<bc::map::camp_group> fast_groups;
+	if (P.g18_fast_init)
+		fast_groups = bc::map::camp_groups();
 	if (P.altar_no_camp)
-		for (const auto& g : bc::map::camp_groups())
-			for (const auto& c : g.camps())
-				camp_tiles.set(c.spawn_position());
+	{
+		if (P.g18_fast_init)
+		{
+			for (const auto& g : fast_groups)
+				for (const auto& c : g.camps())
+					camp_tiles.set(c.spawn_position());
+		}
+		else
+			for (const auto& g : bc::map::camp_groups())
+				for (const auto& c : g.camps())
+					camp_tiles.set(c.spawn_position());
+	}
 	altar_block_g.assign(altars.size(), -1);
 	altar_block_c.assign(altars.size(), -1);
 	std::vector<vec2> blocked_tiles; // mode 2: camp tiles kept as approach tiles, resolved to their group below (groups are built after this)
@@ -100,7 +113,23 @@ void World::init_static()
 	// bodies walked around (rushbait-v2 / 30x80 ladder: 62 such tiles, eight: 22, expanse: 16). Read from the
 	// packed exports in plain code: per-tile host calls on 1,800-hole maps would cost ~1M fuel.
 	dash_walls = walls;
-	if (P.dash_holes && dash_kit)
+	if (P.dash_holes && dash_kit && P.g18_fast_init)
+	{
+		// g18_fast_init: the same crossings from host-side bitboard shifts (a hole with standable ground on both opposite sides along a row,
+		// a column or a diagonal); the per-hole scan below cost ~180k fuel on islands (two rounds of every dash body's opening).
+		const bc::bitboard ground = ~walls;
+		auto sh = [](const bc::bitboard& b, int dx, int dy) {
+			bc::bitboard t = dx ? b.shift_right(dx) : b;
+			return dy ? t.shift_up(dy) : t;
+		};
+		bc::bitboard cross = sh(ground, 1, 0) & sh(ground, -1, 0);
+		cross |= sh(ground, 0, 1) & sh(ground, 0, -1);
+		cross |= sh(ground, 1, 1) & sh(ground, -1, -1);
+		cross |= sh(ground, 1, -1) & sh(ground, -1, 1);
+		cross &= bc::map::holes();
+		dash_walls = walls & ~cross;
+	}
+	else if (P.dash_holes && dash_kit)
 	{
 		// Only the hole tiles are visited (a full-map scan cost ~87k fuel on lanes, most of the first turn).
 		auto ground = [&](int x, int y) { return x >= 0 && y >= 0 && x < W && y < H && !bit(walls_lin, y * W + x); };
@@ -117,7 +146,7 @@ void World::init_static()
 	}
 	groups.clear();
 	int id = 0;
-	const auto all_groups = bc::map::camp_groups();
+	const auto all_groups = P.g18_fast_init ? std::move(fast_groups) : bc::map::camp_groups();
 	groups.reserve(all_groups.size());
 	for (const auto& g : all_groups)
 	{
@@ -199,6 +228,7 @@ void World::init_static()
 	if (P.altar_no_camp >= 2)
 		for (std::size_t i = 0; i < altars.size(); ++i)
 			for (auto t : altar_approach[i])
+				if (!P.g18_fast_init || camp_tiles.is_set(t)) // g18_fast_init: only a camp tile can match below (islands: ~255k fuel)
 				for (auto& g : groups)
 					for (std::size_t c = 0; c < g.camps.size(); ++c)
 						if (g.camps[c].pos == t)
@@ -370,6 +400,11 @@ void World::init_units()
 
 void Group::update_cluster()
 {
+	if (P.g18_fast_init && camps.size() <= 1)
+	{
+		cluster = 1.f; // what the loop below computes for one camp, without the loop
+		return;
+	}
 	int best = 0, live = 0;
 	for (std::size_t i = 0; i < camps.size(); ++i)
 	{

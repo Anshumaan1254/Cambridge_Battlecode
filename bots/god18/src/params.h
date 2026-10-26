@@ -1022,6 +1022,9 @@ struct Params
 	int g18_capt_slack = 0;		// ... the recall lands this many rounds after the countdown ends (probe PROBE18: the reward lands at round + timer)
 	int g18_capt_timer = 0;		// 1: recall-while-capturing times the recall on the engine's capture countdown (capture_state().timer: 3 with
 								// a Capture emblem) instead of the fixed 5-turn capture time
+	int g18_fast_init = 0;		// 1: cheaper World::init_static, same tables: one camp_groups() call instead of two, the altar-approach camp lookup
+								// only for approach tiles that are camp tiles (islands: ~255k fuel, 2.5 rounds), the 1-wide hole crossings from
+								// shifted bitboards instead of a per-hole scan (islands, dash kits: ~180k), no cluster loop for one-camp groups
 	int g17_opp_r = 12;			// respond_to_alert: an OPPORTUNITY (tributing / recalling carrier) is answered from this far (v15 12; endgame 16)
 	int g17_ally_fresh = 1;		// with g17_bait: an ally seen recalling is not counted as channelling (the start / cancel flags are not visible)
 	int g15_sight = 0;		  // 1 (with om_sight 1): shared sightings from every body and its ward anywhere on the map, not only on our half (each

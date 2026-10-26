@@ -350,6 +350,11 @@ bool mi_draft_prepare()
 	return s.prior;
 }
 
+bool mi_known_map()
+{
+	return S().known >= 0;
+}
+
 double mi_prior(int c)
 {
 	const auto& s = S();

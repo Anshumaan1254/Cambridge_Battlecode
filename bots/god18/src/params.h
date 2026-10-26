@@ -893,6 +893,7 @@ struct Params
 	int mi_dmem = 1;		  // 1: the draft writes draft memory v2 (mapintel's plans, TEAM, OWN, BODY, CONT, CODE, ENEMY, NAV, DEBUG, L)
 	int mi_pick = 0;		  // 1: the pick value adds mi_prior_w x the strong teams' pick prior (LEARNED; ln(rate + 0.05), centred)
 							  // 2 (GOD v18): only on maps with a monolith or an objective group (the draft's own map analysis: F.mono, MP.objective)
+							  // 3: 2 + on the maps known_maps.h knows (the 40 old maps: the map's own strong-team pick rate)
 	float mi_prior_w = 1.0f;
 	float mi_own = 0.f;		  // > 0: groups the OWN block gives this body score x (1 + mi_own) (soft ownership, teamplan assign.h)
 	int mi_own_maxg = 30;	  // ... only on maps with at most this many groups (on v10 the switch lost on maps with more than 30)

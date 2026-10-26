@@ -13,3 +13,5 @@ void mi_draft_after_pick(int pick);
 bool mi_draft_prepare();
 // The prior's term for champion_draft id c: ln(rate + 0.05) minus its mean over the 12 picks (0 when not ready).
 double mi_prior(int c);
+// GOD v18 mi_pick 3: whether the map matched known_maps.h (the 40 sprint 1-2 maps, whose prior is the map's own strong-team pick rate).
+bool mi_known_map();

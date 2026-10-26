@@ -339,6 +339,10 @@ private:
 	std::array<int, 8> g15_trib_since{ -1, -1, -1, -1, -1, -1, -1, -1 };
 	std::array<int, 8> g15_trib_gems{};
 	int g15_nthreat = 0;
+	// GOD v18 g18_calm_mono: the contact-discipline values in force for this map (v17's on lone-monolith maps), set in init()
+	int calm_bits = 0;
+	float ml2_flee_eff = 0.f;
+	int fz_engage_eff = 0;
 	int g15_lock_round = -100;
 	int g15_fw_n = 0, g15_fw_round = -100, g15_fw_off = -100; // g15_fwalk: turns in a row walking to a fight without a hit, cooldown end
 	void g15_threats();

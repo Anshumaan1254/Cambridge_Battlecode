@@ -1025,6 +1025,10 @@ struct Params
 	int g18_fast_init = 1;		// 1: cheaper World::init_static, same tables: one camp_groups() call instead of two, the altar-approach camp lookup
 								// only for approach tiles that are camp tiles (islands: ~255k fuel, 2.5 rounds), the 1-wide hole crossings from
 								// shifted bitboards instead of a per-hole scan (islands, dash kits: ~180k), no cluster loop for one-camp groups
+	int g18_calm_mono = 0;		// 1: on lone-monolith maps (World::mono_mode) contact discipline is off: g15_calm 0, ml2_flee and fz_engage below;
+								// 2: also on objective maps (World::obj_mode)
+	float g18_mono_ml2_flee = 0.2f;
+	int g18_mono_fz_engage = 6;
 	int g17_opp_r = 12;			// respond_to_alert: an OPPORTUNITY (tributing / recalling carrier) is answered from this far (v15 12; endgame 16)
 	int g17_ally_fresh = 1;		// with g17_bait: an ally seen recalling is not counted as channelling (the start / cancel flags are not visible)
 	int g15_sight = 0;		  // 1 (with om_sight 1): shared sightings from every body and its ward anywhere on the map, not only on our half (each

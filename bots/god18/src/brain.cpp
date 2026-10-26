@@ -728,6 +728,15 @@ void Brain::init()
 	auto& W = world();
 	W.dash_kit = kit.dash >= 0;
 	W.init_static();
+	{
+		// g18_calm_mono: on a lone-monolith map (mono_mode: the contest plan, the fight at the objective is the game) keep v17's contact
+		// reflexes; contact discipline lost there (ct2, 24 contest copies: 18/48, deaths 29.0-19.4) while it won on the ladder pool.
+		// 2: also on objective maps (obj_mode: the whole team on one heavy group; var17's stampede copies -1,320 over 6 games).
+		const bool v17_contact = (P.g18_calm_mono >= 1 && W.mono_mode) || (P.g18_calm_mono >= 2 && W.obj_mode);
+		calm_bits = v17_contact ? 0 : P.g15_calm;
+		ml2_flee_eff = v17_contact ? P.g18_mono_ml2_flee : P.ml2_flee;
+		fz_engage_eff = v17_contact ? P.g18_mono_fz_engage : P.fz_engage;
+	}
 	if (W.mono_mode && P.mono_build)
 		build = build_for(type, P.mono_build);
 	if ((P.ic_home == 1 || P.ic_home == 2) && build.size() >= 5)
@@ -1042,7 +1051,7 @@ void Brain::turn()
 		}
 	}
 	build_danger();
-	if (P.g15_calm)
+	if (calm_bits)
 		g15_threats();
 	if (P.ward_enemy && round % 2 == 0)
 		enemy_wards_update();
@@ -3809,7 +3818,7 @@ bool Brain::combat()
 		}
 		}
 	}
-	if (P.ml2_leave > 0.f || P.ml2_flee > 0.f || P.ml2_enter > 0.f || P.ml2_hold > 0)
+	if (P.ml2_leave > 0.f || ml2_flee_eff > 0.f || P.ml2_enter > 0.f || P.ml2_hold > 0)
 	{
 		// ml2: the danger model learned on real ladder games (P(we die within 8 rounds) from what we see). Against ladder
 		// teams our estimate called 1,100 contact states 'fight' (adv >= 1.3) in which the model gave >= 0.3 and the body
@@ -3852,8 +3861,8 @@ bool Brain::combat()
 		if (P.ml2_enter > 0.f && !fight && ml2_p_kill >= P.ml2_enter && ml2_p_die < P.ml2_enter_die && d <= my_reach + 1 &&
 			!(W.enemy_spawn.is_set(tgt->pos) || cheb(tgt->pos, W.enemy_spawn_c) <= 3))
 			fight = true;
-		if (P.ml2_flee > 0.f && !fight && !in_reach && !ml2_kill && ml2_p_die >= (P.anchors && is_anchor ? P.anchor_ml2 : P.ml2_flee) + ml2_sup && nearest_enemy <= P.flee_dist && task != T_CAPTURE &&
-			!((P.g15_calm & 1) && g15_nthreat == 0))
+		if (ml2_flee_eff > 0.f && !fight && !in_reach && !ml2_kill && ml2_p_die >= (P.anchors && is_anchor ? P.anchor_ml2 : ml2_flee_eff) + ml2_sup && nearest_enemy <= P.flee_dist && task != T_CAPTURE &&
+			!((calm_bits & 1) && g15_nthreat == 0))
 		{
 			ml2_exit_round = round;
 			post_danger(tgt->pos);
@@ -3867,7 +3876,7 @@ bool Brain::combat()
 	engaged = fight || in_reach || nearest_enemy <= 5;
 	(void)stunners;
 
-	if (P.fz_engage > 0 && fight && !in_reach && !killable && last_fight_round < round - 1 && d > P.fz_engage && !tgt->channeling && !tgt->tributing)
+	if (fz_engage_eff > 0 && fight && !in_reach && !killable && last_fight_round < round - 1 && d > fz_engage_eff && !tgt->channeling && !tgt->tributing)
 		fight = false; // v14 fz_engage: not yet in a fight and the target is still far: keep doing what we do
 	if (P.fz_chase > 0 && !in_reach)
 	{
@@ -3888,7 +3897,7 @@ bool Brain::combat()
 	}
 	// v15 g15_calm & 4: starting a fight we have to walk to needs a target that is coming at us (or one step from our reach), a kill, a
 	// channel or a bag worth chasing; otherwise we keep farming (v14 walked 175 rounds a body toward fights, the ladder teams 73).
-	if ((P.g15_calm & 4) && fight && !in_reach && !killable && last_fight_round < round - 1 && d > my_reach + 1 && !tgt->channeling && !tgt->tributing &&
+	if ((calm_bits & 4) && fight && !in_reach && !killable && last_fight_round < round - 1 && d > my_reach + 1 && !tgt->channeling && !tgt->tributing &&
 		tgt->gems < 40 && !g15_is_threat(*tgt))
 		fight = false;
 	if (P.g15_fwalk > 0)
@@ -4037,7 +4046,7 @@ bool Brain::combat()
 	const bool outmatched = P.outmatch_flee && nearest_enemy <= P.outmatch_flee_dist && out_bar > 0.f &&
 		adv < out_bar + (pair_body ? P.pair_flee_bonus : 0.f);
 	if ((((isolated || reserve) && adv < P.isolated_flee_adv && nearest_enemy <= P.flee_dist) || outmatched) && task != T_CAPTURE &&
-		!((P.g15_calm & 1) && g15_nthreat == 0)) // v15: nobody here is coming at us: keep farming
+		!((calm_bits & 1) && g15_nthreat == 0)) // v15: nobody here is coming at us: keep farming
 	{
 		post_danger(tgt->pos);
 		task = T_FLEE;
@@ -4631,7 +4640,7 @@ bool Brain::safety()
 	{
 		float eb = 0;
 		for (const auto& e : W.enemies)
-			if (e.alive && e.visible && !W.enemy_spawn.is_set(e.pos) && !((P.g15_calm & 2) && !g15_is_threat(e)))
+			if (e.alive && e.visible && !W.enemy_spawn.is_set(e.pos) && !((calm_bits & 2) && !g15_is_threat(e)))
 			{
 				const int reach = std::max(e.kit.attack_range + (e.kit.ranged ? 0 : 1), enemy_spell_reach(e, false));
 				const int d = cheb(e.pos, pos);
@@ -5392,7 +5401,7 @@ bool Brain::respond_to_alert()
 		return false;
 	// v15 g15_calm & 8: a body working a group (a camp hit in the last 3 rounds, waiting on its respawn) keeps at it unless the rally is
 	// next to it (rallies pulled a quarter of our walking toward fights in the session-17 traces).
-	if ((P.g15_calm & 8) && !opp && d > P.g15_rally_near && (round - target_hit_round <= 3 || task == T_WAIT))
+	if ((calm_bits & 8) && !opp && d > P.g15_rally_near && (round - target_hit_round <= 3 || task == T_WAIT))
 		return false;
 	if (P.g15_fwalk > 0 && !opp)
 	{

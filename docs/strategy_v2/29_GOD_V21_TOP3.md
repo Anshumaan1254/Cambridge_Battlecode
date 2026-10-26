@@ -118,4 +118,4 @@ shows a recall every turn. Mite and TK do the same; IC does not.
   fort never triggered in two traced games against the IC clone (it does not invade late), so only the ladder can judge it.
 
 **GOD v21 candidate** = `bots/god21` with `g20_pack_until` 2000 (all g21 switches off): `submissions/candidates/god21_wholepack_20261027.zip`.
-Locally level with v20; it extends to the whole game the one v20 mechanism the ladder seems to reward (v20 60% vs v18 48%).
+Confirmation of the exact build (`god21`, source with all switches): vs v18 158/290 = 54.5%, +4 [-35, +45] paired to the unchanged build; vs the IC clone 92/140, -19 [-87, +46]; 0 faults in 430 games. Locally level with v20; it extends to the whole game the one v20 mechanism the ladder seems to reward (v20 60% vs v18 48%).

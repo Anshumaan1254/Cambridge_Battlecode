@@ -6155,7 +6155,10 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 		{
 			// Join only packs too heavy for one body; never a third body except on a monolith.
 			const float solo_rounds = hp_left / std::max(10.f, ally_dps);
-			const bool heavy = follow_g || g.monolith || g.elk || (!g.harmless && (solo_rounds > P.join_min_rounds || g.attackers >= 2));
+			// g18_rich (IC study, Oct 26): a harmless group worth g18_rich_gems+ (vault's 49-cluster centre: 343 gems; the-line: 161) is cleared by
+			// IC's whole team in a few rounds while our join rule let one body farm it alone (harmless groups were never "heavy").
+			const bool rich = P.g18_rich && g.harmless && g.gems >= P.g18_rich_gems && solo_rounds > P.join_min_rounds;
+			const bool heavy = rich || follow_g || g.monolith || g.elk || (!g.harmless && (solo_rounds > P.join_min_rounds || g.attackers >= 2));
 			const int max_join = P.mi_two_bodies ? std::min(P.max_join, 1) : P.max_join; // mi_two_bodies (default branch)
 			// commit_keep: we are already hitting it; the join limits are for walking in, not for leaving a camp half done
 			// (17 unopposed official games: 67 camps we had hit left on this rule).
@@ -6166,7 +6169,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			// two 68-gem packs for 300 rounds, hitting each one a few times before someone else captured it).
 			if (P.join_reach > 0.f && !g.monolith && !(W.obj_mode && g.objective) && static_cast<float>(d_adj + wait) > P.join_reach * solo_rounds)
 				{ WHY(13); return -1; }
-			share = P.join_share;
+			share = rich ? P.g18_rich_share : P.join_share;
 		}
 		// Rounds to clear the group with the given helpers; false when it cannot be done in max_trips.
 		auto plan = [&](float helpers_dps, bool helper_melee, float& t) {

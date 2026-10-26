@@ -1027,6 +1027,9 @@ struct Params
 	int g18_fast_init = 1;		// 1: cheaper World::init_static, same tables: one camp_groups() call instead of two, the altar-approach camp lookup
 								// only for approach tiles that are camp tiles (islands: ~255k fuel, 2.5 rounds), the 1-wide hole crossings from
 								// shifted bitboards instead of a per-hole scan (islands, dash kits: ~180k), no cluster loop for one-camp groups
+	int g18_rich = 0;			// 1: a harmless group worth at least g18_rich_gems is joinable like a heavy pack (up to max_join extra bodies), joiners credited
+	int g18_rich_gems = 80;		// g18_rich_share of its value (IC takes vault's 343-gem centre and the-line's 161 with the whole team in the opening)
+	float g18_rich_share = 0.8f;
 	int g18_calm_mono = 0;		// 1: on lone-monolith maps (World::mono_mode) contact discipline is off: g15_calm 0, ml2_flee and fz_engage below;
 								// 2: also on objective maps (World::obj_mode)
 	float g18_mono_ml2_flee = 0.2f;

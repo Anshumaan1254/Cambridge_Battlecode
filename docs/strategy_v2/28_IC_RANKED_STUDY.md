@@ -132,3 +132,19 @@ Margins are gems a game; "paired" = the candidate's games minus v18's games agai
 The null control shows the noise floor: v18's own play with a few unused lines of code moves the big-pool margin by +10 and the v17
 margin by -43 (v18's +154 against v17 is partly a lucky draw: any code change reshuffles those games). No candidate is clearly better
 than v18 against v18 or v17; the pack variants are consistently better against a pack opponent.
+
+## 8. Confirmation and decision
+
+`_v20d` (the best of the sweep) on 80 maps it had never played (ct2, gold3, pad17, obj; 160 games each): vs v18 75/160, -12 [-80, +55]
+(ct2 +4, gold3 +17, pad17 -43, obj -71); vs the pack bot, paired with v18's own games on those maps, +2 [-80, +81]. Its s3 advantage
+against the pack bot (+87) was the winner of ten noisy comparisons and did not hold.
+
+**Decision: no new build. GOD v18 stays the recommended bot.** Nothing measured here beats v18 locally (every candidate is within the
+noise floor of the null control), and the one property that looked better (play against pack opponents) did not survive fresh maps.
+v19 showed that a locally level change can lose to IC on the website (5/70 vs 8/70), so a level candidate is not shipped as "better".
+`_v20d` is kept as a candidate zip (`submissions/candidates/god20d_adaptive_pack_20261026.zip`) for a website A/B against IC only if the
+user asks for one. `bots/god20` keeps every switch (off by default = v18's play).
+
+What the study says to work on next (not solved here): the opening economy and the middle (section 2, 5). The pack as built is a
+weaker farmer than v18's spread on large maps and on many-small-group maps (unopposed pace -10%), and our brain with IC's drafts and a
+pack still loses to v18 (`_icc2`): IC's edge is not the pack alone but how efficiently it farms and fights inside it.

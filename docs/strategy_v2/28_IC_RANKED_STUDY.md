@@ -1,0 +1,73 @@
+# Why we lose: Intercontinental Fish (205 games) and our ranked losses (Oct 26, patch 2.0.0)
+
+The user (Oct 26, 17:39 IST): v19 was worse than v18 against IC; roll back to v18, analyse the new and the old IC matches deeply,
+build a bot that beats IC by using its strategy and its shortcomings, quality over speed, nothing on the website until told. 17:43 IST:
+"see our previous ranked battle losses too and overcome those problems too".
+
+## 1. Data
+
+- **IC**: 205 games of GOD v18 / v19 against IC on the whole sprint-3 pool (interim v18 65, final v18 70, v19 70; `experiments/ic_oct26_v18/`,
+  decoded index `/tmp/claude-0/ic_all.json` during the session). Results: 7/65, 8/70, 5/70.
+- **Ranked**: our 360 ranked games on engine 2.0.0 (Oct 26 00:24-12:10 UTC: v17 315, interim v18 30, v18 5, v19 10), 183-177. The 177
+  losses and 70 wins decoded (`experiments/ladder_oct26_v18/`: `ranked_me.jsonl`, `rk_index.py`). We are 51st (1,943); IC is first (2,390).
+- Scripts: `experiments/ic_oct26_v18/analysis/` (`icx.py` loader, `ic_open.py` opening and zones, `ic_pack.py` cohesion, `ic_budget.py`
+  time budget, `mapgroups.py` captures per group, `deaths_ctx.py`, `trace.py` per-body traces, `capsum.py`, `permap.py`, `contest_idx.py`).
+
+## 2. The game is decided in the middle
+
+Captured gems a game by zone (M = groups about as far from both spawns, O = our half, T = theirs) and phase (p0 < r200 < p1 < r500 < p2):
+
+| | O p0/p1/p2 | **M p0/p1/p2** | T p0/p1/p2 |
+|---|---|---|---|
+| IC games (final v18): us | 52 / 104 / 120 | **17 / 48 / 80** | 0 / 3 / 11 |
+| IC games: IC | 66 / 131 / 188 | **77 / 154 / 360** | 4 / 17 / 47 |
+| ranked losses (177): us | 52 / 92 / 180 | **15 / 32 / 94** | 1 / 4 / 14 |
+| ranked losses: them | 56 / 105 / 270 | **45 / 101 / 406** | 5 / 13 / 62 |
+| ranked wins (70): us | 60 / 122 / 294 | **31 / 76 / 401** | 2 / 6 / 29 |
+| ranked wins: them | 60 / 110 / 260 | **32 / 50 / 141** | 5 / 5 / 21 |
+
+70% of the gap in our ranked losses is the middle; in our wins we hold it. IC and the ranked teams that beat us bring more bodies:
+first group of the game shared by 4.35 bodies (IC) / 3.2 (ranked winners) against our 2.3-2.5; allies within 4 of a capture 1.7 / 1.6
+against our 0.7.
+
+## 3. How IC plays (traces, `trace.py`)
+
+- **One pack**: the whole team (6 bodies on 5-champion maps: Cassi & Issac) clears one group, then the next. Corners: G19 (its near elk
+  group) r7-17 x6, then the four middle groups G27 r22, G26 r37, G29 r55, G28 r70, Marcella capturing each; then the pack sits in the
+  middle and retakes every middle group on its respawn (G27 again at r103, G26 r127 ...) and raids our half between respawns (r82-112,
+  2 of ours killed). Corners totals: IC 909 captured (middle 644), we 316 and 0 of the 4 middle groups.
+- **Bank next to the work**: Marcella (2 gold a gem banked) captures and banks at the central altar (35,34) every 10-20 rounds; IC banks
+  27 times a game (we 12), bags of the same size (median 25 vs 22). Altar lock on that altar (2.6 a game).
+- **Pack loosens later**: largest pack 3.4 / 2.6 / 2.3 / 2.0 bodies by phase (ours 2.2 / 1.8 / 1.8 / 1.6).
+- **Items follow the gold**: Treasure first, then Bruiser strength emblems: strength from items at r800 107 vs our 43.
+- **Time budget** (share of body-rounds): IC hits camps 17.2% (us 10.3%), is dead 9.8% (us 15.0%), walks with an enemy within 8 14.2%
+  (us 20.0%). Captures a game 39.6 vs 21.7, hits per capture equal (28 vs 24): IC simply farms twice as long, because it holds the
+  middle and does not die.
+
+## 4. How we lose (traces)
+
+- **Corners**: four of ours clear G18, walk to the middle at r34, meet IC's six, walk back, wander until r60; Heart of Ruin carries 22
+  gems for 66 rounds without banking and dies with them; Vesper solos a wolf for 27 rounds.
+- **Elk arena** (the only gems: a 72-gem group in the centre): we lose the first fight (2 dead by r31) and the other three walk to the
+  corners to farm gold groups for 50 rounds while IC's three survivors take the 72 gems.
+- **Maps with a rich centre** (vault, the-line, quarry, fragment, ribs, pilgrimage, reverse spiral, rushbait): IC 760-1,000 captured,
+  we 0-385; we die 12-23 times.
+- **Heavy groups**: ranked winners cycle their elk / rich groups about twice as often as we cycle ours (great wall, big world, eight).
+- **Deaths**: 80% while fighting, 65% with 2+ enemies near and a local health ratio below 0.8; Vendetta 2.7 a game (IC's 0.6).
+- **Ranked map record** (engine 2.0.0): at most one win in rushbait-v2 0-6, eight 1-7, fragment 0-6, big-world 1-6, elk-arena 0-5,
+  quarry 0-5, great-wall 1-6, reverse-spiral 0-5, ribs 0-4, pilgrimage 0-4, the-pack 0-3, gold-rush 0-3; corners 2-6, stampede 2-5,
+  dunes 2-5. Best: boss-battle 8-1, harvest 9-2, gemcombat5 6-0, guardians 6-0, vault 5-0, stalactites 5-0.
+
+## 5. What the evidence says to change
+
+- **Win the opening economy.** In ranked games the capture difference at r300 decides: ahead by 60+ we win 16/23, behind by 60+ 8/92
+  (r150: we are behind by 20+ in 109 of 247 games, ahead in 32). Items at r150 are equal in our losses (12.0 vs 12.3 shard
+  equivalents) and 15.8 vs 9.0 in our wins; by r800 84 vs 124 and 137 vs 85.
+- **Fights follow the economy.** Team fights (2+ enemies within 5 of a body): early (r < 250) with more bodies we win them (deaths per
+  episode 0.38 vs IC's 0.54), even numbers we lose (0.51 vs 0.35); late we lose them whatever the numbers (0.46 vs 0.30 with more
+  bodies). In our ranked wins we win every kind (0.16 vs 0.75).
+- **Near an enemy, keep farming.** With an enemy within 8, IC hits something 35% of its turns, we 23%; when ahead we step toward the
+  enemy 38-41% of those turns (IC 24%), when behind we walk away 34-36% (IC 28-32%, and still hits 32-36%).
+- **Bring numbers where the gems are.** Rushbait (ranked loss, mirror draft): the other team's four bodies clear the small groups of
+  one lane one after another (G1 r6-15, G3 r16-25, G5 r26-40 ...), while ours walk 25 rounds to a far elk group and Vesper solos a wolf
+  for 40 rounds (4 gems). Pilgrimage (v18 alone, no enemy): no body touches the 33-gem elk groups or the 88-gem centre in 250 rounds.

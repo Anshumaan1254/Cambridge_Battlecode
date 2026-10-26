@@ -68,6 +68,54 @@ shows a recall every turn. Mite and TK do the same; IC does not.
   home beats the next target).
 - `g17_bait` 0: no end-of-turn recall bait.
 
-## 5. Results
+- `g21_fort` R: from round R, a body within 15 steps of spawn that sees more invaders (enemies nearer our spawn than theirs) within 8 than
+  it has allies within 6 goes home and fights from the spawn tiles (full heal each round there); 30-round holds, 20-round cooldown.
+- Whole-game adaptive pack: `g20_pack_until` 400 -> 2000 (our ranked losses die after r500, 8.2 deaths a game there).
 
-(pending)
+## 5. More data (user, 02:20 IST: "study more teams, our ranked losses on v18 and v20, try strategies, exploits, tricks, baits")
+
+- **Ladder record by live version** (vs teams of the same rating, 1922-1930): **v20 39/65 = 60%**, v18 100/210 = 47.6%. We are 49th
+  (1,947). v20 stays live.
+- **Ranks 4-12** (620 ranked games each, `ranked_rNN.jsonl`): every team drafts Heart of Ruin + Marcella plus three of Vesper, Vendetta,
+  Ryth, Prism, Willow, Tavi, Varg; ours is the most common draft. 48-52% each.
+- **Our 254 decoded v18 / v20 ranked games** (`loss_classes.py`, rows `ranked_us_v18v20_rows.json`):
+
+| per game | deaths us / them | captured gems us / them | items r300 us / them | gold earned < r300 us / them |
+|---|---|---|---|---|
+| wins (120) | 4.3 / 19.6 | 990 / 682 | 43 / 25 | 868 / 623 |
+| losses (134) | 11.5 / 8.7 | 513 / 1046 | 26 / 32 | 571 / 678 |
+
+  Losses: outfought 54, outfarmed 38, bag lost 19, close 15, opening wipe 10 (a game can be in two classes). 8.2 of the 11.5 deaths come
+  after r500; 62% of them start above 70% health 8 rounds before (burst), 62% with 2+ enemies within 8 already, 69% with an ally near,
+  52% within 15 tiles of our spawn; killers: Vesper 3.1, Marcella 2.8 a game.
+- **Tricks the top teams use**: turn-order changes every round (TK 4,018 set_priority a game, Mite 823; we alternate fighters' priority
+  already), item selling to swap a full slot set (Mite 6.8 a game), altar locks 3-4 a game (we 1), the end-of-turn recall bait (Mite, TK).
+
+## 6. Results (local, release, paired per-map margin against the unchanged build; s3 + var17 + gen2 = 145 maps vs v18, s3 70 vs the IC clone)
+
+| candidate | vs v18 | vs IC clone `_icc2` |
+|---|---|---|
+| unchanged (`god21` / `_w21base`) | 152 / 155 of 290 | 93 / 93 of 140 |
+| v20 (`_v20d`, the same play: the null control) | 150, -17 [-58, +19] | 91, -41 [-94, +6] |
+| `g21_lock` 3 + `g21_noback` | 139, -52 [-127, +26] | 77, **-126 [-248, -12]** |
+| `g21_lock` 3 | 142, -38 | 84, -89 |
+| `g21_noback` | 125, -74 [-151, +4] | 75, **-167 [-278, -63]** |
+| `cap_recall_gold` 250 | 134, -54 | 80, -75 |
+| `chain_farm` 1 | 123, **-94 [-159, -30]** | 76, **-118 [-216, -25]** |
+| `g17_bait` 0 | 141, -64 | 83, -78 |
+| `build_stat` 1 | 144, -29 | 92, -49 |
+| `build_kit` 1 | 151, +8 | 87, -42 |
+| `gold_value` 0.7 / 0.35 | 146, -30 / 154, +12 | 80, -72 / 82, -53 |
+| whole-game pack (`g20_pack_until` 2000) | 152, +9 (to v20) | 88, -4 (to v20) |
+| ... with `g20_adapt_mem` 60 | 133, **-56 [-110, -1]** | 85, -42 |
+| `g21_fort` 400 / 1 | 142, -24 / 141, -34 | 88, -48 / 86, -33 |
+| whole-game pack + `g21_fort` 400 | 156, +11 [-40, +60] | 91, -33 [-111, +42] |
+
+- The user's three complaints are, on our brain, part of what works: the back-and-forth near enemies is largely kiting (step in, hit,
+  step out) and the flee / bank / farm cycle; vetoing it loses up to 167 gems a game against the IC clone. The capture-recalls (heal and
+  shop at once) and the recall bait are worth keeping: every way of cutting them lost.
+- The null control (v20 vs the same play rebuilt) moves by up to 41 gems: nothing within about +-50 is distinguishable locally. The
+  fort never triggered in two traced games against the IC clone (it does not invade late), so only the ladder can judge it.
+
+**GOD v21 candidate** = `bots/god21` with `g20_pack_until` 2000 (all g21 switches off): `submissions/candidates/god21_wholepack_20261027.zip`.
+Locally level with v20; it extends to the whole game the one v20 mechanism the ladder seems to reward (v20 60% vs v18 48%).

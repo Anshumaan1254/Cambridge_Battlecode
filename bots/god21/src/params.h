@@ -1039,7 +1039,7 @@ struct Params
 	// and the altar next to them, retaking each group on its respawn (corners: G27, G26, G29, G28 every ~60 rounds, all banked at the
 	// central altar). Our bodies spread one per group, meet the pack one at a time and leave or die.
 	int g20_pack = 2;			// 1: followers farm the group the pack leader claims (pk_leader); the leader plans with the pack's damage
-	int g20_pack_until = 400;	// ... until this round
+	int g20_pack_until = 2000;	// v21: the adaptive pack for the whole game (was 400: our ranked losses die after r500)	// ... until this round
 	int g20_pack_r = 10;		// allies within this many tiles of the leader are its pack (their damage, their health in the threat checks)
 	int g20_pack_rew = 6;		// a follower may still take a reward this many steps away (the capture rules pick who), else only the leader's group
 	float g20_pack_risk = 1.f;	// with 3+ pack bodies: enemy-half penalty and mid risk x this

@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- **Session 22 (Oct 26, 11:00 UTC- , the user's Windows PC `C:\battlecode\Cambridge_Battlecode`, 8 cores; IN PROGRESS): GOD v19 work** (`bots/god19` = v18 +
+- **Session 22 (Oct 26, 11:00 UTC- , the user's Windows PC `C:\battlecode\Cambridge_Battlecode`, 8 cores; IN PROGRESS): GOD v19 work** (`bots/god19pc`, renamed Oct 27 to avoid the remote `bots/god19`; = v18 +
   switches, all off = v18). **Rules now: never `cambc submit` / `submissions activate` (the user submits); unranked match groups with the live bot are
   allowed; the bot handed over must be final.** Live = v74 = `god18.zip` (the user's upload). Ladder study of v74 (200 games, 95 vs the top 10: 9 wins)
   and 349 top-12 games: doc `docs/strategy_v2/28_V74_LADDER_STUDY.md`. Key: unopposed, v18 farms as fast as IC does against us (equal per 100 rounds

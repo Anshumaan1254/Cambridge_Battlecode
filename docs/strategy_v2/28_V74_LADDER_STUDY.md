@@ -75,5 +75,5 @@ gem-fields: IC's strength is its reactions, which no script reproduces. Not usab
 
 Local play cannot measure what loses to the top teams (the contested middle under IC's / Mite's reactions). The only real test is the
 ladder: `tools/paired_groups.py` re-creates v74's 43 distinct unranked groups (215 games, 15 vs IC) against the same opponent versions on
-the same maps and sides once a new version is live (deterministic: a map-by-map comparison), and `cambc submissions activate 74` restores
+the same maps and sides once a new version is live (deterministic: a map-by-map comparison); the user (never an agent) can run `cambc submissions activate 74` to restore
 v74 without a new upload.

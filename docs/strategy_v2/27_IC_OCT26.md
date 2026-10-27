@@ -44,7 +44,11 @@ produced with the scripts in `experiments/ladder_oct26_v17/analysis/`).
 - `g18_rich` (the team may join a harmless group worth 80+ gems): on the four maps with such groups (vault, the-line, stalactites,
   gemcombat5, both sides) 3/8 vs v17 where v18 went 7/8; off.
 - `_ax1` (`heavy_value` 1.6, `big_reward` 60, `big_reward_dive` 60: value big groups, fight for them with the team near, contest an enemy
-  capture of one): vs `_icp1` 85/140, +138 (v18 the same); vs v17 below.
+  capture of one): vs `_icp1` 85/140, +138 (v18 the same); vs v17 81/140, +59 [-42, +155] (old maps +143, new -53).
+- `_fd` (fight discipline against the Vendetta dives: `fight_margin` 1.6, `isolated_fight_adv` 1.6, `outmatch_flee_adv` 1.0): vs v17 79/140,
+  +96 [+4, +188], deaths 10.8-12.1 (old maps +106, new +83).
+- Shipped v18 (`_v18g`) on the same pool: 85/140, +154 [+59, +250]. Neither candidate beats it locally; both are zips in
+  `submissions/candidates/` (`god18_fd.zip`, `god18_ax1.zip`) for a real test against IC.
 - Varg in every slot and Tavi for Ryth: all below v17 (doc 25).
 
 ## 4. How to test against the real IC

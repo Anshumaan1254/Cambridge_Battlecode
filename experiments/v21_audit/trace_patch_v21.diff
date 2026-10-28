@@ -1,0 +1,15 @@
+--- god21/src/brain.cpp	2026-10-28 06:00:47.229438717 +0000
++++ _t21/src/brain.cpp	2026-10-28 06:11:30.551775994 +0000
+@@ -1,3 +1,4 @@
++#define G20_TRACE 1
+ #include "brain.h"
+ #include "pack_maps.h"
+ #include "mi_game.h"
+@@ -1292,6 +1293,7 @@
+ 			if (e.alive && e.visible)
+ 				g21_ne = std::min(g21_ne, cheb(g21_pos0, e.pos));
+ 		std::printf("PT r=%d i=%d path=%d eng=%d task=%d tg=%d hp=%d/%.0f bag=%d x=%d y=%d ne=%d\n", round, W.my_index, dbg_path, dbg_eng, static_cast<int>(task), task_group, g21_hp0, max_hp, static_cast<int>(gems), g21_pos0.x, g21_pos0.y, g21_ne);
++		std::printf("PM r=%d i=%d pk=%d L=%d T=%d n=%d ep=%d al=%d\n", round, W.my_index, static_cast<int>(pk_mode()), pk_leader, pk_target, pk_n, round - epack_round, static_cast<int>(comms().alert_kind));
+ 	});
+ #endif
+ #ifdef SPELL_TRACE

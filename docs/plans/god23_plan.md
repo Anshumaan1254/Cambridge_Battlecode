@@ -19,6 +19,9 @@ every other group −1 when P0 is alive or a reward: bodies die on heavy groups 
 damage −30%) → OFF, redesign or drop; `_85sf` −94 was the spawn-farm bug (safety() returned before rest-on-spawn on every map; fixed,
 re-running); veto bits alone: lure −26, **one-step +53 [−21, +125]**, chase −9, their-half −10, second wave −20; leave step, bank, draft,
 combined, held-out confirmation of one-step (maps/heldout = gen2+gold3+var17, 103 maps) are queued (`queue3.sh`, `queue4.sh`).
+Leave step (bit 32, `g23_leave` instead of v75's flee when in reach) **−106 [−188, −30]** → OFF (it steps toward an ally up to 12
+tiles away without checking that the path leaves enemy reach; v75's `toward_help` only moves to a helper arriving within 3 rounds and never
+into more reach).
 Subagents launched Nov 2 (code review of g23 hooks; death/fight analysis of 128 ladder replays → `experiments/ladder_nov2/agent_fights/`;
 `experiments/ladder_nov2/ladder_loop.py` automation) were cut by the usage limit and resumed at 23:16 UTC.
 

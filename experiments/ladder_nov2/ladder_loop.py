@@ -781,33 +781,28 @@ def wait_built(pend, timeout, poll):
         time.sleep(poll)
 
 
-def activate(version, execute, st_path, st, event, extra):
-    """Activate a version (write command), confirm it is live, record it in the state file and loop_log.md."""
+def activate(version, execute, source):
+    """Make a version live (a write command: printed unless execute), wait until the platform shows it live, and
+    return the state record for it (activation time = its statusAt, our rank / rating just before the switch)."""
     cmd = [CAMBC, 'submissions', 'activate', str(version), '--json']
     if not execute:
         run_cmd(cmd, write=True)
         return None
-    lad = get_ladder()  # our rank / rating just before the switch
+    lad = get_ladder()
     rc, out, err = run_cmd(cmd, write=True, execute=True)
     if rc != 0:
         raise LoopError(f'`cambc submissions activate {version}` failed (rc {rc}): {(err or out).strip()[:400]}')
     for _ in range(12):
-        d = get_submissions()
-        live = d.get('active') or {}
+        live = get_submissions().get('active') or {}
         if live.get('version') == version:
             break
         time.sleep(5)
     else:
         raise LoopError(f'v{version} is still not live 60 s after `activate`; check `cambc submissions list`')
-    at = live.get('statusAt') or iso(now())
-    rec = {'version': version, 'id': live.get('id'), 'note': live.get('note'), 'activatedAt': iso(parse_ts(at)),
-           'statusAt': live.get('statusAt'), 'ratingAtActivation': round(lad[ME]['rating'], 1),
-           'rankAtActivation': lad[ME]['rank'], 'source': event}
-    rec.update(extra)
-    st['current'] = rec
-    st['history'].append({'at': iso(now()), 'event': event, 'version': version, 'activatedAt': rec['activatedAt'],
-                          'previous': (st.get('previous') or {}).get('version')})
-    return rec
+    return {'version': version, 'id': live.get('id'), 'note': live.get('note'),
+            'activatedAt': iso(parse_ts(live['statusAt'])) if live.get('statusAt') else iso(now()),
+            'statusAt': live.get('statusAt'), 'ratingAtActivation': round(lad[ME]['rating'], 1),
+            'rankAtActivation': lad[ME]['rank'], 'source': source}
 
 
 def cmd_deploy(a):
@@ -858,7 +853,7 @@ def cmd_deploy(a):
             print(out.strip())
         if rc != 0:
             raise LoopError(f'`cambc submit` failed (rc {rc}): {(err or out).strip()[:400]}')
-        pend = {'version': parse_submit_version(out), 'bot': bot, 'note': a.note, 'submittedAt': iso(t0),
+        pend = {'version': parse_submit_version(out, after), 'bot': bot, 'note': a.note, 'submittedAt': iso(t0),
                 'afterVersion': after}
         st['pending'] = pend
         st['history'].append({'at': iso(t0), 'event': 'submit', 'bot': bot, 'note': a.note, 'version': pend['version']})
@@ -871,12 +866,13 @@ def cmd_deploy(a):
     s = wait_built(pend, a.timeout, a.poll)
     st['pending'] = pend
     save_state(a.state, st)
-    if s.get('version') == live['version'] or (d.get('active') or {}).get('version') == s['version']:
-        print(f"v{s['version']} is already live")
-    rec = activate(s['version'], True, a.state, st, 'deploy', {'bot': pend['bot'], 'submittedAt': pend['submittedAt']})
-    st['pending'] = None
-    save_state(a.state, st)
+    rec = activate(s['version'], True, 'deploy')
+    rec.update(bot=pend['bot'], submittedAt=pend['submittedAt'])
     prev_v = (st.get('previous') or {}).get('version')
+    st['current'], st['pending'] = rec, None
+    st['history'].append({'at': iso(now()), 'event': 'deploy', 'version': rec['version'],
+                          'activatedAt': rec['activatedAt'], 'previous': prev_v})
+    save_state(a.state, st)
     line = (f"{now():%Y-%m-%dT%H:%MZ} DEPLOY v{rec['version']} \"{pend['note']}\" (bots/{pend['bot']}) live since "
             f"{rec['activatedAt']}; previous v{prev_v}; at activation rank {rec['rankAtActivation']} rating "
             f"{rec['ratingAtActivation']:.0f} | ladder_loop")
@@ -1048,13 +1044,15 @@ def cmd_rollback(a):
         raise LoopError(f"v{target} is not built (status {s.get('status')!r})")
     print(f"rollback: v{lv} \"{live.get('note', '')}\" -> v{target} \"{s.get('note', '')}\"")
     old = previous_record(st, live)
-    rec = activate(target, a.execute, a.state, st, 'rollback', {})
+    rec = activate(target, a.execute, 'rollback')
     if rec is None:
         print(f'[dry-run] would record current = v{target}, previous = v{lv} (marked rolled back) in {rel(a.state)} '
               f'and append a ROLLBACK line to {rel(a.log)}')
         return
     old['rolledBack'] = True
-    st['previous'] = old
+    st['current'], st['previous'] = rec, old
+    st['history'].append({'at': iso(now()), 'event': 'rollback', 'from': lv, 'version': target,
+                          'activatedAt': rec['activatedAt']})
     save_state(a.state, st)
     line = (f"{now():%Y-%m-%dT%H:%MZ} ROLLBACK v{lv} -> v{target} \"{s.get('note', '')}\" live since "
             f"{rec['activatedAt']}; rank {rec['rankAtActivation']} rating {rec['ratingAtActivation']:.0f} | ladder_loop")

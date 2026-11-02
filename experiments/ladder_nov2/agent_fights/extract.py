@@ -15,7 +15,7 @@ Conventions
 - Fight = connected component of champion hits, linking hits <=GAP rounds apart that share a body or
   whose attacker/target tiles are within RAD (Chebyshev).  Exchange = both teams landed a hit.
 """
-import json, os, sys
+import json, os, sys, bisect
 from collections import defaultdict, Counter, deque
 
 BASE = '/home/claude/cambridge_battlecode/experiments/ladder_nov2'
@@ -49,6 +49,45 @@ def shards(items):
         else:
             s += q * (6 if fam == 1 else 7 if fam == 6 else 35 if fam == 12 else 5)
     return s
+
+
+GROW = {'Cassi': (65, 3, 13), 'Issac': (80, 3, 10), 'Ryth': (100, 4.5, 10), 'VesperVale': (100, 5, 10), 'Prism': (65, 2.5, 8),
+        'Stellar': (65, 3.5, 8.5), 'Vendetta': (100, 6, 10), 'Marcella': (100, 4.5, 14), 'Tavi': (75, 5, 10),
+        'Willow': (50, 3, 5), 'Ren': (100, 5, 9), 'Varg': (100, 5, 10), 'HeartOfRuin': (100, 3, 10)}  # hp, str, foc per shard
+HAS_RESET = {'Ryth', 'VesperVale', 'Vendetta', 'Issac', 'Marcella', 'Tavi', 'Willow', 'Varg'}
+SPELL_SUM = {'Ryth': 1.0, 'Cassi': 2.0, 'Stellar': 3.4, 'Prism': 2.5, 'Marcella': 2.0, 'Ren': 1.1, 'Tavi': 1.6, 'HeartOfRuin': 1.5}
+DASHERS = {'HeartOfRuin', 'VesperVale', 'Vendetta', 'Ren', 'Issac'}
+STUNNERS = {'Ryth': 3, 'Ren': 4, 'Tavi': 4, 'Cassi': 4, 'Prism': 4}  # ranged (4) stun ability id
+
+
+def stat_shards(items):
+    n = [0, 0, 0]  # str, foc, hp
+    for it, q in items:
+        fam, rest = divmod(it, 6)
+        stat, emb = rest // 2, rest % 2
+        if not emb:
+            n[stat] += q
+        elif fam == 1:
+            n[stat] += 6 * q
+        elif fam == 6:
+            n[stat] += 5 * q
+            for o in range(3):
+                if o != stat:
+                    n[o] += q
+        elif fam == 12:
+            n[stat] += 35 * q
+        else:
+            n[stat] += 5 * q
+    return n
+
+
+def dps(ct, items):
+    """rough damage per round: basic attacks (+1 reset per 8 rounds) + damage spells every 8 rounds"""
+    n = stat_shards(items)
+    g = GROW[ct]
+    st = STR[ct] + g[1] * n[0] + (0.01 * g[0] * n[2] if ct == 'Ryth' else 0)
+    fo = FOC[ct] + g[2] * n[1]
+    return st * (1 + (ct in HAS_RESET) / 8) + fo * SPELL_SUM.get(ct, 0) / 8
 
 
 def bfs(rows, starts, w, h):
@@ -148,7 +187,7 @@ def process(mid, we, ginfo):
     heals = []
     acted = defaultdict(set)  # body -> rounds with a Move/Attack/Cast
     for e in d['events']:
-        if e.get('who') is not None and e['k'] in ('Move', 'Attack', 'Cast ability', 'Recall'):
+        if e.get('who') is not None and e['k'] in ('Move', 'Attack', 'Cast ability', 'Recall', 'Cancel channel', 'Place ward', 'Submit gems'):
             acted[e['who']].add(e['r'])
     seq = 0
     for r in range(1, final + 1):
@@ -274,11 +313,13 @@ def process(mid, we, ginfo):
     hit_rounds = defaultdict(set)
     for h in hits:
         hit_rounds[h['t']].add(h['r'])
-    # real recalls: the channel was held into the next turn (no own action next round) or was broken by a champion hit
+    # real recalls: the channel was held through the next round (no own action or self-cancel next round, still alive).
+    # (Both teams often 'fake recall': start a recall at turn end and cancel it at the next turn start.)
     real_recalls = defaultdict(list)
     for b, rs in recalls.items():
         for x in rs:
-            if (x + 1) not in acted[b] or x in hit_rounds[b] or (x + 1) in hit_rounds[b]:
+            nxt = S.get(x + 1, {}).get(b)
+            if (x + 1) not in acted[b] and nxt is not None and nxt[7]:
                 real_recalls[b].append(x)
     camp_by_r = defaultdict(list)
     for h in camp_hits:
@@ -338,6 +379,120 @@ def process(mid, we, ginfo):
                     sd += 1
         return tw, aw, sd
 
+    last_casts = defaultdict(list)  # (body, ability) -> rounds
+    for e in d['events']:
+        if e['k'] == 'Cast ability' and e.get('who') is not None:
+            last_casts[(e['who'], e['ability'])].append(e['r'])
+
+    def ready(b, ab, r):
+        """ability ab of body b is off cooldown at round r (8 turn ends since its last cast)"""
+        rs = last_casts.get((b, ab))
+        if not rs:
+            return True
+        i = bisect.bisect_left(rs, r) - 1
+        return i < 0 or r - rs[i] >= 8
+
+    def power(r, p, t, rad=6, excl=None, incl_self=None):
+        """Lanchester index (sum hp) x (sum dps) of team t bodies within rad of p at end of round r"""
+        s = S.get(r, {})
+        hp = dp = 0.0
+        n = 0
+        for i, c in s.items():
+            if c[7] and team[i] == t and i != excl and cheb((c[3], c[4]), p) <= rad:
+                hp += c[5]
+                dp += dps(types[i], c[11])
+                n += 1
+        if incl_self is not None:
+            c = s.get(incl_self)
+            if c and c[7]:
+                hp += c[5]
+                dp += dps(types[incl_self], c[11])
+                n += 1
+        return hp * dp, n
+
+    def threat(r, b):
+        """enemies of b at end of round r-1: (#within 4, #with ready dash within 4, #with ready ranged stun within 5)"""
+        s = S.get(r - 1, {})
+        cb = s.get(b)
+        if not cb or not cb[7]:
+            return None
+        p = (cb[3], cb[4])
+        n4 = nd = ns = 0
+        for i, c in s.items():
+            if not c[7] or team[i] == team[b]:
+                continue
+            dd = cheb((c[3], c[4]), p)
+            if dd <= 4:
+                n4 += 1
+                if types[i] in DASHERS and ready(i, 6, r):
+                    nd += 1
+            if dd <= 5 and types[i] in STUNNERS and ready(i, STUNNERS[types[i]], r):
+                ns += 1
+        return n4, nd, ns
+
+    # ---- retreat episodes: an away step from an enemy within 5 after taking a champion hit in the last 3 rounds
+    death_r = defaultdict(list)
+    for dd in deaths:
+        death_r[dd['who']].append(dd['r'])
+    retreats = []
+    for b, mv in moves.items():
+        last_start = -100
+        for (r, fr, to, rel) in mv:
+            if not rel:
+                continue
+            j = min(rel, key=lambda q: rel[q][0])
+            d0, d1 = rel[j]
+            if d0 > 5 or d1 <= d0:
+                continue
+            if not any(x in hit_rounds[b] for x in (r - 2, r - 1, r)):
+                continue
+            if r - last_start < 6:
+                continue
+            last_start = r
+            c = S.get(r - 1, {}).get(b)
+            if not c or not c[7]:
+                continue
+            p = (c[3], c[4])
+            th = threat(r, b)
+            pw_own, n_own = power(r - 1, p, team[b], 6, excl=b, incl_self=b)
+            pw_en, n_en = power(r - 1, p, 1 - team[b], 6)
+            died = any(r <= x <= r + 8 for x in death_r[b])
+            own_dash = types[b] in DASHERS and ready(b, 6, r)
+            retreats.append({'mid': mid, 'res': ginfo['res'], 'side': 'we' if team[b] == we else 'they', 'body': b, 'champ': types[b],
+                             'r': r, 'hp': c[5] / max(1, c[6]), 'hp_abs': c[5], 'n_own': n_own, 'n_en': n_en,
+                             'pw_ratio': (pw_own / pw_en) if pw_en > 0 else None, 'en4': th[0] if th else None,
+                             'dash4': th[1] if th else None, 'stun5': th[2] if th else None, 'own_dash': own_dash, 'died8': died,
+                             'gems': c[8]})
+
+    # ---- held recalls (channel kept through the next round): conditions at start and outcome
+    spawn_tiles = {0: {tuple(q) for q in mp['spawnA']}, 1: {tuple(q) for q in mp['spawnB']}}
+    camp_hit_rounds = defaultdict(set)
+    for h in camp_hits:
+        camp_hit_rounds[h['t']].add(h['r'])
+    recall_eps = []
+    for b, rs in real_recalls.items():
+        for x in rs:
+            c = S.get(x, {}).get(b)
+            if not c or not c[7]:
+                continue
+            p = (c[3], c[4])
+            if p in spawn_tiles[team[b]]:
+                continue
+            en = [(cheb(p, (q[3], q[4])), i) for i, q in S[x].items() if q[7] and team[i] != team[b]]
+            dmin = min(en)[0] if en else 99
+            done = None
+            for k in range(1, 8):
+                ck = S.get(x + k, {}).get(b)
+                if ck and ck[7] and (ck[3], ck[4]) in spawn_tiles[team[b]]:
+                    done = k
+                    break
+            hit = any((x + k) in hit_rounds[b] for k in range(0, 6))
+            chit = any((x + k) in camp_hit_rounds[b] for k in range(0, 6))
+            died = any(x <= y <= x + 8 for y in death_r[b])
+            recall_eps.append({'mid': mid, 'res': ginfo['res'], 'side': 'we' if team[b] == we else 'they', 'body': b, 'champ': types[b],
+                               'r': x, 'hp': c[5] / max(1, c[6]), 'gems': c[8], 'dmin': dmin, 'en6': sum(1 for dd, i in en if dd <= 6),
+                               'done': done, 'champ_hit': hit, 'camp_hit': chit, 'died8': died})
+
     # ---- fight rows
     frows = []
     for fi, c in enumerate(fights):
@@ -370,6 +525,10 @@ def process(mid, we, ginfo):
         first = team[h0['a']]
         cp = h0['tp']
         num = {t: len(nearby(start - 1, cp, t)) for t in (0, 1)}
+        pw = {t: power(start - 1, cp, t, 6)[0] for t in (0, 1)}
+        # visible-at-contact proxy: bodies within 6 of the first hit's target tile
+        dps_c = {t: round(sum(dps(types[i], S[start - 1][i][11]) for i in nearby(start - 1, cp, t)), 1) if S.get(start - 1) else 0 for t in (0, 1)}
+        hp_c = {t: sum(S[start - 1][i][5] for i in nearby(start - 1, cp, t)) if S.get(start - 1) else 0 for t in (0, 1)}
         num8 = {t: len(nearby(start - 1, cp, t, 8)) for t in (0, 1)}
         hp0 = {t: sum(S[start - 1][b][5] for b in parts[t] if b in S.get(start - 1, {}) and S[start - 1][b][7]) for t in (0, 1)}
         sh0 = {t: sum(shards(S[start - 1][b][11]) for b in parts[t] if b in S.get(start - 1, {})) for t in (0, 1)}
@@ -428,7 +587,7 @@ def process(mid, we, ginfo):
                           'enemy': len(nearby(fd['r'] - 1, pv, 1 - vt, 6)), 'dt': fd['r'] - start}
         dlist = [(dd['r'], dd['who'], types[dd['who']], 'we' if team[dd['who']] == we else 'they') for dd in fdeaths]
         frows.append({'mid': mid, 'res': ginfo['res'], 'map': ginfo['map'], 'fid': fi, 'start': start, 'end': end,
-                      'joins': rel(joins), 'first_death': fd_num, 'deaths': dlist,
+                      'joins': rel(joins), 'first_death': fd_num, 'deaths': dlist, 'pw': rel(pw), 'dps_c': rel(dps_c), 'hp_c': rel(hp_c),
                       'first_hit': [h0['r'], h0['a'], types[h0['a']], h0['t'], types[h0['t']], h0['kind']],
                       'exchange': nh[0] > 0 and nh[1] > 0, 'first': 'we' if first == we else 'they',
                       'win': None if win is None else ('we' if win == we else 'they'),
@@ -509,6 +668,30 @@ def process(mid, we, ginfo):
                              'killer_is_target': dd['by'] == j}
         cpos = dd['at']
         dho, dhe = dist_home(t, cpos), dist_home(1 - t, cpos)
+        pr = []
+        for k in (3, 5):
+            cbk = S.get(r - k, {}).get(b)
+            if cbk and cbk[7]:
+                pk = (cbk[3], cbk[4])
+                po = power(r - k, pk, t, 6, excl=b, incl_self=b)[0]
+                pe = power(r - k, pk, 1 - t, 6)[0]
+                pr.append(po / pe if pe > 0 else None)
+            else:
+                pr.append(None)
+        th = threat(r, b)
+        # hp when the final retreat began: first away step of the last uninterrupted run of away/side steps
+        fin = [m for m in moves[b] if r - 10 <= m[0] <= r and m[3]]
+        ret_r = ret_hp = None
+        for m in reversed(fin):
+            j = min(m[3], key=lambda q: m[3][q][0])
+            d0, d1 = m[3][j]
+            if d1 > d0:
+                ret_r = m[0]
+            elif d1 < d0:
+                break
+        if ret_r is not None:
+            cr = S.get(ret_r - 1, {}).get(b)
+            ret_hp = cr[5] / max(1, cr[6]) if cr and cr[7] else None
         rec = [x for x in real_recalls[b] if r - 6 <= x <= r]
         stunned = any(r - 3 <= x <= r for x in stun_on[b])
         # first champion hit on b in the last 15 rounds and farming just before it
@@ -531,7 +714,9 @@ def process(mid, we, ginfo):
                       'camp_hits5': len(ch5), 'camp_dmg5': round(camp_dmg5), 'champ_dmg5': round(champ_dmg5),
                       'lure': lure, 'lure_t': lure_t, 'lure_info': lure_info, 'enemy_half': (dho is not None and dhe is not None and dho > dhe),
                       'd_own': dho, 'd_enemy': dhe, 'recall6': len(rec), 'stunned3': stunned, 'farming': farming,
-                      'tw_pre_hit': tw_pre, 'dealt10': round(dealt10), 'shards': rowsh, 'x': cpos[0], 'y': cpos[1]})
+                      'tw_pre_hit': tw_pre, 'dealt10': round(dealt10), 'shards': rowsh, 'x': cpos[0], 'y': cpos[1],
+                      'pw3': pr[0], 'pw5': pr[1], 'threat': th, 'ret_r': ret_r, 'ret_hp': ret_hp,
+                      'rec_r': rec[-1] if rec else None})
     # ---- game row
     g = {'mid': mid, 'res': ginfo['res'], 'map': ginfo['map'], 'opp': ginfo['opp'], 'we': we, 'final': final,
          'sub': {'we': meta['submitted'][we], 'they': meta['submitted'][1 - we]}, 'champs': meta['champsPerTeam'],
@@ -539,22 +724,24 @@ def process(mid, we, ginfo):
          'deaths': {'we': sum(1 for x in drows if x['side'] == 'we'), 'they': sum(1 for x in drows if x['side'] == 'they')},
          'gems_lost': {'we': sum(x['bag'] for x in drows if x['side'] == 'we'), 'they': sum(x['bag'] for x in drows if x['side'] == 'they')},
          'n_fights': len(frows), 'n_exch': sum(1 for f in frows if f['exchange'])}
-    return drows, frows, g
+    return drows, frows, g, retreats, recall_eps
 
 
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.abspath(__file__))
     sides, info = load_meta()
-    D, F, G = [], [], []
+    D, F, G, RT, RC = [], [], [], [], []
     mids = sorted(f[:-5] for f in os.listdir(f'{BASE}/dec') if f.endswith('.json'))
     for i, mid in enumerate(mids):
-        dr, fr, g = process(mid, int(sides[mid]), info[mid])
+        dr, fr, g, rt, rc = process(mid, int(sides[mid]), info[mid])
+        RC.extend(rc)
         D += dr
         F += fr
         G.append(g)
+        RT.extend(rt)
         if i % 16 == 0:
             print(i, mid, len(dr), len(fr), flush=True)
-    for name, rows in (('deaths', D), ('fights', F), ('games', G)):
+    for name, rows in (('deaths', D), ('fights', F), ('games', G), ('retreats', RT), ('recalls', RC)):
         with open(os.path.join(out, name + '.jsonl'), 'w') as f:
             for r in rows:
                 f.write(json.dumps(r) + '\n')

@@ -190,3 +190,8 @@ Never leave a worse bot live overnight: if the agent cannot monitor, roll back b
 - mkvariant copies `src/` at creation: recreate variants after every edit of bots/god23 (the bench runner builds what is in the variant).
 - `cambc matches list --limit` ≤ 100; use the cursor. The ladder JSON: `{"teams": [...], "total": N}`; our team is on page 4 at limit 25.
 - Replays: `--log-limit 0` in run-batch drops stdout; omit it for trace builds.
+- Queues: never chain background queues with `while pgrep -f "queueN.sh"` — the wrapper shells that launched them keep that text in
+  their command line, so the wait never ends (lost ~40 min on Nov 2). Use one sequential script (`/home/claude/analysis/master_queue.sh`)
+  or anchor the pattern (`pgrep -f "^/bin/bash /home/claude/analysis/queueN.sh"`).
+- bench2 resumes from `experiments/ab2/<tag>/rows.jsonl`: after changing a variant's code, use a NEW tag (or move the old rows), else the
+  old result is printed again (happened with `_85sf`).

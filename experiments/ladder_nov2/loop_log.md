@@ -1,3 +1,4 @@
 2026-11-02T17:30Z rank 89 rating 1946 | Live: 84  Selected: 84 | since 2026-11-02T00:00:00: 266/515 (52%), Elo-expected 256.9 | bands 1800:7/10 1850:14/20 1900:127/230 1950:106/230 2000:6/15 2050:6/10
 2026-11-02T23:17Z rank 71 rating 1992 | Live: 85  Selected: 85 | since 2026-11-02T21:16:00: 40/60 (67%), Elo-expected 34.0 | bands 1850:11/15 1900:6/10 1950:23/35
 2026-11-02T23:55Z paired groups v85 (live) vs v84 on 30 of v84's unranked groups (150 games, same opponent versions, maps, sides): v84 64/150, v85 68/150; flips L->W 22, W->L 18 (net +4, sign test p ~0.64): level. Calibration: two versions differ in ~27% of paired games; net-flip SE ~ sqrt(flips).
+2026-11-02T23:42Z rank 72 rating 1994 | live v85 "GPTA 8.1.0 Shastra" since 2026-11-02T21:15:46Z (--since) | ranked 48/75 (64%), Elo-expected 41.4 (+6.6, z +1.5), perf 2059 | bands 1850:7/10 1900:10/15 1950:27/40 2000:4/10 | ladder_loop

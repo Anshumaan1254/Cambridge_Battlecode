@@ -19,7 +19,7 @@ every other group −1 when P0 is alive or a reward: bodies die on heavy groups 
 damage −30%) → OFF, redesign or drop; `_85sf` −94 was the spawn-farm bug (safety() returned before rest-on-spawn on every map; fixed,
 re-running); veto bits alone: lure −26, **one-step +53 [−21, +125]**, chase −9, their-half −10, second wave −20; leave step, bank, draft,
 combined, held-out confirmation of one-step (maps/heldout = gen2+gold3+var17, 103 maps) are queued (`queue3.sh`, `queue4.sh`).
-**Nov 3, 00:40 UTC — code review (independent agent) of every g23 hook; fixes applied to bots/god85:** (1) with `g23_tol` the clock bits
+**Nov 2, 23:40 UTC — code review (independent agent) of every g23 hook; fixes applied to bots/god85:** (1) with `g23_tol` the clock bits
 were read back as the team STANCE by every body (comms.cpp: random PUSH/GROUPED) — the main cause of `_85tol` −341; (2) v27_watch
 blacklisted P0 while bodies waited at a rally; (3) PRIME walked off captures / half-killed groups; (4) a live P0 skipped the scorer's
 safety checks (now `group_score(P0) > 0` is required); (5) the in-time constraint and the rally fallback applied while P0 was alive /
@@ -31,6 +31,12 @@ changed v84's code generation: they are back, g23.cpp has private copies. **Veri
 (3 maps × both bots identical). `tools/g23port` regenerated (now also patches comms.cpp). `_85c1` (one-step + spawn-farm + exact + msg,
 old source) +13. Queued with the fixed source: isolation (`_85v2n` one-step alone, `_85x` exact, `_85m` msg), `_85sf`, `_85v2b`,
 `_85tolb` (TOL alone), `_85dr` (v84's draft).
+
+**Ladder loop tool** (`experiments/ladder_nov2/ladder_loop.py`, docs `LADDER_LOOP.md`, written by a helper agent; read-only paths
+tested for real, write paths only in dry-run / against a fake CLI): snapshot / adopt / deploy / paired-run / paired-report / verdict /
+rollback, platform-changing commands only with `--execute`. Platform fact: a live version's `statusAt` keeps moving; its activation time
+is when the version it replaced went inactive. State recorded with `adopt`: v85 live since 21:15:46Z (v84 inactive then). Caveat: v73's
+status changed at 22:56:35Z, so v73 may have been live 21:15–22:56 (ranked 35/50 then; 13/25 since 22:56; drafts look like v85's).
 
 Paired ladder test v85 vs v84 (30 of v84's unranked groups re-played with v85 live, 150 games): 68 vs 64 wins, flips 22 L→W / 18 W→L
 (level; p ≈ 0.64). Calibration for every later A/B: ~27% of paired games flip between two versions, so 150 paired games resolve about

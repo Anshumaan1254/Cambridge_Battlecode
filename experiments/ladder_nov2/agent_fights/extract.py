@@ -185,6 +185,7 @@ def process(mid, we, ginfo):
     deaths = []
     stun_on = defaultdict(list)  # body -> rounds stunned (by champion)
     heals = []
+    camp_hit_by = defaultdict(list)  # camp index -> (round, team) of champion hits on it
     acted = defaultdict(set)  # body -> rounds with a Move/Attack/Cast
     for e in d['events']:
         if e.get('who') is not None and e['k'] in ('Move', 'Attack', 'Cast ability', 'Recall', 'Cancel channel', 'Place ward', 'Submit gems'):
@@ -261,6 +262,7 @@ def process(mid, we, ginfo):
                                              'kind': 'splash', 'w': STR['Varg'], 'stun': False})
                 elif P in camp_at:
                     champ_camp[who].add(r)
+                    camp_hit_by[camp_at[P]].append((r, team[who]))
                 enh[who] = False
                 continue
             if k == 'Cast ability' and who is not None:
@@ -280,6 +282,7 @@ def process(mid, we, ginfo):
                             stun_on[j].append(r)
                     elif P in camp_at:
                         champ_camp[who].add(r)
+                        camp_hit_by[camp_at[P]].append((r, team[who]))
                 elif ab == 3:
                     tg = [j for j, pj in pos.items() if pj is not None and cheb(pj, P) <= 1 and team[j] != team[who]]
                     for j in tg:
@@ -288,8 +291,11 @@ def process(mid, we, ginfo):
                                      'w': SPELL.get((ct, ab), 1.0) * FOC[ct], 'stun': st})
                         if st:
                             stun_on[j].append(r)
-                    if not tg and any(cheb(P, q) <= 1 for q in camp_at):
-                        champ_camp[who].add(r)
+                    for q, ci in camp_at.items():
+                        if cheb(P, q) <= 1:
+                            camp_hit_by[ci].append((r, team[who]))
+                            if not tg:
+                                champ_camp[who].add(r)
                 elif ab == 5:
                     heals.append((r, who))
                 continue
@@ -714,6 +720,12 @@ def process(mid, we, ginfo):
         tw8, aw8, sd8 = move_class(b, r - 8, r)
         tw4, aw4, sd4 = move_class(b, r - 4, r)
         ch5 = [h for rr in range(r - 5, r + 1) for h in camp_by_r.get(rr, ()) if h['t'] == b]
+        wakers = set()
+        for h in ch5:
+            prev = [tm for (rr, tm) in camp_hit_by.get(h['camp'], ()) if rr <= h['r']]
+            if prev:
+                wakers.add('own' if prev[-1] == t else 'enemy')
+        camp_waker = None if not ch5 else ('both' if len(wakers) > 1 else (next(iter(wakers)) if wakers else 'unknown'))
         champ_dmg5 = sum(h.get('dmg', 0) for h in hits if h['t'] == b and r - 5 <= h['r'] <= r)
         camp_dmg5 = sum(h.get('dmg', 0) for h in ch5)
         # lure: steps toward one enemy E in the last 12 rounds while E kept its distance
@@ -793,7 +805,7 @@ def process(mid, we, ginfo):
                       'd_own': dho, 'd_enemy': dhe, 'recall6': len(rec), 'stunned3': stunned, 'farming': farming,
                       'tw_pre_hit': tw_pre, 'dealt10': round(dealt10), 'shards': rowsh, 'x': cpos[0], 'y': cpos[1],
                       'pw3': pr[0], 'pw5': pr[1], 'threat': th, 'ret_r': ret_r, 'ret_hp': ret_hp,
-                      'rec_r': rec[-1] if rec else None})
+                      'rec_r': rec[-1] if rec else None, 'camp_waker': camp_waker})
     # ---- game row
     g = {'mid': mid, 'res': ginfo['res'], 'map': ginfo['map'], 'opp': ginfo['opp'], 'we': we, 'final': final,
          'sub': {'we': meta['submitted'][we], 'they': meta['submitted'][1 - we]}, 'champs': meta['champsPerTeam'],

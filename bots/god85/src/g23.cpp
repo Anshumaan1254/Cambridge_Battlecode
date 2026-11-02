@@ -416,13 +416,62 @@ bool Brain::g23_veto(std::vector<Enemy*>& E, Enemy*& tgt, bool fight, bool killa
 		if (Enemy* t2 = g23_pick_target(E, tgt))
 			tgt = t2;
 	}
+	// rescue (bit 64): an ally within 4 is caught (an enemy can hit it now and a melee / dash chaser is within 2 of it: it cannot walk
+	// away) and we are healthy: turn and fight for it when our bodies there (it, us, the healthy allies within 4 of it) are not fewer than
+	// their bodies within 4 of it. Ladder crater losses: a chased Heart of Ruin died to 3 enemies over 7 rounds while a full-health Ryth
+	// next to it and a Marcella 4 tiles away walked away with the team (each body's flee decision was right for itself).
+	bool rescued = false;
+	if ((P.g23_veto_bits & 64) && !fight && !killable && hp >= P.g23_rescue_hp * max_hp)
+	{
+		Enemy* best_t = nullptr;
+		float best_h = 1e30f;
+		for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 8; ++i)
+		{
+			const auto& a = W.allies[static_cast<std::size_t>(i)];
+			if (i == W.my_index || !a.alive || !a.visible || a.channeling || cheb(a.pos, pos) > 4 || a.hp < 0.15f * a.max_hp)
+				continue;
+			bool hit_now = false, chased = false;
+			for (auto* e : E)
+			{
+				if (W.enemy_spawn.is_set(e->pos))
+					continue;
+				const int de = cheb(e->pos, a.pos);
+				hit_now |= de <= e->kit.attack_range + (e->kit.ranged ? 0 : 1);
+				chased |= (!e->kit.ranged || e->ready(e->kit.dash)) && de <= 2;
+			}
+			if (!hit_now || !chased)
+				continue;
+			int n_en = 0, n_us = 1; // us + the healthy allies within 4 of it (it included)
+			for (auto* e : E)
+				n_en += !W.enemy_spawn.is_set(e->pos) && cheb(e->pos, a.pos) <= 4;
+			for (int j = 0; j < static_cast<int>(W.allies.size()); ++j)
+			{
+				const auto& b = W.allies[static_cast<std::size_t>(j)];
+				if (j != W.my_index && b.alive && b.visible && !b.channeling && cheb(b.pos, a.pos) <= 4 && b.hp >= 0.3f * b.max_hp)
+					++n_us;
+			}
+			if (n_en > n_us)
+				continue;
+			// the enemy on it that we can reach soonest, lowest health first
+			for (auto* e : E)
+			{
+				if (W.enemy_spawn.is_set(e->pos) || cheb(e->pos, a.pos) > 2 || cheb(e->pos, pos) > my_reach + 2)
+					continue;
+				const float h = e->hp + 50.f * static_cast<float>(cheb(e->pos, pos));
+				if (h < best_h)
+					best_h = h, best_t = e;
+			}
+		}
+		if (best_t)
+			fight = true, rescued = true, tgt = best_t;
+	}
 	const int td = cheb(pos, tgt->pos);
 	bool lure = false;
-	if (!killable && td > my_reach && !in_awake_camp_range() && camp_danger.is_set(tgt->pos))
+	if (!killable && !rescued && td > my_reach && !in_awake_camp_range() && camp_danger.is_set(tgt->pos))
 		lure = true;
 	if (fight && lure && (P.g23_veto_bits & 1))
 		fight = false;
-	if ((P.g23_veto_bits & 2) && fight && !killable && !ally_fight && !in_reach && td > my_reach + 1 && !tgt->channeling && !tgt->tributing)
+	if ((P.g23_veto_bits & 2) && fight && !killable && !ally_fight && !rescued && !in_reach && td > my_reach + 1 && !tgt->channeling && !tgt->tributing)
 		fight = false; // one approach step at most
 	if (fight && !killable && td > my_reach && !in_reach && !tgt->channeling && !tgt->tributing)
 	{

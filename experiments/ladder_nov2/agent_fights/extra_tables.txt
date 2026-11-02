@@ -1,0 +1,35 @@
+1. per-body shards / max hp / dps / unspent gold / banked, means (we vs they)
+  ('L', 200): n=100 shards/body 4.2 vs 4.6 | max hp/body 1228 vs 1223 | dps/body 75 vs 76 | unspent gold 68 vs 155 | banked 50 vs 82
+  ('L', 400): n=100 shards/body 10.1 vs 12.7 | max hp/body 1427 vs 1532 | dps/body 94 vs 98 | unspent gold 85 vs 207 | banked 134 vs 213
+  ('L', 600): n=99 shards/body 16.5 vs 23.2 | max hp/body 1658 vs 1921 | dps/body 113 vs 127 | unspent gold 97 vs 244 | banked 227 vs 390
+  ('L', 800): n=89 shards/body 24.0 vs 34.1 | max hp/body 1929 vs 2293 | dps/body 134 vs 157 | unspent gold 106 vs 247 | banked 332 vs 538
+  ('W', 200): n=28 shards/body 4.3 vs 2.8 | max hp/body 1220 vs 1188 | dps/body 77 vs 70 | unspent gold 83 vs 128 | banked 66 vs 59
+  ('W', 400): n=28 shards/body 11.0 vs 7.1 | max hp/body 1439 vs 1356 | dps/body 99 vs 81 | unspent gold 102 vs 119 | banked 184 vs 125
+  ('W', 600): n=28 shards/body 20.2 vs 12.4 | max hp/body 1746 vs 1585 | dps/body 128 vs 95 | unspent gold 162 vs 144 | banked 353 vs 194
+  ('W', 800): n=27 shards/body 30.7 vs 17.7 | max hp/body 2110 vs 1751 | dps/body 158 vs 111 | unspent gold 114 vs 139 | banked 498 vs 272
+
+2. held recalls (channel kept through the next round) per game, by nearest enemy distance at the start
+  we-L: 0-3: 0.25/game, completed 36%, died<=8r 16% | 4-5: 0.94/game, completed 35%, died<=8r 4% | 6-7: 3.80/game, completed 61%, died<=8r 1% | 8-+: 46.57/game, completed 80%, died<=8r 0%
+  we-W: 0-3: 0.14/game, completed 25%, died<=8r 25% | 4-5: 0.68/game, completed 42%, died<=8r 5% | 6-7: 3.68/game, completed 62%, died<=8r 1% | 8-+: 54.64/game, completed 79%, died<=8r 0%
+  they-L: 0-3: 1.48/game, completed 38%, died<=8r 5% | 4-5: 5.19/game, completed 51%, died<=8r 3% | 6-7: 10.16/game, completed 66%, died<=8r 1% | 8-+: 42.55/game, completed 74%, died<=8r 0%
+  they-W: 0-3: 1.75/game, completed 20%, died<=8r 16% | 4-5: 7.07/game, completed 29%, died<=8r 15% | 6-7: 11.71/game, completed 54%, died<=8r 2% | 8-+: 39.18/game, completed 61%, died<=8r 1%
+
+3. immediate move reversals (A->B->A) in the last 8 rounds before a death
+  ('they', 'L', 'camp-involved'): n=162, >=2 reversals 13%
+  ('they', 'L', 'no camp'): n=589, >=2 reversals 10%
+  ('they', 'W', 'camp-involved'): n=86, >=2 reversals 8%
+  ('they', 'W', 'no camp'): n=397, >=2 reversals 9%
+  ('we', 'L', 'camp-involved'): n=252, >=2 reversals 24%
+  ('we', 'L', 'no camp'): n=670, >=2 reversals 14%
+  ('we', 'W', 'camp-involved'): n=46, >=2 reversals 30%
+  ('we', 'W', 'no camp'): n=89, >=2 reversals 10%
+
+4. enemy-camp deaths (ours) per 1000 rounds vs share of combat camps in the middle band
+  middle-band share < 0.40: 0.71 (n=61) vs >= 0.40: 1.32 (n=67)
+  5 champions: 1.13 (n=76) vs 3-4: 0.89
+
+5. champion-kill deaths with no retreat step in the last 10 rounds and hp < 50% five rounds before
+  we-L: 0.78/game (28% of no-retreat deaths)
+  we-W: 0.57/game (55% of no-retreat deaths)
+  they-L: 0.46/game (36% of no-retreat deaths)
+  they-W: 1.14/game (30% of no-retreat deaths)

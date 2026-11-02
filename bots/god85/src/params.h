@@ -1200,7 +1200,9 @@ struct Params
 	float g23_bag_r = 1.5f;
 	float g23_far_w = 0.5f;		// weight of a body that cannot reach the contact point within 2 rounds
 	int g23_contact_r = 8;		// bodies within this of the contact point count in R
-	int g23_veto_bits = 63;		// mode 2 bits: 1 lure, 2 one approach step, 4 chase guard, 8 never deeper into their half, 16 second-wave join, 32 the v23 leave step
+	int g23_veto_bits = 63;		// mode 2 bits: 1 lure, 2 one approach step, 4 chase guard, 8 never deeper into their half, 16 second-wave join, 32 the v23 leave step,
+								// 64 rescue a caught ally (turn and fight when our bodies at it are not fewer than theirs)
+	float g23_rescue_hp = 0.5f;	// rescue: our own health share needed
 	int g23_msg = 0;			// 1: priority = (turn class + 16) x 4096 + hp bucket x 256 + state x 64 + target x 4 + flags (bit 0 committed, bit 1
 								// capturing); allies read it with query_priority: the second wave and R count committed allies
 	int g23_farm = 0;			// 1: farming through contact: with the engine in AVOID (nobody can hit us next turn) at R >= g23_keep_r the current group

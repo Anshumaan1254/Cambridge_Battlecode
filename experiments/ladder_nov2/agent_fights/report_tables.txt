@@ -1,0 +1,127 @@
+## Q1 deaths (columns: side-result, n deaths)
+| | we-W n=135 | we-L n=922 | they-W n=483 | they-L n=751 |
+|---|---|---|---|---|
+| deaths per game | 4.8 | 9.2 | 17.2 | 7.5 |
+| killed by a camp | 13% | 10% | 4% | 11% |
+| champion kills: fight started by the victim's team | 42% | 30% | 29% | 42% |
+| own side within 6 incl. self (mean of r-5..r-1) | 2.09 | 2.22 | 2.16 | 2.15 |
+| enemies within 6 (same rounds) | 2.22 | 2.17 | 2.29 | 2.25 |
+| outnumbered by >=0.5 body | 38% | 34% | 38% | 43% |
+| no ally within 6 | 33% | 30% | 30% | 35% |
+| local HP x DPS ratio at r-5 (median, champion kills) | 0.55 | 0.50 | 0.38 | 0.44 |
+| >=2 own steps toward nearest enemy in last 8 r | 54% | 63% | 41% | 38% |
+| steps toward / away in last 8 r (mean) | 2.1 / 3.6 | 2.4 / 3.3 | 1.5 / 3.3 | 1.4 / 3.4 |
+| no retreat step at all in last 10 r (champion kills) | 25% | 34% | 23% | 19% |
+| hp 5 rounds before (mean) | 44% | 56% | 55% | 51% |
+| hp 5 rounds before < 50% | 65% | 45% | 48% | 55% |
+| carrying gems | 14% | 23% | 27% | 25% |
+| gems lost per death | 3.1 | 5.9 | 7.3 | 6.3 |
+| an awake camp hit it in last 5 r | 34% | 27% | 18% | 22% |
+|   ...a camp the ENEMY had woken | 16% | 15% | 5% | 4% |
+| lure: chased a target that kept its distance | 11% | 12% | 8% | 7% |
+| on the enemy half | 38% | 36% | 35% | 37% |
+| stunned in last 3 r | 43% | 41% | 45% | 44% |
+| held a recall in last 6 r | 2% | 1% | 9% | 5% |
+| was hitting a camp when first hit | 10% | 10% | 13% | 13% |
+
+## Q2 exchanges (both teams landed a champion hit; fights = hits <=5 r apart and <=6 tiles apart)
+W: 26.4 exchanges/game; we win 488, lose 148, draw 102 -> our win share 77%
+   we hit first: 60% of exchanges, our win share 83%
+   they hit first: 40% of exchanges, our win share 67%
+   more bodies within 6 at contact: 29% of exchanges, our win share 84%
+   equal bodies at contact: 40% of exchanges, our win share 70%
+   fewer bodies at contact: 31% of exchanges, our win share 78%
+   more participants: 27% of exchanges, our win share 88%
+   fewer participants: 25% of exchanges, our win share 64%
+   power ratio (HPxDPS within 6 of contact, we/they) 0-0.5: 17%, our win share 57%
+   power ratio (HPxDPS within 6 of contact, we/they) 0.5-0.8: 11%, our win share 77%
+   power ratio (HPxDPS within 6 of contact, we/they) 0.8-1.25: 15%, our win share 73%
+   power ratio (HPxDPS within 6 of contact, we/they) 1.25-2: 17%, our win share 74%
+   power ratio (HPxDPS within 6 of contact, we/they) 2-inf: 38%, our win share 88%
+L: 22.5 exchanges/game; we win 806, lose 1019, draw 425 -> our win share 44%
+   we hit first: 51% of exchanges, our win share 56%
+   they hit first: 49% of exchanges, our win share 32%
+   more bodies within 6 at contact: 33% of exchanges, our win share 49%
+   equal bodies at contact: 42% of exchanges, our win share 46%
+   fewer bodies at contact: 25% of exchanges, our win share 34%
+   more participants: 32% of exchanges, our win share 56%
+   fewer participants: 22% of exchanges, our win share 21%
+   power ratio (HPxDPS within 6 of contact, we/they) 0-0.5: 26%, our win share 25%
+   power ratio (HPxDPS within 6 of contact, we/they) 0.5-0.8: 14%, our win share 36%
+   power ratio (HPxDPS within 6 of contact, we/they) 0.8-1.25: 15%, our win share 42%
+   power ratio (HPxDPS within 6 of contact, we/they) 1.25-2: 14%, our win share 54%
+   power ratio (HPxDPS within 6 of contact, we/they) 2-inf: 29%, our win share 61%
+
+ winner vs loser (means per exchange)
+ W games, we won (n=488): bodies within 6 at contact: winner 1.86 / loser 1.88; participants: winner 2.24 / loser 2.08; arrival spread, first 15 r (>=2 bodies): winner 5.80 / loser 5.82; focus: share of hits on top target (>=2 targets, >=3 hits): winner 0.66 / loser 0.76; stuns landed: winner 1.89 / loser 1.15; stuns per hit: winner 0.12 / loser 0.13; stunned targets killed within 3 r: winner 0.50 / loser 0.03; shards per participant: winner 32.14 / loser 12.81; camp damage taken: winner 122.23 / loser 81.54; loser bodies killed that had tried to leave 239/397 (60%); winner hit first 65%
+ W games, they won (n=148): bodies within 6 at contact: winner 1.87 / loser 1.69; participants: winner 2.19 / loser 1.81; arrival spread, first 15 r (>=2 bodies): winner 6.00 / loser 6.88; focus: share of hits on top target (>=2 targets, >=3 hits): winner 0.66 / loser 0.74; stuns landed: winner 1.72 / loser 1.32; stuns per hit: winner 0.13 / loser 0.16; stunned targets killed within 3 r: winner 0.39 / loser 0.03; shards per participant: winner 14.39 / loser 15.50; camp damage taken: winner 101.93 / loser 173.94; loser bodies killed that had tried to leave 57/82 (70%); winner hit first 57%
+ L games, we won (n=806): bodies within 6 at contact: winner 1.96 / loser 1.70; participants: winner 2.28 / loser 1.86; arrival spread, first 15 r (>=2 bodies): winner 5.39 / loser 5.97; focus: share of hits on top target (>=2 targets, >=3 hits): winner 0.68 / loser 0.72; stuns landed: winner 1.87 / loser 1.06; stuns per hit: winner 0.13 / loser 0.13; stunned targets killed within 3 r: winner 0.43 / loser 0.03; shards per participant: winner 23.08 / loser 19.02; camp damage taken: winner 139.48 / loser 112.42; loser bodies killed that had tried to leave 373/531 (70%); winner hit first 64%
+ L games, they won (n=1019): bodies within 6 at contact: winner 1.88 / loser 1.90; participants: winner 2.18 / loser 2.05; arrival spread, first 15 r (>=2 bodies): winner 5.11 / loser 5.91; focus: share of hits on top target (>=2 targets, >=3 hits): winner 0.68 / loser 0.75; stuns landed: winner 1.52 / loser 1.22; stuns per hit: winner 0.13 / loser 0.17; stunned targets killed within 3 r: winner 0.33 / loser 0.03; shards per participant: winner 35.25 / loser 19.45; camp damage taken: winner 95.74 / loser 122.10; loser bodies killed that had tried to leave 392/640 (61%); winner hit first 61%
+
+ retreat episodes (away step from an enemy within 5 right after taking a champion hit): caught = died within 8 r
+ we: hp<25% 42% (n=689); 25-40% 24% (n=702); 40-60% 13% (n=1379); >=60% 7% (n=3571); hp<40% & enemy dash/stun ready in reach 41% (n=512); hp>=40% & none ready 8% (n=2984)
+ they: hp<25% 46% (n=630); 25-40% 28% (n=825); 40-60% 17% (n=1390); >=60% 8% (n=3490); hp<40% & enemy dash/stun ready in reach 43% (n=531); hp>=40% & none ready 9% (n=2859)
+
+ logistic regression, decisive exchanges n=2456 (coef per SD, z):
+   log2 local power ratio +0.54 (z +5.3); we hit first +0.59 (z +11.6); bodies diff at contact +0.09 (z +0.9); arrival spread diff +0.35 (z +7.1); camp dmg diff/500 -0.12 (z -2.4); shards/participant diff/10 +1.43 (z +12.3); L game -0.36 (z -6.8)
+
+## Q3 patterns (per game; L = our losses, W = our wins)
+P1 dives L we: 12.4/game, died within 8 r 12% = 1.45 deaths/game, gems lost 10.6/game; hp at start 0.85
+P1 dives L they: 6.3/game, died within 8 r 8% = 0.50 deaths/game, gems lost 2.1/game; hp at start 0.84
+P1 dives W we: 5.0/game, died within 8 r 6% = 0.32 deaths/game, gems lost 0.1/game; hp at start 0.82
+P1 dives W they: 13.9/game, died within 8 r 11% = 1.54 deaths/game, gems lost 8.0/game; hp at start 0.87
+P1 deaths after >=2 steps toward while weaker L we: 2.26/game (27% of champion kills); no retreat step 2.80/game (34%), of which approached 85%
+P1 deaths after >=2 steps toward while weaker L they: 1.08/game (16% of champion kills); no retreat step 1.27/game (19%), of which approached 69%
+P1 deaths after >=2 steps toward while weaker W we: 0.57/game (14% of champion kills); no retreat step 1.04/game (25%), of which approached 79%
+P1 deaths after >=2 steps toward while weaker W they: 3.46/game (21% of champion kills); no retreat step 3.86/game (23%), of which approached 66%
+P1 steps within 6 of an enemy L we: weak: 252 steps/game, toward 21%, died<=6r after a toward step 9.7% | par: 207 steps/game, toward 35%, died<=6r after a toward step 4.3% | strong: 641 steps/game, toward 50%, died<=6r after a toward step 1.7% | weak with equal/more bodies 139/game
+P1 steps within 6 of an enemy L they: weak: 176 steps/game, toward 17%, died<=6r after a toward step 6.7% | par: 154 steps/game, toward 33%, died<=6r after a toward step 2.8% | strong: 528 steps/game, toward 50%, died<=6r after a toward step 0.9% | weak with equal/more bodies 69/game
+P1 steps within 6 of an enemy W we: weak: 128 steps/game, toward 17%, died<=6r after a toward step 6.3% | par: 165 steps/game, toward 34%, died<=6r after a toward step 2.9% | strong: 866 steps/game, toward 53%, died<=6r after a toward step 0.7% | weak with equal/more bodies 47/game
+P1 steps within 6 of an enemy W they: weak: 346 steps/game, toward 18%, died<=6r after a toward step 11.4% | par: 210 steps/game, toward 37%, died<=6r after a toward step 3.9% | strong: 450 steps/game, toward 54%, died<=6r after a toward step 1.7% | weak with equal/more bodies 196/game
+P2 deaths hit by a camp the enemy woke L we: 1.42/game (15% of deaths); all camp-involved 2.52/game
+P2 deaths hit by a camp the enemy woke L they: 0.29/game (4% of deaths); all camp-involved 1.62/game
+P2 deaths hit by a camp the enemy woke W we: 0.79/game (16% of deaths); all camp-involved 1.64/game
+P2 deaths hit by a camp the enemy woke W they: 0.82/game (5% of deaths); all camp-involved 3.07/game
+P3 lure deaths L we: 1.11/game (12%); killer = chased target 9%; chase episodes 53.5/game, died within 10 r 1.1%
+P3 lure deaths L they: 0.54/game (7%); killer = chased target 4%; chase episodes 41.0/game, died within 10 r 0.8%
+P3 lure deaths W we: 0.54/game (11%); killer = chased target 0%; chase episodes 62.6/game, died within 10 r 0.6%
+P3 lure deaths W they: 1.32/game (8%); killer = chased target 14%; chase episodes 42.1/game, died within 10 r 2.0%
+P1b re-death within 40 r of respawn: they-L 0.35/game, they-W 1.64/game, we-L 0.90/game, we-W 0.14/game
+P1c deaths carrying >=10 gems L we: 1.37/game, 50 gems/game, approached 58%
+P1c deaths carrying >=10 gems L they: 1.15/game, 43 gems/game, approached 31%
+P1c deaths carrying >=10 gems W we: 0.39/game, 14 gems/game, approached 18%
+P1c deaths carrying >=10 gems W they: 3.61/game, 120 gems/game, approached 37%
+
+## map features vs our pattern rates (per 1000 rounds, all 128 games; Spearman rho)
+| pattern | area | spawn_dist | altars | bush_frac | wall_frac | narrow_frac | champs |
+| dives | -0.35 | -0.26 | -0.38 | -0.20 | +0.20 | +0.20 | -0.17 |
+| dive deaths | -0.11 | -0.08 | +0.05 | -0.13 | -0.09 | -0.10 | +0.03 |
+| enemy-camp deaths | -0.04 | -0.03 | +0.13 | +0.08 | +0.13 | -0.01 | +0.34 |
+| lure deaths | -0.22 | -0.19 | -0.01 | -0.08 | +0.12 | +0.08 | +0.06 |
+   dives: spawn_dist < 42.0: 9.90 per 1000 r (n=58) vs >= 42.0: 7.25 (n=70)
+   dives: area < 2025.0: 10.58 per 1000 r (n=59) vs >= 2025.0: 6.63 (n=69)
+   enemy-camp deaths: champs < 5: 0.89 per 1000 r (n=52) vs >= 5: 1.13 (n=76)
+   lure deaths: spawn_dist < 42.0: 0.95 per 1000 r (n=58) vs >= 42.0: 0.59 (n=70)
+   top maps for dives: 00reverse_spiral 39.9 (n=3, 30x30, spawn dist 3), adgato_gemcombat2 20.3 (n=1, 51x31, spawn dist 48), 01concentrated_wealth 20.2 (n=2, 61x61, spawn dist 179), 02arena 19.8 (n=1, 30x30, spawn dist 17), 03one_gem 19.5 (n=1, 51x41, spawn dist 100), 01fracture 14.3 (n=1, 61x71, spawn dist 163)
+   top maps for enemy-camp deaths: 01starfish 5.0 (n=1, 50x50, spawn dist 43), 01yellow_brick_road 3.6 (n=3, 40x30, spawn dist 32), 00oasis 3.6 (n=6, 29x29, spawn dist 26), 00gem_fields 2.8 (n=6, 50x40, spawn dist 41), 01corridors 2.4 (n=1, 51x40, spawn dist 37), 01elk_arena 2.2 (n=6, 50x50, spawn dist 22)
+   top maps for lure deaths: 01starfish 3.5 (n=1, 50x50, spawn dist 43), 02arena 2.5 (n=1, 30x30, spawn dist 17), 00gem_fields 2.5 (n=6, 50x40, spawn dist 41), 00oasis 2.4 (n=6, 29x29, spawn dist 26), adgato_gemcombat2 1.8 (n=1, 51x31, spawn dist 48), 00reverse_spiral 1.7 (n=3, 30x30, spawn dist 3)
+
+## examples (L games, ours)
+P1 dive: a45e6a13-92bb-4b32-b946-1e2e63c00cf9 r1139 body 0 HeartOfRuin hp 58% ratio 0.01 1v3 toward 10:Ryth -> killed by Marcella, bag 0
+P1 dive: c9a77cf7-c677-4b19-8c7b-b6026a65c997 r1917 body 6 VesperVale hp 3% ratio 0.01 1v2 toward 2:Ryth -> killed by Ryth, bag 8
+P1 dive: 34232fbd-3d4f-4e8e-94df-0e23adf39a1c r1333 body 8 Vendetta hp 100% ratio 0.01 1v5 toward 1:Marcella -> killed by Tavi, bag 22
+P1 dive: ff848547-cdeb-4f1f-9425-75dc35a7e9e1 r1587 body 5 HeartOfRuin hp 99% ratio 0.01 1v1 toward 1:Marcella -> killed by Marcella, bag 12
+P1 dive: 6425e837-7261-4ed8-ab2e-d1acda791688 r758 body 2 HeartOfRuin hp 73% ratio 0.02 1v1 toward 7:Marcella -> killed by Marcella, bag 15
+P1 dive: 8f9cb474-ead4-4f5e-932b-52c94ec4c4c2 r1302 body 7 Marcella hp 68% ratio 0.03 1v2 toward 2:VesperVale -> killed by VesperVale, bag 0
+P2 enemy camp: a58f3c4c-915b-4ce5-98e5-b3542c6d22ea r1491 body 8 Ryth camp dmg 5r 1449 champion dmg 251 killer VesperVale steps toward 5
+P2 enemy camp: f2900a82-a986-417a-ad38-d1491b93ae98 r819 body 7 Ryth camp dmg 5r 917 champion dmg 867 killer Marcella steps toward 4
+P2 enemy camp: 6425e837-7261-4ed8-ab2e-d1acda791688 r440 body 0 Varg camp dmg 5r 730 champion dmg 581 killer Marcella steps toward 6
+P2 enemy camp: f3155e2a-546b-411b-b88f-784a870a02c4 r287 body 0 Vendetta camp dmg 5r 649 champion dmg 111 killer VesperVale steps toward 6
+P2 enemy camp: 3ef76771-ce2a-499d-b2d0-8a5bcc99f3d7 r440 body 3 Ryth camp dmg 5r 555 champion dmg 284 killer HeartOfRuin steps toward 3
+P2 enemy camp: 02498171-020a-4853-92da-da2da0473ba7 r484 body 7 Ryth camp dmg 5r 540 champion dmg 840 killer Marcella steps toward 4
+P3 lure: ff848547-cdeb-4f1f-9425-75dc35a7e9e1 r1422 body 3 Vendetta chased 0:HeartOfRuin 12 steps (gap 7->7), killed by Marcella
+P3 lure: 28ee331d-ceeb-4d72-be5f-3d90a2ede6cf r319 body 10 Ryth chased 3:Marcella 9 steps (gap 2->2), killed by Cassi
+P3 lure: 3ef76771-ce2a-499d-b2d0-8a5bcc99f3d7 r533 body 3 Ryth chased 7:HeartOfRuin 9 steps (gap 4->10), killed by VesperVale
+P3 lure: 92dc1a55-3c62-4361-b5e7-ad9c9c93019f r175 body 0 Vendetta chased 5:Marcella 9 steps (gap 4->4), killed by Vendetta
+P3 lure: d48ea37f-08a2-4a5c-907a-2bb058bdd9be r1117 body 5 VesperVale chased 0:HeartOfRuin 9 steps (gap 5->6), killed by VesperVale
+P3 lure: 2c265ba4-b215-4ccf-8c9f-a355ee9fba95 r117 body 0 Vendetta chased 4:VesperVale 8 steps (gap 3->4), killed by Ryth

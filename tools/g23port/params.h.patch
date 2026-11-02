@@ -1,0 +1,62 @@
+--- god84/src/params.h	2026-11-02 17:31:12.755566245 +0000
++++ god85/src/params.h	2026-11-02 17:54:01.194927987 +0000
+@@ -1187,6 +1187,59 @@
+ 	float pxs_obj_mult = 3.f;
+ 	float pxs_raid_mult = 3.f;	// styles 2 / 3: groups on the other team's half are worth this much more (a raid, not just a lower penalty)
+ 	int pxs_deny_bodies = 2;	// style 6: bodies 0 .. n-1 camp the other team's altars
++	// ---- GOD v23 (g23.cpp; GOD_V23_METHOD.md). Every g23_* switch at 0 = v75's behaviour.
++	int g23_fight = 0;			// 1: the fight engine replaces combat()'s decision stack: local power ratio R, escape test, KILL / FIGHT / AVOID / LEAVE
++								// with hysteresis, the engagement gate, the second wave; execution (engage, the leave step) is v75's
++	float g23_r_engage = 1.15f; // start a fight at R >= this when their reinforcement within 2 rounds is not bigger than ours
++	float g23_r_join = 0.85f;	// join a fight an ally within 6 is in at R >= this
++	float g23_r_release = 0.6f; // a committed fight is released when a new enemy arrives and R falls below this
++	int g23_fight_hold = 6;		// rounds a FIGHT holds (the target dies, hp < g23_low_hp with an escape, or the release above end it sooner)
++	int g23_avoid_hold = 3;		// rounds AVOID / LEAVE hold (a kill, no escape, our spawn or an ally's fight end it sooner)
++	float g23_low_hp = 0.2f;
++	int g23_bag_caution = 40;	// carrying this many gems: no fight we can walk away from unless R >= g23_bag_r (or a kill)
++	float g23_bag_r = 1.5f;
++	float g23_far_w = 0.5f;		// weight of a body that cannot reach the contact point within 2 rounds
++	int g23_contact_r = 8;		// bodies within this of the contact point count in R
++	int g23_veto_bits = 63;		// mode 2 bits: 1 lure, 2 one approach step, 4 chase guard, 8 never deeper into their half, 16 second-wave join, 32 the v23 leave step
++	int g23_msg = 0;			// 1: priority = (turn class + 16) x 4096 + hp bucket x 256 + state x 64 + target x 4 + flags (bit 0 committed, bit 1
++								// capturing); allies read it with query_priority: the second wave and R count committed allies
++	int g23_farm = 0;			// 1: farming through contact: with the engine in AVOID (nobody can hit us next turn) at R >= g23_keep_r the current group
++								// keeps its score (no threat veto, no enemy-near surcharge); damage spells still go on camps near enemies (stuns kept)
++	float g23_keep_r = 0.8f;
++	int g23_stage = 0;			// 1 (with g23_farm): a body heading to a group that an ally also claims waits at staging distance until the ally is
++								// within 2 rounds, unless the group is harmless or it clears it alone within g23_stage_solo rounds; at most g23_stage_max rounds
++	int g23_stage_solo = 12;
++	int g23_stage_max = 8;
++	int g23_tol = 0;			// 1: team objective layer: prime groups (value >= g23_prime_share x max or gems >= g23_prime_gems, dA <= dB + g23_prime_margin),
++								// the P0 clock in bit 7 of shared bytes 0-5 (needs the stance bits free: learners off, g15_lock bit 2 off), the roster of
++								// `need` bodies with the smallest eta, the PRIME role (farm in time, wait at the rally, hit together), the warden's ward
++	float g23_prime_share = 0.5f;
++	int g23_prime_gems = 36;
++	int g23_prime_margin = 6;
++	int g23_prime_cap = 3;
++	int g23_prime_maxd = 40;	// a prime group is at most this many steps from our spawn and pays at least g23_prime_perstep gems per step
++	float g23_prime_perstep = 0.8f;
++	int g23_open_maxd = 25;		// the opening (everyone to P0 first) only when P0 is within this many steps
++	int g23_alive_eta = 12;		// with P0 alive now, bodies within this many rounds of it commit (the others farm)
++	int g23_rally_wait = 40;	// the rally wait is a deadline, not a max_wait
++	int g23_force_rounds = 25;	// force F(g): the bodies that clear g within this many rounds at the roster's damage
++	int g23_hold_extra = 2;		// bodies added to the roster when an enemy holds the group
++	int g23_open_margin = 2;	// opening: t_us <= t_them + this: everyone to P0 first
++	int g23_ward = 0;			// 1: the warden's ward on the prime group's ward tile (an original spawn tile in the ward's vision: the engine timer is
++								// readable), never re-placed; other bodies keep ward_v14
++	int g23_bank = 0;			// 1: banking rules: bag >= g23_bank_near with an altar within g23_bank_near_d, or >= tribute_min, or >= g23_bank_risk with an
++								// enemy at R < 0.8 within 10, or free time at a prime rally; hard cap g23_bank_cap while an altar is within 15
++	int g23_bank_near = 15;
++	int g23_bank_near_d = 6;
++	int g23_bank_risk = 20;
++	int g23_bank_cap = 60;
++	int g23_no_opp = 0;			// 1: no OPPORTUNITY posts (a tributing / recalling carrier is a KILL for whoever sees it; the alert slot is DANGER / RALLY)
++	int g23_rally_r = 10;		// respond_to_alert: a RALLY farther than this is not answered (second wave handles the near ones)
++	int g23_spawnfarm = 0;		// 1: a camp within attack range of one of our spawn tiles (homonoliths: 3 monoliths at the spawn corner) is farmed from the
++								// spawn tile: the spawn heals us fully every round, so the group costs no health (group_score: incoming 0; safety: no retreat)
++	int g23_draft = 0;			// 1: the roster rule in the draft (4.1): 5: Vesper Vale, Vendetta, Heart of Ruin, Tavi, Marcella; 4: ... Cassi & Issac
++								// (Marcella on maps with < 8 gem groups); 3: the first three; Prism for Tavi on a single-objective map, Ryth for Heart of
++								// Ruin on a lone-monolith map; counter-picks promote Marcella / Heart of Ruin
+ };
+ 
+ #ifdef LEGEND_RUNTIME_PARAMS

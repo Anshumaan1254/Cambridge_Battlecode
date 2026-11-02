@@ -3,6 +3,13 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
+- **Session 24 (Nov 2, a remote session, IN PROGRESS): GOD v23 + the ladder loop.** The user now allows this agent to submit / activate
+  (ladder testing with rollback, target rank < 30). Logged in from the container (session to Nov 9). Team HouseOfCoders rank 86 / 825
+  (1955); live = website v84 "GPTA 8.0.0 SHASTRA" (source not in the repo; the user was asked for the zip). Map pool is 86 (`maps/s4/`).
+  **The full plan and handoff: `docs/plans/god23_plan.md`** (state, what was learned, every switch of `bots/god23`, the order of work,
+  the ladder loop, pitfalls). Analysis of 130 ranked losses: `/home/claude/data/WHY_WE_LOSE_TO_MITE_AND_IC_AND_THE_FIX.md`; the method:
+  `/home/claude/data/GOD_V23_METHOD.md` (copy them into docs/ before committing). `bots/god23` = gpta75 + `src/g23.cpp` (fight engine,
+  messages, farming through contact, team objective layer, banking, draft roster), all behind `g23_*` switches; null check exact (70/140).
 - **Session 23 (Oct 27, the user's Windows PC, 8 cores; IN PROGRESS): GOD v22.** Live = website v75 "GPTA" = the user's `god__3_.zip`,
   byte-identical to `submissions/god18.zip` (sha256 bc6abe19...) = **GOD v18** (website history: v76 GOD v19 and v78 GOD v21 were rolled back,
   v77 = GOD v20). Base chosen by the user: v75 -> `bots/gpta75` (frozen) and `bots/god22` (= god18 + `g22_*` switches, all off = v75).

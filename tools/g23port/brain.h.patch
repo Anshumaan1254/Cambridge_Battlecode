@@ -1,0 +1,73 @@
+--- god84/src/brain.h	2026-11-02 17:31:12.755998657 +0000
++++ god85/src/brain.h	2026-11-02 17:42:05.645660905 +0000
+@@ -486,6 +486,70 @@
+ 	std::vector<int> v23_P, v23_F;						 // prime group ids (P0 first) and the force each needs
+ 	std::vector<vec2> v23_rally, v23_wtile;				 // per prime group: the rally tile and the ward tile
+ 	int v23_role = 0, v23_role_k = -1, v23_ready = BIG, v23_deadline = -1, v23_last_eta = 0, v23_clock_w = -1;
++	// ---- GOD v23 (g23.cpp; the method: GOD_V23_METHOD.md). Fight engine (P.g23_fight), messages (P.g23_msg), farming through contact
++	// (P.g23_farm), team objective layer (P.g23_tol), wards by role (P.g23_ward), banking rules (P.g23_bank).
++public:
++	enum G23State : int { G23_NONE = 0, G23_AVOID = 1, G23_LEAVE = 2, G23_FIGHT = 3, G23_KILL = 4 };
++	enum G23Role : int { G23_FARM = 0, G23_PRIME = 1 };
++private:
++	int g23_state = G23_NONE, g23_since = -100, g23_round = -100; // state, the round its class (fight / avoid) started, the round it was set
++	int g23_tgt_idx = -1;	 // enemy index of the fight target (broadcast)
++	int g23_emask = 0;		 // enemy indices counted in last turn's R (a new one can release a committed fight)
++	float g23_R = 1.f;		 // local power ratio at the contact point (last evaluation)
++	mutable int g23_emask_now = 0;
++	mutable bool g23_holds_read = false;
++	bool g23_escape = true, g23_keep_farm = true;
++	int g23_leave_round = -100;
++	std::uint32_t g23_chase_h = 0;
++	int g23_chase_best = 99, g23_chase_n = 0, g23_chase_round = -100;
++	std::array<int, 8> g23_chase_off{ -100, -100, -100, -100, -100, -100, -100, -100 };
++	bool g23_go_rally();
++	struct AllyMsg
++	{
++		int round = -1000, state = 0, target = -1, hpb = 0, flags = 0, turn_class = 0;
++	};
++	std::array<AllyMsg, 8> g23_ally{};
++	void g23_read_allies();
++	int g23_decide(std::vector<Enemy*>& E, Enemy*& tgt, float allies_burst, bool in_reach, float incoming);
++	float g23_dps_of(float str_, float focus_, const Kit& k, bool reset_ready, bool spell_ready, float hp_frac, bc::champion_type t) const;
++	float g23_ratio(vec2 contact, const std::vector<Enemy*>& E, int* new_enemy, int* reinf_us, int* reinf_them) const;
++	bool g23_escape_test(const std::vector<Enemy*>& E, float incoming) const;
++	Enemy* g23_pick_target(std::vector<Enemy*>& E, Enemy* fallback) const;
++	bool g23_leave(std::vector<Enemy*>& E, Enemy& tgt);
++	bool g23_veto(std::vector<Enemy*>& E, Enemy*& tgt, bool fight, bool killable, bool in_reach, float adv, int d, int my_reach);
++	void g23_set_priority();
++	// team objective layer
++	struct Prime
++	{
++		int g = -1, altar = -1, force = 3;
++		vec2 rally{ -1, -1 }, ward{ -1, -1 };
++		bool ward_tried = false;
++	};
++	std::array<Prime, 3> g23_prime{};
++	int g23_nprime = 0;
++	bool g23_tol_ready = false;
++	int g23_ready_in = 0;	  // rounds until P0 is next alive (0 = alive now / reward waiting)
++	bool g23_enemy_holds = false;
++	int g23_role = G23_FARM, g23_role_round = -100;
++	int g23_rally_since = -100; // since when we wait at the rally
++	bool g23_warden = false, g23_ward_placed = false;
++	int g23_open_until = 0;	 // opening: everyone to P0 until this round when we reach it first
++	int g23_stage_g = -1, g23_stage_since = -100; // g23_stage: staging at a group with allies on the way
++	void g23_tol_init();
++	void g23_tol_tick();	 // every living turn after perceive + comms read: clock, roster, role
++	int g23_eta(const Group& g, vec2 from) const;
++	bool g23_prime_turn();	 // PRIME executor; true when it used the turn
++	bool g23_stage(Group& g); // synchronized arrival; true when waiting
++	bool g23_warden_ward();	 // the warden's ward on the prime group's ward tile
++	float g23_team_dps() const;
++	int g23_clock_read() const;
++	void g23_clock_write(int ready_in, bool holds);
++	bool g23_sees_group(const Group& g) const;
++	bool g23_spawn_reach(const Group& g) const;
++	bool g23_spawn_farm(Group& g);
+ };
+ 
+ Brain& brain();
++
++float best_mod(const Kit& k);
++int enemy_spell_reach(const Enemy& e, bool assume_ready);

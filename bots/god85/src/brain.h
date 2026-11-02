@@ -498,7 +498,7 @@ private:
 	float g23_R = 1.f;		 // local power ratio at the contact point (last evaluation)
 	mutable int g23_emask_now = 0;
 	mutable bool g23_holds_read = false;
-	bool g23_escape = true, g23_keep_farm = true;
+	bool g23_escape = true, g23_keep_farm = false;
 	int g23_leave_round = -100;
 	std::uint32_t g23_chase_h = 0;
 	int g23_chase_best = 99, g23_chase_n = 0, g23_chase_round = -100;
@@ -527,7 +527,8 @@ private:
 	};
 	std::array<Prime, 3> g23_prime{};
 	int g23_nprime = 0;
-	bool g23_tol_ready = false;
+	bool g23_tol_ready = false, g23_sees = false;
+	mutable int g23_clock_v = -1, g23_clock_since = -1000; // clock staleness: the value read and since when it is unchanged
 	int g23_ready_in = 0;	  // rounds until P0 is next alive (0 = alive now / reward waiting)
 	bool g23_enemy_holds = false;
 	int g23_role = G23_FARM, g23_role_round = -100;
@@ -550,6 +551,3 @@ private:
 };
 
 Brain& brain();
-
-float best_mod(const Kit& k);
-int enemy_spell_reach(const Enemy& e, bool assume_ready);

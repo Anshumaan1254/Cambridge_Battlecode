@@ -590,13 +590,6 @@ I in_stat(I it, bool focus)
 	return it;
 }
 
-vec2 sgn_step(vec2 from, vec2 to)
-{
-	return { (to.x > from.x) - (to.x < from.x), (to.y > from.y) - (to.y < from.y) };
-}
-} // namespace
-
-// Shared with g23.cpp (GOD v23).
 float best_mod(const Kit& k)
 {
 	return std::max({ k.dmg >= 0 ? k.dmg_mod : 0.f, k.cc >= 0 ? k.cc_mod : 0.f, k.aoe >= 0 ? k.aoe_mod : 0.f, k.dash >= 0 ? k.dash_mod : 0.f });
@@ -622,6 +615,11 @@ int enemy_spell_reach(const Enemy& e, bool assume_ready)
 	return r;
 }
 
+vec2 sgn_step(vec2 from, vec2 to)
+{
+	return { (to.x > from.x) - (to.x < from.x), (to.y > from.y) - (to.y < from.y) };
+}
+} // namespace
 
 Brain& brain()
 {
@@ -1987,6 +1985,7 @@ void Brain::progress_watch(bool acted_now)
 	{
 		const auto& g = W.groups[static_cast<std::size_t>(task_group)];
 		legit_wait = g.st == ST_RESPAWN && g.ready_round + 3 >= round && cheb(pos, g.center) <= g.radius + 3;
+		legit_wait |= P.g23_tol && g23_role == G23_PRIME && g23_nprime > 0 && task_group == g23_prime[0].g && cheb(pos, g23_prime[0].rally) <= 2;
 	}
 	const bool progress = acted_now || gems != pw_gems || gold != pw_gold || hp > pw_hp + 0.02f * max_hp || W.ally_spawn.is_set(pos) ||
 		legit_wait || pw_since < 0 || cheb(pos, pw_anchor) > 3;
@@ -3142,6 +3141,8 @@ void Brain::use_locks()
 
 void Brain::place_ward(bool force)
 {
+	if (P.g23_ward && g23_warden && g23_ward_placed)
+		return; // g23: the warden's ward on the prime group is the team's respawn clock: it never moves
 	// v23 4.3.3 / 4.8: the warden's ward on the prime group's ward tile is the team's respawn clock: it never moves
 	if (P.v23_tol && v23_warden && v23_role_k >= 0 && static_cast<std::size_t>(v23_role_k) < v23_wtile.size() && ward_pos == v23_wtile[static_cast<std::size_t>(v23_role_k)])
 		return;
@@ -4664,6 +4665,8 @@ bool Brain::combat()
 			return true; // hold this turn (not in reach: nothing to hit)
 		}
 	}
+	if (P.g23_fight == 2 && !fight && g23_round == round && g23_state >= G23_FIGHT)
+		g23_state = in_reach ? G23_LEAVE : G23_AVOID, g23_tgt_idx = -1; // cancelled by a later veto: not a FIGHT for the allies
 	if (fight)
 	{
 		last_fight_round = round;
@@ -7198,7 +7201,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 				edps += sc_recent[static_cast<std::size_t>(k)].dps;
 			}
 		const bool dive = P.big_reward_dive > 0 && g.st == ST_REWARD && g.enemy_on_tile && g.gems >= P.big_reward_dive && hp >= 0.25f * max_hp;
-		const bool keep23 = P.g23_farm && g.id == task_group && g23_keep_farm; // v23: nobody can hit us next turn and we are not outpowered: keep farming here
+		const bool keep23 = P.g23_farm && P.g23_fight && g.id == task_group && g23_keep_farm; // v23: nobody can hit us next turn and we are not outpowered: keep farming here
 		if (edps > 0 && !dive && !keep23)
 		{
 			// big_reward: a group worth a death or two is fought for with the whole team close by
@@ -7215,7 +7218,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 				{ WHY(10); return -1; }
 		}
 	}
-	if (round - g.enemy_round < 12 && !(P.g23_farm && g.id == task_group && g23_keep_farm))
+	if (round - g.enemy_round < 12 && !(P.g23_farm && P.g23_fight && g.id == task_group && g23_keep_farm))
 		time += 12.f;
 	if (P.v24_ci_escort && (type == CT::cassi || type == CT::issac))
 	{
@@ -7329,7 +7332,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 	{
 		// v23 PRIME role: only groups finished (and walked to the rally) before the prime group is alive again
 		const float walk = static_cast<float>(cheb(g.center, g23_prime[0].rally));
-		if (time + walk > static_cast<float>(g23_ready_in - 1))
+		if (g23_ready_in > 0 && time + walk > static_cast<float>(g23_ready_in - 1))
 			{ WHY(15); return -1; }
 	}
 	if (P.tp_own && tp_own_.ok && g.id >= 0 && g.id < static_cast<int>(tp_own_.owner.size()) &&
@@ -7802,7 +7805,7 @@ void Brain::farm()
 			}
 		}
 	}
-	if (best < 0 && P.g23_tol && g23_role == G23_PRIME && g23_nprime > 0 && g23_go_rally())
+	if (best < 0 && P.g23_tol && g23_role == G23_PRIME && g23_nprime > 0 && g23_ready_in > 0 && hp >= 0.9f * max_hp && g23_go_rally())
 		return; // v23: nothing finishes in time: wait at the prime group's rally
 	if (best < 0)
 	{

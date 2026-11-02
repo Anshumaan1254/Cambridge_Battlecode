@@ -39,6 +39,10 @@ class LoopError(Exception):
     """An expected failure with a clear message: printed as 'error: ...' (exit code 2), no traceback."""
 
 
+class BuildFailed(LoopError):
+    """The uploaded version did not build (nothing to resume)."""
+
+
 def log(msg):
     print(msg, file=sys.stderr, flush=True)
 
@@ -246,10 +250,10 @@ def build_state(status):
 
 
 def other_changes(d, live):
-    """Other versions whose status changed after the live version was uploaded and before its statusAt.
-    A status change of another version is a version switch; if one happened before the live version's statusAt,
-    that statusAt may have been moved later by a re-activation (seen on Nov 2: v85 statusAt 23:15 while v84 went
-    inactive at 21:15, when v85 went live)."""
+    """Other versions whose status changed after the live version was uploaded (and before its statusAt): the
+    version switches we can see. Needed because the live version's own statusAt is NOT its activation time: the
+    platform refreshes it while it stays live (Nov 2: v85 went live ~21:15:46 when v84 went inactive, and its statusAt
+    read 23:15:54, then 23:30:54, with no switch in between)."""
     t_up, t_st = parse_ts(live['createdAt']), parse_ts(live['statusAt'])
     out = []
     for s in d['submissions']:
@@ -274,21 +278,39 @@ def guess_previous(d, live, since):
 
 
 def resolve_since(a, d, st, quiet=False):
-    """When the live version went live: --since, else the state file (deploy / adopt), else its statusAt."""
+    """When the live version went live -> (start, old_end, how).
+
+    start   = first moment its games count as the live version's: --since, else the state file (deploy / adopt
+              record it), else the LAST version switch seen after its upload (another version's status change), else
+              its statusAt (which the platform refreshes, so it is only a last resort).
+    old_end = the previous version's games must have finished before this: equal to start, except in the guessed
+              case where it is the FIRST switch seen; games between the two could be either version and count for
+              neither."""
     live = live_sub(d)
     if getattr(a, 'since', None):
-        return parse_ts(a.since), '--since'
+        t = parse_ts(a.since)
+        return t, t, '--since'
     cur = st.get('current') or {}
     if cur.get('version') == live['version'] and cur.get('activatedAt'):
-        return parse_ts(cur['activatedAt']), 'state file'
-    t = parse_ts(live['statusAt'])
+        t = parse_ts(cur['activatedAt'])
+        return t, t, 'state file'
     ch = other_changes(d, live)
-    if ch and not quiet:
-        log(f"warning: v{live['version']}'s statusAt {iso(t)} may be later than its real activation: other versions "
-            f"changed status after it was uploaded ({', '.join(f'v{v} at {iso(x)}' for x, v in ch)}). A re-activation "
-            f"moves statusAt. Using statusAt; if you know when v{live['version']} went live, pass --since ISO or record "
-            f"it once with `{SELF} adopt --since ISO`.")
-    return t, 'statusAt'
+    v = live['version']
+    if not ch:
+        t = parse_ts(live['statusAt'])
+        if not quiet:
+            log(f"warning: no version switch seen since v{v} was uploaded; using its statusAt {iso(t)}, which the "
+                f"platform refreshes while it is live (so this window is probably too short). Pass --since ISO or "
+                f"record the activation once: `{SELF} adopt --since ISO`.")
+        return t, t, 'statusAt'
+    start, old_end = ch[-1][0], ch[0][0]
+    if not quiet:
+        log(f"warning: activation time of v{v} not recorded; version switches seen since its upload: "
+            f"{', '.join(f'v{x} at {iso(t)}' for t, x in ch)}. Counting v{v} from the last one ({iso(start)})"
+            + (f" and the previous version up to the first one ({iso(old_end)}); games in between count for neither"
+               if old_end < start else '') +
+            f". If you know when v{v} went live: `{SELF} adopt --since ISO` (once) or --since ISO.")
+    return start, old_end, 'last switch seen'
 
 
 def get_ladder():
@@ -373,13 +395,14 @@ def fetch_ranked(since, need_before=0, floor=None, max_pages=30):
     return rows
 
 
-def ranked_windows(rows, since, prev_n, prev_floor=None):
-    """(games created after `since`, the last prev_n games that were created and finished before it).
-    A game created before `since` but finished after it could have been played by either version: dropped."""
+def ranked_windows(rows, since, prev_n, prev_floor=None, old_end=None):
+    """(games created after `since`, the last prev_n games created and finished before `old_end` (default: since)).
+    A game created before the switch but finished after it could have been played by either version: dropped."""
+    old_end = old_end or since
     gs = [g for g in (game(m) for m in rows.values())
           if g and g['kind'] == 'ranked' and g['status'] == 'finished' and g['result'] in ('win', 'loss')]
     new = sorted((g for g in gs if g['created'] >= since), key=lambda g: g['created'])
-    old = [g for g in gs if g['created'] < since and (g['finished'] or g['created']) < since
+    old = [g for g in gs if g['created'] < old_end and (g['finished'] or g['created']) < old_end
            and (prev_floor is None or g['created'] >= prev_floor)]
     old.sort(key=lambda g: g['created'], reverse=True)
     return new, old[:prev_n]
@@ -609,18 +632,18 @@ def print_paired_totals(pa):
 
 # ------------------------------------------------------------------------------------------------ shared analysis
 
-def ranked_part(a, st, d, live, since):
-    """Ranked games of the live version since `since` vs the previous version's last ranked games."""
+def ranked_part(a, st, d, live, since, old_end):
+    """Ranked games of the live version since `since` vs the previous version's last ranked games before `old_end`."""
     cur, prev = st.get('current') or {}, st.get('previous') or {}
     in_state = cur.get('version') == live['version']
-    prev_v = prev.get('version') if in_state and prev.get('version') is not None else guess_previous(d, live, since)
+    prev_v = prev.get('version') if in_state and prev.get('version') is not None else guess_previous(d, live, old_end)
     floor = parse_ts(a.prev_since) if a.prev_since else (
         parse_ts(prev['activatedAt']) if in_state and prev.get('activatedAt') else None)
-    rows = fetch_ranked(since, need_before=a.prev_n + 10, floor=floor)
-    new, old = ranked_windows(rows, since, a.prev_n, floor)
+    rows = fetch_ranked(old_end, need_before=a.prev_n + 10, floor=floor)
+    new, old = ranked_windows(rows, since, a.prev_n, floor, old_end)
     lad = get_ladder()
     rc = ranked_compare(new, old, lad, cur.get('ratingAtActivation') if in_state else None)
-    rc.update(prev_v=prev_v, live_v=live['version'], since=since, floor=floor, me=lad[ME])
+    rc.update(prev_v=prev_v, live_v=live['version'], since=since, old_end=old_end, floor=floor, me=lad[ME])
     return rc
 
 
@@ -629,7 +652,8 @@ def print_ranked(rc):
     pct = lambda w, n: f'{100 * w / n:.1f}%' if n else '-'
     perf = lambda p: f'{p:.0f}' if p is not None else '-'
     print(f"ranked: v{lv} since {iso(rc['since'])}: {rc['w1']}/{rc['n1']} ({pct(rc['w1'], rc['n1'])}), perf {perf(rc['perf1'])}")
-    print(f"        before it (v{pv}), last {rc['n0']} games" + (f" since {iso(rc['floor'])}" if rc['floor'] else '') +
+    print(f"        before it (v{pv}), last {rc['n0']} games before {iso(rc['old_end'])}"
+          + (f" (not before {iso(rc['floor'])})" if rc['floor'] else '') +
           f": {rc['w0']}/{rc['n0']} ({pct(rc['w0'], rc['n0'])}), perf {perf(rc['perf0'])}"
           + (f"   [{rc['unrated']} games vs teams no longer on the ladder left out]" if rc['unrated'] else ''))
     if rc['base'] is None:
@@ -644,8 +668,8 @@ def common_analysis(a, verbose):
     st = load_state(a.state)
     d = get_submissions()
     live = live_sub(d)
-    since, how = resolve_since(a, d, st)
-    print(f"live: v{live['version']} \"{live.get('note', '')}\", live since {iso(since)} ({how})")
+    since, old_end, how = resolve_since(a, d, st)
+    print(f"live: v{live['version']} \"{live.get('note', '')}\", counted from {iso(since)} ({how})")
     plan_path = a.plan or st.get('plan')
     if plan_path and not os.path.isabs(plan_path) and not os.path.exists(plan_path):
         plan_path = os.path.join(ROOT, plan_path)
@@ -657,7 +681,7 @@ def common_analysis(a, verbose):
         print_paired_totals(pa)
     else:
         print('paired replays: no plan (pass --plan PLAN.json)')
-    rc = ranked_part(a, st, d, live, since)
+    rc = ranked_part(a, st, d, live, since, old_end)
     print_ranked(rc)
     return st, d, live, since, pa, rc
 
@@ -668,7 +692,7 @@ def cmd_snapshot(a):
     st = load_state(a.state)
     d = get_submissions()
     live = live_sub(d)
-    since, how = resolve_since(a, d, st)
+    since, _, how = resolve_since(a, d, st)
     lad = get_ladder()
     me = lad[ME]
     new, _ = ranked_windows(fetch_ranked(since), since, 0)
@@ -700,10 +724,15 @@ def cmd_adopt(a):
     st = load_state(a.state)
     d = get_submissions()
     live = live_sub(d)
+    ch = other_changes(d, live)
     if a.since:
         since = parse_ts(a.since)
+    elif len(ch) == 1:
+        since = ch[0][0]  # one switch since its upload: that is when it went live
     else:
-        since, _ = resolve_since(argparse.Namespace(since=None), d, {})
+        raise LoopError(f"cannot tell when v{live['version']} went live (switches seen since its upload: "
+                        f"{', '.join(f'v{x} at {iso(t)}' for t, x in ch) or 'none'}); pass --since ISO "
+                        f"(and --previous N)")
     pv = a.previous if a.previous is not None else guess_previous(d, live, since)
     ps = find_sub(d, pv) if pv is not None else None
     if pv is not None and ps is None:
@@ -772,8 +801,8 @@ def wait_built(pend, timeout, poll):
             if state == 'ready':
                 return s
             if state == 'failed':
-                raise LoopError(f"v{s['version']} did not build (status {last!r}); see its build log on the website. "
-                                f"The live version is unchanged.")
+                raise BuildFailed(f"v{s['version']} did not build (status {last!r}); see its build log on the website. "
+                                  f"The live version is unchanged.")
         if time.time() >= deadline:
             what = f"v{pend['version']}" if pend.get('version') is not None else 'the upload'
             raise LoopError(f'{what} is not built after {timeout:.0f}s (last status {last!r}). The live version is '
@@ -789,6 +818,7 @@ def activate(version, execute, source):
         run_cmd(cmd, write=True)
         return None
     lad = get_ladder()
+    t_cmd = now()
     rc, out, err = run_cmd(cmd, write=True, execute=True)
     if rc != 0:
         raise LoopError(f'`cambc submissions activate {version}` failed (rc {rc}): {(err or out).strip()[:400]}')
@@ -799,8 +829,10 @@ def activate(version, execute, source):
         time.sleep(5)
     else:
         raise LoopError(f'v{version} is still not live 60 s after `activate`; check `cambc submissions list`')
-    return {'version': version, 'id': live.get('id'), 'note': live.get('note'),
-            'activatedAt': iso(parse_ts(live['statusAt'])) if live.get('statusAt') else iso(now()),
+    t_srv = parse_ts(live['statusAt']) if live.get('statusAt') else None
+    # the server's stamp of the switch when it is plausible, else our own clock at the activate command
+    at = t_srv if t_srv and abs((t_srv - t_cmd).total_seconds()) <= 120 else t_cmd
+    return {'version': version, 'id': live.get('id'), 'note': live.get('note'), 'activatedAt': iso(at),
             'statusAt': live.get('statusAt'), 'ratingAtActivation': round(lad[ME]['rating'], 1),
             'rankAtActivation': lad[ME]['rank'], 'source': source}
 
@@ -863,7 +895,17 @@ def cmd_deploy(a):
         print(f'[dry-run] would poll `cambc submissions list --json` until it is built, then:')
         run_cmd([CAMBC, 'submissions', 'activate', str(pend.get('version') or '<NEW_VERSION>'), '--json'], write=True)
         return
-    s = wait_built(pend, a.timeout, a.poll)
+    try:
+        s = wait_built(pend, a.timeout, a.poll)
+    except BuildFailed:
+        st['pending'] = None
+        st['history'].append({'at': iso(now()), 'event': 'build_failed', 'version': pend.get('version'), 'bot': pend['bot']})
+        save_state(a.state, st)
+        raise
+    except LoopError:  # timeout: keep `pending` (with the version, if found) for --resume
+        st['pending'] = pend
+        save_state(a.state, st)
+        raise
     st['pending'] = pend
     save_state(a.state, st)
     rec = activate(s['version'], True, 'deploy')
@@ -987,7 +1029,10 @@ def cmd_verdict(a):
             why.append(f'{s} < {a.p} -> KEEP signal')
         else:
             why.append(f'{s} -> not significant (need p < {a.p})')
-    if rc['z'] is None:
+    if rc['old_end'] < rc['since']:  # guessed window: the baseline may even be the wrong version (manual rollbacks)
+        why.append(f"ranked: v{lv}'s activation time is a guess (version switches seen from {iso(rc['old_end'])} to "
+                   f"{iso(rc['since'])}) -> not used; record it once with `{SELF} adopt --since ISO`, or pass --since")
+    elif rc['z'] is None:
         why.append(f"ranked: no Elo baseline ({rc['base_src']}) -> no signal")
     elif rc['n1'] < a.min_games:
         why.append(f"ranked: {rc['n1']} ranked games by v{lv} (need >= {a.min_games}) -> no signal yet "

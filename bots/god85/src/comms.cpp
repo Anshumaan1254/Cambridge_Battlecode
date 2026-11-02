@@ -63,7 +63,7 @@ void Comms::read(int round)
 	}
 	if (!bag_on)
 		bag_tens = 0;
-	stance = ((b[0] >> 7) & 1) | (((b[1] >> 7) & 1) << 1);
+	stance = P.g23_tol ? 0 : ((b[0] >> 7) & 1) | (((b[1] >> 7) & 1) << 1); // g23_tol: bit 7 of bytes 0-5 is the prime clock
 	if (P.opp_plan)
 		plan9 = ((b[3] >> 7) & 1) | (((b[4] >> 7) & 1) << 1) | (((b[5] >> 7) & 1) << 2);
 	if (P.opp_model)

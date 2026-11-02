@@ -11,6 +11,29 @@ namespace
 {
 using CT = bc::champion_type;
 
+// Private copies of brain.cpp's helpers (kept there in its anonymous namespace so the base's code generation, and so its fuel use, is
+// unchanged with every g23 switch off).
+float best_mod(const Kit& k)
+{
+	return std::max({ k.dmg >= 0 ? k.dmg_mod : 0.f, k.cc >= 0 ? k.cc_mod : 0.f, k.aoe >= 0 ? k.aoe_mod : 0.f, k.dash >= 0 ? k.dash_mod : 0.f });
+}
+
+int enemy_spell_reach(const Enemy& e, bool assume_ready)
+{
+	auto up = [&](int slot) { return slot >= 0 && (assume_ready || e.ready(slot)); };
+	int r = (up(e.kit.dmg) || up(e.kit.cc) || up(e.kit.aoe)) ? 4 : 0;
+	if (P.aoe_reach5 && up(e.kit.aoe))
+		r = std::max(r, static_cast<int>(e.kit.aoe_range + e.kit.aoe_radius) + (e.kit.aoe_excl ? 0 : 1));
+	if (P.aoe_reach5 >= 2)
+	{
+		if (up(e.kit.cc) && !e.kit.cc_excl)
+			r = std::max(r, static_cast<int>(e.kit.cc_range) + 1);
+		if (up(e.kit.dmg) && !e.kit.dmg_excl)
+			r = std::max(r, static_cast<int>(e.kit.dmg_range) + 1);
+	}
+	return r;
+}
+
 // Next-turn reach of an enemy: attack range (+1 step for melee), +2 with a dash ready, its spells.
 int enemy_reach(const Enemy& e)
 {
@@ -301,7 +324,7 @@ int Brain::g23_decide(std::vector<Enemy*>& E, Enemy*& tgt, float allies_burst, b
 	}
 	const bool tgt_spawn = W.enemy_spawn.is_set(tgt->pos) || cheb(tgt->pos, W.enemy_spawn_c) <= 3;
 	const bool low = hp < P.g23_low_hp * max_hp;
-	bool fight = killable || !escape || on_spawn || (R >= P.g23_r_engage && rt <= ru) || (ally_fight && R >= P.g23_r_join);
+	bool fight = killable || !escape || (on_spawn && in_reach) || (R >= P.g23_r_engage && rt <= ru) || (ally_fight && R >= P.g23_r_join);
 	if (fight && !killable && escape && !on_spawn)
 	{
 		if (static_cast<int>(gems) >= P.g23_bag_caution && R < P.g23_bag_r)
@@ -443,6 +466,7 @@ bool Brain::g23_leave(std::vector<Enemy*>& E, Enemy& tgt)
 	auto& W = world();
 	post_danger(tgt.pos);
 	task = T_FLEE;
+	avoid_note(E); // v27_avoid: groups near them are no target for a while
 	g23_leave_round = round;
 	if (!kit.ranged && can_attack)
 		if (Enemy* o = best_in_reach(nullptr))
@@ -637,7 +661,7 @@ bool Brain::g23_stage(Group& g)
 	}
 	if (coming == 0)
 		return false;
-	if (g23_stage_g != g.id)
+	if (g23_stage_g != g.id || round - g23_stage_since > 60)
 		g23_stage_g = g.id, g23_stage_since = round;
 	if (round - g23_stage_since > P.g23_stage_max)
 		return false;
@@ -789,8 +813,10 @@ int Brain::g23_clock_read() const
 	for (int i = 0; i < 5; ++i)
 		v |= ((b[static_cast<std::size_t>(i)] >> 7) & 1) << i;
 	g23_holds_read = ((b[5] >> 7) & 1) != 0;
-	if (v == 0)
-		return 0; // alive (or nothing written yet)
+	if (v != g23_clock_v)
+		g23_clock_v = v, g23_clock_since = round;
+	if (v == 0 || round - g23_clock_since > 85)
+		return 0; // alive (or nothing written yet, or nobody refreshed it for 85 rounds: it respawned unseen)
 	int ri = (((v - 1) * 5 - round) % 150 + 150) % 150;
 	if (ri > 100)
 		ri = 0; // a timer that ran out while nobody looked
@@ -833,6 +859,7 @@ void Brain::g23_tol_tick()
 	auto& p0 = g23_prime[0];
 	auto& g = W.groups[static_cast<std::size_t>(p0.g)];
 	const bool sees = g23_sees_group(g);
+	g23_sees = sees;
 	bool holds = false;
 	for (const auto& e : W.enemies)
 		if (e.alive && e.seen_round >= 0 && round - e.seen_round <= 10 && cheb(e.pos, g.center) <= g.radius + 3)
@@ -861,7 +888,7 @@ void Brain::g23_tol_tick()
 		alive_n += a.alive;
 	int need = std::min(alive_n, p0.force + (g23_enemy_holds ? P.g23_hold_extra : 0));
 	if (g23_enemy_holds && g23_R < 1.f && round - g23_round <= 1)
-		need = alive_n; // contested: the whole team or nobody
+		need = 0; // contested and outpowered here: nobody goes (farm elsewhere; the next cycle decides again)
 	if (round < g23_open_until)
 		need = alive_n;
 	struct Cand
@@ -929,12 +956,24 @@ bool Brain::g23_prime_turn()
 	auto& g = W.groups[static_cast<std::size_t>(p0.g)];
 	if (g.st == ST_REWARD)
 		return false; // the normal farm: the capturer takes it (mi_capture), the others move on
+	// never walk off a capture or a group we are finishing (it would reset / heal while we are away)
+	if (task == T_CAPTURE || reward_here())
+		return false;
+	if (task_group >= 0 && task_group != p0.g && task_group < static_cast<int>(W.groups.size()) && round - target_hit_round <= P.v27_commit_r &&
+		W.groups[static_cast<std::size_t>(task_group)].st == ST_ALIVE)
+		return false;
 	const int eta = g23_eta(g, pos);
 	if (eta >= BIG)
 		return false;
-	const bool alive_now = g.st == ST_ALIVE || (g.st == ST_RESPAWN && g.ready_round <= round) || g23_ready_in <= 0;
+	// own vision beats our own stale model; without vision the shared clock decides
+	const bool alive_now = g23_sees ? (g.st == ST_ALIVE || (g.st == ST_RESPAWN && g.ready_round <= round)) : g23_ready_in <= 0;
 	if (alive_now)
 	{
+		// the scorer's own checks still apply (enemy force at the group, their half while hurt, unreachable, survivability)
+		prepare_scoring();
+		int e2 = 0;
+		if (group_score(g, e2) <= 0.f)
+			return false;
 		if (task_group != p0.g)
 			task_group = p0.g, task_since = round;
 		task = T_FARM;

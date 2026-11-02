@@ -19,6 +19,19 @@ every other group −1 when P0 is alive or a reward: bodies die on heavy groups 
 damage −30%) → OFF, redesign or drop; `_85sf` −94 was the spawn-farm bug (safety() returned before rest-on-spawn on every map; fixed,
 re-running); veto bits alone: lure −26, **one-step +53 [−21, +125]**, chase −9, their-half −10, second wave −20; leave step, bank, draft,
 combined, held-out confirmation of one-step (maps/heldout = gen2+gold3+var17, 103 maps) are queued (`queue3.sh`, `queue4.sh`).
+**Nov 3, 00:40 UTC — code review (independent agent) of every g23 hook; fixes applied to bots/god85:** (1) with `g23_tol` the clock bits
+were read back as the team STANCE by every body (comms.cpp: random PUSH/GROUPED) — the main cause of `_85tol` −341; (2) v27_watch
+blacklisted P0 while bodies waited at a rally; (3) PRIME walked off captures / half-killed groups; (4) a live P0 skipped the scorer's
+safety checks (now `group_score(P0) > 0` is required); (5) the in-time constraint and the rally fallback applied while P0 was alive /
+a reward, and replaced healing; (6) contested + outpowered sent the whole team (now nobody); (7) stale own model beat a fresh clock;
+(8) a clock nobody refreshed for 85+ rounds decoded as "respawning"; (9) the warden's ward was re-thrown; (10) `g23_keep_farm` started
+true; (11) mode 2 broadcast FIGHT for fights a later veto cancelled; (12) the leave step did not call `avoid_note` (v27_avoid);
+(13) "on spawn" alone forced FIGHT; (14) staging never re-armed; (15) the two helpers moved out of brain.cpp's anonymous namespace
+changed v84's code generation: they are back, g23.cpp has private copies. **Verified: all switches off now plays exactly v84's games**
+(3 maps × both bots identical). `tools/g23port` regenerated (now also patches comms.cpp). `_85c1` (one-step + spawn-farm + exact + msg,
+old source) +13. Queued with the fixed source: isolation (`_85v2n` one-step alone, `_85x` exact, `_85m` msg), `_85sf`, `_85v2b`,
+`_85tolb` (TOL alone), `_85dr` (v84's draft).
+
 Paired ladder test v85 vs v84 (30 of v84's unranked groups re-played with v85 live, 150 games): 68 vs 64 wins, flips 22 L→W / 18 W→L
 (level; p ≈ 0.64). Calibration for every later A/B: ~27% of paired games flip between two versions, so 150 paired games resolve about
 ±12 net flips (±8 pp) at 2 SE. v84's banking module alone (`_85bank` = `v23_bank 1`) +22 vs god84 (level with `_85null` +25).

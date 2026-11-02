@@ -319,7 +319,8 @@ def process(mid, we, ginfo):
     for b, rs in recalls.items():
         for x in rs:
             nxt = S.get(x + 1, {}).get(b)
-            if (x + 1) not in acted[b] and nxt is not None and nxt[7]:
+            stunned = x in stun_on[b] or (x + 1) in stun_on[b]  # a stunned body cannot act either
+            if (x + 1) not in acted[b] and nxt is not None and nxt[7] and not stunned:
                 real_recalls[b].append(x)
     camp_by_r = defaultdict(list)
     for h in camp_hits:
@@ -463,6 +464,82 @@ def process(mid, we, ginfo):
                              'pw_ratio': (pw_own / pw_en) if pw_en > 0 else None, 'en4': th[0] if th else None,
                              'dash4': th[1] if th else None, 'stun5': th[2] if th else None, 'own_dash': own_dash, 'died8': died,
                              'gems': c[8]})
+
+    # ---- dive episodes: >=2 steps toward the nearest enemy (within 6) within 4 rounds while the local power
+    #      ratio (own side incl. self within 6 vs enemies within 6, end of previous round) is < 0.67
+    # ---- chase episodes: >=3 steps toward the same enemy within 6 rounds, the enemy stepping away >=2 times,
+    #      and the gap not closing (distance at the end >= distance at the first step)
+    dives, chases = [], []
+    step_stats = Counter()
+    for b, mv in moves.items():
+        tb = team[b]
+        cand = []
+        for (r, fr, to, rel) in mv:
+            if not rel:
+                continue
+            j = min(rel, key=lambda q: rel[q][0])
+            d0, d1 = rel[j]
+            if d0 > 6:
+                continue
+            po, no = power(r - 1, fr, tb, 6, excl=b, incl_self=b)
+            pe, ne = power(r - 1, fr, 1 - tb, 6)
+            ratio = po / pe if pe > 0 else 9.0
+            rb = 'weak' if ratio < 0.67 else 'par' if ratio <= 1.5 else 'strong'
+            nb = 'nless' if no < ne else 'neq' if no == ne else 'nmore'
+            dirn = 'toward' if d1 < d0 else 'away' if d1 > d0 else 'side'
+            died = any(r <= x <= r + 6 for x in death_r[b])
+            side = 'we' if tb == we else 'they'
+            step_stats[(side, rb, dirn, 'n')] += 1
+            step_stats[(side, rb, dirn, 'died6')] += died
+            step_stats[(side, rb + '+' + nb, dirn, 'n')] += 1
+            step_stats[(side, rb + '+' + nb, dirn, 'died6')] += died
+            if dirn == 'toward' and ratio < 0.67:
+                cand.append((r, j, ratio))
+        last = -100
+        for i, (r, j, ratio) in enumerate(cand):
+            if r - last < 8:
+                continue
+            if any(r < r2 <= r + 3 for (r2, _, _) in cand[i + 1:i + 4]):
+                last = r
+                c = S.get(r - 1, {}).get(b)
+                died = [dd for dd in deaths if dd['who'] == b and r <= dd['r'] <= r + 8]
+                dives.append({'mid': mid, 'res': ginfo['res'], 'side': 'we' if tb == we else 'they', 'body': b, 'champ': types[b],
+                              'r': r, 'hp': c[5] / max(1, c[6]) if c else None, 'ratio': round(ratio, 3), 'target': f'{j}:{types[j]}',
+                              'n_own': len(nearby(r - 1, (c[3], c[4]), tb, 6, excl=b)) + 1 if c else None,
+                              'n_en': len(nearby(r - 1, (c[3], c[4]), 1 - tb, 6)) if c else None,
+                              'died8': bool(died), 'killer': (types.get(died[0]['by'], 'camp') if died else None), 'bag': died[0]['bag'] if died else 0})
+        # chases
+        last = -100
+        for i, (r, fr, to, rel) in enumerate(mv):
+            if r - last < 8 or not rel:
+                continue
+            j = min(rel, key=lambda q: rel[q][0])
+            d0, d1 = rel[j]
+            if d0 > 6 or d1 >= d0:
+                continue
+            steps = [(r2, rl[j]) for (r2, f2, t2, rl) in mv[i:] if r2 <= r + 6 and j in rl and rl[j][1] < rl[j][0]]
+            if len(steps) < 3:
+                continue
+            cj = S.get(r + 6, {}).get(j) or S.get(steps[-1][0], {}).get(j)
+            cb = S.get(r + 6, {}).get(b) or S.get(steps[-1][0], {}).get(b)
+            j_away = sum(1 for (r2, f2, t2, rl) in moves[j] if r <= r2 <= r + 6 and b in rl and rl[b][1] > rl[b][0])
+            if not cj or not cb or not cj[7] or not cb[7]:
+                dend = 0
+            else:
+                dend = cheb((cb[3], cb[4]), (cj[3], cj[4]))
+            if j_away >= 2 and dend >= d0:
+                last = r
+                c = S.get(r - 1, {}).get(b)
+                died = [dd for dd in deaths if dd['who'] == b and r <= dd['r'] <= r + 10]
+                n_en0 = len(nearby(r - 1, fr, 1 - tb, 6))
+                ce = S.get(steps[-1][0], {}).get(b)
+                n_en1 = len(nearby(steps[-1][0], (ce[3], ce[4]), 1 - tb, 6)) if ce and ce[7] else None
+                chases.append({'mid': mid, 'res': ginfo['res'], 'side': 'we' if tb == we else 'they', 'body': b, 'champ': types[b],
+                               'r': r, 'target': f'{j}:{types[j]}', 'tgt_champ': types[j], 'steps': len(steps), 'd0': d0, 'dend': dend,
+                               'hp': c[5] / max(1, c[6]) if c else None, 'n_en0': n_en0, 'n_en1': n_en1,
+                               'own_half_end': (dist_home(tb, (ce[3], ce[4])) or 0) <= (dist_home(1 - tb, (ce[3], ce[4])) or 0) if ce and ce[7] else None,
+                               'died10': bool(died), 'killer_is_target': bool(died) and died[0]['by'] == j,
+                               'killer': (types.get(died[0]['by'], 'camp') if died else None)})
 
     # ---- held recalls (channel kept through the next round): conditions at start and outcome
     spawn_tiles = {0: {tuple(q) for q in mp['spawnA']}, 1: {tuple(q) for q in mp['spawnB']}}
@@ -724,24 +801,27 @@ def process(mid, we, ginfo):
          'deaths': {'we': sum(1 for x in drows if x['side'] == 'we'), 'they': sum(1 for x in drows if x['side'] == 'they')},
          'gems_lost': {'we': sum(x['bag'] for x in drows if x['side'] == 'we'), 'they': sum(x['bag'] for x in drows if x['side'] == 'they')},
          'n_fights': len(frows), 'n_exch': sum(1 for f in frows if f['exchange'])}
-    return drows, frows, g, retreats, recall_eps
+    g['step_stats'] = {'|'.join(k): v for k, v in step_stats.items()}
+    return drows, frows, g, retreats, recall_eps, dives, chases
 
 
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.abspath(__file__))
     sides, info = load_meta()
-    D, F, G, RT, RC = [], [], [], [], []
+    D, F, G, RT, RC, DV, CH = [], [], [], [], [], [], []
     mids = sorted(f[:-5] for f in os.listdir(f'{BASE}/dec') if f.endswith('.json'))
     for i, mid in enumerate(mids):
-        dr, fr, g, rt, rc = process(mid, int(sides[mid]), info[mid])
+        dr, fr, g, rt, rc, dv, chs = process(mid, int(sides[mid]), info[mid])
         RC.extend(rc)
+        DV.extend(dv)
+        CH.extend(chs)
         D += dr
         F += fr
         G.append(g)
         RT.extend(rt)
         if i % 16 == 0:
             print(i, mid, len(dr), len(fr), flush=True)
-    for name, rows in (('deaths', D), ('fights', F), ('games', G), ('retreats', RT), ('recalls', RC)):
+    for name, rows in (('deaths', D), ('fights', F), ('games', G), ('retreats', RT), ('recalls', RC), ('dives', DV), ('chases', CH)):
         with open(os.path.join(out, name + '.jsonl'), 'w') as f:
             for r in rows:
                 f.write(json.dumps(r) + '\n')

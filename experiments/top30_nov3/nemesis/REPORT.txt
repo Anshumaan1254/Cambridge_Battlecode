@@ -1,0 +1,166 @@
+NEMESIS STREAM: who beats us, what they do that the teams we beat do not, which of our rules lets them, the fix
+Cambridge Battlecode 2026a, team HouseOfCoders. Written 2026-11-03 ~08:30Z. Scripts: nemesis/scripts/, outputs: nemesis/out/.
+
+DATA AND CAVEATS
+- Rating table: ladder_nov2/matches_me.jsonl, ranked games since 2026-10-30 (2,795 ranked over 3.99 days, of which 2,215 have an opponent
+  in top30_nov3/ladder.json). Opponent rating = ladder rating at fetch time (not at match time). out/winrate.txt.
+- Style table: nemesis/out/profiles.jsonl, 156 of the 161 selected games (profile.py finished; 5 had no decode). All on v84-v87
+  (v84 90, v87 37, v85 28, v86 1); no v88 game in the selection, so "what the live bot does" = v84-v87 behaviour.
+  The selection is result-stratified: 8 nemesis teams (shoutout MAPS, KKB, filter, smurphy, Funky monkeys, the ruliad, EggsAfter11AM,
+  dromedaries) 12 L + 4 W each, 3 "easy" teams (OneTap, eclipsed Sunlight, SilverSamurai) 4 L + 8 W each. Cells: NEM-L 92, EASY-L 12,
+  NEM-W 28, EASY-W 24. Every style number is compared WITHIN a result stratum (NEM-L vs EASY-L, NEM-W vs EASY-W), never pooled;
+  a trait counts as "nemesis" only when it shows in both strata. EASY-L is small (n=12): treat its numbers as +-30%.
+- Extra extractions on the same games: out/goldlocks.jsonl (gold, shop, teleports, locks, failed tributes), out/marc.jsonl (captures and
+  banks by champion), out/marc_cadence.txt (Marcella capture -> bank), out/q2.txt, out/q3.txt (deaths by killer), out/compare.txt.
+
+A. WHO BEATS US (ranked since Oct 30; Elo-expected at our performance rating 1978 = our ladder rating 1979)
+   team                  rank rating  ranked W/N  win%   deficit (wins below Elo expectation)
+   filter                  77   1975     45/120    38    +15.5   <- biggest single drain, a team rated like us
+   Gem Simons (not listed) 82   1961     55/130    42    +13.2
+   Sneaky Bush Campers (-) 94   1934     24/60     40     +9.8
+   shoutout MAPS           65   2021     15/55     27     +9.1
+   KKB                     68   2006     19/60     32     +8.6
+   the ruliad              66   2015      5/30     17     +8.4
+   天天开心 :( (-)           84   1959     25/60     42     +6.6
+   Midnight Wardens (-)   100   1925     34/70     49     +6.3
+   Funky monkeys           85   1959      9/25     36     +4.2
+   smurphy                 71   1996      9/25     36     +2.8
+   dromedaries             53   2055      4/15     27     +1.9   (higher rated: losses mostly expected)
+   EggsAfter11AM           47   2072     15/45     33     +1.5   (same)
+   Teams we beat easily: OneTap (89, 1948) 79/100 = 79% (-24.7), SilverSamurai (59, 2032) 19/25 = 76% (-8.4), eclipsed Sunlight
+   (92, 1937) 24/30 = 80% (-7.3); also Valenki 66%, Zkey Farming 54% (2012), cheesynachos 55%, Velvet Tributers 50% (2117).
+   Full table (all opponents with >= 8 games): out/winrate.txt.
+- 8 nemesis teams: 121/375 ranked = 32% vs 173.0 Elo-expected: 52 wins short in 4 days = 13.0 wins/day. Everyone else: 851/1685 = 51%,
+  11.6 wins ABOVE expectation (+2.9/day). The 3 easy teams: 122/155 = 79%, 40.4 above (+10.1/day).
+- Rating points: the ladder K was fitted from the 13 rating snapshots in loop_log.md (dR = K x sum(S - E)): K ~ 4.6 points per game
+  (noisy). At that K the nemesis teams take ~60 rating points/day off us, everyone else gives back ~13/day, the easy 3 ~47/day.
+  The equilibrium effect is what matters for the gap: replaying the nemesis games at Elo expectation moves our performance rating
+  1978 -> 1995 (+17); at 50% -> 1999 (+21); without those games it is 1998. The gap to rank 30 (2175) is 197: the nemesis teams
+  explain 17-21 points = 9-11% of it. The other ~175 points are general (the fights / economy streams), not nemesis-specific.
+- By opponent rating band our only deficit is against 1900-1999 (815/1595 = 51%, 25.4 wins below expectation); against 2000-2199 we
+  are 23 wins ABOVE. We are not losing to strong teams more than expected; we lose too many even games to teams at our level.
+
+B. WHAT THE NEMESIS TEAMS DO THAT THE EASY TEAMS DO NOT (per game means; NEM-L | EASY-L || NEM-W | EASY-W)
+   THE MARCELLA FUNNEL (nemesis trait, both strata; full detail in S1):
+   their Marcella's share of the team's captures          31% | 21% || 29% | 22%   (ours in the same games: 18% | 19% || 20% | 19%)
+   their Marcella's capture gold / game                    1318 | 837 || 954 | 603  (ours 383 | 784 || 481 | 544)
+   their Marcella's banked gems / game (share of bank)     385 (38%) | 283 (28%) || 173 (31%) | 99 (21%)   (ours 87 (16%) | 183 || 162 | 185)
+   their shards at r600 (all bodies)                       100.5 | 79.4 || 85.3 | 68.8  (ours 76.6 | 77.1 || 112.5 | 90.7)
+   our deaths killed by their Marcella                     4.51 | 1.91 || 1.93 | 1.00
+   their gold captured by r600                             1774 | 1470 || 1505 | 1602  (ours 1542 | 1416 || 1907 | 1822)
+   their shop events / game                                155 | 70 || 144 | 43   (ours 57 | 67 || 96 | 75)
+   Per team (all strata): Marcella share of captures / capture gold / Marcella kills of ours per game:
+     the ruliad 32% 1369 3.40 | shoutout MAPS 28% 1375 2.92 | dromedaries 36% 1288 7.40 | KKB 32% 1168 4.67 | EggsAfter11AM 23% 954 2.27 |
+     smurphy 22% 946 2.62 | Funky monkeys 35% 1563 4.62 | filter 31% 942 2.56 || SilverSamurai 8% 162 0.17 | eclipsed Sunlight 18% 467
+     1.25 | OneTap 28% 1003 2.00 (the one easy team that funnels; we still beat it 79%). Draft is NOT the difference: Marcella is picked
+     in 97% of nemesis games and 86% of easy games (we pick her in 74%).
+   OPENING (nemesis trait in losses, weaker in wins):
+   gap we-they (banked+carried) r200 / r400                -38 / -87 | -5 / -4 || +14 / +55 | +21 / +110
+   our gems captured by r200                               82 | 106 || 101 | 110
+   their first target: gems / rank from spawn / stack      31.9 / 2.5 / 2.09 | 21.0 / 1.7 / 1.77 || 31.9 / 3.3 / 1.90 | 23.3 / 2.7 / 1.99
+   our first target: gems / stack / distinct-group frac    18.6 / 1.59 / 0.58 | 15.4 / 1.42 / 0.68 || 16.6 / 1.57 / 0.66 | 23.1 / 1.63 / 0.58
+   BANKING CADENCE (nemesis trait; it is the Marcella funnel): banks 30.1 | 26.9 || 20.5 | 15.3; bag at bank 43 | 128 || 37 | 58;
+     carry rounds 57 | 162 || 76 | 95. Ours: banks 16.7 | 19.6 || 28.9 | 27.8, carry 95 | 81 || 73 | 66.
+   DEATHS: ours 10.4 | 8.7 || 5.7 | 3.5 (+1.7, +2.1); the excess is the Marcella kills (+2.6, +0.9). Our dives (2+ steps toward a
+     group at R < 0.67) 11.8 | 7.4 || 6.7 | 3.4. We hit first in 49% | 65% || 55% | 54% of exchanges.
+   NOT nemesis traits (equal or the easy teams do more; no fix needed):
+     invasions of our half (>= 2 bodies, >= 5 rounds) 2.6 | 3.7 || 1.2 | 2.3; share of body-rounds in our half 4-6% for all four cells;
+     range-4 spell hits on champions 15.6 | 23.6 || 12.1 | 11.8; wards 222 | 247 || 222 | 213, wards on bushes 61 | 121 || 53 | 118;
+     steals (captures of groups we killed) 1.5 | 2.2 || 2.9 | 0.6; deaths by r400 ours 2.8 | 2.3.
+     Altar locks: nemesis place 3.3 | 1.1 || 3.4 | 1.2 a game, but they cancel only 0.22 of our tributes a game (16 gems) in NEM-L;
+     ours cancel 0.63 of theirs (32 gems). Exception: filter, 1.06 cancels (64 gems) a game (S5).
+     Teleport crystals: nemesis 5.3 | 2.7 || 7.5 | 0.0 (filter 12.9 a game); no measured cost to us.
+
+SHORTCOMINGS, ranked by estimated gain
+
+S1 No Marcella funnel: their Marcella captures, banks at once and buys; ours is a minor collector [STRATEGY] est. gain +2 to +4 games
+   per 100 overall (+5 to +8 per 100 vs the nemesis teams), from closing the item gap
+   number: their Marcella takes 14.6 captures / 378 gems / 1318 gold a game and banks 385 gems (+770 gold from her 2-gold-a-gem
+     passive): ~2,090 gold = ~70 shards on one body. Ours, same games: 5.9 captures / 96 gems / 383 gold, banks 87 gems (NEM-L, n=90
+     vs 62 games with a Marcella). Cadence (marc_cadence.txt): their Marcella banks 40% of her captures within 20 rounds, median 27
+     rounds and 10 tiles from the capture; ours 18%, median 65.5 rounds and 16 tiles; the easy teams' Marcella 18%, 38 rounds, 18 tiles.
+     Effect: their shards at r600 100.5 vs our 76.6 (NEM-L, +24 = +31%); EASY-L 79.4 vs 77.1 (+2). This is the "enemy has 41% more shards
+     per body at r600 in losses" of agent_fights/REPORT.md (item gap = the strongest exchange factor, z +12.3), and it lands on the body
+     that kills us most: their Marcella kills 4.51 of ours a game in NEM-L vs 1.91 in EASY-L (1.93 vs 1.00 in wins); per team the
+     funnel size orders the kill rate (dromedaries 7.4, KKB 4.7, Funky monkeys 4.6 ... SilverSamurai 0.17).
+     Like-with-like column: NEM-L vs EASY-L, and both teams in the same games (ours vs theirs).
+   examples: 603f9ead-f23f-4263-a4de-d722dbd0a774 (dromedaries, 00oasis, 162-1012): their Marcella = body 7 captures r24 (22 gems,
+     90 gold) and banks r33, r56 -> r57, r85 -> r87, r111 -> r121, r312 -> r318; 17 shards at r300, 87 at r600 while our best body has 19;
+     she kills 22 of ours (r262 b2 HoR, r346 b0 Vendetta, r368 b3 Ryth). 4032595e-7f6e-4245-af47-1e77e1196f23 (KKB, 00gem_fields, 566-1007):
+     their Marcella b0 captures 71 gems r34, banks r46; 64 shards at r600, our Marcella b8 has 5; kills r325 b9, r330 b5, r356 b8.
+     8acd6fee-b129-460c-ab7b-7b51919a09d2 (smurphy, 00oasis, 133-1012): their Marcella b0 44 shards at r600 (ours max 11); kills r549 b8,
+     r705 b8, r726 b5.
+   cause: brain.cpp group_score() capture hand-off (~l.6907-6933): `return P.mi_capture == 2 ? k.gold_mult * g.gold + k.tribute_gold *
+     g.gems : k.gold_mult;` with params.h:906 `int mi_capture = 1;` -> a reward is handed only to a higher gold_mult ally (Vesper Vale
+     1.2) and only within `gold_rank_d = 5` (params.h:341); Marcella's tribute gold is never counted. Banking: tribute() (brain.cpp 6013)
+     `const int need = bank_min(recall_bank ? via_home : dist);` -> bank_min() returns tribute_min = 54 (params.h:127) plus 1.74 a step
+     for every body; the anchor rules that bank smaller bags (`anchors = 0`, `anchor_trib = 0.6f`, params.h:844-846) are off, and when
+     on they rank Vesper Vale first (brain.cpp ~5506 `pri = t == CT::vesper_vale ? 3.f : t == CT::marcella ? 2.f ...`).
+     Ledger: `mi_capture 2` was measured level or worse in v15 (Oct, AGENTS.md:63). It is not the same rule: it only re-ordered bodies
+     already within 5 of a reward; the bank threshold, the hand-off radius and the cadence stayed as they are.
+   fix: switch g24_marc_funnel (params.h, default 0), active only when we drafted Marcella and she is alive:
+     (1) group_score() hand-off: a reward with gems >= 10 or gold >= 60 yields to our Marcella when she is within g24_mf_r = 8 steps of
+         it (not 5) and not channelling; funnel value = gold + 2 x gems for her (the mi_capture 2 formula) and gold x gold_mult for the
+         rest. Reuse the F4 handoff path (P.handoff, value_mult_handoff) so the holder steps off when she arrives; the holder waits at
+         most g24_mf_wait = 6 rounds, then captures itself.
+     (2) tribute()/bank_min(): for Marcella, need = max(20, 0.5 x tribute_min) when an altar is within g24_mf_altar = 12 steps (the
+         nemesis bank at median 10 tiles); otherwise unchanged. No recall-banking change (the failed g23_bankcap 50 forced every body to
+         recall with big bags: this walks one body to a near field altar).
+     (3) shop(): no change needed (she shops on her next spawn visit); optional: draft.cpp pd_pri_marcella +1 so we field her in more
+         than 74% of games.
+   test: local games vs god84 and gpta75 (mechanism, not win rate first): our Marcella capture gold a game 383 -> >= 900, her banked
+     gems 87 -> >= 250, her shards at r600 x2, team shards at r600 +15 or more, team deaths not up (> +0.5 a game = stop), team captured
+     gems by r600 not down by more than 20. Expected: shard gap at r600 vs a funnelling opponent from +24 to under +10.
+
+S2 Their Marcella is not a priority target, although killing her is how we beat them [STRATEGY] est. gain +0.5 to +1 game per 100
+   number: in our wins vs the nemesis teams their Marcella dies 2.52 times a game with a 27-gem bag; in our losses 1.04 times with 16
+     (NEM-W vs NEM-L, n=27 / 90). Her bag is worth 3x to them (gems + 2 gold a gem). Caveat: agent_fights found focus fire "not the
+     lever" in general; this is one target type with a known item lead, so the gain is kept small.
+   examples: 603f9ead: their Marcella b7 dies once in the whole game (r144, empty bag) and banks 28 times; 079eed44-0ca2-449d-9ae7-
+     7112c0c73d5b (dromedaries, 03honeycomb 670-1025): their Marcella b4 carries 64 gems r362-373 and r486-497 untouched, dies with a bag
+     once (r855, 71 gems) in 5 deaths.
+   cause: g23.cpp g23_pick_target() (l.224): the key is damage race only (`mine`, `allies_d`, ehp); no term for the target's type, items
+     or bag; brain.cpp tp_target_value() (5836) uses the bag (kill_value) but only on the teamplan path.
+   fix: g24_marc_focus (default 0): in g23_pick_target(), divide the key (ehp / damage) of an enemy Marcella by (1 + bag/40) and by 1.3
+     when her strength >= 1.5 x her design strength (seen e->str, world.cpp:539); target choice only, no change to engage / flee
+     (the dive filter, disengage and strike_first in the ledger changed engage decisions; this does not).
+   test: local games against a Marcella-funnel opponent (our own bot with g24_marc_funnel 1): their Marcella deaths a game +0.5,
+     our deaths not up.
+
+S3 Opening against the nemesis: small split first targets while they stack the big one [STRATEGY] est. gain +1 game per 100 (overlaps
+   the economy stream's opening item: count it once)
+   number: gap at r200 / r400 -38 / -87 (NEM-L) vs -5 / -4 (EASY-L); our gems captured by r200 82 vs 106; their first target 31.9 gems
+     (2.09 bodies) vs our 18.6 (1.59 bodies), our first targets split over 0.58 distinct groups per body. In wins the gap is +14 / +55,
+     so the loss stratum carries it. The largest group on the map: they capture it 5.8 times a game, we 1.5 (NEM-L); EASY-L 8.8 vs 1.3,
+     so "they own the biggest group" is a loss trait in general, not a nemesis one.
+   examples: 9c4c0947-158f-4360-83f9-ce74f2974e70 (shoutout MAPS, 00gem_fields 400-1027): they 171 captured by r200 vs our 46, first hit
+     r16 on a 58-gem target with 2.0 bodies; 079eed44 (dromedaries, 03honeycomb): they 153 captured by r200 vs our 63, 286 vs 185 by r400.
+   cause: brain.cpp farm() (~7553) / group_score() (6771): each body scores groups for itself; the prime-set rule that would send the
+     pack to the largest reachable group (g23.cpp ~772 `value >= g23_prime_share x max`) is part of g23_tol, shelved; g23_open_safe 100
+     (v91, level 15/30) only avoids contested groups.
+   fix: g24_open_stack (default 0): rounds < 120: the first target of every body is the largest group with dA <= dB + 2 (prime set
+     with g23_prime_share 0.6); bodies wait at its edge until 3 have arrived (or 12 rounds). Not g23_tol's full objective layer.
+   test: our gems captured by r200 on the s4 maps +15 or more, first-target stack 1.6 -> 2.3, deaths by r400 not up.
+
+S4 We misread an itemized Marcella in the exchange model [BUG-like model gap] est. gain +0.5 game per 100
+   number: our deaths to their Marcella: 66% started by them, at death 1.94 enemies vs 1.14 allies within 5, our health 5 rounds before
+     64%; 4.51 a game (NEM-L) vs 1.91 (EASY-L); our dives toward groups at R < 0.67: 11.8 vs 7.4 (L), 6.7 vs 3.4 (W).
+   examples: 603f9ead r262 b2, r368 b3; 4032595e r325 b9, r330 b5; 8acd6fee r549 b8.
+   cause: g23.cpp g23_dps_of() (l.60): `float d = str_ * (reset_ready ? 1.2f : 1.f);` treats Marcella's enhanced reset like any reset;
+     it stuns (draft.cpp:499 "Marcella's enhanced attack stuns"), so it also removes one round of our damage, which g23_ratio() does
+     not subtract.
+   fix: g24_marc_threat (default 0): in g23_dps_of() for t == CT::marcella with the reset ready, d = str x 1.5 (stun round), and in
+     g23_ratio() our side's damage x 0.85 while an enemy Marcella with the reset ready is within 2 of the contact. Differs from the
+     failed dive filter: it changes R for one champion type only, no step filter.
+   test: steps toward an enemy group containing a Marcella at R < 0.67 per game -30%; deaths to Marcella -0.5 a game; total deaths not up.
+
+S5 filter's locks and denial [STRATEGY] est. gain +0.3 game per 100 (filter alone is our biggest drain: +15.5 wins in 4 days)
+   number: filter cancels 1.06 of our tributes a game by lock (64 gems; every other team <= 0.40), our failed tributes vs filter 2.2 a
+     game (236 gems), steals 3.1 a game, teleports 12.9 a game; its Marcella funnel is average (31%, 942 gold).
+   cause: tribute() (brain.cpp 6013) picks nearest_altar() with no memory of a lock that cancelled us there.
+   fix: g24_lock_memory (default 0): after a tribute of ours is cancelled by an enemy lock at altar A, nearest_altar() adds +8 steps to A
+     for 150 rounds while an enemy was seen within 8 of A in the last 20 rounds.
+   test: our lock-cancelled tributes a game vs a locking opponent -50%.
+
+NEXT (not done here): Gem Simons (+13.2 wins), Sneaky Bush Campers (+9.8), 天天开心 (+6.6) and Midnight Wardens (+6.3) drain us as much as
+the listed teams but were not in the selection; profile them with profile.py on a new selection.json before choosing between S1 and S3.

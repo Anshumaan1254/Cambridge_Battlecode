@@ -39,7 +39,7 @@ S1 Scarce maps: we take groups alone; the top-30 stack 2+ bodies [STRATEGY] est.
    (update_mode, l.5667), and it fires only when the map cannot pay 1,000 gems in 2,000 rounds. None of the 10 worst maps qualifies.
  fix: g24_scarce (params.h, default 0) plus g24_scarce_gpc 92 and g24_scarce_follow 150.
    (a) World init, next to mono_mode (world.cpp ~l.261): W.scarce_mode = sum(group gems) / team_champs <= g24_scarce_gpc.
-   (b) group_score: on scarce_mode, heavy = true for gem groups of >= 12 gems, with at most one joiner (claimers < 2 + 0).
+   (b) group_score: on scarce_mode, heavy = true for gem groups of >= 12 gems, with at most one joiner (claimers < 2).
    (c) l.6789: (W.mono_mode || (P.g24_scarce && W.scarce_mode)) && round < g24_scarce_follow. The opening then follows the
    lowest-index claimant's group, using the existing mono_follow code.
    Already tried and off: open_follow (23/42 on all maps), squads, deathball. What is different here: only the map class that carries
@@ -110,14 +110,20 @@ S4 Bush-heavy maps [STRATEGY] est. gain +1 game per 100 (mechanism not verified 
 S5 Endgame: a winning bag recalled but never landed [BUG] est. gain +0.5 games per 100
  number: of 118 ME88 losses, 11 reached r2000 (9.3%, against 3.6% of top-30 sides). In 1 of them banked + carried beat the winner:
    e36c7dd7 02the_pond, lost 843-846 with 244 carried (top_L: 3 of 305 such games).
- examples: e36c7dd7 HeartOfRuin b5. Bag 60 at r1850, 198 at r1955; 834 + 198 >= 1000 means "winning" from r1955. Recall events every
-   round r1940-1991, with Attack r1940-1964 and dashes r1976 / r1984. At (2,29) at r1976. Submitted 232 gems at the (3,7) altar at
-   r1992; 24 ticks lands at r2016, after the end.
- cause: tribute() (brain.cpp l.6013): with winning set and !endgame, recall_bank = "W.dist_home(pos) > P.recall_min_dist && via_home
-   + 2 < dist && safe_to_recall() && !endgame" chose go_home(). That recall was cancelled every round, by camp hits while it kept
-   attacking, then by its own moves. Nothing falls back to walking once the recall has failed for k rounds.
- fix: g24_bank_fallback (default 0), in tribute(). If a recall_bank recall has been cancelled >= 3 rounds in a row, or ticks + walk >=
-   2000 - round - 20, drop recall_bank and walk to the nearest altar (go_altar).
+ examples: e36c7dd7 HeartOfRuin b5 (we are team 1). Bag 60 at r1850, 215 at r1958. Our banked reached 831 at r1961, so 831 + 215
+   >= 1000 made the bag "winning" from r1961; tribute()'s endgame flag (round + dist + ticks + 12 >= 2000) was already set by about r1950.
+   Recall events every round r1940-1991, with Attack r1940-1964 and dashes r1976 / r1984; at (2,29) at r1976. Submitted 232 gems at
+   the (3,7) altar at r1992; 24 ticks lands at r2016, after the end.
+ cause (two candidate paths; not traced turn by turn):
+   (1) tribute() (brain.cpp l.6013), v27_avoid branch: "if (P.v27_avoid > 0 && round < av_until && !recall_bank && !force) { ... if
+       (hot) { if (W.dist_home(pos) > P.recall_min_dist && ... safe_to_recall()) recall_bank = true; else return false; } }". This sets
+       recall_bank even when endgame or winning is set (v27_avoid = 12). go_home() then recalls, and camp hits or the next move cancel
+       the recall.
+   (2) The Attack events show that combat or farm ran before tribute() in r1940-1964, so the bag was never put first.
+   Nothing falls back to walking after repeated failed recalls.
+ fix: g24_bank_fallback (default 0), in tribute(). The v27_avoid hot-altar branch does not apply when endgame or winning is set. If a
+   recall_bank recall has been cancelled >= 3 rounds in a row, drop recall_bank and walk to the nearest altar (go_altar). In turn(), a
+   winning or endgame bag calls tribute(true) before farm and camp combat (enemy combat keeps priority).
  test: on local games, a mechanism log of "recall cancelled >= 3 times while winning" should drop to 0.
 
 =====================================================================================================================================

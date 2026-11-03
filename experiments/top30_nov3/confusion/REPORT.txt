@@ -1,0 +1,149 @@
+CONFUSION STREAM: flip-flop decisions and per-champion priorities (Nov 3 2026). Code: bots/god24/src (v88 + g24 switches, all off).
+
+DATA AND DEFINITIONS
+- confusion/flips.py: 137 v88 games (ours, 132 losses), 400 top-30 vs top-30 games (top_W / top_L = 400 sides each), 70 old v84-87
+  games. Output: out/fl/<key>.json; summary: summ.py -> out/summary.txt; trajectory pass traj.py -> out/traj_{v88,top}.jsonl
+  (all our episodes, a 10% sample of top episodes); trq.py / bagq.py / bag2.py / exsel.py are the queries quoted below.
+- WASTED LOOP: a body is back within 1 tile of where it stood k = 2..12 rounds earlier, with >= 2 moves and no productive action in
+  between (attack, non-dash cast, camp hit, capture, submit / bank, shop, teleport, lock). Each move inside such a loop is a wasted
+  round; contiguous wasted rounds = 1 episode. This covers A-B-A, reversals and walk-toward-X-then-back. The g17_bait recall is not
+  a productive action and not a move, so it neither creates nor hides a loop. Each episode is classified by the state at its first
+  round: FIGHT (champion hit given or taken within +-2: kiting; other stream), ENEMY6 (nearest enemy <= 6), ENEMY12 (7..12),
+  CAMPAGGRO, RECALL (held recall), BAG (>= 30 gems), LOWHP (< 45%), SPAWN (<= 4 of own spawn), DEADGRP / LIVEGRP (within 4 of a
+  dead / live group), OPEN (otherwise).
+- ACTIVITY per body-round: dead > bank > recall > capture > fight > camp > spawn > walk_bag (>= 40 gems) > walk > wait.
+
+WASTED ROUNDS PER GAME [per 1000 alive body-rounds]       (out/summary.txt)
+ class        we_v88 (n137)  opp_v88 (same games)  top_W (n400)   top_L (n400)   map-matched per 1000 (63 maps): v88 / opp / topW / topL
+ ENEMY12      149.1 [34.1]    89.0 [18.2]           72.1 [15.9]    98.2 [23.9]    36.7 / 17.4 / 15.8 / 23.6
+ ENEMY6       107.0 [24.5]    73.4 [15.0]           65.4 [14.4]    79.1 [19.2]    25.0 / 15.1 / 14.3 / 22.6
+ OPEN          38.1 [ 8.7]    22.9 [ 4.7]           22.4 [ 4.9]    24.1 [ 5.9]     7.3 /  3.9 /  3.9 /  4.0
+ BAG           18.9 [ 4.3]     2.7 [ 0.5]            6.1 [ 1.3]     4.1 [ 1.0]     3.5 /  0.7 /  1.1 /  1.0
+ LIVEGRP       19.2 [ 4.4]    14.9 [ 3.0]           10.0 [ 2.2]    10.4 [ 2.5]     3.9 /  3.3 /  2.3 /  1.7
+ CAMPAGGRO      9.2 [ 2.1]     6.6 [ 1.4]            5.5 [ 1.2]     9.9 [ 2.4]     2.7 /  1.3 /  1.2 /  1.2
+ DEADGRP       22.7 [ 5.2]    24.2 [ 4.9]           21.5 [ 4.7]    19.2 [ 4.7]     no gap
+ RECALL         7.2 [ 1.6]    13.2 [ 2.7]            9.0 [ 2.0]    19.1 [ 4.6]     no gap (held-then-cancelled recalls 28.3/g vs 24.9 opp,
+                                                                                    33.9 top_W, 25.7 top_L: the non-bait recall-cancel is NOT a gap)
+ SPAWN/LOWHP   12.0            10.7                  10.8           10.1           no gap
+ ALL but FIGHT 383.4 [87.8]   257.6 [52.7]          222.9 [49.1]   274.1 [66.6]   89.3 / 50.8 / 47.2 / 62.0
+ FIGHT        232.0 [53.1]   130.7 [26.7]          126.8 [27.9]   182.0 [44.3]   55.9 / 27.1 / 31.1 / 50.4   (fights stream)
+Our loops are also longer: 7.1 wasted rounds per episode vs 5.3-5.6 (top); 49% of our ENEMY loops have an excursion >= 4 tiles
+(top 36%), 42% of their rounds are in episodes >= 12 rounds (top 31%). Excess vs top_L (loss-conditioned): +109 rounds a game outside
+fights, +126 vs our opponents in the same games; the 3 most costly classes: ENEMY12 (+51 r/g), ENEMY6 (+28), then BAG (+15) and OPEN
+(+14). Price: 0.135 gems collected per v88 alive body-round -> 109 rounds = 15 gems/g if all were farming; we assume half is recoverable.
+The enemy loops are 78% empty-bag (bag < 10: ENEMY12 115 vs 60 r/side-game top), so they are not bank behaviour.
+The enemy-relative shape is the same as the top teams' (first step away 31-42%, toward 17-40%, same distance profiles: the turn
+points sit at 5-8 tiles for both, out/traj_*.jsonl, trq.py): we do not use different trigger distances, we re-decide more often and
+for longer. That points at missing state (memory / hysteresis), not at wrong thresholds.
+
+S1 Flee / farm pacing near enemies (ENEMY12 + ENEMY6) [BUG] est. +4-7 gems/g (+40-60 body-rounds a game), maybe fewer deaths
+ number: 256 wasted rounds a game vs 177 top_L, 138 top_W, 162 opp_v88 (same games); per 1000 alive map-matched 61.7 vs 46.2 top_L,
+   30.1 top_W, 32.5 opp. Episodes 35.8/g vs 26.3 top_L. 78% with bag < 10, 59-69% with an ally within 5, 29% (ENEMY12) / 66%
+   (ENEMY6) with >= 2 enemies within 9.
+ examples: a7ff89ef-bfac-4fc2-b148-c33450f65fb5 00fragment HoR b0 r1015-1067 (52 wasted rounds, Issac at 8, 3 enemies within 9) and
+   r1236-1286 (50); 2a1e1985-fb22-4a3a-9623-743b5bf00bf6 00lost_world HoR b0 r800-853 (52, big live group, enemy Vesper at 4);
+   d8356e71-d468-40a0-a5ff-41f09c3acf52 00reverse_spiral Marcella b7 r740-786 (47, Vendetta at 4); 0929d08d-... 00contest
+   Vendetta b4 r1349-1394 (46).
+ cause (three rules interact; the flee rules are stateless and the two guards cannot see the pacing):
+   (a) combat() flees are re-decided every turn with no memory: brain.cpp:4919 "outmatched = P.outmatch_flee && nearest_enemy <=
+       P.outmatch_flee_dist (8) && ... adv < out_bar"; :4926 "iso_flee = (isolated || reserve) && adv < P.isolated_flee_adv (1.5) &&
+       nearest_enemy <= P.flee_dist (5)"; :4604 px_flee and :4659 ml2 flee (both nearest_enemy <= flee_dist). One step out of the
+       radius and combat() returns false; farm() runs and walks back to the same target.
+   (b) the only memory, v27_avoid, bans a group only near the enemy itself: avoid_note() brain.cpp:2076 "av_rad[...] = reach + 2" and
+       in_avoid() :2086 "cheb(g.center, av_pos) <= av_rad + g.radius"; group_score :7045 returns -1 only for those. A target 6-10
+       tiles behind the enemy (the usual case: the enemy stands between us and our group) stays a target, and the walk to it re-enters
+       the 5 / 8-tile flee radius. After 12 rounds (v27_avoid 12 = flip_window 12) everything is forgotten.
+   (c) the pacing guards are blind to it: osc_guard() (fz_osc = 0, off) requires brain.cpp:1959 "walking && ... enemy_near_d > 5"
+       and T_FLEE is not a walking task, so a flee turn resets its window; progress_watch() :2010-2011 counts "hp > pw_hp + 0.02 *
+       max_hp" and "cheb(pos, pw_anchor) > 3" as progress: out-of-combat regen or a 4-tile excursion (49% of our loops) restarts the
+       12-round clock, which is how 40-50-round pacing survives.
+ fix g24_pace (bits, default 0):
+   1 = side ban: avoid_note() also stores our position; while round < av_until, group_score (next to the v27_avoid test, :7045)
+       returns -1 for a group with cheb(g.center, av_pos) < cheb(g.center, av_anchor) - 1 (the enemy is nearer to it than we were =
+       we would walk through them), for any group within g24_pace_r (default 9 = outmatch_flee_dist + 1) of av_pos. Not when
+       g.id == task_group && g23_keep_farm (E1 hold) or the group is on our half and adv >= 1.
+   2 = flee-aware oscillation guard: osc_guard() treats a T_FLEE turn with no hit given or taken as quiet (drop "enemy_near_d > 5",
+       require round - last_hit_round > 3 and no attack); 12-round window, >= 60% moves, back within 1 tile -> blacklist the task
+       group 20 rounds and av_until = round + 20 (fz_osc_bl). This is not v14's fz_osc 10 (measured 39/80 on the old base): that
+       one ignored flee turns, i.e. it could not fire on this class.
+   4 = progress_watch(): regen alone is no progress while an enemy was within 12 in the last 3 rounds, and the anchor test uses the
+       farthest point of the last 12 rounds (a 4-tile there-and-back is no progress).
+   Different from the failed "disengage" / "dive filter": nothing changes whether we fight or flee; it only stops the walk back.
+ test (local replays, execution metrics + confusion/flips.py): ENEMY12 + ENEMY6 wasted rounds 256 -> <= 180 a game (top_L 177);
+   episodes >= 12 rounds share 42% -> <= 30%; must not raise deaths or lower collected gems; log "G24 pace ban g=.. " count.
+
+S2 Who captures: HoR takes the rewards the top teams give to Marcella [STRATEGY] est. part of E3 (+1-2 games/100 on Marcella drafts)
+ number (share of the team's captured gems; we_v88 vs top_L / top_W; n body-games 137/333/345 HoR, 97/367/356 Marcella):
+   HoR 24.9% vs 16.6% / 15.9%; Marcella 19.0% vs 32.9% / 34.1%; Vendetta 23.4% vs 20.2 / 20.9; Vesper 28.7% vs 29.4 / 32.2; Ryth
+   14.5% vs 12.8 / 12.9; Varg 17.0% (n19) vs 22.0 / 21.9. Banked share follows the same order (Marcella 19.1% vs 36%). Captured gems a
+   game: Marcella 110 vs 200 / 349, HoR 147 vs 102 / 160.
+ examples: 4032595e-7f6e-4245-af47-1e77e1196f23 00gem_fields (HoR 11 captures / 103 gems, Marcella 5 / 35, all small groups);
+   9afd7274-ee03-47a5-a0a9-ba366c61b88e 01fracture HoR b0 carried 79-110 gems r319-535 (and paced, S3).
+ cause: group_score() brain.cpp:7168-7193, mi_capture 1: the shared reward goes to the highest kit gold_mult (only Vesper Vale's passive
+   is > 1; teamplan/kit.h:142), then "da < d_tile" (the nearest), then the lower index: "if (gm > my_gm + 1e-9 || (std::fabs(gm -
+   my_gm) <= 1e-9 && (da < d_tile || ...))) { WHY(4); return -1; }". HoR dashes in first and stands nearest, so it captures; Marcella
+   (2 gold a banked gem) only outranks with g24_marc_funnel (off).
+ fix: g24_cap_rank 1 (default 0): at equal gold_mult the tie-break is a carry rank before distance: Marcella 3, Vesper 3 (gold_mult
+   already), Ryth / Varg 2, Vendetta 1, HoR 0; applies only when the higher-ranked ally claims the group or stands within 2 of the
+   reward (g23_capfix 1 rule) and no enemy is within 6. Ship together with g24_marc_funnel 1 (E3), whose ledger level was "mi_capture 2
+   only re-ordered bodies within 5": this rank also moves the HoR / Vendetta captures, which mi_capture 2 left alone.
+ test: per-champion capture share on local games (summ.py section 3): HoR <= 18%, Marcella >= 28%; HoR deaths with bag >= 30 down.
+
+S3 Bag holders pace between farm and a hot altar (BAG) [BUG] est. +1-2 gems/g (15 rounds, plus bag exposure)
+ number: 18.9 wasted rounds a game vs 2.7 opp_v88, 6.1 top_W, 4.1 top_L (per 1000: 4.3 vs 0.5-1.3); 2.4 episodes/g vs 0.5-1.1;
+   7.9 rounds per episode; 65% with no group within 4; 39% of the rounds with bags >= 60 (escort_bag 60).
+ examples: 9afd7274-ee03-47a5-a0a9-ba366c61b88e 01fracture HoR b0 r319-333, r343-353, r356-365 (79 gems, no enemy within 12, altar
+   10-20 away), r520-535 (110 gems); e33e2b41-556d-428d-a9ff-e0c1f221ac0e 02the_pack Vendetta b0 r1521-1540 + r1573-1597 (65 gems);
+   c366bbe9-2dd2-4a3f-a8c5-3cbe95a5328d adgato_gemcombat4 Vesper b8 r425-436 (52) and r639-650 (87).
+ cause: tribute() decides "want" every turn, then two hold branches return false and hand the turn to farm(), which walks away;
+   when the hold expires the bank walk starts again: brain.cpp:6289 "if (... altar_unsafe(a)) && !endgame && !winning && !force &&
+   !stalled) return false;" (enemy within 6 of the altar in the last altar_enemy_memory 8 rounds) and :6291 "bag_needs_escort(a))"
+   (bag >= escort_bag 60, enemy seen near the altar within escort_quiet 12 or visible within 10, fewer than 2 healthy allies within 5).
+   The "committed" flag (:6215 "P.sticky_tribute && task == T_TRIBUTE") is lost because farm() resets task; risky (:6211,
+   tribute_risky 10, risky_persist 0: one sighting) restarts the trip. 57% of the loops go away from the altar first, 28% toward it.
+ fix: g24_bank_hold 1 (default 0): when a hold branch (:6289 / :6291) fires for a body that wanted to bank (want true) for the 2nd time
+   in 20 rounds: if safe_to_recall() and dist_home > recall_min_dist set recall_bank (spawn altar), else task = T_WAIT on the current
+   tile (no farm walk) until the hold clears or 12 rounds pass. Not g23_bankcap (failed): that recalled every big bag at a far / hot
+   altar up front; this fires only after an observed hold flip.
+ test: BAG wasted rounds 18.9 -> <= 6 a game; tribute-fail and bag-loss on death not up.
+
+S4 Target flips in the open (OPEN) and at live groups (LIVEGRP) [BUG] est. +1-2 gems/g
+ number: OPEN 38.1 vs 22.9 opp / 22.4 top_W / 24.1 top_L wasted rounds a game (per 1000 map-matched 7.3 vs 3.9-4.0); LIVEGRP 19.2 vs
+   14.9 / 10.0 / 10.4. 77% of OPEN rounds are in loops >= 6 rounds (a walk toward one group and back, nothing within 12).
+ examples: bc6e81b3-2c5d-48ef-a1bc-d572968202d0 03twisty Ryth b4 r787-825 (39 wasted rounds); ef16c340-ebee-4af3-8f13-960982567b69
+   00galaxy Vesper b7 r243-256; 72a89dd0-1016-40f7-ac03-89db792926aa 00galaxy Vesper b1 r1213-1228 and r1416-1430.
+ cause: farm() remembers one left target: brain.cpp:8026 "else if (P.flip_window > 0 && g.id == left_group && round - left_round <=
+   P.flip_window) s /= P.flip_margin;" with left_group overwritten at :8299; an A-B-C-A cycle is not damped. Two transient score terms
+   expire exactly when the flip window does (12 rounds): the enemy surcharge :7564 "if (round - g.enemy_round < 12 && ...) time += 12.f"
+   (any enemy seen within 6 of the group centre, world.cpp:726) and v27_avoid's -1 (12 rounds). A target dropped for a transient comes
+   back at full score after 12 rounds, while the body is half-way to the replacement. Hard -1s (avoid, abandon tadv, WHY 4 yields)
+   are not damped by hysteresis at all. (Not traced turn by turn: no local runs allowed; LEGEND_TRACE QSW lines would confirm.)
+ fix: g24_flip_mem 1 (default 0): keep the last 3 left targets with their leave round; a return within 20 rounds needs flip_margin x;
+   the +12 surcharge decays linearly over 12 rounds instead of stopping (time += 12 - (round - g.enemy_round)).
+ test: OPEN + LIVEGRP wasted rounds 57 -> <= 38 a game; QSW switch count per 100 rounds down >= 25%.
+
+S5 Per-champion priorities: what each of ours spends its rounds on vs the same champion on top-30 [STRATEGY] (only the 6 champions we
+   drafted in v88 games are comparable; Cassi&Issac, Stellar, Prism, Willow, Ren, Tavi: top-30 data only, in out/summary.txt)
+ share of all body-rounds, we_v88 vs top_L / top_W (n body-games: Ryth 111/149/154, Vesper 120/294/286, Vendetta 115/257/260,
+   Marcella 97/367/356, HoR 137/333/345, Varg 19/40/38):
+   walk     Ryth 51.8 vs 48.1/49.7  Vesper 45.3 vs 37.4/35.4  Vendetta 44.6 vs 41.7/41.6  Marcella 49.5 vs 43.4/42.1  HoR 45.3 vs 42.2/42.6
+   camp     Ryth 12.2 vs 13.1/14.6  Vesper 14.1 vs 13.8/16.6  Vendetta 11.9 vs 13.1/16.1  Marcella 13.4 vs 10.3/12.6  HoR 12.3 vs 14.6/17.0
+   capture  Ryth  2.6 vs  4.5/ 5.6  Vesper  4.2 vs  8.1/11.6  Vendetta  4.7 vs  6.3/ 8.4  Marcella  3.8 vs  6.9/ 9.1  HoR  4.9 vs  5.3/ 7.6
+   fight    Marcella 6.2 vs 4.8/4.5 (ours fights more); others equal (2.7-4.1 vs 3.2-5.6)
+   solo share of camp hits (no ally on the group within 8 rounds): 45-59% for all five vs 40-45% (E2, g24_join).
+   fight opener / opened-on per game (first champion hit after 20 quiet rounds): Vesper 1.82 / 2.48 vs 2.41 / 1.83 (top_L) and
+   3.04 / 1.37 (top_W): our Vesper is hit first more often than it hits first; the other four match top_L.
+ largest per-champion differences: (1) Marcella captures / banks half the top share (S2 + E3); (2) Vesper Vale walks 8-10 points more
+   and captures half as often (12.0 captures/g vs 15.6 / 21.5) although it already wins the gold_mult tie: its time goes into walking
+   between solo groups (solo 52% vs 45%) and S1 pacing (Vesper 4,116 ENEMY12 rounds in 137 games, 2nd after HoR); (3) HoR captures too
+   much (S2) and camps 2-5 points less.
+ cause: the score is the same for every kit except gold_mult (capture), approach_rounds and the v24_ci_escort / g24_marc_funnel terms
+   (group_score :7006-7600); the per-kit draft tables do not feed farm(). No rule gives Vesper or Marcella a "stay with the group, take
+   its rewards" priority; the join rule (E2) decides grouping.
+ fix: S2 (g24_cap_rank) + E2 (g24_join) + E3 (g24_marc_funnel); for Vesper g24_cap_rank also lets her outrank a nearer HoR / Vendetta on
+   any reward within gold_rank_d. Not a new Vesper rule until S1 / S2 are measured.
+ test: Vesper capture share of rounds >= 6%, walk <= 41% on local games (summ.py).
+
+NOT GAPS (checked): recall-then-cancel that is not the bait (held recalls cancelled 28.3/g vs 24.9-33.9); RECALL / DEADGRP / SPAWN /
+LOWHP loops (equal or lower than top_L); the turn-point distances (same profile as top). FIGHT loops (232 vs 127-182 r/g) are the
+largest single class but are kiting inside fights: hand to the fights stream (g23 engine AVOID / LEAVE with g23_fight_hold 6).

@@ -12,3 +12,4 @@
 2026-11-03T01:30Z LOCAL _r66 (rescue + one-step, current code) vs god84 90/172 +34 [-46,+120], deaths 8.3 vs 8.2 (g23r alone +112, deaths 7.8 vs 9.2): one-step cancels the rescue's death reduction again (as _85r2 did) -> not stacked.
 2026-11-03T01:41Z LOCAL _rdv (rescue + dive filter) vs god84 86/172 +8 [-73,+90], deaths 8.0 vs 8.2 -> not stacked (g23r alone +112).
 2026-11-03T01:51Z LOCAL _rbank (rescue + v84 v23_bank) vs god84 94/172 +24 [-61,+106], deaths 8.5 vs 8.6 -> not stacked. g23r vs gpta75 110/172 +161 [+76,+248], deaths 8.7 vs 10.2, kills 9.4 vs 7.9 (baseline god84 vs gpta75 102/172 +79, deaths 9.0 vs 9.2): rescue +82 vs a second opponent.
+2026-11-03T02:04Z LOCAL _rd256 (rescue + disengage bit 256) vs god84 89/172 -22, deaths 7.8 vs 7.2, kills 6.6 vs 7.1 -> disengage off. _rr6 (rescue radius 6) 97/172 +107, deaths 7.7 vs 9.2 (= g23r's numbers).

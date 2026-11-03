@@ -456,6 +456,7 @@ private:
 	mutable int sc_why = 0;			  // group_score: the rule that rejected the last group scored (WHY codes, every build)
 	int mw_group = -1, mw_until = -1; // v27_meanwhile: the live group cleared while the chosen one respawns, until when
 	int pw_since = -1, pw_off_until = -1, pw_bank_until = -1; // v27_watch
+	int pw_dash_round = -100; // g23_watchfix: the round of our last travel dash (not progress)
 	vec2 pw_anchor{ -1, -1 };
 	std::vector<int> pw_altar_ban;	// v27_watch: per altar, the round until which a stalled bank trip does not pick it again
 	std::array<float, 8> fut_hp{};	// v27: futile hits on an enemy champion (it heals on its spawn, or our burst estimate is wrong)

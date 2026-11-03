@@ -47,6 +47,7 @@ struct Group
 	// Dynamic memory
 	GroupState st = ST_ALIVE; // every group starts alive
 	int ready_round = 0;	  // first round it is alive again when respawning
+	int zero_since = -1;	  // g23_watchfix: first round we saw it respawning with its timer at 0 (blocked while a spawn tile is occupied)
 	int reward_round = -1000; // first round we saw it as a reward (reward_claim_gone 2)
 	int seen_round = -1;
 	std::vector<float> hp;	  // last seen health per camp

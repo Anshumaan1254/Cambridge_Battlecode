@@ -1440,7 +1440,7 @@ void Brain::turn()
 	q_line(dbg_path);
 #endif
 	if (P.v27_watch > 0)
-		progress_watch(last_act_round == round || cast_done || target_hit_round == round);
+		progress_watch(last_act_round == round || (cast_done && !(P.g23_watchfix && pw_dash_round == round)) || target_hit_round == round);
 	C.write_self(W.my_index, (task == T_FARM || task == T_CAPTURE || task == T_WAIT) ? task_group : -1);
 	last_hp = hp;
 }
@@ -1988,7 +1988,8 @@ void Brain::progress_watch(bool acted_now)
 	if (task == T_WAIT && task_group >= 0 && task_group < static_cast<int>(W.groups.size()))
 	{
 		const auto& g = W.groups[static_cast<std::size_t>(task_group)];
-		legit_wait = g.st == ST_RESPAWN && g.ready_round + 3 >= round && cheb(pos, g.center) <= g.radius + 3;
+		legit_wait = g.st == ST_RESPAWN && g.ready_round + 3 >= round && cheb(pos, g.center) <= g.radius + 3 &&
+			!(P.g23_watchfix && g.zero_since >= 0 && round - g.zero_since > 12); // g23_watchfix: a timer stuck at 0 (a blocked spawn) is no wait
 		legit_wait |= P.g23_tol && g23_role == G23_PRIME && g23_nprime > 0 && task_group == g23_prime[0].g && cheb(pos, g23_prime[0].rally) <= 2;
 	}
 	const bool progress = acted_now || gems != pw_gems || gold != pw_gold || hp > pw_hp + 0.02f * max_hp || W.ally_spawn.is_set(pos) ||
@@ -2458,6 +2459,8 @@ bool Brain::after_move(bool moved)
 		{
 			cd[static_cast<std::size_t>(kit.dash)] = c;
 			cast_done = true;
+			if (P.g23_watchfix)
+				pw_dash_round = round;
 		}
 	}
 	return true;
@@ -8032,7 +8035,7 @@ void Brain::farm()
 	case ST_REWARD: task = T_CAPTURE; IDL(); capture_group(g); break;
 	case ST_RESPAWN:
 		task = T_WAIT;
-		if (g.ready_round - round > 0)
+		if (g.ready_round - round > 0 || P.g23_watchfix) // g23_watchfix: at timer 0 wait next to the tiles (on them the respawn is blocked)
 		{
 			// Ring bodies wait outside the camps' reach: a respawned elk hits whoever stands on its tile's neighbours.
 			IDL();

@@ -1207,6 +1207,10 @@ struct Params
 								// retreat step; a retreat started under 40% health with an enemy spell ready is caught 41% of the time, at 40%+ without one 8%)
 	float g23_rescue_hp = 0.5f;	// rescue: our own health share needed
 	int g23_rescue_r = 4;		// rescue: the caught ally is within this many tiles of us
+	int g23_watchfix = 0;		// 1: base-code fixes from the ladder replays (map_fail/REPORT.md B2, B3): (a) a respawning group whose timer reads 0 is
+								// waited for next to its tiles, never farmed onto them (an occupied spawn tile keeps the timer at 0: 166 idle rounds on
+								// islands); a timer stuck at 0 for 12+ rounds is not a legit wait for the watchdog; (b) a travel dash is not progress
+								// for the watchdog (dash every 8 rounds < v27_watch 12: corridors loops of 40+ rounds)
 	float g23_dis_hp = 0.4f, g23_dis_spell_hp = 0.5f; // bit 256 disengage: leave a fight we cannot finish now below these health shares (the second one
 								// when an enemy within 4 has a dash / stun / damage spell ready) or when the burst that can land on us next turn >= our health
 	int g23_msg = 0;			// 1: priority = (turn class + 16) x 4096 + hp bucket x 256 + state x 64 + target x 4 + flags (bit 0 committed, bit 1

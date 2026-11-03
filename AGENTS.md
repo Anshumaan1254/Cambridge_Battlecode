@@ -101,8 +101,10 @@ running or unfinished, and what to do next, so a new agent can continue without 
 
 - Competition: Cambridge Battlecode 2026a (CAMBC), 12 Oct to 18 Nov 2026. C++ bot compiled to wasm; CLI `cambc` 4.0.0, platform engine 2.0.0.
   A submitted bot cannot change and keeps nothing between matches (learning is offline or in-match).
-- **Never `cambc submit` / `cambc submissions activate`: the user uploads and activates.** Read-only CLI use and unranked match groups
-  with the live bot are allowed (team quota about 50 groups per rolling hour). Deliver zips under `submissions/` and say so.
+- **Never `cambc submit` / `cambc submissions activate`: the user uploads and activates** — EXCEPT session 24 (Nov 2-3): the user asked
+  this agent to put candidates live itself, test them with paired groups and roll back (`experiments/ladder_nov2/ladder_loop.py`).
+  Read-only CLI use and unranked match groups with the live bot are allowed (team quota 50 groups per rolling hour). Deliver zips under
+  `submissions/` and say so.
 - Test panel (user, Oct 27): every candidate vs v75 (`bots/gpta75`), v17 (`bots/god17`) and the IC clone on `maps/s3` + held-out
   pools (`gen2`, `gold3`, `var17`); then the user's upload and paired ladder groups decide (`tools/paired_groups.py`).
 - No per-map tables or fixed drafts: decisions come from map features computed at runtime.

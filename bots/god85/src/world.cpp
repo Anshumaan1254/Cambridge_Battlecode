@@ -662,6 +662,13 @@ void World::perceive(vec2 me)
 				g.st = ST_RESPAWN;
 				g.ready_round = round + timer;
 				g.awake = false;
+				if (P.g23_watchfix)
+				{
+					if (timer > 0)
+						g.zero_since = -1;
+					else if (g.zero_since < 0)
+						g.zero_since = round;
+				}
 			}
 		}
 		else

@@ -63,8 +63,8 @@ def wait_live(v, timeout=300):
             a, s = live_selected()
         except Exception as e:  # noqa: BLE001
             print('  list failed:', e, flush=True)
-            a = None
-        if a == v:
+            a = s = None
+        if a == v and s == v:  # unranked groups play the SELECTED version (Nov 3: v98 active but v94 selected -> v94's games)
             return time.time() - t0
         time.sleep(5)
     return None

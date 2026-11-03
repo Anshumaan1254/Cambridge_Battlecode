@@ -1317,7 +1317,10 @@ struct Params
 	int g24_mf_r = 3;
 	int g24_mf_wait = 3;
 	int g24_mf_altar = 12;
-	// ---- g24 C5 execution (X1-X3) ----
+	// ===== GOD v25: switches ported onto v94 (cap rank, wave 2); 0 = v94 =====
+	int g24_cap_rank = 0;		// 1 (confusion S2): on a gold tie in group_score's capture order (mi_capture) the carry takes the reward: Marcella >
+								// Vesper Vale > the rest > Heart of Ruin, when the higher-ranked ally claiming it is at most g24_cap_rank_d steps farther
+	int g24_cap_rank_d = 2;
 	int g24_pace = 0;			// bits (confusion/REPORT.txt S1, flee / farm pacing near enemies): 1 side ban: while the v27_avoid memory runs (round <
 								// av_until) group_score gives up a group within g24_pace_r of an enemy we fled from that is nearer to it than our tile
 								// at the flee was, minus 1 (we would walk through them); not our task group under g23_keep_farm, not a group on our half
@@ -1342,6 +1345,7 @@ struct Params
 								// 8-connected cluster holds no visible enemy, among the neighbours that keep or open the distance to the nearest
 								// enemy and do not lengthen the way home (dist_home <= now), never next to an awake camp's reach; 2 also a 2-step
 								// path into such a bush (first step taken) when hp >= 40% and no enemy within 2
+	// ---- g24 C5 execution (X1-X3) ----
 	// ===== end of GOD v24 switches =====
 };
 

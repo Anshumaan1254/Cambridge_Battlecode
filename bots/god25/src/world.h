@@ -165,7 +165,7 @@ struct World
 	float mono_share = 0;		 // share of the map's gem rate (gems / respawn) held by lone monoliths
 	float mono_rate_total = 0, mono_rate_lone = 0;
 	std::vector<int> mono_groups; // the lone monoliths we can reach
-	// P.g24_bush_flee: 8-connected bush cluster id per tile (row-major, -1 = no bush; init_static, only with the switch on)
+	// g24_bush_flee: 8-connected bush cluster id per tile (row-major, -1 = no bush; empty on a map without bushes; init_static)
 	std::vector<short> bush_cl;
 	int bush_cluster(vec2 p) const
 	{

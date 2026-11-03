@@ -1,4 +1,4 @@
-// GOD v24 (docs/plans/god24_plan.md): fight fixes F1-F5 and economy fixes E1-E3. Every g24_* switch at 0 plays v88's games.
+// GOD v24 (docs/plans/god24_plan.md): fight fixes F1-F5 and economy fixes E1-E3, always on since GOD v25 (the g24_* parameters are values).
 // The hooks sit in brain.cpp (combat(), group_score(), capture_group(), bank_min()) and g23.cpp (g23_veto()); the helpers are here.
 
 #include "brain.h"
@@ -26,7 +26,7 @@ int hit_reach(const Enemy& e)
 bool Brain::g24_dash_out(const std::vector<Enemy*>& E)
 {
 	auto& W = world();
-	if (!(P.g24_flee_dash & 1) || kit.dash < 0 || !ready(kit.dash) || W.ally_spawn.is_set(pos))
+	if (kit.dash < 0 || !ready(kit.dash) || W.ally_spawn.is_set(pos))
 		return false;
 	bool chased = false;
 	for (auto* e : E)
@@ -91,19 +91,18 @@ bool Brain::g24_dash_out(const std::vector<Enemy*>& E)
 // ---------------------------------------------------------------------------------------------- E1 hold a contested big group
 
 // E1 g24_hold: the isolated pre-emptive flee (combat(): no ally within 5 and adv < isolated_flee_adv 1.5) does not fire while we work a big
-// group (>= g24_hold_gems, or with g24_hold_own on our half) that we stand within attack range + 2 of, at adv >= g24_hold_r and health >=
+// group (>= g24_hold_gems) that we stand within attack range + 2 of, at adv >= g24_hold_r and health >=
 // g24_hold_hp. Ladder: at a 1 v 1 contact on a contested big respawn at hp >= 0.8 we left 35% (top 30: 18%) and took 27% of those cycles
 // (top 30: 50%). The outmatched, cornered, burst and real-fight rules are untouched: a blanket "flee less" (_fight1) lost 101.
 bool Brain::g24_hold_ok(float adv) const
 {
 	auto& W = world();
-	if (!P.g24_hold || task_group < 0 || task_group >= static_cast<int>(W.groups.size()) || adv < P.g24_hold_r || hp < P.g24_hold_hp * max_hp)
+	if (task_group < 0 || task_group >= static_cast<int>(W.groups.size()) || adv < P.g24_hold_r || hp < P.g24_hold_hp * max_hp)
 		return false;
 	const auto& g = W.groups[static_cast<std::size_t>(task_group)];
 	if (g.st != ST_ALIVE && g.st != ST_REWARD)
 		return false;
-	const bool own_half = W.dist_home(g.center) < BIG && W.dist_away(g.center) < BIG && W.dist_home(g.center) <= W.dist_away(g.center);
-	if (g.gems < P.g24_hold_gems && !(P.g24_hold_own && own_half))
+	if (g.gems < P.g24_hold_gems)
 		return false;
 	int d = BIG;
 	for (std::size_t i = 0; i < g.camps.size(); ++i)
@@ -138,7 +137,7 @@ bool Brain::g24_scarce_map() const
 int Brain::g24_marc_for(const Group& g) const
 {
 	auto& W = world();
-	if (!(P.g24_marc_funnel & 1) || g.st != ST_REWARD || (g.gems < 10 && g.gold < 60))
+	if (g.st != ST_REWARD || (g.gems < 10 && g.gold < 60))
 		return -1;
 	for (const auto& e : W.enemies)
 		if (e.alive && e.visible && cheb(e.pos, g.center) <= g.radius + 4)

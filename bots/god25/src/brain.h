@@ -403,7 +403,6 @@ private:
 	std::array<vec2, 16> osc_pos{};	 // v14 fz_osc: our tile at the end of each of the last 16 rounds
 	std::array<int, 16> osc_quiet{ -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100 }; // ... and the round, when it was a quiet walking round
 	void osc_guard();
-	int left_group = -1, left_round = -1000; // target we last switched away from (flip guard)
 	// no_split: positions at the end of the last turn (ours and the allies we saw)
 	void remember_positions();
 	vec2 my_prev_pos{ -1, -1 };
@@ -488,7 +487,7 @@ private:
 	std::vector<vec2> v23_rally, v23_wtile;				 // per prime group: the rally tile and the ward tile
 	int v23_role = 0, v23_role_k = -1, v23_ready = BIG, v23_deadline = -1, v23_last_eta = 0, v23_clock_w = -1;
 	// ---- GOD v23 (g23.cpp; the method: GOD_V23_METHOD.md). Fight engine (P.g23_fight), messages (P.g23_msg), farming through contact
-	// (P.g23_farm), team objective layer (P.g23_tol), wards by role (P.g23_ward), banking rules (P.g23_bank).
+	// (always on since GOD v25), team objective layer (P.g23_tol), wards by role (P.g23_ward), banking rules (P.g23_bank).
 public:
 	enum G23State : int { G23_NONE = 0, G23_AVOID = 1, G23_LEAVE = 2, G23_FIGHT = 3, G23_KILL = 4 };
 	enum G23Role : int { G23_FARM = 0, G23_PRIME = 1 };
@@ -563,10 +562,10 @@ private:
 	int g24_marc_for(const Group& g) const;		  // E3: our Marcella's index when this reward should go to her, else -1
 	bool g24_hold_for_marc(Group& g);				  // E3: wait beside a reward for her; step aside when she is on it
 	// GOD v25 (wave 2: g24_pace, g24_bank_hold, g24_flip_mem, g24_bush_flee)
-	vec2 g24_av_me{ -1, -1 };				 // g24_pace 1: our tile when avoid_note() last stored enemies
-	bool g24_side_ban(const Group& g) const; // g24_pace 1: the enemy we fled from stands between us and g
-	int g24_pw_er = -1000;					 // g24_pace 4: last round a visible enemy was within 12
-	std::array<vec2, 16> g24_pw_pos{};		 // g24_pace 4: our tile at the end of each recent round, and that round
+	vec2 g24_av_me{ -1, -1 };				 // g24_pace: our tile when avoid_note() last stored enemies
+	bool g24_side_ban(const Group& g) const; // g24_pace: the enemy we fled from stands between us and g
+	int g24_pw_er = -1000;					 // g24_pace: last round a visible enemy was within 12
+	std::array<vec2, 16> g24_pw_pos{};		 // g24_pace: our tile at the end of each recent round, and that round
 	std::array<int, 16> g24_pw_posr{ -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100 };
 	int g24_bh_last = -1000, g24_bh_wait_until = -1000; // g24_bank_hold: start of the last hold episode, end of the wait
 	bool g24_bh_held = false, g24_bh_prev = false;		// ... a hold branch ended this / the previous tribute() call (one episode while it repeats)

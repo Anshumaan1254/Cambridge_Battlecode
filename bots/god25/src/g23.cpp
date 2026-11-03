@@ -1,5 +1,5 @@
 // GOD v23 (the method: GOD_V23_METHOD.md). Fight engine (P.g23_fight), priority messages (P.g23_msg), farming through contact
-// (P.g23_farm / g23_stage), team objective layer (P.g23_tol), the warden's ward (P.g23_ward). Everything here sits behind its switch;
+// (always on since GOD v25) and g23_stage, team objective layer (P.g23_tol), the warden's ward (P.g23_ward). Everything here sits behind its switch;
 // the hooks in brain.cpp are a few lines each.
 #include "brain.h"
 #include "nav.h"
@@ -453,7 +453,7 @@ bool Brain::g23_veto(std::vector<Enemy*>& E, Enemy*& tgt, bool fight, bool killa
 			if (n_en > n_us)
 				continue;
 			// F2 g24_rescue_pw: bodies are not power (a fed carry counts as one): our health x damage at the ally against theirs
-			if (P.g24_rescue_pw && g23_ratio(a.pos, E, nullptr, nullptr, nullptr) < P.g23_r_join)
+			if (g23_ratio(a.pos, E, nullptr, nullptr, nullptr) < P.g23_r_join)
 				continue;
 			// the enemy on it that we can reach soonest, lowest health first
 			for (auto* e : E)
@@ -468,7 +468,7 @@ bool Brain::g23_veto(std::vector<Enemy*>& E, Enemy*& tgt, bool fight, bool killa
 		if (best_t)
 			fight = true, rescued = true, tgt = best_t;
 	}
-	if (P.g24_lure && fight && !killable)
+	if (fight && !killable)
 	{
 		// F4 g24_lure: a target inside an awake camp's reach while we stand outside it is a lure, rescues included (deaths to camps the enemy
 		// woke 0.96 a game vs 0.20; 73% walked in); the veto holds 3 rounds on that target

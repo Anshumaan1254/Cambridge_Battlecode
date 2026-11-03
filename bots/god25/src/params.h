@@ -936,11 +936,10 @@ struct Params
 							  // one step in, one step back: v14's traced games, 2,000 such back-and-forth body-rounds in 80 games)
 	int fz_wardblock = 0;	  // 1: the wards we see (ours and theirs) count as blocked tiles in the step searches (v13: 646 of 1,171 blocked
 							  // moves were into a ward tile, most of them the other team's)
-	int fz_osc = 0;			  // > 0: walking back and forth: over the last fz_osc rounds (a walking task, no attack or cast, no enemy within 5,
-							  // off spawn) at least 60% of them moved and we end within 1 tile of where we were: drop the target (blacklisted
-							  // fz_osc_bl rounds) or the bank / home trip, and re-plan (v13: 32.6 such walks per 1000 alive body-rounds, the
-							  // ladder teams 11-15; 23% of target switches went back to the target left within 20 rounds)
-	int fz_osc_bl = 20;
+	int fz_osc_bl = 20;		  // osc_guard (always on since GOD v25, window g24_pace_win): walking back and forth with no hit taken for 3 rounds, no
+							  // attack or cast, off spawn: at least 60% of the rounds moved and we end within 1 tile of where we were: drop the
+							  // target (blacklisted this many rounds) or the bank / home trip, and re-plan (v13: 32.6 such walks per 1000 alive
+							  // body-rounds, the ladder teams 11-15; 23% of target switches went back to the target left within 20 rounds)
 	int mono_v14 = 0;		  // 1 (with mono_team): monolith groups whose other camps are harmless are team targets too, judged with their own
 							  // limits (mono_clear_max, mono_absorb: bodies rotate in front and heal between turns). The 600 ladder replays'
 							  // teams kill 1.44 monoliths a game on monolith maps (first kill r530-900); v13 dropped every one as too heavy
@@ -1115,7 +1114,9 @@ struct Params
 	int v24_ci_escort = 0;		// 1: Cassi & Issac prefer groups within v24_ci_escort_r of a non-pair ally (+v24_ci_escort_w rounds per tile beyond)
 	int v24_ci_escort_r = 8;
 	float v24_ci_escort_w = 2.f;
-	int v24_build = 0;			// bits: v24_build_list for 1 Vendetta, 2 Vesper Vale, 4 Marcella, 8 Ryth, 16 Heart of Ruin (Treasure first, front-line health); 31 all; +32: Vendetta's balanced order
+	int v24_build = 0;			// bits: v24_build_list for 1 Vendetta, 2 Vesper Vale, 8 Ryth, 16 Heart of Ruin (Treasure first, front-line health); +32: Vendetta's
+								// balanced order. Marcella always takes hers (GOD v25: Treasure-focus x5, Jungle-focus x5, Bruiser-health x5, then
+								// Bruiser-focus / Bruiser-health)
 	int v25_cap_safe = 0;		// 1: capture from a tile of the dead group that no awake camp reaches (step there when a camp hits us on the reward)
 	int v25_heal_latch = 0;		// 1: after a retreat forced by camp damage, go home (recall when safe) until health >= v25_heal_hp, no stepping back in
 	float v25_heal_hp = 0.6f;
@@ -1237,10 +1238,9 @@ struct Params
 								// when an enemy within 4 has a dash / stun / damage spell ready) or when the burst that can land on us next turn >= our health
 	int g23_msg = 0;			// 1: priority = (turn class + 16) x 4096 + hp bucket x 256 + state x 64 + target x 4 + flags (bit 0 committed, bit 1
 								// capturing); allies read it with query_priority: the second wave and R count committed allies
-	int g23_farm = 0;			// 1: farming through contact: with the engine in AVOID (nobody can hit us next turn) at R >= g23_keep_r the current group
-								// keeps its score (no threat veto, no enemy-near surcharge); damage spells still go on camps near enemies (stuns kept)
-	float g23_keep_r = 0.8f;
-	int g23_stage = 0;			// 1 (with g23_farm): a body heading to a group that an ally also claims waits at staging distance until the ally is
+	float g23_keep_r = 0.8f;	// farming through contact (always on since GOD v25): with the engine in AVOID (nobody can hit us next turn) at R >= this the
+								// current group keeps its score (no threat veto, no enemy-near surcharge); damage spells go on camps near enemies (stuns kept)
+	int g23_stage = 0;			// 1: a body heading to a group that an ally also claims waits at staging distance until the ally is
 								// within 2 rounds, unless the group is harmless or it clears it alone within g23_stage_solo rounds; at most g23_stage_max rounds
 	int g23_stage_solo = 12;
 	int g23_stage_max = 8;
@@ -1283,70 +1283,52 @@ struct Params
 	int g23_draft = 0;			// 1: the roster rule in the draft (4.1): 5: Vesper Vale, Vendetta, Heart of Ruin, Tavi, Marcella; 4: ... Cassi & Issac
 								// (Marcella on maps with < 8 gem groups); 3: the first three; Prism for Tavi on a single-objective map, Ryth for Heart of
 								// Ruin on a lone-monolith map; counter-picks promote Marcella / Heart of Ruin
-	// ===== GOD v24 switches (docs/plans/god24_plan.md); every one 0 = v88 =====
+	// ===== GOD v24 fixes (docs/plans/god24_plan.md), always on since GOD v25; the values below =====
 	// ---- g24 C1 fights (F1-F5) ----
-	int g24_flee_dash = 3;		// F1 bits: 1 a flee with a chaser that still hits us after a walk step dashes first (HoR never did: 12% vs top 70%);
-								// 2 combat()'s can_escape counts our dash only with bit 1 or a dash that is not a fight spell
-	int g24_rescue_pw = 1;		// F2: 1 = the rescue of a caught ally also needs g23_ratio at the ally >= g23_r_join (bodies are not power)
-	float g24_abandon_r = 0.f;	// F2: > 0: group_score drops a group whose threat odds are below this (x0.5 big) unless it is our task group and
-								// g23_keep_farm (v88 keeps walking to groups stronger enemies hold between odds 0.3 and 0.67)
-	int g24_fresh = 0;			// F3: > 0: for this many rounds after our respawn a fight that is not a kill and not in reach needs adv >= g24_fresh_adv
+	// F1 g24_flee_dash: a flee with a chaser that still hits us after a walk step dashes first (HoR never did: 12% vs top 70%); combat()'s
+	// can_escape counts every ready dash
+	// F2 rescue power: the rescue of a caught ally also needs g23_ratio at the ally >= g23_r_join (bodies are not power)
+	float g24_abandon_r = 0.67f;	// F2: group_score drops a group whose threat odds are below this (x0.5 big) unless it is our task group and
+								// g23_keep_farm (v88 kept walking to groups stronger enemies hold between odds 0.3 and 0.67)
+	int g24_fresh = 40;			// F3: for this many rounds after our respawn a fight that is not a kill and not in reach needs adv >= g24_fresh_adv
 	float g24_fresh_adv = 1.5f; // (deaths within 40 rounds of a respawn v88 1.49 a game vs opponents 0.31)
-	int g24_lure = 0;			// F4: 1 = the lure veto (target inside an awake camp's reach, we outside) for every non-killable fight, rescues too,
-								// held 3 rounds on that target (deaths to enemy-woken camps 0.96 a game vs 0.20)
-	int g24_hit_is_fight = 0;	// F5: 1 = being hit last round counts as being in a fight for fz_engage's hold when adv >= fight_back_margin and the
-								// target is within my reach + 1 (answered within 1 round 48% vs 59%)
+	// F4 g24_lure: the lure veto (target inside an awake camp's reach, we outside) for every non-killable fight, rescues too, held 3 rounds on
+	// that target (deaths to enemy-woken camps 0.96 a game vs 0.20)
+	// F5 g24_hit_is_fight: being hit last round counts as being in a fight for fz_engage's hold when adv >= fight_back_margin and the target is
+	// within my reach + 1 (answered within 1 round 48% vs 59%)
 	// ---- g24 C2 economy (E1, E2) ----
-	int g24_hold = 0;			// E1: 1 = no isolated pre-emptive flee from our big task group (>= g24_hold_gems, or our half with g24_hold_own)
-	int g24_hold_gems = 30;		// within attack range + 2 at adv >= g24_hold_r and hp >= g24_hold_hp; pair with g23_farm 1
-	float g24_hold_r = 0.8f;
+	int g24_hold_gems = 30;		// E1 g24_hold: no isolated pre-emptive flee from our task group of >= this many gems within attack range + 2 at
+	float g24_hold_r = 0.8f;	// adv >= g24_hold_r and hp >= g24_hold_hp x max
 	float g24_hold_hp = 0.5f;
-	int g24_hold_own = 0;
-	int g24_join = 0;			// E2: 1 = before g24_join_until a group of >= g24_join_gems that one body clears in > g24_join_min rounds takes joiners
-	int g24_join_gems = 30;		// (harmless included), reach g24_join_reach x, credited g24_join_share
-	int g24_join_until = 300;
+	int g24_join_gems = 30;		// E2 g24_join: before g24_join_until a group of >= g24_join_gems that one body clears in > g24_join_min rounds takes
+	int g24_join_until = 300;	// joiners (harmless included), reach g24_join_reach x, credited g24_join_share
 	int g24_join_min = 6;
 	float g24_join_reach = 2.f;
 	float g24_join_share = 0.9f;
-	int g24_scarce = 0;			// E2: 1 = on a scarce map (group gems per champion <= g24_scarce_gpc) a group of >= 12 gems takes one joiner all game
-	int g24_scarce_gpc = 92;
-	// ---- g24 C3 Marcella funnel (E3, N1-N3) ----
-	int g24_marc_funnel = 1;	// E3 bits: 1 = a reward (gems >= 10 or gold >= 60) yields to our Marcella within g24_mf_r steps (her value gold + 2 x gems),
-								// the holder waits for her at most g24_mf_wait rounds, never with an enemy within 4; she banks from max(20, tribute_min / 2)
-								// gems with a field altar within g24_mf_altar steps; 4 = that bank rule alone (no hand-off)
-	int g24_mf_r = 3;
-	int g24_mf_wait = 3;
-	int g24_mf_altar = 12;
-	// ===== GOD v25: switches ported onto v94 (cap rank, wave 2); 0 = v94 =====
-	int g24_cap_rank = 0;		// 1 (confusion S2): on a gold tie in group_score's capture order (mi_capture) the carry takes the reward: Marcella >
-								// Vesper Vale > the rest > Heart of Ruin, when the higher-ranked ally claiming it is at most g24_cap_rank_d steps farther
-	int g24_cap_rank_d = 2;
-	int g24_pace = 0;			// bits (confusion/REPORT.txt S1, flee / farm pacing near enemies): 1 side ban: while the v27_avoid memory runs (round <
-								// av_until) group_score gives up a group within g24_pace_r of an enemy we fled from that is nearer to it than our tile
-								// at the flee was, minus 1 (we would walk through them); not our task group under g23_keep_farm, not a group on our half
-								// where tadv >= 1; 2 osc_guard() also runs with fz_osc 0, over g24_pace_win rounds, and a T_FLEE turn counts as quiet
-								// (enemy_near_d > 5 dropped: no hit taken for 3 rounds, no attack / cast); a catch blacklists the task group fz_osc_bl
-								// rounds and holds the avoid memory fz_osc_bl rounds; 4 progress_watch(): healing is no progress while an enemy was
-								// within 12 in the last 3 rounds, and a move > 3 from the anchor is no progress when it comes back within 1 of a tile
-								// of the last 2..12 rounds (a there-and-back)
-	int g24_pace_r = 9;			// = outmatch_flee_dist + 1
-	int g24_pace_win = 12;
-	int g24_bank_hold = 0;		// 1 (confusion S3): a carrier of >= g24_bank_hold_bag gems that wants to bank and is held by altar_unsafe /
-								// bag_needs_escort for the 2nd hold episode within g24_bank_hold_win rounds recalls to the spawn altar (safe_to_recall,
-								// dist_home > recall_min_dist), else waits on its tile (T_WAIT, no farm walk) until the hold clears or
-								// g24_bank_hold_wait rounds pass
-	int g24_bank_hold_bag = 30;
-	int g24_bank_hold_win = 20;
-	int g24_bank_hold_wait = 12;
-	int g24_flip_mem = 0;		// 1 (confusion S4): farm()'s flip guard remembers the last 3 targets left (a return within g24_flip_mem_win rounds
-								// needs flip_margin x); group_score's +12 enemy surcharge fades (12 - rounds since the sighting) instead of ending
-	int g24_flip_mem_win = 20;
-	int g24_bush_flee = 0;		// bits (bush_emblem/REPORT.txt S2): 1 go_home_step(avoid) with a visible enemy within 5 steps into a bush whose
-								// 8-connected cluster holds no visible enemy, among the neighbours that keep or open the distance to the nearest
-								// enemy and do not lengthen the way home (dist_home <= now), never next to an awake camp's reach; 2 also a 2-step
-								// path into such a bush (first step taken) when hp >= 40% and no enemy within 2
-	// ---- g24 C5 execution (X1-X3) ----
-	// ===== end of GOD v24 switches =====
+	int g24_scarce_gpc = 92;	// E2 g24_scarce: on a scarce map (group gems per champion <= this) a group of >= 12 gems takes one joiner all game
+	// ---- g24 C3 Marcella funnel (E3) ----
+	int g24_mf_r = 3;			// a reward (gems >= 10 or gold >= 60) yields to our Marcella within g24_mf_r steps (her value gold + 2 x gems), the
+	int g24_mf_wait = 3;		// holder waits for her at most g24_mf_wait rounds, never with an enemy within 4; she banks from max(20, tribute_min / 2)
+	int g24_mf_altar = 12;		// gems with a field altar within g24_mf_altar steps
+	// ===== GOD v25: rules ported onto v94 (cap rank, wave 2), always on; the values below =====
+	int g24_cap_rank_d = 2;		// confusion S2: on a gold tie in group_score's capture order (mi_capture) the carry takes the reward: Marcella > Vesper
+								// Vale > the rest > Heart of Ruin, when the higher-ranked ally claiming it is at most this many steps farther
+	int g24_pace_r = 9;			// confusion S1 g24_pace: side ban: while the v27_avoid memory runs group_score gives up a group within g24_pace_r
+								// (= outmatch_flee_dist + 1) of an enemy we fled from that is nearer to it than our tile at the flee was, minus 1;
+								// not our task group under g23_keep_farm, not a group on our half where tadv >= 1
+	int g24_pace_win = 12;		// osc_guard over this many rounds, a T_FLEE turn is a walking turn and quiet = no hit taken for 3 rounds; a catch
+								// blacklists the task group and holds the avoid memory fz_osc_bl rounds; progress_watch(): healing is no progress
+								// while an enemy was within 12 in the last 3 rounds, nor a move > 3 off the anchor that comes back within 1 of a tile
+								// of the last 2..12 rounds
+	int g24_bank_hold_bag = 30;	// confusion S3 g24_bank_hold: a carrier of >= this many gems that wants to bank and is held by altar_unsafe /
+	int g24_bank_hold_win = 20;	// bag_needs_escort for the 2nd hold episode within g24_bank_hold_win rounds recalls to the spawn altar (safe_to_recall,
+	int g24_bank_hold_wait = 12; // dist_home > recall_min_dist), else waits on its tile (T_WAIT) until the hold clears or g24_bank_hold_wait rounds pass
+	int g24_flip_mem_win = 20;	// confusion S4 g24_flip_mem: farm()'s flip guard remembers the last 3 targets left (a return within this many rounds
+								// needs flip_margin x); group_score's +12 enemy surcharge fades (12 - rounds since the sighting)
+	// g24_bush_flee (bush_emblem S2): go_home_step(avoid) with a visible enemy within 5 steps into a bush whose 8-connected cluster holds no
+	// visible enemy, among the neighbours that keep or open the distance to the nearest enemy and do not lengthen the way home, never next to
+	// an awake camp's reach
+	// ===== end of GOD v24 / v25 =====
 };
 
 #ifdef LEGEND_RUNTIME_PARAMS

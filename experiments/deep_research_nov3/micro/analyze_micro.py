@@ -116,7 +116,7 @@ for ds in ('top', 'our'):
     for d in rows(ds, 'deaths'):
         t = d['t']
         for lab in labs(d['mid'], t):
-            per[(lab, d['mid'], 'd')]['n'] += 1
+            per[(lab, d['mid'], t)]['n'] += 1
             a = A[lab]
             if d['cause'] == 'camp':
                 ctx = 'camp'
@@ -130,26 +130,26 @@ for ds in ('top', 'our'):
                 ctx = 'caught'
             else:
                 ctx = 'fight'
-            per[(lab, d['mid'], 'd')][ctx] += 1
-            per[(lab, d['mid'], 'd')]['carry'] += d['bag'] >= 10
-            per[(lab, d['mid'], 'd')]['bag'] += d['bag']
+            per[(lab, d['mid'], t)][ctx] += 1
+            per[(lab, d['mid'], t)]['carry'] += d['bag'] >= 10
+            per[(lab, d['mid'], t)]['bag'] += d['bag']
             a.rate('d_stunned3', d.get('stunned3', False))
             a.rate('d_hitback', d.get('hit_back', False))
             a.rate('d_enemyhalf', d.get('enemy_half', False))
             a.rate('d_farming', d.get('farming', False))
             a.rate('d_marc', d.get('marcella_pattern', False))
             if d['champ'] == 'HeartOfRuin':
-                per[(lab, d['mid'], 'd')]['hor'] += 1
+                per[(lab, d['mid'], t)]['hor'] += 1
         if d['killer'] != 'camp':
             for lab in labs(d['mid'], 1 - t):
-                per[(lab, d['mid'], 'd')]['kill'] += 1
-                per[(lab, d['mid'], 'd')]['kill_bag'] += d['bag']
+                per[(lab, d['mid'], 1 - t)]['kill'] += 1
+                per[(lab, d['mid'], 1 - t)]['kill_bag'] += d['bag']
     # every side gets a row even with no deaths
     for (mid, t), ls in SIDE.items():
         if SIDE_DS[(mid, t)] != ds:
             continue
         for lab in ls:
-            c = per.get((lab, mid, 'd'), Counter())
+            c = per.get((lab, mid, t), Counter())
             a = A[lab]
             for k in ('n', 'camp', 'enemy_camp', 'respawn', 'walkin', 'caught', 'fight', 'carry', 'bag', 'kill', 'kill_bag', 'hor'):
                 a.val('g_' + k, c[k])

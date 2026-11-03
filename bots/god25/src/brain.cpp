@@ -795,7 +795,8 @@ void Brain::init()
 		g18_adjust_build();
 	if (P.v23_build)
 		build = v23_build_list(); // GOD v23 4.7: builds by kit (replaces every list above)
-	if (P.v24_build && (P.v24_build & (type == CT::vendetta ? 1 : type == CT::vesper_vale ? 2 : type == CT::marcella ? 4 : type == CT::ryth ? 8 : type == CT_HOR ? 16 : 0)))
+	// GOD v25: Marcella always takes her v24 focus list; the others by their v24_build bit
+	if (type == CT::marcella || (P.v24_build & (type == CT::vendetta ? 1 : type == CT::vesper_vale ? 2 : type == CT::ryth ? 8 : type == CT_HOR ? 16 : 0)))
 	{
 		auto b = v24_build_list(type);
 		if (!b.empty())
@@ -1366,8 +1367,7 @@ void Brain::turn()
 	update_priority();
 	if (P.unstick_rounds > 0)
 		unstick();
-	if (P.fz_osc > 0 || (P.g24_pace & 2))
-		osc_guard();
+	osc_guard();
 	if (P.stall_guard > 0 && W.dash_off_until == round) // hole crossings are back: the plain-walls fields are stale
 		nav().reset_fields();
 	FSP("unstick");
@@ -1946,19 +1946,18 @@ void Brain::osc_guard()
 {
 	// v14 fz_osc: a body walking back and forth with nothing to show for it (target flips, a detour that keeps turning, an approach that
 	// gives way and comes back) re-plans with that target out of the way.
+	// GOD v25 g24_pace (confusion S1): the flee / farm pacing near enemies is a T_FLEE turn then walking turns back in; a flee turn counts
+	// as a walking turn, and a turn is quiet with no hit taken for 3 rounds and no attack / cast (an enemy near no longer breaks the window)
 	auto& W = world();
-	// g24_pace 2 (confusion S1): the flee / farm pacing near enemies is a T_FLEE turn then walking turns back in; a flee turn with no hit
-	// taken for 3 rounds and no attack / cast is quiet, and an enemy within 5 no longer breaks the window (a hit does)
-	const bool pace = (P.g24_pace & 2) != 0;
-	const bool walking = task == T_FARM || task == T_CAPTURE || task == T_WAIT || task == T_TRIBUTE || task == T_HOME || (pace && task == T_FLEE);
-	const bool quiet = walking && last_act_round < round && !cast_done && (pace ? round - last_hit_round > 3 : enemy_near_d > 5) && !W.ally_spawn.is_set(pos) &&
+	const bool walking = task == T_FARM || task == T_CAPTURE || task == T_WAIT || task == T_TRIBUTE || task == T_HOME || task == T_FLEE;
+	const bool quiet = walking && last_act_round < round && !cast_done && round - last_hit_round > 3 && !W.ally_spawn.is_set(pos) &&
 		!flag(state, bc::champion_state::recalling) && !flag(state, bc::champion_state::submitting_gems) && !flag(state, bc::champion_state::teleporting);
 	const std::size_t i = static_cast<std::size_t>(round & 15);
 	osc_pos[i] = pos;
 	osc_quiet[i] = quiet ? round : -100;
 	if (!quiet)
 		return;
-	const int n = std::min(15, pace ? P.g24_pace_win : P.fz_osc);
+	const int n = std::min(15, P.g24_pace_win);
 	int moves = 0;
 	for (int k = 1; k < n; ++k)
 	{
@@ -1976,24 +1975,21 @@ void Brain::osc_guard()
 	debug_block({ std::printf("QBL r=%d i=%d why=osc task=%d g=%d\n", round, W.my_index, task, task_group); });
 #endif
 #ifdef G24_TRACE
-	if (pace)
-	{
-		int ne = 0;
-		for (const auto& e : W.enemies)
-			ne += e.alive && e.visible && cheb(e.pos, pos) <= 12;
-		std::printf("G24 pace_osc body=%d r=%d task=%d g=%d moves=%d n=%d pos=(%d,%d) ne12=%d\n", W.my_index, round, task, task_group, moves, n, pos.x, pos.y, ne);
-	}
+	int ne = 0;
+	for (const auto& e : W.enemies)
+		ne += e.alive && e.visible && cheb(e.pos, pos) <= 12;
+	std::printf("G24 pace_osc body=%d r=%d task=%d g=%d moves=%d n=%d pos=(%d,%d) ne12=%d\n", W.my_index, round, task, task_group, moves, n, pos.x, pos.y, ne);
 #endif
-	if ((task == T_FARM || task == T_CAPTURE || task == T_WAIT || (pace && task == T_FLEE)) && task_group >= 0 && task_group < static_cast<int>(W.groups.size()))
+	if ((task == T_FARM || task == T_CAPTURE || task == T_WAIT || task == T_FLEE) && task_group >= 0 && task_group < static_cast<int>(W.groups.size()))
 	{
 		blacklist[static_cast<std::size_t>(task_group)] = round + P.fz_osc_bl;
 		task_group = -1;
 	}
 	else if (task == T_TRIBUTE)
 		tribute_cancel_round = round; // no new bank trip for two rounds: farm() re-plans first
-	if (pace && P.v27_avoid > 0)
+	if (P.v27_avoid > 0)
 	{
-		// g24_pace 2: hold the avoid memory (v27_avoid, and the side ban with bit 1) for fz_osc_bl rounds: the enemies in sight now, else
+		// g24_pace: hold the avoid memory (v27_avoid and the side ban) for fz_osc_bl rounds: the enemies in sight now, else
 		// the ones still remembered (a stale list is not revived)
 		std::vector<Enemy*> E;
 		for (auto& e : W.enemies)
@@ -2024,36 +2020,30 @@ void Brain::progress_watch(bool acted_now)
 			!(P.g23_watchfix && g.zero_since >= 0 && round - g.zero_since > 12); // g23_watchfix: a timer stuck at 0 (a blocked spawn) is no wait
 		legit_wait |= P.g23_tol && g23_role == G23_PRIME && g23_nprime > 0 && task_group == g23_prime[0].g && cheb(pos, g23_prime[0].rally) <= 2;
 	}
-	if (P.g24_bank_hold && task == T_WAIT && task_group < 0 && round < g24_bh_wait_until)
+	if (task == T_WAIT && task_group < 0 && round < g24_bh_wait_until)
 		legit_wait = true; // g24_bank_hold: a carrier holding its tile while the altar hold lasts (the wait ends by itself)
-	bool progress;
-	if (P.g24_pace & 4)
+	// GOD v25 g24_pace (confusion S1c): out-of-combat regen next to enemies and a there-and-back walk restarted the clock (40-50-round
+	// pacing): healing is no progress while an enemy was within 12 in the last 3 rounds, nor a move off the anchor that comes back within 1
+	// of where we stood 2..12 rounds ago
+	for (const auto& e : W.enemies)
+		if (e.alive && e.visible && cheb(e.pos, pos) <= 12)
+			g24_pw_er = round;
+	const bool other = acted_now || gems != pw_gems || gold != pw_gold || W.ally_spawn.is_set(pos) || legit_wait || pw_since < 0;
+	const bool healed = hp > pw_hp + 0.02f * max_hp && round - g24_pw_er >= 3;
+	bool moved_off = cheb(pos, pw_anchor) > 3;
+	for (int k = 2; k <= 12 && moved_off; ++k)
 	{
-		// g24_pace 4 (confusion S1c): out-of-combat regen next to enemies and a there-and-back walk restarted the clock (40-50-round pacing)
-		for (const auto& e : W.enemies)
-			if (e.alive && e.visible && cheb(e.pos, pos) <= 12)
-				g24_pw_er = round;
-		const bool other = acted_now || gems != pw_gems || gold != pw_gold || W.ally_spawn.is_set(pos) || legit_wait || pw_since < 0;
-		const bool healed = hp > pw_hp + 0.02f * max_hp && round - g24_pw_er >= 3;
-		bool moved_off = cheb(pos, pw_anchor) > 3;
-		for (int k = 2; k <= 12 && moved_off; ++k)
-		{
-			const std::size_t j = static_cast<std::size_t>((round - k) & 15);
-			if (g24_pw_posr[j] == round - k && cheb(pos, g24_pw_pos[j]) <= 1)
-				moved_off = false; // back within 1 tile of where we stood k rounds ago
-		}
-#ifdef G24_TRACE
-		if (!other && !healed && !moved_off && (hp > pw_hp + 0.02f * max_hp || cheb(pos, pw_anchor) > 3))
-			std::printf("G24 pace_watch body=%d r=%d no_progress enemy_ago=%d stall=%d task=%d g=%d\n", W.my_index, round, round - g24_pw_er, round - pw_since, task,
-				task_group);
-#endif
-		g24_pw_pos[static_cast<std::size_t>(round & 15)] = pos;
-		g24_pw_posr[static_cast<std::size_t>(round & 15)] = round;
-		progress = other || healed || moved_off;
+		const std::size_t j = static_cast<std::size_t>((round - k) & 15);
+		if (g24_pw_posr[j] == round - k && cheb(pos, g24_pw_pos[j]) <= 1)
+			moved_off = false;
 	}
-	else
-		progress = acted_now || gems != pw_gems || gold != pw_gold || hp > pw_hp + 0.02f * max_hp || W.ally_spawn.is_set(pos) ||
-			legit_wait || pw_since < 0 || cheb(pos, pw_anchor) > 3;
+#ifdef G24_TRACE
+	if (!other && !healed && !moved_off && (hp > pw_hp + 0.02f * max_hp || cheb(pos, pw_anchor) > 3))
+		std::printf("G24 pace_watch body=%d r=%d no_progress enemy_ago=%d stall=%d task=%d g=%d\n", W.my_index, round, round - g24_pw_er, round - pw_since, task, task_group);
+#endif
+	g24_pw_pos[static_cast<std::size_t>(round & 15)] = pos;
+	g24_pw_posr[static_cast<std::size_t>(round & 15)] = round;
+	const bool progress = other || healed || moved_off;
 	pw_gems = gems, pw_gold = gold, pw_hp = hp;
 	if (progress)
 	{
@@ -2122,11 +2112,7 @@ void Brain::avoid_note(const std::vector<Enemy*>& E)
 		++av_n;
 	}
 	if (av_n > 0)
-	{
-		av_until = round + P.v27_avoid;
-		if (P.g24_pace & 1)
-			g24_av_me = pos; // g24_pace 1: where we stood when we fled
-	}
+		av_until = round + P.v27_avoid, g24_av_me = pos; // g24_pace: where we stood when we fled
 }
 
 bool Brain::in_avoid(const Group& g) const
@@ -2137,7 +2123,7 @@ bool Brain::in_avoid(const Group& g) const
 	return false;
 }
 
-// g24_pace 1 (confusion S1b): v27_avoid bans only groups next to the enemy; the usual target lies 6-10 tiles behind it (the enemy stands
+// GOD v25 g24_pace side ban (confusion S1b): v27_avoid bans only groups next to the enemy; the usual target lies 6-10 tiles behind it (the enemy stands
 // between us and our group) and the walk to it re-enters the flee radius. Banned while the avoid memory runs: a group within g24_pace_r of
 // an enemy we fled from that is nearer to it than our tile at the flee was, minus 1. Not our task group under g23_keep_farm (E1 hold), not a
 // group on our half where our side is not weaker (tadv >= 1, group_score's local force ratio).
@@ -2726,7 +2712,7 @@ bool Brain::go_home_step(bool avoid)
 	auto& W = world();
 	if (P.pocket_fix && W.dist_home(pos) >= BIG && pocket_dash())
 		return true;
-	if (P.g24_bush_flee && avoid && can_move && g24_bush_step())
+	if (avoid && can_move && g24_bush_step())
 		return true;
 	if (P.v23_flee_away && avoid && can_move)
 	{
@@ -2774,9 +2760,7 @@ bool Brain::go_home_step(bool avoid)
 // equal health, power ratio and map class; ours crossed open ground (no bush term in the retreat). With a visible enemy within 5 (not on its
 // spawn): among the 8 neighbours that keep or open the distance to the nearest one and do not lengthen the way home (dist_home <= now),
 // step into a bush whose 8-connected cluster holds no visible enemy, never one next to an awake camp's reach (farthest from the enemy,
-// then nearest home, then out of danger; standing in such a bush already, a sideways step must open the distance). Bit 2: no such
-// neighbour, hp >= 40% and no enemy within 2: the first step of a 2-step path into such a bush that shortens the way home by 1 or more
-// (the walk is at most 1 longer).
+// then nearest home, then out of danger; standing in such a bush already, a sideways step must open the distance).
 bool Brain::g24_bush_step()
 {
 	auto& W = world();
@@ -2834,52 +2818,18 @@ bool Brain::g24_bush_step()
 			if (d > bd || (d == bd && (h < bh || (h == bh && dg < bdang))))
 				bd = d, bh = h, bdang = dg, best = p;
 		}
-	vec2 goal = best;
-	if (best == pos && (P.g24_bush_flee & 2) && td > 2 && hp >= 0.4f * max_hp)
-	{
-		// bit 2: a bush 2 steps away through a neighbour that keeps the distance
-		int bd2 = -1, bh2 = BIG;
-		for (int dy = -2; dy <= 2; ++dy)
-			for (int dx = -2; dx <= 2; ++dx)
-			{
-				if (std::max(std::abs(dx), std::abs(dy)) != 2)
-					continue;
-				const vec2 b{ pos.x + dx, pos.y + dy };
-				if (!bc::map::is_in_bounds(b) || cheb(b, t->pos) < td || !clean(b))
-					continue;
-				const int h = W.dist_home(b);
-				if (h > h0 - 1 || !open(b))
-					continue;
-				const int d = cheb(b, t->pos);
-				if (d < bd2 || (d == bd2 && h >= bh2))
-					continue;
-				// the first step: a neighbour of b next to us that keeps the distance
-				vec2 n = pos;
-				for (int ey = -1; ey <= 1 && n == pos; ++ey)
-					for (int ex = -1; ex <= 1 && n == pos; ++ex)
-					{
-						const vec2 q{ pos.x + ex, pos.y + ey };
-						if ((ex || ey) && cheb(q, b) == 1 && cheb(q, t->pos) >= td && open(q))
-							n = q;
-					}
-				if (n == pos)
-					continue;
-				bd2 = d, bh2 = h, best = b, goal = n;
-			}
-	}
 	if (best == pos)
 		return false;
 	bc::bitboard g;
-	g.set(goal);
+	g.set(best);
 #ifdef G24_TRACE
 	const vec2 p0 = pos;
 #endif
 	if (!step(g, false, false))
 		return false;
 #ifdef G24_TRACE
-	std::printf("G24 bush_flee body=%d r=%d %s from=(%d,%d) bush=(%d,%d) cl=%d enemy=%d d=%d->%d home=%d->%d hp=%.2f\n", W.my_index, round,
-		goal == best ? "one" : "two", p0.x, p0.y, best.x, best.y, W.bush_cluster(best), static_cast<int>(t->type), td, cheb(best, t->pos), h0,
-		W.dist_home(best), hp / std::max(1.f, max_hp));
+	std::printf("G24 bush_flee body=%d r=%d from=(%d,%d) bush=(%d,%d) cl=%d enemy=%d d=%d->%d home=%d->%d hp=%.2f\n", W.my_index, round, p0.x, p0.y, best.x,
+		best.y, W.bush_cluster(best), static_cast<int>(t->type), td, cheb(best, t->pos), h0, W.dist_home(best), hp / std::max(1.f, max_hp));
 #endif
 	return true;
 }
@@ -4468,8 +4418,8 @@ bool Brain::combat()
 	const float t_die = hp / std::max(1.f, incoming);
 	const int dh = W.dist_home(pos);
 	const bool on_spawn = W.ally_spawn.is_set(pos);
-	// F1 g24_flee_dash bit 2: a fight dash (Heart of Ruin) is an escape only when the flee really dashes (bit 1)
-	const bool dash_escape = ready(kit.dash) && !chaser_dash && (!(P.g24_flee_dash & 2) || (P.g24_flee_dash & 1) || kit.dash_mod <= 0.f);
+	// F1 g24_flee_dash: a ready dash is an escape, a fight dash (Heart of Ruin) too since the flee dashes first (g24_dash_out)
+	const bool dash_escape = ready(kit.dash) && !chaser_dash;
 	const bool can_escape = on_spawn || !chaser || dash_escape || static_cast<float>(dh) + 1.f < t_die;
 
 	// sup_mode 4: leaving toward a helper that arrives within 3 rounds (one step, never into more enemy reach) instead of home:
@@ -4815,7 +4765,7 @@ bool Brain::combat()
 		if (P.g23_veto_bits & 128)
 			rescue_commit = fight && g23_rescue_now;
 	}
-	if (P.g24_fresh > 0 && fight && !killable && !in_reach && round - respawn_round < P.g24_fresh && adv < P.g24_fresh_adv)
+	if (fight && !killable && !in_reach && round - respawn_round < P.g24_fresh && adv < P.g24_fresh_adv)
 	{
 		fight = false; // F3 g24_fresh: just respawned at full health, the team may have just lost a fight here: only a clear one
 		rescue_commit = false;
@@ -4824,7 +4774,7 @@ bool Brain::combat()
 #endif
 	}
 	// F5 g24_hit_is_fight: hit last round by a target we can answer: we are in a fight, the fz_engage approach hold does not apply
-	const bool hit_fight = P.g24_hit_is_fight && last_hit_round >= round - 1 && adv >= P.fight_back_margin && d <= my_reach + 1;
+	const bool hit_fight = last_hit_round >= round - 1 && adv >= P.fight_back_margin && d <= my_reach + 1;
 	if (fz_engage_eff > 0 && fight && !rescue_commit && !hit_fight && !in_reach && !killable && last_fight_round < round - 1 && d > fz_engage_eff && !tgt->channeling && !tgt->tributing)
 		fight = false; // v14 fz_engage: not yet in a fight and the target is still far: keep doing what we do
 	if (P.fz_chase > 0 && !in_reach)
@@ -6268,7 +6218,7 @@ int Brain::bank_min(int trip) const
 	// bags when the altar is far. Short trips keep the plain threshold (risk and scoreboard rules set it).
 	// E3 g24_marc_funnel: Marcella banks small bags at a near field altar (every gem pays her 2 gold: the nemesis teams' Marcella banks 40% of
 	// her captures within 20 rounds, ours 18%)
-	if ((P.g24_marc_funnel & 5) && type == bc::champion_type::marcella && trip <= P.g24_mf_altar)
+	if (type == bc::champion_type::marcella && trip <= P.g24_mf_altar)
 		return std::max(20, tribute_min / 2);
 	if (P.bank_trip_w <= 0.f || trip >= BIG)
 		return tribute_min;
@@ -6278,8 +6228,7 @@ int Brain::bank_min(int trip) const
 
 bool Brain::tribute(bool force)
 {
-	if (P.g24_bank_hold)
-		g24_bh_prev = g24_bh_held, g24_bh_held = false; // g24_bank_hold: hold episodes (g24_bank_hold_fire)
+	g24_bh_prev = g24_bh_held, g24_bh_held = false; // g24_bank_hold: hold episodes (g24_bank_hold_fire)
 	if (gems == 0)
 		return false;
 	auto& W = world();
@@ -6372,17 +6321,16 @@ bool Brain::tribute(bool force)
 	// farming (the bag is safer moving with us than dying at their altar) unless the game is on the line.
 	// v23 4.6: unsafe = an enemy seen within 4 of it in the last 8 rounds; a bag at the cap walks in anyway.
 	if ((P.v23_bank ? v23_altar_unsafe(a) && static_cast<int>(gems) < P.v23_bank_cap : altar_unsafe(a)) && !endgame && !winning && !force && !stalled)
-		return P.g24_bank_hold && g24_bank_hold_fire(a, "unsafe");
+		return g24_bank_hold_fire(a, "unsafe");
 	if (!P.v23_bank && !endgame && !winning && !force && !stalled && bag_needs_escort(a))
 	{
 		// v8 escort_bag: the bag is a long channel at a hot altar: call the team first (keep farming / healing meanwhile).
 		auto& C = comms();
 		if (!(C.fresh(round, 6) && C.alert_kind == AL_OPPORTUNITY))
 			C.post(AL_DANGER, W.altars[static_cast<std::size_t>(a)], round);
-		return P.g24_bank_hold && g24_bank_hold_fire(a, "escort");
+		return g24_bank_hold_fire(a, "escort");
 	}
-	if (P.g24_bank_hold)
-		g24_bh_wait_until = -1000; // the hold cleared: the bank walk goes on
+	g24_bh_wait_until = -1000; // g24_bank_hold: the hold cleared, the bank walk goes on
 	task = T_TRIBUTE;
 	const vec2 altar = W.altars[static_cast<std::size_t>(a)];
 #ifdef PROBE18T
@@ -6426,7 +6374,7 @@ bool Brain::tribute(bool force)
 	return true;
 }
 
-// g24_bank_hold (confusion S3): a hold branch of tribute() hands the turn to farm(), which walks the bag away; when the hold expires the
+// GOD v25 g24_bank_hold (confusion S3): a hold branch of tribute() hands the turn to farm(), which walks the bag away; when the hold expires the
 // bank walk starts again (18.9 paced rounds a game vs 2.7-6.1). The 2nd hold episode within g24_bank_hold_win rounds (a hold, the bank walk
 // or no bank wanted in between, then a hold again) of a bag >= g24_bank_hold_bag: recall to the spawn altar when that is safe and spawn is
 // past recall_min_dist, else hold the tile (T_WAIT) until the hold clears or g24_bank_hold_wait rounds pass. True: the turn is used.
@@ -6971,9 +6919,8 @@ bool Brain::ring_farm(Group& g, bool respawning)
 	ust_anchor = pos; // waiting out a cooldown on the ring is not being stuck
 	ust_since = round;
 	const bool save_cc = enemy_near_d <= P.hold_cc_dist;
-	const bool hold_spells = enemy_near_d <= P.hold_spell_dist && P.hold_spells_near_enemies && !P.g23_farm;
 	bool did = false;
-	if (!hold_spells && !cast_done)
+	if (!cast_done) // farming through contact (v23 g23_farm): damage spells go on camps near enemies too (save_cc keeps the stuns)
 	{
 		std::size_t t = g.camps.size();
 		float bk = 1e30f;
@@ -7135,7 +7082,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 	// 3,305 turns of combat-flee steps inside a 3x3 box)
 	if (P.v27_avoid > 0 && round < av_until && in_avoid(g))
 		{ WHY(10); return -1; }
-	if ((P.g24_pace & 1) && g24_side_ban(g)) // g24_pace 1: the enemy we fled from stands between us and the group
+	if (g24_side_ban(g)) // g24_pace: the enemy we fled from stands between us and the group
 		{ WHY(10); return -1; }
 	// Rounds until we can hit the group. Ranged champions stop at their attack range; a dash kit covers 10 tiles
 	// per 8-round cooldown (walk + 2-tile dash). Fitted on 1,659 engaged episodes: d-1 was exact for Ryth and Varg
@@ -7233,7 +7180,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 				}
 		}
 		// E3 g24_marc_funnel: the reward goes to our Marcella (2 gold a gem when she banks it); she outranks every hand-off and claim rule
-		const bool mf24 = (P.g24_marc_funnel & 1) && g24_marc_for(g) >= 0;
+		const bool mf24 = g24_marc_for(g) >= 0;
 		if (mf24 && type == bc::champion_type::marcella)
 			outrank_lower = true;
 		if (P.mi_capture && !(capture_group_id == g.id && g.mask.is_set(pos)) && !(mf24 && type == bc::champion_type::marcella))
@@ -7260,7 +7207,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 				// g23_capfix 1: yield only to an ally that takes it (claims the group or stands on it)
 				if ((P.g23_capfix & 1) && !(i < 6 && C.claim[static_cast<std::size_t>(i)] == g.id) && !g.mask.is_set(a.pos))
 					continue;
-				if (P.g24_cap_rank && std::fabs(gm - my_gm) <= 1e-9)
+				if (std::fabs(gm - my_gm) <= 1e-9)
 				{
 					// GOD v25 g24_cap_rank (confusion study S2): on a gold tie the carry takes the reward, not the nearest body (our Heart of
 					// Ruin took 25% of the team's captured gems vs 16% on the top-30 teams, Marcella 19% vs 33%): Marcella > Vesper Vale >
@@ -7350,8 +7297,8 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			// E2 g24_join: in the opening a rich group one body clears slowly takes joiners, harmless ones too (ladder: our opening visits to 30+
 			// gem groups alone 45% vs top 30 17%; harmless 30+ gem groups always one body). g24_scarce: on a scarce map a 12+ gem group takes one
 			// joiner all game (72% of our kills there solo vs 59%).
-			const bool join24 = P.g24_join && round < P.g24_join_until && g.gems >= P.g24_join_gems && solo_rounds > static_cast<float>(P.g24_join_min);
-			const bool scarce24 = !join24 && P.g24_scarce && g.gems >= 12 && solo_rounds > static_cast<float>(P.g24_join_min) && g24_scarce_map();
+			const bool join24 = round < P.g24_join_until && g.gems >= P.g24_join_gems && solo_rounds > static_cast<float>(P.g24_join_min);
+			const bool scarce24 = !join24 && g.gems >= 12 && solo_rounds > static_cast<float>(P.g24_join_min) && g24_scarce_map();
 			const bool heavy0 = rich || follow_g || g.monolith || g.elk || (!g.harmless && (solo_rounds > P.join_min_rounds || g.attackers >= 2));
 			const bool heavy = heavy0 || join24 || (scarce24 && claimers < 2);
 			const int max_join = P.mi_two_bodies ? std::min(P.max_join, 1) : P.max_join; // mi_two_bodies (default branch)
@@ -7587,7 +7534,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 				edps += sc_recent[static_cast<std::size_t>(k)].dps;
 			}
 		const bool dive = P.big_reward_dive > 0 && g.st == ST_REWARD && g.enemy_on_tile && g.gems >= P.big_reward_dive && hp >= 0.25f * max_hp;
-		const bool keep23 = P.g23_farm && P.g23_fight && g.id == task_group && g23_keep_farm; // v23: nobody can hit us next turn and we are not outpowered: keep farming here
+		const bool keep23 = P.g23_fight && g.id == task_group && g23_keep_farm; // v23: nobody can hit us next turn and we are not outpowered: keep farming here
 		if (edps > 0 && !dive && !keep23)
 		{
 			// big_reward: a group worth a death or two is fought for with the whole team close by
@@ -7603,25 +7550,20 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			if (tadv < (P.v23_contact ? P.v23_abandon_r : P.target_threat_adv) * (big ? 0.5f : 1.f))
 				{ WHY(10); return -1; }
 			// F2 g24_abandon_r: between v23_abandon_r and this a body kept walking to a group stronger enemies hold (walk-in deaths 5.5 a game vs 2.7)
-			if (P.g24_abandon_r > 0.f && tadv < P.g24_abandon_r * (big ? 0.5f : 1.f) && !(g.id == task_group && g23_keep_farm))
+			if (tadv < P.g24_abandon_r * (big ? 0.5f : 1.f) && !(g.id == task_group && g23_keep_farm))
 				{ WHY(10); return -1; }
 		}
 	}
-	if (round - g.enemy_round < 12 && !(P.g23_farm && P.g23_fight && g.id == task_group && g23_keep_farm))
+	if (round - g.enemy_round < 12 && !(P.g23_fight && g.id == task_group && g23_keep_farm))
 	{
-		if (P.g24_flip_mem)
-		{
-			// g24_flip_mem (confusion S4): the surcharge fades over the 12 rounds instead of dropping from 12 to 0 the round the flip window
-			// ends (a target dropped for a transient came back at full score while we were half-way to its replacement)
-			const int age = round - g.enemy_round;
-			time += 12.f - static_cast<float>(std::max(0, age));
+		// GOD v25 g24_flip_mem (confusion S4): the surcharge fades over the 12 rounds instead of dropping from 12 to 0 the round the flip
+		// window ends (a target dropped for a transient came back at full score while we were half-way to its replacement)
+		const int age = round - g.enemy_round;
+		time += 12.f - static_cast<float>(std::max(0, age));
 #ifdef G24_TRACE
-			if (age > 0 && (g.id == task_group || g.id == g24_left_g[0] || g.id == g24_left_g[1] || g.id == g24_left_g[2]))
-				std::printf("G24 flip_mem body=%d r=%d fade g=%d age=%d add=%d task=%d\n", W.my_index, round, g.id, age, 12 - age, static_cast<int>(g.id == task_group));
+		if (age > 0 && (g.id == task_group || g.id == g24_left_g[0] || g.id == g24_left_g[1] || g.id == g24_left_g[2]))
+			std::printf("G24 flip_mem body=%d r=%d fade g=%d age=%d add=%d task=%d\n", W.my_index, round, g.id, age, 12 - age, static_cast<int>(g.id == task_group));
 #endif
-		}
-		else
-			time += 12.f;
 	}
 	if (P.v24_ci_escort && (type == CT::cassi || type == CT::issac))
 	{
@@ -8083,17 +8025,15 @@ void Brain::farm()
 				if (P.commit_hit > 0.f && g.st == ST_ALIVE && round - target_hit_round <= 2)
 					s *= P.commit_hit;
 			}
-			else if (P.flip_window > 0 && !P.g24_flip_mem && g.id == left_group && round - left_round <= P.flip_window)
-				s /= P.flip_margin; // going back to a target we just left: A-B-A-B flips walk in place
-			else if (P.flip_window > 0 && P.g24_flip_mem)
+			else if (P.flip_window > 0)
 			{
-				// g24_flip_mem (confusion S4): the last 3 targets left, each for g24_flip_mem_win rounds (an A-B-C-A cycle is damped too)
+				// going back to a target we just left: A-B-A-B flips walk in place. GOD v25 g24_flip_mem (confusion S4): the last 3 targets
+				// left, each for g24_flip_mem_win rounds (an A-B-C-A cycle is damped too)
 				for (std::size_t k = 0; k < g24_left_g.size(); ++k)
 					if (g.id == g24_left_g[k] && round - g24_left_r[k] <= P.g24_flip_mem_win)
 					{
 #ifdef G24_TRACE
-						const bool old_rule = g.id == left_group && round - left_round <= P.flip_window;
-						if (!old_rule && s > best_s && s / P.flip_margin <= best_s)
+						if (s > best_s && s / P.flip_margin <= best_s)
 							std::printf("G24 flip_mem body=%d r=%d damp g=%d left_ago=%d s=%.3f best=%d best_s=%.3f\n", W.my_index, round, g.id, round - g24_left_r[k], s, best,
 								best_s);
 #endif
@@ -8372,8 +8312,6 @@ void Brain::farm()
 		});
 #endif
 		if (task_group >= 0)
-			left_group = task_group, left_round = round;
-		if (P.g24_flip_mem && task_group >= 0)
 		{
 			// g24_flip_mem: remember the last 3 targets left (a target already listed takes the new round; else the oldest slot)
 			std::size_t slot = 0;
@@ -8512,7 +8450,7 @@ bool Brain::wait_group(Group& g)
 
 bool Brain::capture_group(Group& g)
 {
-	if ((P.g24_marc_funnel & 1) && g.st == ST_REWARD && g24_hold_for_marc(g))
+	if (g.st == ST_REWARD && g24_hold_for_marc(g))
 		return true; // E3: Marcella takes it
 	if (P.handoff && P.anchors && !is_anchor && g.st == ST_REWARD && g.mask.is_set(pos))
 	{
@@ -9303,10 +9241,8 @@ bool Brain::farm_group(Group& g)
 		}
 		return best;
 	};
-	// Keep burst for a fight only when one is likely within the cooldown: an unused ready spell is lost value
-	// (8-round cooldowns), and an enemy 7-9 tiles away led to a fight within 8 rounds only 13% of the time.
+	// Stuns are kept for a fight with an enemy within hold_cc_dist; damage spells go on camps (farming through contact)
 	const bool save_cc = enemy_near_d <= P.hold_cc_dist;
-	const bool hold_spells = enemy_near_d <= P.hold_spell_dist && P.hold_spells_near_enemies && !P.g23_farm;
 	if (P.varg_splash_pos && type == CT::varg && can_move)
 	{
 		// Varg's splash hits every camp next to the target: stand next to the camp with the most live neighbours. From
@@ -9424,7 +9360,7 @@ bool Brain::farm_group(Group& g)
 			if (!can_move && !cast_done)
 			{
 				const std::size_t s4 = pick(4);
-				if (s4 < g.camps.size() && !hold_spells)
+				if (s4 < g.camps.size())
 					spells_on_camp(g, s4, save_cc);
 			}
 			return true;
@@ -9452,8 +9388,7 @@ bool Brain::farm_group(Group& g)
 			return true;
 		}
 	}
-	if (!hold_spells)
-		spells_on_camp(g, t, save_cc);
+	spells_on_camp(g, t, save_cc); // farming through contact (v23 g23_farm): no damage-spell hold near enemies
 	attack_chain_camp(g, t);
 	return true;
 }

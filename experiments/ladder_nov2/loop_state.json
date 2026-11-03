@@ -34,31 +34,45 @@
    "version": 87,
    "activatedAt": "2026-11-03T01:21:19Z",
    "previous": 86
+  },
+  {
+   "at": "2026-11-03T02:41:52Z",
+   "event": "submit",
+   "bot": "g23rcf",
+   "note": "GOD v23 rc3: rescue + reward capture fixes + respawn/watchdog fixes",
+   "version": null
+  },
+  {
+   "at": "2026-11-03T02:52:04Z",
+   "event": "deploy",
+   "version": 88,
+   "activatedAt": "2026-11-03T02:52:00Z",
+   "previous": 87
   }
  ],
  "current": {
+  "version": 88,
+  "id": "5f019fae-7a5d-47b2-b6e2-b030ccd7cdb1",
+  "note": "GOD v23 rc3: rescue + reward capture fixes + respawn/watchdog fixes",
+  "activatedAt": "2026-11-03T02:52:00Z",
+  "statusAt": "2026-11-03T02:52:00.276Z",
+  "ratingAtActivation": 2000.2,
+  "rankAtActivation": 67,
+  "source": "deploy",
+  "bot": "g23rcf",
+  "submittedAt": "2026-11-03T02:41:52Z"
+ },
+ "previous": {
   "version": 87,
   "id": "af532269-5c7e-4c05-838c-893c63166d9e",
   "note": "GOD v23 rc2: v84 + caught-ally rescue (g23 mode 2 bits 64)",
+  "statusAt": "2026-11-03T02:40:34.263Z",
   "activatedAt": "2026-11-03T01:21:19Z",
-  "statusAt": "2026-11-03T01:21:19.439Z",
   "ratingAtActivation": 2000.3,
   "rankAtActivation": 69,
-  "source": "deploy",
-  "bot": "g23r",
-  "submittedAt": "2026-11-03T01:18:17Z"
+  "bot": "g23r"
  },
- "previous": {
-  "version": 86,
-  "id": "b56bfbf8-4a84-47f9-b7af-dc5396cfaaa8",
-  "note": "GOD v23 rc1: v84 + caught-ally rescue that commits (g23 bits 192)",
-  "statusAt": "2026-11-03T01:10:46.008Z",
-  "activatedAt": "2026-11-03T01:00:56Z",
-  "ratingAtActivation": 1990.0,
-  "rankAtActivation": 72,
-  "bot": "g23rc"
- },
- "updatedAt": "2026-11-03T02:07:04Z",
+ "updatedAt": "2026-11-03T02:52:04Z",
  "pending": null,
  "plan": "experiments/ladder_nov2/paired_c2.json"
 }

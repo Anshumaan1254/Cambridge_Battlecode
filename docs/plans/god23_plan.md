@@ -7,6 +7,13 @@ ladder loop (earlier sessions were forbidden to). Still: commit/push only when t
 
 ## STATUS (newest first)
 
+**Nov 3, 02:55 UTC — LIVE: website v88 = `bots/g23rcf`** (rescue + `g23_capfix 7` + `g23_watchfix 1`), activated 02:52:00Z (rank 67 /
+2000); `previous` = v87. Local: s4 +6, held-out −7 (level; every rescue combination regressed from g23r's lucky +112), capture
+mechanism verified in 16 local games (our kills left 30+ rounds 6 vs v84's 18, never captured 3 vs 10). **At 03:02Z (quota):**
+`ladder_loop.py paired-run --plan experiments/ladder_nov2/paired_c3.json --max 50 --execute` (34 free at 03:02, 16 more at 03:05); report
+`three_way.py experiments/ladder_nov2/paired_c3.json` (columns v84 old, v85 on 30, v86, v87). Also screened: `_hs` (`g23_holdsafe`:
+combat holds step out of awake camp reach, map_fail B1) +17, deaths level — candidate for the next stack.
+
 **Nov 3, 02:30 UTC.** v87 (`g23r`) paired on 50 groups: **131/250 vs v84 121/250 (net +10, p 0.25)**, level with v85 (+2 of 150) and
 v86 (+4; only 12 of 250 games differ between g23r and g23rc) → WAIT; the other 51 groups go in at 03:02Z. Ranked 9/20 so far.
 Rescue checks: vs gpta75 +161 (v84 +79: +82), radius 6 = same games, + one-step +34, + dive filter +8, + bank +24, + disengage (bit 256)

@@ -57,7 +57,7 @@ struct Comms
 	// 4 (0 = none). Free in v14 (opp_plan, opp_model, alert_refresh and mi_live off). Readers keep the round it will land (t4_deadline).
 	int t4 = 0;
 	int t4_deadline = -1;
-	static bool t4_free() { return !P.opp_plan && !P.opp_model && !P.alert_refresh && !P.mi_live; }
+	static bool t4_free() { return !P.opp_plan && !P.opp_model && !P.alert_refresh && !P.mi_live && !P.g23_tol; } // g23_tol: bit 7 of bytes 0-5 is the prime clock
 	void write_t4(int v);
 	void set_contact();
 	bool take_contact();

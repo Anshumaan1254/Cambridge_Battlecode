@@ -1,0 +1,151 @@
+DRAFT / BANKING + EXECUTION STREAMS: OUR BOT (v88 = bots/g23rcf/src) VS THE TOP-30 (Nov 3 2026, second-round helper)
+
+Inputs: draft_bank/out/{tables,draft_tables,draft_ours_elo}.txt and {teams,bodies,tributes}.jsonl; execution/out/{summary,mapreg}.txt,
+map_table.tsv, met/*.json (re-run at 07:58Z; nothing re-extracted). New queries: draft_bank/q/q1.py (teams.jsonl by map class and result),
+draft_bank/q/q2.py (execution met/ by map class). The capture-share, gold and endgame-replay checks below were one-off inline queries
+on bodies.jsonl, teams.jsonl and ladder_nov2/dec/e36c7dd7*.json. They were not saved as scripts.
+Groups: ME88 = our v88 sides (all LOSSES: 118 banking / 121 execution); top_L / top_W = losing / winning side of top-30 vs top-30 games
+(305 / 304 each); opp_v88 = the opponents in our v88 games; RANKED = matches_me.jsonl, 2,795 ranked games Oct 30 - Nov 3, our win 0.501.
+"Scarce" = a map whose gems per champion (map gems / champions per team) is <= 92 (the median map): 1,480 of the 2,795 ranked games.
+
+HEADLINE
+- Our win rate tracks the map's gem supply: 0.433 on scarce maps (n 1,480) vs 0.578 on the rest (n 1,315). The top-30 teams are flat on
+  the same split (deviation +0.001 / -0.001). On scarce maps we take groups alone (S1), and our gold goes to the tank, not the damage
+  dealers (S2). Those two are the main gaps from these streams.
+- Leads 2-4 do not hold up on ranked results. Monolith maps are our better class: ranked win 0.569, n 870, against 0.471 elsewhere.
+  Single-altar maps: 0.554, n 603. The objectives stream's 21% is the loss-heavy replay sample. Banking in like-with-like comparisons
+  is level or better than the top-30 losers. The draft is level with the Elo expectation. Details are in N1-N3 after the ranked list.
+
+=====================================================================================================================================
+S1 Scarce maps: we take groups alone; the top-30 stack 2+ bodies [STRATEGY] est. gain +2.5 games per 100
+ number: RANKED win by gems per champion, by quartile: 0.412 / 0.452 / 0.567 / 0.589 (n 697 / 783 / 663 / 652). Top-30 deviation in the
+   same quartiles: +0.002 / +0.001 / -0.003 / 0.000.
+   mapreg logistic regression (n 2,795, per 1 sd): gems +0.37 (z +3.9), area +0.21 (+4.0), altars -0.20 (-3.8), golems -0.17 (-3.5),
+   narrow -0.15 (-2.9), bush -0.12 (-2.7), opponent rating -0.18 (-2.9). The 10 worst maps (13-26%) average 253 gems, area 1,990 and
+   spawn distance 38, against 536 / 3,125 / 68 on the other maps. 7 of the 10 have <= 260 gems. Our per-map deviation does not
+   correlate with the top-30's (r = +0.04, 84 maps).
+   Mechanism, execution replays (scarce maps; like-with-like = ME88 losses vs top_L): share of gem-group kills (>= 12 gems) made by a
+   single body: 0.72 (n 71 games; v84-87 also 0.72, n 101) vs 0.59 top_L (n 165), 0.56 top_W, 0.56 opp_v88. Attackers per >= 30-gem
+   kill: 1.44 vs 1.68 / 1.78 / 1.70. Rich maps: only 0.62 vs 0.57 / 0.60, so the gap is specific to this class.
+   Group kills per game on scarce maps: 44.4 vs 49.2 (top_L) and 71.1 (opp_v88). Wake-and-leave alone: 2.4 vs 1.5 a game.
+   Earlier map_fail opening study: bodies per group visit 1.7 vs 2.8 on crater; visits ending in a kill 21% vs 62%.
+ examples: c17d8fdc 00breadcrumbs (28 of our 28 kills of >= 12 gems were solo: group 23 (20 gems) at r2 and r87); acd884e5
+   00breadcrumbs (34 of 34 solo; opponent 42 of 47); 0cddda74 00gem_fields (our only big kill: 71-gem G5 at r72, solo and contested;
+   VesperVale b6 woke it at r7 and r260 and left); crater 7355a70b (map_fail: their b5-b9 all on G5).
+ cause: brain.cpp group_score() (l.6994-7003), join rule: "Join only packs too heavy for one body ... const bool heavy = rich ||
+   follow_g || g.monolith || g.elk || (!g.harmless && (solo_rounds > P.join_min_rounds || g.attackers >= 2)); ... if (!committed &&
+   (!heavy || ...)) { WHY(6); return -1; }". join_min_rounds is 14. The leader-follow opening exists only on lone-monolith maps
+   (l.6789: "if (P.mono_follow_until > 0 && W.mono_mode && round < P.mono_follow_until)"). The only scarcity rule is v28_scarce
+   (update_mode, l.5667), and it fires only when the map cannot pay 1,000 gems in 2,000 rounds. None of the 10 worst maps qualifies.
+ fix: g24_scarce (params.h, default 0) plus g24_scarce_gpc 92 and g24_scarce_follow 150.
+   (a) World init, next to mono_mode (world.cpp ~l.261): W.scarce_mode = sum(group gems) / team_champs <= g24_scarce_gpc.
+   (b) group_score: on scarce_mode, heavy = true for gem groups of >= 12 gems, with at most one joiner (claimers < 2 + 0).
+   (c) l.6789: (W.mono_mode || (P.g24_scarce && W.scarce_mode)) && round < g24_scarce_follow. The opening then follows the
+   lowest-index claimant's group, using the existing mono_follow code.
+   Already tried and off: open_follow (23/42 on all maps), squads, deathball. What is different here: only the map class that carries
+   the ladder gap (53% of ranked games) changes. Rich maps stay byte-identical, so their farming pace (the reason those failed) is
+   untouched.
+ test: local games on the 10 worst maps + 00breadcrumbs / 00lanes / 00the_line. Solo share of >= 12-gem kills should go 0.72 -> <= 0.60;
+   attackers per >= 30-gem kill 1.44 -> >= 1.65. Unopposed pace on those maps no worse than -5%. Inert check: rich maps identical.
+   Gain: closing a third of the 15-point gap on 53% of games is about +2.5 games per 100.
+
+S2 Captures go to our tank, not our damage dealers: the item gap on Marcella [STRATEGY] est. gain +1 to +2 games per 100 (uncertain)
+ number: per-team shares, like-with-like = losers (ME88 losses n 76-110 bodies vs top_L n 115-264). Marcella: 0.26 of the team's camp
+   hits vs 0.19, but 0.19 of gem captures vs 0.34 and 0.20 of gold vs 0.28. Gems per camp hit: 0.62 vs 1.51.
+   HeartOfRuin: 0.22 of hits vs 0.23, 0.28 of gems vs 0.16, 0.23 of gold vs 0.15. VesperVale (+20% gold passive): gold share 0.33 vs 0.42.
+   Wins show the same: in v84 wins Marcella's gem share is 0.15, against 0.35 for top_W.
+   Per game, Marcella: gold 454 vs 925 (top_L) / 1,445 (top_W); shop visits 12.2 vs 24.6; distinct item types at the end 4.2 vs 6.2;
+   kills 1.25 vs 1.99 (top_L). Spell kills 0.42 vs 2.96 (all top-30 games), at the same cast rate on champions (1.67 vs 1.70 per 100
+   rounds). Team gold is the same; it is spent on the wrong body. This is the item-gap factor in agent_fights (z +12.3).
+   Marcella's share of the team's banked gems: 20.6% vs 37.5% (tables B1).
+ examples: 216dd998 01yellow_brick_road: Marcella b4 had 299 camp hits / 59 gems / 415 gold; HoR b2 287 / 233 / 1,836.
+   bfe31ac3 00swirl: Marcella b3 202 / 45 / 520; HoR b0 234 / 210 / 1,787.
+   6d3884d1 01corridors: Marcella b7 208 / 79 / 680; HoR b5 250 / 244 / 1,797.
+ cause: brain.cpp capture_group() (l.8102): whoever stands on a reward tile captures it, and two allies split it. Our melee tank already
+   stands on the group's tiles; Marcella (range 4) attacks from off the tiles, and g23_capfix 7 takes near rewards at once. The only
+   routing is behind switches that are off: P.handoff 0 / P.anchors 0 ("F4 reward hand-off: an anchor on the group takes it alone").
+ fix: g24_carry_cap (default 0), in capture_group(). A body that is not the carry, standing on an ST_REWARD group, steps to the ring
+   off the tiles (the wait_group ring code) when all of these hold: our Marcella (else Vesper) is alive with hp >= 0.4, within 2 steps of
+   a tile of that group, and no enemy is within 6. In group_score, the carry values such a reward x1.5 (the handoff_bonus term).
+   Already measured worse: F4 anchors 3 + handoff (CHANGES.md l.219), gold_rank (the poorest collects, within 5/8), kill_captures
+   (15_LOSSES_OCT20). What is different: none of the anchor farming changes (bank x0.6, bag caution 20, enemy-half x3, altar cost) and no
+   fetch walks. It only uses rewards the carry already stands next to; the old variants all cost pace through walks.
+ test: Marcella's share of gem captures 0.19 -> >= 0.28 and her gold +300 a game. The team's captures per game stay within 3%, and
+   capture delay (kill to step-on) stays within +1 round. The ladder decides; this has failed locally before.
+
+S3 Camp execution: passive damage, wake-and-leave, back-and-forth, wasted dashes [BUG + STRATEGY] est. gain ~10-20 gems per game,
+   about +1 game per 100; part of it follows from S1
+ number: ME88 vs top_L, per game (execution summary). Passive camp damage 2,734 vs 1,952 (wolf 702 vs 349). Camp hits taken per hit given:
+   wolf 1.13 vs 0.91, golem 1.28 vs 0.68. Wake-and-leave alone 2.8 vs 1.7 (cost 1,143 vs 741 damage). A-B-A with no fight within 3
+   rounds: 61.6 vs 45.1 (14.4 vs 11.3 per 1,000 body-rounds). Wasted travel dashes 11.8 vs 4.8. Stalls >= 12 rounds: 11.6 vs 7.5.
+   summarize.py's gem prices: aba 6.6 + passive deaths 6.2 + passive damage 3.1 + dashes 2.1 + stalls 2.0 + wake-leave 1.6 = 21.6
+   gems a game. Not gaps: dead-tile waits 39.7 vs 61.1 and idle 140 vs 162 are lower for us, and tribute failures 0.3 vs 0.5.
+   Scarce maps: passive 1,996 vs 1,016 and aba_pure 66 vs 54. Rich maps: 3,782 vs 3,064 and 55 vs 35.
+ examples: e33e2b41 02the_pack: Marcella b1 r1099-1112 took 14 wolf hits while attacking nothing; HoR b2 stalled 137 rounds from r388 at
+   (17,23) next to a live group, nearest enemy 7. 9c7cbc9f 00lanes HoR b5: A-B-A r474-561 plus wasted dashes r60 / r557 / r793.
+   70d8f57d 00anvil Marcella b5: woke the monolith at r883 and left (cost 9,200).
+ cause: (a) solo farming (S1): one body takes every hit of a 3-wolf pack, hence the 1.13 ratio. (b) Wake-and-leave: params.h l.412
+   "commit_keep = 0 // 1: a camp we hit in the last 2 rounds is not dropped by the join limits (17 unopposed official games: 67 camps
+   we had hit left on this rule)". With it off, group_score's WHY(6) join limit drops a group we just woke. I found no recorded ladder
+   or local measurement of commit_keep 1. (c) A-B-A and the wasted dashes: not traced to a rule in this stream. The candidates are the
+   flee/farm pacing that v27_avoid targets, and the travel dashes (cast 6:travel per 100 rounds: Vendetta 7.23 vs 5.69, Vesper 6.36
+   vs 5.05, HoR 4.99 vs 4.10).
+ fix: commit_keep 1 is an existing switch: test it alone first. If wasted dashes stay above 6 a game, add g24_dash_travel (default 0):
+   no travel dash (no enemy within 8) unless it saves >= 2 field steps on a path of >= 10 to a target.
+ test: wake_leave_solo 2.8 -> <= 2.0 a game; passive damage on wolves -30%; dash_wasted 11.8 -> <= 6 (execution/metrics.py on local
+   replays).
+
+S4 Bush-heavy maps [STRATEGY] est. gain +1 game per 100 (mechanism not verified in this stream)
+ number: RANKED win 0.455 with bush_frac > 0.06 (n 987) vs 0.630 with bush_frac <= 0.03 (n 764). Scarce and bushy: 0.388 (n 456); rich
+   and bushy: 0.512 (n 531). Regression: bush -0.12 per sd (z -2.7) with gems, area and opponent controlled. Top-30 deviation -0.001.
+   Engine: a champion in a bush is invisible from outside, even when adjacent; only a ward inside the bush reveals it.
+ examples: 03ambush_field (bush 0.23, our ranked win 0.18, n 11); 01islands (0.15, 0.20, n 30); 01elk_arena (0.08, 0.16, n 37).
+ cause: brain.cpp place_ward (l.3175): "(P.ward_bush_maps == 1 && !world().mono_mode) ? 0 : P.ward_bush". Bush wards are placed only on
+   lone-monolith maps. Unconditional bush warding measured worse (CHANGES.md l.194).
+ fix: g24_bush_ward (default 0): ward_bush 2 when the map's bush share is >= 0.06, so 01elk_arena, 03ambush_field and 01islands are
+   included. The difference from the failed version: it is gated by map class.
+ test: on those maps, the share of our deaths with the killer in a bush tile during the 3 rounds before (to be measured first: if it is
+   < 15%, drop this) and our wards in bush tiles.
+
+S5 Endgame: a winning bag recalled but never landed [BUG] est. gain +0.5 games per 100
+ number: of 118 ME88 losses, 11 reached r2000 (9.3%, against 3.6% of top-30 sides). In 1 of them banked + carried beat the winner:
+   e36c7dd7 02the_pond, lost 843-846 with 244 carried (top_L: 3 of 305 such games).
+ examples: e36c7dd7 HeartOfRuin b5. Bag 60 at r1850, 198 at r1955; 834 + 198 >= 1000 means "winning" from r1955. Recall events every
+   round r1940-1991, with Attack r1940-1964 and dashes r1976 / r1984. At (2,29) at r1976. Submitted 232 gems at the (3,7) altar at
+   r1992; 24 ticks lands at r2016, after the end.
+ cause: tribute() (brain.cpp l.6013): with winning set and !endgame, recall_bank = "W.dist_home(pos) > P.recall_min_dist && via_home
+   + 2 < dist && safe_to_recall() && !endgame" chose go_home(). That recall was cancelled every round, by camp hits while it kept
+   attacking, then by its own moves. Nothing falls back to walking once the recall has failed for k rounds.
+ fix: g24_bank_fallback (default 0), in tribute(). If a recall_bank recall has been cancelled >= 3 rounds in a row, or ticks + walk >=
+   2000 - round - 20, drop recall_bank and walk to the nearest altar (go_altar).
+ test: on local games, a mechanism log of "recall cancelled >= 3 times while winning" should drop to 0.
+
+=====================================================================================================================================
+NOT GAPS (leads checked, with numbers)
+N1 Banking. Like-with-like = ME88 losses vs top_L:
+   - On the 10 worst maps: banked 421 vs 445; bag 30.0 vs 35.6; gems lost on death 75 vs 118 a game; carried at the end 19.5 vs 17.1;
+     deaths 16.3 vs 16.1.
+   - Maps with > 260 gems: bag 33.2 vs 43.8; lost on death 64 vs 120.
+   - All maps: cancel rate 1.6% vs 5.0%; bagloss 74.8 vs 123.6 (execution summary).
+   The top-30's bigger bags are mostly Prism hoarders (137 tributes, mean bag 657, 68% cancelled) and Vesper (49 vs 29). Their own winners
+   pay for big bags in deaths (top_L lose 124 gems a game to deaths). Tribute size, carry length (median 25 vs 27 rounds) and altar choice
+   (own spawn altar 78% vs 71%) are level. Locks: we place 0.91 a game (all reactive: 100% hit a tribute) against 1.95 (8% hit). Theirs
+   are placed in advance and rarely matter (victim bags 114, n 95). No change recommended; the one endgame bug is S5.
+N2 Map classes (lead 2). Monolith maps: RANKED 0.569 (n 870) against 0.471 without; lone-monolith regression coefficient -0.04 (z -0.5).
+   Single-altar maps: 0.554 (n 603). The objectives stream's "v84-v88 21%, v88 0/33" comes from replay samples where ME wins 0.20 and
+   ME88 0.00, so it is not a class effect. The monolith kill rate (0.42 vs 0.67) and the monolith hits taken per hit given (1.42 vs 0.97
+   top_L) are real but do not show up in ranked results. Single-altar banking (479 vs 714) is the loss sample again.
+N3 Draft. Our main roster (Ryth+Vesper+Vendetta+Marcella+HoR) is the top-30 majority (30.6% of their 5-champion team-games, edge -0.1 over
+   2,443 team-games). Since Nov 2 we win 49.5% against an Elo expectation of 51.2% (n 465). Roster families: 5-champ main -2.1 (n 207);
+   with Varg +6.2 (n 58); 4-champ -2.9 / +3.5. On the four 4-champion worst maps we play Ryth+Vesper+(Vendetta|Marcella)+HoR and the
+   top-30 play Vesper+Vendetta+Marcella+HoR. That top-30 roster wins 44.5% against top-30 opponents (exp 50.4), and the Ryth version
+   44.0% (exp 47.2): no difference. Small-n outliers: our Ryth+Vesper+Marcella+Varg+HoR went 1/10 (draft.cpp comp_value l.164: +0.03
+   for Varg when F.multi*5 >= F.groups*2). Enemy Willow: edge -13.4 (n 83); enemy Tavi: -9.5 (n 54). Those point at fights, not picks.
+   No draft change is recommended before S1-S2 are tested.
+
+SUMMARY TABLE (ranked by gain)
+ S1 scarce-map stacking          STRATEGY  +2.5 games/100   g24_scarce (+_gpc 92, _follow 150)   group_score l.6994 + l.6789, world.cpp
+ S2 carry captures (Marcella)    STRATEGY  +1-2 games/100   g24_carry_cap                        capture_group l.8102
+ S3 camp execution               BUG/STRAT ~+1 game/100     commit_keep 1, g24_dash_travel       params.h l.412, group_score WHY(6)
+ S4 bush wards on bushy maps     STRATEGY  +1 game/100 (?)  g24_bush_ward                        place_ward l.3175
+ S5 winning bag recall loop      BUG       +0.5 games/100   g24_bank_fallback                    tribute l.6013 recall_bank

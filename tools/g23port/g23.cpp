@@ -428,7 +428,7 @@ bool Brain::g23_veto(std::vector<Enemy*>& E, Enemy*& tgt, bool fight, bool killa
 		for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 8; ++i)
 		{
 			const auto& a = W.allies[static_cast<std::size_t>(i)];
-			if (i == W.my_index || !a.alive || !a.visible || a.channeling || cheb(a.pos, pos) > 4 || a.hp < 0.15f * a.max_hp)
+			if (i == W.my_index || !a.alive || !a.visible || a.channeling || cheb(a.pos, pos) > P.g23_rescue_r || a.hp < 0.15f * a.max_hp)
 				continue;
 			bool hit_now = false, chased = false;
 			for (auto* e : E)
@@ -498,6 +498,27 @@ bool Brain::g23_veto(std::vector<Enemy*>& E, Enemy*& tgt, bool fight, bool killa
 			g23_chase_off[static_cast<std::size_t>(ti)] = round + 15;
 			fight = false;
 		}
+	}
+	// disengage (bit 256, ladder P2): the trade turned; leave now (v75's flee / avoid takes over) unless our attack kills this turn
+	if ((P.g23_veto_bits & 256) && fight && !killable && !rescued && !tgt->channeling && !tgt->tributing)
+	{
+		bool spell_near = false;
+		float burst = 0;
+		for (auto* e : E)
+		{
+			if (W.enemy_spawn.is_set(e->pos))
+				continue;
+			const int de = cheb(e->pos, pos);
+			const bool sp = e->ready(e->kit.dash) || e->ready(e->kit.cc) || e->ready(e->kit.dmg) || (e->kit.aoe_stuns && e->ready(e->kit.aoe));
+			spell_near |= de <= 4 && sp;
+			int reach = e->kit.attack_range + (e->kit.ranged ? 0 : 1) + (e->ready(e->kit.dash) ? 2 : 0);
+			if (e->ready(e->kit.dmg) || e->ready(e->kit.cc) || e->ready(e->kit.aoe))
+				reach = std::max(reach, 4);
+			if (de <= reach)
+				burst += e->str * (e->ready(e->kit.reset) ? 2.f : 1.f) + e->burst();
+		}
+		if (hp < P.g23_dis_hp * max_hp || (spell_near && hp < P.g23_dis_spell_hp * max_hp) || burst >= hp)
+			fight = false;
 	}
 	g23_state = fight ? (killable ? G23_KILL : G23_FIGHT) : (in_reach ? G23_LEAVE : G23_AVOID);
 	g23_round = round;

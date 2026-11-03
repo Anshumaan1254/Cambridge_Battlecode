@@ -1203,8 +1203,12 @@ struct Params
 	int g23_veto_bits = 63;		// mode 2 bits: 1 lure, 2 one approach step, 4 chase guard, 8 never deeper into their half, 16 second-wave join, 32 the v23 leave step,
 								// 64 rescue a caught ally (turn and fight when our bodies at it are not fewer than theirs), 128 a rescue commits (the
 								// later approach holds of combat() - fz_engage, the chase guards, calm 4, fwalk, strike_first - do not stop it: they
-								// measure "let them come to us", and a chaser on our ally is not coming to us)
+								// measure "let them come to us", and a chaser on our ally is not coming to us), 256 disengage (ladder P2: 2.80 deaths a loss with no
+								// retreat step; a retreat started under 40% health with an enemy spell ready is caught 41% of the time, at 40%+ without one 8%)
 	float g23_rescue_hp = 0.5f;	// rescue: our own health share needed
+	int g23_rescue_r = 4;		// rescue: the caught ally is within this many tiles of us
+	float g23_dis_hp = 0.4f, g23_dis_spell_hp = 0.5f; // bit 256 disengage: leave a fight we cannot finish now below these health shares (the second one
+								// when an enemy within 4 has a dash / stun / damage spell ready) or when the burst that can land on us next turn >= our health
 	int g23_msg = 0;			// 1: priority = (turn class + 16) x 4096 + hp bucket x 256 + state x 64 + target x 4 + flags (bit 0 committed, bit 1
 								// capturing); allies read it with query_priority: the second wave and R count committed allies
 	int g23_farm = 0;			// 1: farming through contact: with the engine in AVOID (nobody can hit us next turn) at R >= g23_keep_r the current group

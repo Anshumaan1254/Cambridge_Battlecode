@@ -7,6 +7,15 @@ ladder loop (earlier sessions were forbidden to). Still: commit/push only when t
 
 ## STATUS (newest first)
 
+**Nov 3, 04:20 UTC — LIVE: website v89 = `bots/g23rcfb`** (v88 + `v23_build 1`: v84's own kit build orders, Jungle first, Bruiser
+stacks, Power focus on Marcella), pinned 04:11:33Z, previous v88. Local: s4 +43 (deaths 7.9 vs 8.9), held-out −36 (deaths 7.8 vs 8.3;
+misses the −30 filter by 6, deployed as a ladder test, deviation logged). 50 groups of `paired_c4.json` queued 04:12 (49 with v84/v85/
+v86/v87/v88 columns). Next candidate ready: `bots/g23rcf24` (v88 + `v24_build 31`: the other session's builds, Treasure first +
+front-line health; s4 +15 deaths 7.2 vs 9.1 gold +9%, held-out −5; bundle `submissions/history/god_v23_g23rcf24_20261103.zip`).
+Off after local screens: draft rule + rescue (deaths +2 twice), squad / deathball openings (−53 / −91), `v23_shop` (+11, level),
+`g23_holdsafe` (no-op on v84), deathball proxy (useless opponent). `g23_open_safe` (opening discount on contested groups) s4 −23,
+held-out running.
+
 **Nov 3, 03:20 UTC — v88 KEPT live.** Paired (same 50 groups, 250 games): v88 134/250 vs v84 121 (net +13, p 0.20), v85 +7 of 150,
 v86 +7, v87 +3 (73 flips: the capture / watchdog fixes change many games, net level vs v87). Ladder ranks so far: v86 → v87 → v88 each
 a little better vs v84 (+6, +10, +13 of 250); rank 68, rating ~2000. **Corrections:** strike_first, px_hold, px_burst_wait are OFF in v84

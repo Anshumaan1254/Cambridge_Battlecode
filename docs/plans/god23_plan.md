@@ -7,6 +7,16 @@ ladder loop (earlier sessions were forbidden to). Still: commit/push only when t
 
 ## STATUS (newest first)
 
+**Nov 3, 06:30 UTC — RANKED-SAFE TESTING (the user's rule, 11:26 IST): the best version (v88) is live at every ranked slot (UTC
+minute % 10 == 0); a test version is live only between slots.** Tool: `experiments/ladder_nov2/ladder_cycle.py` — after a slot it
+activates `--test N` (or uploads `--submit BOT --note ...`; an upload goes live by itself when built, ~3 min), queues paired groups
+while the test version is live (waits for `--min-free` quota), then re-activates `--best` (~2-3 min recompile) before the next slot
+and logs a CYCLE line. Verified: queued games run within ~1 min, while the test version is still live (v91's 30 games differ from
+v88's in 8). Never use `ladder_loop.py deploy` / `rollback` any more (they leave a test version live across slots). Quota is the
+limit (50 groups per rolling hour). **v92 = `bots/g29rcf` = v85 (`bots/god29`, the user's god29.zip) + v88's switches** uploaded
+06:20:30, 36 groups of `paired_c7.json` queued 06:24, v88 back 06:26. Local: vs v85 +55 (94/172), vs v84 s4 +13, held-out vs v84
++97 [+32, +171] (122/206, deaths 7.2 vs 8.6). v91 (open_safe) has 6 groups (30 games: 15 vs v88's 15).
+
 **Nov 3, 04:40 UTC — !!! INTERNATIONAL QUALIFIERS: entry = the SELECTED version at 2026-11-03T23:59Z !!!** (from `cambc submissions list
 --json`: `upcomingTournament`). Rule for any agent: stop deploying candidates by ~21:00Z and leave the version with the best paired
 record selected (now **v88**, `bots/g23rcf`); re-check `Selected:` after 23:00Z. v89 (v88 + `v23_build`) lost to v88 on the same

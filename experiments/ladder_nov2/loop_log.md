@@ -13,3 +13,5 @@
 2026-11-03T01:41Z LOCAL _rdv (rescue + dive filter) vs god84 86/172 +8 [-73,+90], deaths 8.0 vs 8.2 -> not stacked (g23r alone +112).
 2026-11-03T01:51Z LOCAL _rbank (rescue + v84 v23_bank) vs god84 94/172 +24 [-61,+106], deaths 8.5 vs 8.6 -> not stacked. g23r vs gpta75 110/172 +161 [+76,+248], deaths 8.7 vs 10.2, kills 9.4 vs 7.9 (baseline god84 vs gpta75 102/172 +79, deaths 9.0 vs 9.2): rescue +82 vs a second opponent.
 2026-11-03T02:04Z LOCAL _rd256 (rescue + disengage bit 256) vs god84 89/172 -22, deaths 7.8 vs 7.2, kills 6.6 vs 7.1 -> disengage off. _rr6 (rescue radius 6) 97/172 +107, deaths 7.7 vs 9.2 (= g23r's numbers).
+2026-11-03T02:07Z rank 69 rating 1994 | live v87 "GOD v23 rc2: v84 + caught-ally rescue (g23 mode 2 bits 64)" since 2026-11-03T01:21:19Z (state file) | ranked 9/20 (45%), Elo-expected 9.4 (-0.4, z -0.2), perf 1980 | bands 1950:8/10 2000:1/10 | ladder_loop
+2026-11-03T02:07Z PAIRED v87 (g23r) on the 50 groups of paired_c2.json (250 games): 131/250 vs v84 121/250 (flips +35/-25, net +10, p 0.25); vs v85 70/150 vs 68/150 (net +2); vs v86 131 vs 127 (only 12 flips: commit rarely matters; net +4) -> WAIT; the other 51 groups at 03:02Z.

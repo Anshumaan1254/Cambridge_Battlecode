@@ -1,6 +1,6 @@
 --- god84/src/params.h	2026-11-02 17:31:12.755566245 +0000
-+++ god85/src/params.h	2026-11-03 02:19:32.065457821 +0000
-@@ -1187,6 +1187,87 @@
++++ god85/src/params.h	2026-11-03 02:34:47.851225281 +0000
+@@ -1187,6 +1187,90 @@
  	float pxs_obj_mult = 3.f;
  	float pxs_raid_mult = 3.f;	// styles 2 / 3: groups on the other team's half are worth this much more (a raid, not just a lower penalty)
  	int pxs_deny_bodies = 2;	// style 6: bodies 0 .. n-1 camp the other team's altars
@@ -31,6 +31,9 @@
 +								// 4 en-route spells never kill a group's last live camp (Marcella killed lone camps from 4 tiles and walked on)
 +	int g23_rew_d = 3;
 +	float g23_rew_mult = 2.5f;
++	int g23_holdsafe = 0;		// 1: combat()'s holds (px_hold, strike_first 1 / 2: "let them come, hit first") do not stand inside an awake camp's reach:
++								// step out first, not into enemy reach (map_fail B1: our passive camp-damage runs with an enemy within 6: 347 / 52
++								// deaths vs their 143 / 12)
 +	int g23_watchfix = 0;		// 1: base-code fixes from the ladder replays (map_fail/REPORT.md B2, B3): (a) a respawning group whose timer reads 0 is
 +								// waited for next to its tiles, never farmed onto them (an occupied spawn tile keeps the timer at 0: 166 idle rounds on
 +								// islands); a timer stuck at 0 for 12+ rounds is not a legit wait for the watchdog; (b) a travel dash is not progress

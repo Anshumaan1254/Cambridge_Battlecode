@@ -551,6 +551,7 @@ private:
 	bool g23_spawn_farm(Group& g);
 	bc::bitboard g23_block;	// P.g23_divefilter: this turn's blocked approach tiles
 	void g23_dive_prepare();
+	bool g23_hold_out_of_camps(); // g23_holdsafe
 };
 
 Brain& brain();

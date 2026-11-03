@@ -4489,6 +4489,8 @@ bool Brain::combat()
 					task = T_FIGHT;
 					last_fight_round = round;
 					engaged = true;
+					if (P.g23_holdsafe)
+						g23_hold_out_of_camps();
 					return true; // hold here: they step in, we hit first
 				}
 			}
@@ -4660,6 +4662,8 @@ bool Brain::combat()
 		if (round - sf_since < P.strike_hold)
 		{
 			task = T_FIGHT;
+			if (P.g23_holdsafe)
+				g23_hold_out_of_camps();
 			return true;
 		}
 	}
@@ -4677,6 +4681,8 @@ bool Brain::combat()
 		if (soon && round - sf_since < P.strike_hold)
 		{
 			task = T_FIGHT;
+			if (P.g23_holdsafe)
+				g23_hold_out_of_camps();
 			return true; // hold this turn (not in reach: nothing to hit)
 		}
 	}

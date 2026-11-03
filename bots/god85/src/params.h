@@ -1214,6 +1214,9 @@ struct Params
 								// 4 en-route spells never kill a group's last live camp (Marcella killed lone camps from 4 tiles and walked on)
 	int g23_rew_d = 3;
 	float g23_rew_mult = 2.5f;
+	int g23_holdsafe = 0;		// 1: combat()'s holds (px_hold, strike_first 1 / 2: "let them come, hit first") do not stand inside an awake camp's reach:
+								// step out first, not into enemy reach (map_fail B1: our passive camp-damage runs with an enemy within 6: 347 / 52
+								// deaths vs their 143 / 12)
 	int g23_watchfix = 0;		// 1: base-code fixes from the ladder replays (map_fail/REPORT.md B2, B3): (a) a respawning group whose timer reads 0 is
 								// waited for next to its tiles, never farmed onto them (an occupied spawn tile keeps the timer at 0: 166 idle rounds on
 								// islands); a timer stuck at 0 for 12+ rounds is not a legit wait for the watchdog; (b) a travel dash is not progress

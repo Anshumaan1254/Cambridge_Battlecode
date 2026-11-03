@@ -1363,3 +1363,20 @@ void Brain::g23_dive_prepare()
 	if (!g23_block.is_empty())
 		g_hard_block = &g23_block;
 }
+
+// ---------------------------------------------------------------------------------------------- hold out of camps (map_fail B1)
+
+// A hold inside an awake camp's reach takes the camp's hits while we wait for the enemy: step to a tile out of every awake camp's reach,
+// avoiding enemy reach (step() with avoid_danger). No step (cornered, rooted): hold where we are.
+bool Brain::g23_hold_out_of_camps()
+{
+	if (!can_move || !camp_danger.is_set(pos))
+		return false;
+	bc::bitboard out = ~camp_danger & ~world().walls;
+	bc::bitboard near2;
+	near2.draw_chebyshev(pos, 2.f);
+	out &= near2;
+	if (out.is_empty())
+		return false;
+	return step(out, true, false);
+}

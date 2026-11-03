@@ -4564,6 +4564,7 @@ bool Brain::combat()
 	engaged = fight || in_reach || nearest_enemy <= 5;
 	(void)stunners;
 
+	bool rescue_commit = false; // g23_veto_bits 128: a rescue the veto chose is not undone by the approach holds below
 	if (P.g23_fight == 2)
 	{
 		// GOD v23 mode 2: v75's decision above, then the v23 vetoes and joins (g23.cpp): the lure (a target inside an awake camp's reach while
@@ -4572,8 +4573,10 @@ bool Brain::combat()
 		fight = g23_veto(E, tgt, fight, killable, in_reach, adv, d, my_reach);
 		d = cheb(pos, tgt->pos); // the later rules (fz_engage, calm, strike holds) measure the target we now have
 		g23_keep_farm = !fight && !in_reach && adv >= P.g23_keep_r;
+		if (P.g23_veto_bits & 128)
+			rescue_commit = fight && g23_rescue_now;
 	}
-	if (fz_engage_eff > 0 && fight && !in_reach && !killable && last_fight_round < round - 1 && d > fz_engage_eff && !tgt->channeling && !tgt->tributing)
+	if (fz_engage_eff > 0 && fight && !rescue_commit && !in_reach && !killable && last_fight_round < round - 1 && d > fz_engage_eff && !tgt->channeling && !tgt->tributing)
 		fight = false; // v14 fz_engage: not yet in a fight and the target is still far: keep doing what we do
 	if (P.fz_chase > 0 && !in_reach)
 	{
@@ -4589,7 +4592,7 @@ bool Brain::combat()
 			if (round - chase_since >= P.fz_chase)
 				chase_off_until = round + P.fz_chase_off;
 		}
-		if (fight && chase_h == tgt->handle && round <= chase_off_until && !tgt->channeling && !tgt->tributing)
+		if (fight && !rescue_commit && chase_h == tgt->handle && round <= chase_off_until && !tgt->channeling && !tgt->tributing)
 			fight = false;
 	}
 	if (P.g22_chase > 0 || P.g22_chase_deep)
@@ -4601,7 +4604,7 @@ bool Brain::combat()
 		if (ready(kit.dmg)) hit_reach = std::max(hit_reach, static_cast<int>(kit.dmg_range));
 		if (ready(kit.cc)) hit_reach = std::max(hit_reach, static_cast<int>(kit.cc_range));
 		if (ready(kit.aoe)) hit_reach = std::max(hit_reach, static_cast<int>(kit.aoe_range + kit.aoe_radius));
-		const bool exempt = killable || d <= hit_reach || tgt->channeling || tgt->tributing;
+		const bool exempt = killable || d <= hit_reach || tgt->channeling || tgt->tributing || rescue_commit;
 		const int home_d = cheb(tgt->pos, W.enemy_spawn_c);
 		if (P.g22_chase > 0 && fight && !exempt)
 		{
@@ -4618,13 +4621,13 @@ bool Brain::combat()
 	}
 	// v15 g15_calm & 4: starting a fight we have to walk to needs a target that is coming at us (or one step from our reach), a kill, a
 	// channel or a bag worth chasing; otherwise we keep farming (v14 walked 175 rounds a body toward fights, the ladder teams 73).
-	if ((calm_bits & 4) && fight && !in_reach && !killable && last_fight_round < round - 1 && d > my_reach + 1 && !tgt->channeling && !tgt->tributing &&
+	if ((calm_bits & 4) && fight && !rescue_commit && !in_reach && !killable && last_fight_round < round - 1 && d > my_reach + 1 && !tgt->channeling && !tgt->tributing &&
 		tgt->gems < 40 && !g15_is_threat(*tgt))
 		fight = false;
 	if (P.g15_fwalk > 0)
 	{
 		// v15 g15_fwalk: a fight we keep walking to without getting into reach is a same-speed chase; stop it and farm for a while.
-		const bool exempt = in_reach || killable || tgt->channeling || tgt->tributing;
+		const bool exempt = in_reach || killable || tgt->channeling || tgt->tributing || rescue_commit;
 		if (fight && !exempt)
 		{
 			if (round <= g15_fw_off)
@@ -4643,7 +4646,7 @@ bool Brain::combat()
 	// Early warning: an outnumbering group is visible; allies keep away from it.
 	if (!fight && E.size() >= 3 && adv < 1.f)
 		post_danger(tgt->pos);
-	if (fight && (P.strike_first & 2) && kit.ranged && !in_reach && !killable && d > kit.attack_range && !ready(kit.dash) &&
+	if (fight && !rescue_commit && (P.strike_first & 2) && kit.ranged && !in_reach && !killable && d > kit.attack_range && !ready(kit.dash) &&
 		!(d <= 4 && (ready(kit.cc) || ready(kit.dmg) || ready(kit.aoe))))
 	{
 		// A6, ranged: walking into range spends this turn's attack (ranged cannot attack after a walk), so the side
@@ -4657,7 +4660,7 @@ bool Brain::combat()
 			return true;
 		}
 	}
-	if (fight && (P.strike_first & 1) && !in_reach && !killable && my_burst <= 0.f && d > my_reach)
+	if (fight && !rescue_commit && (P.strike_first & 1) && !in_reach && !killable && my_burst <= 0.f && d > my_reach)
 	{
 		// A6: proactive fight with our burst on cooldown: wait outside their reach (at most strike_hold rounds per
 		// fight) for the opener; whoever hits first wins (top-3 replays: they hit first in 86 of 152 fights; when they

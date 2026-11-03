@@ -1,5 +1,5 @@
 --- god84/src/brain.cpp	2026-11-02 17:31:12.756024356 +0000
-+++ god85/src/brain.cpp	2026-11-03 00:23:54.301976122 +0000
++++ god85/src/brain.cpp	2026-11-03 00:42:07.587241137 +0000
 @@ -971,6 +971,8 @@
  
  void Brain::turn()
@@ -121,10 +121,12 @@
  	if (P.px_mode)
  	{
  		// Proxy of the top teams' fights: the team target is the lowest-health body we can hit this turn (a body the
-@@ -4520,6 +4564,15 @@
+@@ -4520,7 +4564,19 @@
  	engaged = fight || in_reach || nearest_enemy <= 5;
  	(void)stunners;
  
+-	if (fz_engage_eff > 0 && fight && !in_reach && !killable && last_fight_round < round - 1 && d > fz_engage_eff && !tgt->channeling && !tgt->tributing)
++	bool rescue_commit = false; // g23_veto_bits 128: a rescue the veto chose is not undone by the approach holds below
 +	if (P.g23_fight == 2)
 +	{
 +		// GOD v23 mode 2: v75's decision above, then the v23 vetoes and joins (g23.cpp): the lure (a target inside an awake camp's reach while
@@ -133,11 +135,66 @@
 +		fight = g23_veto(E, tgt, fight, killable, in_reach, adv, d, my_reach);
 +		d = cheb(pos, tgt->pos); // the later rules (fz_engage, calm, strike holds) measure the target we now have
 +		g23_keep_farm = !fight && !in_reach && adv >= P.g23_keep_r;
++		if (P.g23_veto_bits & 128)
++			rescue_commit = fight && g23_rescue_now;
 +	}
- 	if (fz_engage_eff > 0 && fight && !in_reach && !killable && last_fight_round < round - 1 && d > fz_engage_eff && !tgt->channeling && !tgt->tributing)
++	if (fz_engage_eff > 0 && fight && !rescue_commit && !in_reach && !killable && last_fight_round < round - 1 && d > fz_engage_eff && !tgt->channeling && !tgt->tributing)
  		fight = false; // v14 fz_engage: not yet in a fight and the target is still far: keep doing what we do
  	if (P.fz_chase > 0 && !in_reach)
-@@ -4621,6 +4674,8 @@
+ 	{
+@@ -4536,7 +4592,7 @@
+ 			if (round - chase_since >= P.fz_chase)
+ 				chase_off_until = round + P.fz_chase_off;
+ 		}
+-		if (fight && chase_h == tgt->handle && round <= chase_off_until && !tgt->channeling && !tgt->tributing)
++		if (fight && !rescue_commit && chase_h == tgt->handle && round <= chase_off_until && !tgt->channeling && !tgt->tributing)
+ 			fight = false;
+ 	}
+ 	if (P.g22_chase > 0 || P.g22_chase_deep)
+@@ -4548,7 +4604,7 @@
+ 		if (ready(kit.dmg)) hit_reach = std::max(hit_reach, static_cast<int>(kit.dmg_range));
+ 		if (ready(kit.cc)) hit_reach = std::max(hit_reach, static_cast<int>(kit.cc_range));
+ 		if (ready(kit.aoe)) hit_reach = std::max(hit_reach, static_cast<int>(kit.aoe_range + kit.aoe_radius));
+-		const bool exempt = killable || d <= hit_reach || tgt->channeling || tgt->tributing;
++		const bool exempt = killable || d <= hit_reach || tgt->channeling || tgt->tributing || rescue_commit;
+ 		const int home_d = cheb(tgt->pos, W.enemy_spawn_c);
+ 		if (P.g22_chase > 0 && fight && !exempt)
+ 		{
+@@ -4565,13 +4621,13 @@
+ 	}
+ 	// v15 g15_calm & 4: starting a fight we have to walk to needs a target that is coming at us (or one step from our reach), a kill, a
+ 	// channel or a bag worth chasing; otherwise we keep farming (v14 walked 175 rounds a body toward fights, the ladder teams 73).
+-	if ((calm_bits & 4) && fight && !in_reach && !killable && last_fight_round < round - 1 && d > my_reach + 1 && !tgt->channeling && !tgt->tributing &&
++	if ((calm_bits & 4) && fight && !rescue_commit && !in_reach && !killable && last_fight_round < round - 1 && d > my_reach + 1 && !tgt->channeling && !tgt->tributing &&
+ 		tgt->gems < 40 && !g15_is_threat(*tgt))
+ 		fight = false;
+ 	if (P.g15_fwalk > 0)
+ 	{
+ 		// v15 g15_fwalk: a fight we keep walking to without getting into reach is a same-speed chase; stop it and farm for a while.
+-		const bool exempt = in_reach || killable || tgt->channeling || tgt->tributing;
++		const bool exempt = in_reach || killable || tgt->channeling || tgt->tributing || rescue_commit;
+ 		if (fight && !exempt)
+ 		{
+ 			if (round <= g15_fw_off)
+@@ -4590,7 +4646,7 @@
+ 	// Early warning: an outnumbering group is visible; allies keep away from it.
+ 	if (!fight && E.size() >= 3 && adv < 1.f)
+ 		post_danger(tgt->pos);
+-	if (fight && (P.strike_first & 2) && kit.ranged && !in_reach && !killable && d > kit.attack_range && !ready(kit.dash) &&
++	if (fight && !rescue_commit && (P.strike_first & 2) && kit.ranged && !in_reach && !killable && d > kit.attack_range && !ready(kit.dash) &&
+ 		!(d <= 4 && (ready(kit.cc) || ready(kit.dmg) || ready(kit.aoe))))
+ 	{
+ 		// A6, ranged: walking into range spends this turn's attack (ranged cannot attack after a walk), so the side
+@@ -4604,7 +4660,7 @@
+ 			return true;
+ 		}
+ 	}
+-	if (fight && (P.strike_first & 1) && !in_reach && !killable && my_burst <= 0.f && d > my_reach)
++	if (fight && !rescue_commit && (P.strike_first & 1) && !in_reach && !killable && my_burst <= 0.f && d > my_reach)
+ 	{
+ 		// A6: proactive fight with our burst on cooldown: wait outside their reach (at most strike_hold rounds per
+ 		// fight) for the opener; whoever hits first wins (top-3 replays: they hit first in 86 of 152 fights; when they
+@@ -4621,6 +4677,8 @@
  			return true; // hold this turn (not in reach: nothing to hit)
  		}
  	}
@@ -146,7 +203,7 @@
  	if (fight)
  	{
  		last_fight_round = round;
-@@ -4629,6 +4684,8 @@
+@@ -4629,6 +4687,8 @@
  			comms().post(AL_RALLY, tgt->pos, round);
  		learner().on_fight(round);
  		task = T_FIGHT;
@@ -155,7 +212,7 @@
  		if (P.v23_hy & 4)
  		{
  			fe_no_cc = tgt->stunned; // keep our stun for the round after theirs ends
-@@ -4638,6 +4695,8 @@
+@@ -4638,6 +4698,8 @@
  		}
  		return engage(*tgt);
  	}
@@ -164,7 +221,7 @@
  	if (in_reach && !(round < pw_calm_until && hp >= pw_calm_hp - 1.f && round - last_hit_round > 1))
  	{
  		post_danger(tgt->pos);
-@@ -5047,6 +5106,8 @@
+@@ -5047,6 +5109,8 @@
  
  bool Brain::go_home()
  {
@@ -173,7 +230,7 @@
  	auto& W = world();
  	task = T_HOME;
  	if (W.ally_spawn.is_set(pos))
-@@ -5110,6 +5171,11 @@
+@@ -5110,6 +5174,11 @@
  
  void Brain::update_priority()
  {
@@ -185,7 +242,7 @@
  	// Turn order (verified on 14,069 ladder rounds): team A leads odd rounds, team B even rounds; teams
  	// alternate turns; within a team higher priority acts first; set_priority applies from the next round.
  	// A fighter that acts last in a round we trail and first in the next round we lead gets two actions in
-@@ -5393,6 +5459,8 @@
+@@ -5393,6 +5462,8 @@
  		else if (enemy_near_d > P.finish_enemy_d)
  			return go_home();
  	}
@@ -194,7 +251,7 @@
  	if (hp >= threshold)
  	{
  		// On spawn, health is restored only after a turn ends there: after a recall or a walk home, rest one
-@@ -6127,6 +6195,8 @@
+@@ -6127,6 +6198,8 @@
  	// An enemy channelling a tribute (posted as an opportunity) is the cheapest kill in the game, and the
  	// only way to stop a winning tribute: answer it from farther and at lower health than a rally.
  	const bool opp = C.alert_kind == AL_OPPORTUNITY;
@@ -203,7 +260,7 @@
  	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
  	const bool their_endgame = theirs >= P.endgame_alarm;
  	float hp_gate = opp ? (their_endgame ? 0.25f : 0.4f) : P.rally_hp;
-@@ -6144,6 +6214,8 @@
+@@ -6144,6 +6217,8 @@
  	if (hp < hp_gate * max_hp || ((task == T_CAPTURE || reward_here()) && !their_endgame))
  		return false;
  	const int d = cheb(C.alert_pos, pos);
@@ -212,7 +269,7 @@
  	if (d > max_d || d < 2)
  		return false;
  	// v15 g15_calm & 8: a body working a group (a camp hit in the last 3 rounds, waiting on its respawn) keeps at it unless the rally is
-@@ -6567,7 +6639,7 @@
+@@ -6567,7 +6642,7 @@
  	ust_anchor = pos; // waiting out a cooldown on the ring is not being stuck
  	ust_since = round;
  	const bool save_cc = enemy_near_d <= P.hold_cc_dist;
@@ -221,7 +278,7 @@
  	bool did = false;
  	if (!hold_spells && !cast_done)
  	{
-@@ -6939,7 +7011,8 @@
+@@ -6939,7 +7014,8 @@
  			if (g.harmless)
  				return true;
  			// Camps hit the nearest champion: a ranged champion next to a melee ally takes almost nothing.
@@ -231,7 +288,7 @@
  #ifdef XM_TRACE
  			// The uncorrected model, logged next to the new one so both are scored on the same episodes.
  			const bool xm_tank0 = !(kit.ranged && helper_melee);
-@@ -7141,7 +7214,8 @@
+@@ -7141,7 +7217,8 @@
  				edps += sc_recent[static_cast<std::size_t>(k)].dps;
  			}
  		const bool dive = P.big_reward_dive > 0 && g.st == ST_REWARD && g.enemy_on_tile && g.gems >= P.big_reward_dive && hp >= 0.25f * max_hp;
@@ -241,7 +298,7 @@
  		{
  			// big_reward: a group worth a death or two is fought for with the whole team close by
  			const bool big = P.big_reward > 0 && g.gems >= P.big_reward;
-@@ -7157,7 +7231,7 @@
+@@ -7157,7 +7234,7 @@
  				{ WHY(10); return -1; }
  		}
  	}
@@ -250,7 +307,7 @@
  		time += 12.f;
  	if (P.v24_ci_escort && (type == CT::cassi || type == CT::issac))
  	{
-@@ -7267,6 +7341,13 @@
+@@ -7267,6 +7344,13 @@
  			return 1e4f / std::max(1.f, finish);
  		}
  	}
@@ -264,7 +321,7 @@
  	if (P.tp_own && tp_own_.ok && g.id >= 0 && g.id < static_cast<int>(tp_own_.owner.size()) &&
  		tp_own_.owner[static_cast<std::size_t>(g.id)] == tp_own_.slot)
  		return value / std::max(1.f, time) * (1.f + P.tp_own_bonus);
-@@ -7463,6 +7544,8 @@
+@@ -7463,6 +7547,8 @@
  	auto& W = world();
  	if (task != T_CAPTURE && cast_en_route())
  		return;
@@ -273,7 +330,7 @@
  	if (P.style == 1 || round < P.deathball_until || (P.pxs_style && style_now() == 3) || (P.spar_db && sparring_window()))
  	{
  		int leader = -1;
-@@ -7735,6 +7818,8 @@
+@@ -7735,6 +7821,8 @@
  			}
  		}
  	}
@@ -282,7 +339,7 @@
  	if (best < 0)
  	{
  		IDL();
-@@ -7943,10 +8028,14 @@
+@@ -7943,10 +8031,14 @@
  			else
  				task = T_WAIT;
  		}
@@ -299,7 +356,7 @@
  	}
  }
  
-@@ -8775,7 +8864,7 @@
+@@ -8775,7 +8867,7 @@
  	// Keep burst for a fight only when one is likely within the cooldown: an unused ready spell is lost value
  	// (8-round cooldowns), and an enemy 7-9 tiles away led to a fight within 8 rounds only 13% of the time.
  	const bool save_cc = enemy_near_d <= P.hold_cc_dist;
@@ -308,7 +365,7 @@
  	if (P.varg_splash_pos && type == CT::varg && can_move)
  	{
  		// Varg's splash hits every camp next to the target: stand next to the camp with the most live neighbours. From
-@@ -8813,6 +8902,8 @@
+@@ -8813,6 +8905,8 @@
  				step(goal, false, false);
  		}
  	}

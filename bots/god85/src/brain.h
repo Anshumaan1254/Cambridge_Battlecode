@@ -498,7 +498,7 @@ private:
 	float g23_R = 1.f;		 // local power ratio at the contact point (last evaluation)
 	mutable int g23_emask_now = 0;
 	mutable bool g23_holds_read = false;
-	bool g23_escape = true, g23_keep_farm = false;
+	bool g23_escape = true, g23_keep_farm = false, g23_rescue_now = false; // g23_rescue_now: this combat() call's veto chose a rescue
 	int g23_leave_round = -100;
 	std::uint32_t g23_chase_h = 0;
 	int g23_chase_best = 99, g23_chase_n = 0, g23_chase_round = -100;

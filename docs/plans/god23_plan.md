@@ -7,6 +7,25 @@ ladder loop (earlier sessions were forbidden to). Still: commit/push only when t
 
 ## STATUS (newest first)
 
+**Nov 3, 01:00 UTC.** Ladder: rank 67, rating 2003, v85 live (100 ranked since 21:15Z: 62/100, Elo-expected 54.6, z +1.5, perf 2057).
+Panel vs god84 since 23:40 (172 games each, `g85_run7..11.log`): `_85v2n` one-step +42 (deaths 7.0 vs 7.5); `_85r` **rescue** (bit 64)
++70 (deaths 8.0 vs 8.7); `_85r2` rescue + one-step −2; `_85dr` / `_85draft` v84's `v23_draft` +72 / +67 (**the same games**: 171 of
+172 identical, so one sample, not two); `_85sf` fixed spawn-farm −49; `_85dv` dive filter −22; `_85cz` camp zone −57; `_85ca` rescue +
+draft −44 with **deaths 10.2 vs 8.4**; `_85cb` rescue + one-step + draft +32, deaths 9.5 vs 8.6. `_85tolb` / `_85x` / `_85m` / `_85v2b`
+were never created (BUILD FAILED = missing dir) → **TOL after the 15 fixes is still unmeasured** (queue it). Noise: ±80 at 95%; the
+picked singles regress (combinations of the best singles all come out lower).
+**Root cause of the rescue deaths (found 00:45):** `_85r` was built before the stale-`d` fix; `_85ca`/`_85cb` after it. With `d`
+refreshed to the rescue target, combat()'s later approach holds (fz_engage, chase guards, calm 4, fwalk, strike_first 1/2) cancel or
+*hold in place* a rescue — the body stands next to its caught ally inside enemy reach without fighting. With the stale `d` (old target)
+the holds mostly did not fire. Fix: **bit 128 = the rescue commits** (`g23_rescue_now` set by g23_veto; `rescue_commit` skips those
+holds). Inert when off (verified: all-off build `_85n5` = v84's games on 3 maps, every statistic identical). Candidates `g23r` (bits 64:
+refreshed d, no commit) and **`g23rc` (bits 192)** on the panel now (`g85_run11.log`). Fuel (82 games of `_85cb`, mode 2 + rescue):
+p99 78.9k = v84's 78.9k. `tools/g23port` regenerated after the edit (reproduces god85 exactly).
+Draft facts from the ladder: v84 and v85 both play HoR (id 11) every game + Vesper (1) / Vendetta (2) / Ryth (0) / Marcella (6), Varg
+(9) rarely; `v23_draft` brings Tavi / C&I instead (never played live). Next: `g23rc` held-out → deploy → paired groups
+(`paired_cand_shared30.json`, then `paired_cand_rest71.json`) per `experiments/ladder_nov2/DEPLOY_CHECKLIST.md`; locally meanwhile
+`_85tolb` (TOL alone, fixed).
+
 **Nov 2, 23:20 UTC.** Website **v85 "GPTA 8.1.0 Shastra" (god29.zip) is live** since ~21:15 UTC, uploaded by the user's other session
 (not by this agent). It is doing well: 40/60 ranked (Elo-expected 34.0); team rank 71, rating 1992 (was 89 / 1946 on v84). Its source is
 not here yet (asked the user for god29.zip). **Naming trap: `bots/god85` is THIS agent's work (= website v84 + g23 modules), not website

@@ -465,6 +465,8 @@ bool Brain::g23_veto(std::vector<Enemy*>& E, Enemy*& tgt, bool fight, bool killa
 		if (best_t)
 			fight = true, rescued = true, tgt = best_t;
 	}
+	if (P.g23_veto_bits & 128)
+		g23_rescue_now = rescued; // read by combat() right after this call (bit 128: the rescue commits)
 	const int td = cheb(pos, tgt->pos);
 	bool lure = false;
 	if (!killable && !rescued && td > my_reach && !in_awake_camp_range() && camp_danger.is_set(tgt->pos))

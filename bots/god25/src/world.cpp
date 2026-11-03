@@ -123,8 +123,7 @@ void World::init_static()
 	altar_enemy_round.assign(altars.size(), -1000);
 	if (P.g24_bush_flee)
 	{
-		bush_cl.clear();
-		// GOD v24 g24_bush_flee: label the 8-connected bush clusters once (one positions() export, plain flood fill; no per-tile host calls)
+		// GOD v25 g24_bush_flee: label the 8-connected bush clusters once (one positions() export, plain flood fill; no per-tile host calls)
 		const auto bp = bc::map::bushes().positions();
 		if (!bp.empty())
 		{

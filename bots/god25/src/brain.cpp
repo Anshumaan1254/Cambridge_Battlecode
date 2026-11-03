@@ -1975,13 +1975,15 @@ void Brain::osc_guard()
 #ifdef Q_TRACE
 	debug_block({ std::printf("QBL r=%d i=%d why=osc task=%d g=%d\n", round, W.my_index, task, task_group); });
 #endif
+#ifdef G24_TRACE
 	if (pace)
 	{
-		[[maybe_unused]] int ne = 0;
+		int ne = 0;
 		for (const auto& e : W.enemies)
 			ne += e.alive && e.visible && cheb(e.pos, pos) <= 12;
-		G24T("g24_pace", "osc task=%d g=%d moves=%d n=%d pos=(%d,%d) ne12=%d", task, task_group, moves, n, pos.x, pos.y, ne);
+		std::printf("G24 pace_osc body=%d r=%d task=%d g=%d moves=%d n=%d pos=(%d,%d) ne12=%d\n", W.my_index, round, task, task_group, moves, n, pos.x, pos.y, ne);
 	}
+#endif
 	if ((task == T_FARM || task == T_CAPTURE || task == T_WAIT || (pace && task == T_FLEE)) && task_group >= 0 && task_group < static_cast<int>(W.groups.size()))
 	{
 		blacklist[static_cast<std::size_t>(task_group)] = round + P.fz_osc_bl;
@@ -2024,28 +2026,27 @@ void Brain::progress_watch(bool acted_now)
 	}
 	if (P.g24_bank_hold && task == T_WAIT && task_group < 0 && round < g24_bh_wait_until)
 		legit_wait = true; // g24_bank_hold: a carrier holding its tile while the altar hold lasts (the wait ends by itself)
-	bool progress = false;
+	bool progress;
 	if (P.g24_pace & 4)
 	{
-		bool healed = hp > pw_hp + 0.02f * max_hp, moved_off = cheb(pos, pw_anchor) > 3;
 		// g24_pace 4 (confusion S1c): out-of-combat regen next to enemies and a there-and-back walk restarted the clock (40-50-round pacing)
 		for (const auto& e : W.enemies)
 			if (e.alive && e.visible && cheb(e.pos, pos) <= 12)
 				g24_pw_er = round;
 		const bool other = acted_now || gems != pw_gems || gold != pw_gold || W.ally_spawn.is_set(pos) || legit_wait || pw_since < 0;
-		const bool heal0 = healed, move0 = moved_off;
-		if (healed && round - g24_pw_er < 3)
-			healed = false;
-		if (moved_off)
-			for (int k = 2; k <= 12 && moved_off; ++k)
-			{
-				const std::size_t j = static_cast<std::size_t>((round - k) & 15);
-				if (g24_pw_posr[j] == round - k && cheb(pos, g24_pw_pos[j]) <= 1)
-					moved_off = false; // back within 1 tile of where we stood k rounds ago
-			}
-		if (!other && (heal0 || move0) && !healed && !moved_off)
-			G24T("g24_pace", "watch no_progress heal=%d move=%d enemy_ago=%d stall=%d task=%d g=%d", static_cast<int>(heal0), static_cast<int>(move0), round - g24_pw_er,
-				round - pw_since, task, task_group);
+		const bool healed = hp > pw_hp + 0.02f * max_hp && round - g24_pw_er >= 3;
+		bool moved_off = cheb(pos, pw_anchor) > 3;
+		for (int k = 2; k <= 12 && moved_off; ++k)
+		{
+			const std::size_t j = static_cast<std::size_t>((round - k) & 15);
+			if (g24_pw_posr[j] == round - k && cheb(pos, g24_pw_pos[j]) <= 1)
+				moved_off = false; // back within 1 tile of where we stood k rounds ago
+		}
+#ifdef G24_TRACE
+		if (!other && !healed && !moved_off && (hp > pw_hp + 0.02f * max_hp || cheb(pos, pw_anchor) > 3))
+			std::printf("G24 pace_watch body=%d r=%d no_progress enemy_ago=%d stall=%d task=%d g=%d\n", W.my_index, round, round - g24_pw_er, round - pw_since, task,
+				task_group);
+#endif
 		g24_pw_pos[static_cast<std::size_t>(round & 15)] = pos;
 		g24_pw_posr[static_cast<std::size_t>(round & 15)] = round;
 		progress = other || healed || moved_off;
@@ -2142,7 +2143,7 @@ bool Brain::in_avoid(const Group& g) const
 // group on our half where our side is not weaker (tadv >= 1, group_score's local force ratio).
 bool Brain::g24_side_ban(const Group& g) const
 {
-	if (!(P.g24_pace & 1) || P.v27_avoid <= 0 || round >= av_until || av_n <= 0 || g24_av_me.x < 0)
+	if (P.v27_avoid <= 0 || round >= av_until || av_n <= 0 || g24_av_me.x < 0)
 		return false;
 	if (g.id == task_group && g23_keep_farm)
 		return false;
@@ -2180,8 +2181,11 @@ bool Brain::g24_side_ban(const Group& g) const
 		if (tadv >= 1.f)
 			return false;
 	}
-	G24T("g24_pace", "ban g=%d de=%d dme=%d ours=%d tadv=%.2f enemy=(%d,%d) me=(%d,%d) left=%d", g.id, cheb(g.center, av_pos[static_cast<std::size_t>(kb)]), dme,
-		static_cast<int>(g.ours), tadv, av_pos[static_cast<std::size_t>(kb)].x, av_pos[static_cast<std::size_t>(kb)].y, g24_av_me.x, g24_av_me.y, av_until - round);
+#ifdef G24_TRACE
+	const vec2 ep = av_pos[static_cast<std::size_t>(kb)];
+	std::printf("G24 pace_ban body=%d r=%d g=%d de=%d dme=%d ours=%d tadv=%.2f enemy=(%d,%d) me=(%d,%d) left=%d\n", world().my_index, round, g.id, cheb(g.center, ep),
+		dme, static_cast<int>(g.ours), tadv, ep.x, ep.y, g24_av_me.x, g24_av_me.y, av_until - round);
+#endif
 	return true;
 }
 
@@ -2764,6 +2768,120 @@ bool Brain::go_home_step(bool avoid)
 	const bool moved = after_move(Nav::step_field(pos, W.home, 0, avoid ? &av : nullptr, mob_dash(), can_move, W.ally_spawn));
 	g_exit_first = false;
 	return moved;
+}
+
+// GOD v25 g24_bush_flee (bush_emblem/REPORT.txt S2): a retreat that ends in / passes a bush dies 7-12 points less often within 8 rounds at
+// equal health, power ratio and map class; ours crossed open ground (no bush term in the retreat). With a visible enemy within 5 (not on its
+// spawn): among the 8 neighbours that keep or open the distance to the nearest one and do not lengthen the way home (dist_home <= now),
+// step into a bush whose 8-connected cluster holds no visible enemy, never one next to an awake camp's reach (farthest from the enemy,
+// then nearest home, then out of danger; standing in such a bush already, a sideways step must open the distance). Bit 2: no such
+// neighbour, hp >= 40% and no enemy within 2: the first step of a 2-step path into such a bush that shortens the way home by 1 or more
+// (the walk is at most 1 longer).
+bool Brain::g24_bush_step()
+{
+	auto& W = world();
+	if (W.bush_cl.empty())
+		return false;
+	const Enemy* t = nullptr;
+	int td = BIG;
+	for (const auto& e : W.enemies)
+		if (e.alive && e.visible && !W.enemy_spawn.is_set(e.pos) && cheb(e.pos, pos) < td)
+			td = cheb(e.pos, pos), t = &e;
+	if (!t || td > 5)
+		return false;
+	const int h0 = W.dist_home(pos);
+	if (h0 >= BIG)
+		return false;
+	std::array<int, 8> occ{};
+	int no = 0;
+	for (const auto& e : W.enemies)
+		if (e.alive && e.visible && no < 8)
+		{
+			const int c = W.bush_cluster(e.pos);
+			if (c >= 0)
+				occ[static_cast<std::size_t>(no++)] = c;
+		}
+	bc::bitboard loc;
+	loc.draw_chebyshev(pos, 3.f);
+	const std::vector<vec2> cdz = (loc & camp_danger).positions(); // awake camps' reach around us (usually none)
+	auto clean = [&](vec2 p) {
+		const int c = W.bush_cluster(p);
+		if (c < 0)
+			return false;
+		for (int k = 0; k < no; ++k)
+			if (occ[static_cast<std::size_t>(k)] == c)
+				return false;
+		for (const auto q : cdz)
+			if (cheb(p, q) <= 1)
+				return false;
+		return true;
+	};
+	const bc::bitboard blocked = Nav::blocked_now(pos);
+	auto open = [&](vec2 p) { return bc::map::is_in_bounds(p) && !W.walls.is_set(p) && !blocked.is_set(p); };
+	vec2 best = pos;
+	int bd = -1, bh = BIG, bdang = 1;
+	const bool in_bush = clean(pos); // already hidden: a sideways step must open the distance (no shuffle inside the cluster)
+	for (int dy = -1; dy <= 1; ++dy)
+		for (int dx = -1; dx <= 1; ++dx)
+		{
+			const vec2 p{ pos.x + dx, pos.y + dy };
+			if ((dx == 0 && dy == 0) || !bc::map::is_in_bounds(p) || cheb(p, t->pos) < td || !clean(p) || !open(p))
+				continue;
+			const int h = W.dist_home(p);
+			if (h > h0 || (in_bush && h == h0 && cheb(p, t->pos) <= td))
+				continue;
+			const int d = cheb(p, t->pos), dg = danger.is_set(p) ? 1 : 0;
+			if (d > bd || (d == bd && (h < bh || (h == bh && dg < bdang))))
+				bd = d, bh = h, bdang = dg, best = p;
+		}
+	vec2 goal = best;
+	if (best == pos && (P.g24_bush_flee & 2) && td > 2 && hp >= 0.4f * max_hp)
+	{
+		// bit 2: a bush 2 steps away through a neighbour that keeps the distance
+		int bd2 = -1, bh2 = BIG;
+		for (int dy = -2; dy <= 2; ++dy)
+			for (int dx = -2; dx <= 2; ++dx)
+			{
+				if (std::max(std::abs(dx), std::abs(dy)) != 2)
+					continue;
+				const vec2 b{ pos.x + dx, pos.y + dy };
+				if (!bc::map::is_in_bounds(b) || cheb(b, t->pos) < td || !clean(b))
+					continue;
+				const int h = W.dist_home(b);
+				if (h > h0 - 1 || !open(b))
+					continue;
+				const int d = cheb(b, t->pos);
+				if (d < bd2 || (d == bd2 && h >= bh2))
+					continue;
+				// the first step: a neighbour of b next to us that keeps the distance
+				vec2 n = pos;
+				for (int ey = -1; ey <= 1 && n == pos; ++ey)
+					for (int ex = -1; ex <= 1 && n == pos; ++ex)
+					{
+						const vec2 q{ pos.x + ex, pos.y + ey };
+						if ((ex || ey) && cheb(q, b) == 1 && cheb(q, t->pos) >= td && open(q))
+							n = q;
+					}
+				if (n == pos)
+					continue;
+				bd2 = d, bh2 = h, best = b, goal = n;
+			}
+	}
+	if (best == pos)
+		return false;
+	bc::bitboard g;
+	g.set(goal);
+#ifdef G24_TRACE
+	const vec2 p0 = pos;
+#endif
+	if (!step(g, false, false))
+		return false;
+#ifdef G24_TRACE
+	std::printf("G24 bush_flee body=%d r=%d %s from=(%d,%d) bush=(%d,%d) cl=%d enemy=%d d=%d->%d home=%d->%d hp=%.2f\n", W.my_index, round,
+		goal == best ? "one" : "two", p0.x, p0.y, best.x, best.y, W.bush_cluster(best), static_cast<int>(t->type), td, cheb(best, t->pos), h0,
+		W.dist_home(best), hp / std::max(1.f, max_hp));
+#endif
+	return true;
 }
 
 void Brain::prebuild_fields()
@@ -6312,10 +6430,8 @@ bool Brain::tribute(bool force)
 // bank walk starts again (18.9 paced rounds a game vs 2.7-6.1). The 2nd hold episode within g24_bank_hold_win rounds (a hold, the bank walk
 // or no bank wanted in between, then a hold again) of a bag >= g24_bank_hold_bag: recall to the spawn altar when that is safe and spawn is
 // past recall_min_dist, else hold the tile (T_WAIT) until the hold clears or g24_bank_hold_wait rounds pass. True: the turn is used.
-bool Brain::g24_bank_hold_fire([[maybe_unused]] int altar, [[maybe_unused]] const char* why)
+bool Brain::g24_bank_hold_fire(int altar, const char* why)
 {
-	if (!P.g24_bank_hold)
-		return false;
 	g24_bh_held = true;
 	if (static_cast<int>(gems) < P.g24_bank_hold_bag)
 		return false;
@@ -6335,11 +6451,15 @@ bool Brain::g24_bank_hold_fire([[maybe_unused]] int altar, [[maybe_unused]] cons
 	const int dh = W.dist_home(pos);
 	if (dh < BIG && dh > P.recall_min_dist && W.spawn_altar_d < BIG && safe_to_recall())
 	{
-		G24T("g24_bank_hold", "recall %s gems=%d altar=%d prev=%d dh=%d", why, static_cast<int>(gems), altar, round - prev, dh);
+#ifdef G24_TRACE
+		std::printf("G24 bank_hold body=%d r=%d recall %s gems=%d altar=%d prev=%d dh=%d\n", W.my_index, round, why, static_cast<int>(gems), altar, round - prev, dh);
+#endif
 		task = T_TRIBUTE;
 		return go_home();
 	}
-	G24T("g24_bank_hold", "wait %s gems=%d altar=%d prev=%d dh=%d", why, static_cast<int>(gems), altar, round - prev, dh);
+#ifdef G24_TRACE
+	std::printf("G24 bank_hold body=%d r=%d wait %s gems=%d altar=%d prev=%d dh=%d\n", W.my_index, round, why, static_cast<int>(gems), altar, round - prev, dh);
+#endif
 	g24_bh_wait_until = round + P.g24_bank_hold_wait;
 	task = T_WAIT;
 	task_group = -1;
@@ -7466,8 +7586,10 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			// ends (a target dropped for a transient came back at full score while we were half-way to its replacement)
 			const int age = round - g.enemy_round;
 			time += 12.f - static_cast<float>(std::max(0, age));
+#ifdef G24_TRACE
 			if (age > 0 && (g.id == task_group || g.id == g24_left_g[0] || g.id == g24_left_g[1] || g.id == g24_left_g[2]))
-				G24T("g24_flip_mem", "fade g=%d age=%d add=%d task=%d", g.id, age, 12 - age, static_cast<int>(g.id == task_group));
+				std::printf("G24 flip_mem body=%d r=%d fade g=%d age=%d add=%d task=%d\n", W.my_index, round, g.id, age, 12 - age, static_cast<int>(g.id == task_group));
+#endif
 		}
 		else
 			time += 12.f;
@@ -7940,9 +8062,12 @@ void Brain::farm()
 				for (std::size_t k = 0; k < g24_left_g.size(); ++k)
 					if (g.id == g24_left_g[k] && round - g24_left_r[k] <= P.g24_flip_mem_win)
 					{
+#ifdef G24_TRACE
 						const bool old_rule = g.id == left_group && round - left_round <= P.flip_window;
 						if (!old_rule && s > best_s && s / P.flip_margin <= best_s)
-							G24T("g24_flip_mem", "damp g=%d left_ago=%d s=%.3f best=%d best_s=%.3f", g.id, round - g24_left_r[k], s, best, best_s);
+							std::printf("G24 flip_mem body=%d r=%d damp g=%d left_ago=%d s=%.3f best=%d best_s=%.3f\n", W.my_index, round, g.id, round - g24_left_r[k], s, best,
+								best_s);
+#endif
 						s /= P.flip_margin;
 						break;
 					}

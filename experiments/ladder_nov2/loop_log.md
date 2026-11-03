@@ -73,3 +73,4 @@
 2026-11-03T16:05Z CYCLE submit of v94em: not built after 5 min; re-pinning v94
 2026-11-03T16:16Z CYCLE submit of v94em: not built after 5 min; re-pinning v94
 2026-11-03T16:18Z USER (21:47 IST): v97 (= v94em) made live by the user; it is the Qualifiers entry. All my cycle / guard scripts stopped at 16:18:08Z before any of them could re-activate v94. v97 building (active 94 until built).
+2026-11-03T16:26Z PAIRED v97 (= v94em: v94 + endgame bag fix + enemy Marcella stun odds; made live by the user) on 47 groups of paired_c12.json queued 16:19:30Z while v97 was live: identical to v94 on all 195 shared games (106/195 each, flips 0/0); vs v95 +4, v96 +14 (p 0.06), v88 +2. Either the two changes almost never change a game (local v94em vs v94: 88/172, near mirror) or the first groups ran on v94's build; a 3-group probe is blocked until the quota resets at 17:18Z. Per the user's rule (switch to v94 only if v97 is bad), v97 stays.

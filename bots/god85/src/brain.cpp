@@ -21,7 +21,7 @@ static int g_why = 0; // trace only: which rule made group_score return -1 (prin
 #else
 #define WHY(n) (sc_why = (n)) // v27_commit reads it: a safety rejection drops a committed target, a join / pair rule does not
 #endif
-#if defined(LEGEND_TRACE) || defined(Q_TRACE)
+#if defined(LEGEND_TRACE) || defined(Q_TRACE) || defined(PC_TRACE)
 static int g_idle = 0, g_mfail = 0; // trace only: the last farming decision point of the turn (a line number) and the point whose move failed
 #define IDL() (g_idle = __LINE__)
 #else
@@ -1438,6 +1438,13 @@ void Brain::turn()
 	}
 #ifdef Q_TRACE
 	q_line(dbg_path);
+#endif
+#ifdef PC_TRACE
+	// passive in an awake camp's reach: no attack / cast / camp hit this turn (map_fail B1 profile)
+	if (alive && camp_danger.is_set(pos) && last_act_round != round && target_hit_round != round && !cast_done)
+		std::printf("PC r=%d body=%d task=%d tg=%d st=%d hp=%.0f/%.0f end=%d eng=%d pos=(%d,%d) idl=%d\n", round, W.my_index, static_cast<int>(task), task_group,
+			task_group >= 0 && task_group < static_cast<int>(W.groups.size()) ? static_cast<int>(W.groups[static_cast<std::size_t>(task_group)].st) : -1, hp, max_hp,
+			enemy_near_d, static_cast<int>(engaged), pos.x, pos.y, g_idle);
 #endif
 	if (P.v27_watch > 0)
 		progress_watch(last_act_round == round || (cast_done && !(P.g23_watchfix && pw_dash_round == round)) || target_hit_round == round);

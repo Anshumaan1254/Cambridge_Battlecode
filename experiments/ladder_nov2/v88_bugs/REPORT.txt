@@ -1,0 +1,128 @@
+V88 (bots/g23rcf) LADDER LOSSES: DETERMINISTIC MISBEHAVIOUR HUNT (helper agent, Nov 3 2026 ~05:30-06:40Z)
+=====================================================================================================
+
+DATA
+- v88 losses decoded and analysed: 44 = 35 paired (32 of them "flip" losses: v84 won the same map vs the same opponent in the
+  source group; plus 3 loss/loss) + 9 ranked (02:52-04:05Z; 1228a987 / 255a43fc / a66a7484 failed to download or decode).
+  The rest of the 126 queued losses (paired loss/loss) were still downloading into replays/ + dec/ + mj/ when this was written
+  (v88_bugs/download_decode.sh, log dl.log; re-run detect.py L / run_analyze.py L to add them - both cache per game).
+- Baselines: 142 ranked games of Nov 2-3 played by v84-v87 (117 losses; "old"); the 32 v84 games of the same paired groups
+  (sourceGroup, all wins; "v84cp").
+- All numbers are per game (/g), "we/they" = ours / the opponent's in the same games.
+- CAVEAT for any v88-vs-v84 comparison on the same map+opponent: the v84 games were played Nov 2 11:00-17:20Z, v88's Nov 3
+  03:03-03:08Z. Same draft picks, but the opponents may have changed their bots in between.
+
+SCRIPTS (v88_bugs/)
+  h88.py            game list (games.json), half-map camp groups extended to all maps (half_groups_ext.json, groups.mjs; validated:
+                    group count = replay group count on every map), loaders
+  run_analyze.py    map_fail/analyze.py per game -> out/ana/<mid>.json (episodes idle10/osc/block/bag/rloop, deaths with context)
+  detect.py         per game -> out/det/<mid>.json: reward step-on delay of every kill (whole game), passive camp runs
+                    (passive.py), stalls (stall.py), dither (back-and-forth), recamp (same group, repeated passive entries),
+                    blocked moves, gold hoarding / shopping, bag loss, tribute failures, wasted spells.  Sets: L | v84cp | old
+  summarize.py      tables (python3 v88_bugs/summarize.py v88L old_L old_all)
+  wake.py           passive camp hits charged to whoever last damaged that group (own team / other team / own chip spell)
+  stall_alive.py    stalls split by the nearest group's state
+  trace.py          one body round by round: python3 v88_bugs/trace.py <mid-prefix> <body> <r0> <r1> [radius]
+  counterparts.json v88 paired game -> v84 / v87 game of the same map and opponent
+
+=====================================================================================================
+A. THE FIXES THAT WENT LIVE IN v88: CHECKED ON THE LADDER
+=====================================================================================================
+A1 capfix WORKS. Kill -> step-on delay (capture event - 6 - kill round), every kill to final-40:
+                       <=1 rnd   2-8   9-30   >30   never   taken by them   >8-or-never per game
+   v88 losses   we       88%     6%     2%    3%     1%          2%          2.0/g (17 gems/g)
+                they     78%    15%     5%    2%     0%          3%          3.8/g (46 gems/g)
+   old losses   we       71%    11%     7%    9%     2%          5%          6.8/g (59 gems/g)
+                they     75%    17%     5%    3%     0%          3%          4.3/g (72 gems/g)
+   We now step on faster than the opponents; the kill-and-leave pattern is gone.
+A2 watchfix WORKS. Respawn blocks by our bodies 0.45/g, ~0 body-rounds/g (theirs 1.29/g, 4 rnd/g; v84 islands had 166-round
+   blocks). Stalls of 40+ rounds 0.07/g (old 0.21/g; theirs 1.65/g). Oscillation episodes 0.10/g (theirs 0.71/g). Stalls with a
+   dash inside are still 2.7/g (theirs 0.9/g) but all short (16-46 rounds, see B3).
+A3 Passive camp damage (map_fail B1) is now near parity: all camp hits on a body that did not hit that group in r-2..r:
+   we 5,619 dmg/g vs they 5,170 (wake.py). Runs of 5+ hits: 5.2/g, 2,492 dmg, 0.56 deaths at the run end vs 3.4/g, 2,213, 0.33
+   (old losses: 8.2/g, 4,350, 0.78). Our own chip spells from 4+ tiles that woke the group: 277 dmg/g vs their 290: not a gap.
+A4 Not problems (we vs they, v88 losses): bodies that never shop 0.07 vs 0.14/g; mean gold carried 18 vs 54 (we spend);
+   tribute starts that never land 0.30 vs 1.65/g; damage/stun spells hitting nothing 2.4 of 65 vs 3.5 of 92 a game; recall
+   loops (3 held recalls hit within 40 rounds) 2.6 vs 2.4/g; dither (40-round back-and-forth, spread 5+, no action) 1.6 vs
+   1.4/g; "Movement blocked" 19.5 vs 34.7 moves/g; stalled body-rounds 122 vs 188/g, next to a live group with no enemy within 6:
+   24 vs 28/g.
+
+=====================================================================================================
+B. PATTERNS RANKED BY ESTIMATED GAMES LOST
+=====================================================================================================
+
+B1. DEATHS IN FIGHTS (STRATEGY / fight engine, not a deterministic bug; the biggest gap; est. most of the 32 flips, ~15-25)
+- v88 losses: 10.9 deaths/g vs 7.9. By context (map_fail/analyze.py rules): fight 5.9 vs 4.25, caught (hit, not hitting back)
+  1.93 vs 0.77, farm+fight 1.48 vs 0.89, farm->jumped 0.45 vs 0.20, camp 1.0 vs 0.95, recall 0.11 vs 0.36. In our own half 4.2
+  vs their 1.9 in theirs.
+- The 32 flip pairs (same map + opponent; see caveat): v88 deaths 11.6 vs 9.0, banked 527 vs 953; v84 deaths 4.1 vs 17.6,
+  banked 964 vs 490. Extremes: 00swirl 2bbe045f v88 34/3 deaths (v84 12/35), 01gold_rush f39bc1ca 33/13 (3/25), bfe31ac3 00swirl
+  25/11 (6/35), 01concentrated_wealth 66b8297a 23/8 (9/17), 02arena 07d4c19d 17/6 (0/38), 03ultrastarvation ccd344e2 16/1 (7/9).
+- v88's fight-side changes vs v84: g23_fight 2 (the fight engine replaces combat()'s decision stack, g23.cpp) and
+  g23_veto_bits 64 (rescue: turn and fight for a caught ally within g23_rescue_r 4 when our bodies there are not fewer).
+  Hypothesis to test first (local A/B, not done here: no runs allowed): the rescue and the engine's R estimate pull a second body
+  into a lost fight ("caught" deaths x2.5). Suggested check: g23rcf with g23_veto_bits 0 vs 64, and g23_fight 0 vs 2, on these
+  32 map/opponent pairs' maps. agent_fights/extract.py + story.py on these games will show the fights.
+- Bag lost on death (follows from B1 + B2): 72 vs 49 gems/g; deaths with a bag of 40+ 0.57/g (36 gems/g) vs 0.34/g (20).
+  Largest: adcba4c5 adgato_gemcombat5 b4 Marcella r162 126 gems; d8304698 00collision b5 Vendetta r1650 90; 984bf41c 01the_farm
+  b0 HoR r533 87; 1228a987 03showdown b1 Vesper r803 85; e327a37f gemcombat4 b6 HoR r102 77; 143c3985 02the_pond b0 Vendetta
+  r1075 and r1222 69 each.
+
+B2. LONG BAG CARRIES (BUG-ish / banking thresholds; est. 2-4 games; NOT traced to a code line)
+- Episodes with >= 20 gems carried 150+ rounds without a tribute: ours 1.19/g (245 body-rounds/g) vs 0.39/g (124).
+  70c81e1d 00crater b2 Ryth carried 64 gems r330-588 and 92 gems r941-1308 (367 rounds); b0 Vendetta 142 gems r1357-1550;
+  4e0c0235 00pilgrimage b0 HoR 45-68 gems three times (r130-339, r430-675, r1258-1470); cbe0dc7f 00reverse_spiral b7 Ryth 47 gems
+  r1684-1941, ended by death; 70d8f57d 00anvil b5 Marcella 46 gems r519-843.
+- Where to look: Brain::tribute() (brain.cpp 6013), bank_min() (6003), home_trip() (5323), altar_unsafe() (5277),
+  chain_keep() (8289). Hypothesis: with a contested / far altar (altar_unsafe, bag_needs_escort) and a farm target always
+  scoring higher than the trip, a mid-size bag (40-140) is never banked until a recall trip happens; check whether the
+  "contested altar" test keeps failing for hundreds of rounds. Measure first: rounds per carry episode spent within 6 of an
+  altar.
+
+B3. STANDING NEXT TO A CAMP IT CANNOT HIT (BUG; deterministic on two map types; est. ~1-2 games)
+- 02the_pond 143c3985 (vs bentheboss): single 20-gold camps sit on 1-tile islands in the pond (G17 at (15,8), G9 (17,9): every
+  neighbour tile is a hole); the sleeping wolf group G3 (3 wolves + gold, 12 gems / 140 gold) is at (7-8,6-8). Our bodies stand
+  at full health, $0, no enemy within 6, doing nothing but the bait recall: b0 Vendetta r46-54 at (13,5) and r59-87 at (15,3);
+  b2 HoR r43-72 at (12,6)/(11,3); b1 Vesper r38-44 at (12,6) and r45-64 at (11,8) - within 3 tiles (its attack range) of G17
+  and of G3, no attack. At r88 the Vendetta finally walks to G3. Again b2 r365 (27 rounds), b1 r495 (31), b0 r1545 (40).
+  ~100 body-rounds lost in the opening. The v84 game on this map shows the same stalls (b2 r43 23 rounds, b0 r1285, b2 r1002):
+  long-standing, not a v88 regression. Cause NOT pinned down: pair_plans is 0, mi_kite 0, no crystal so hop/island tasks
+  are off; candidates are a melee body targeting an island camp it cannot reach (it parks at the nearest shore tile) and the
+  v26_nowake rule (wakes_sleeper, brain.cpp 2329) or a gather/hold that keeps the Vesper from opening G3. A local
+  LEGEND_TRACE run on 02the_pond would show the task and the IDL reason in one game.
+- 03ultrastarvation (all 3 v88 losses on it: 010b54dd, 5b7f0c2e, ccd344e2): b1 HoR waits 7-20 rounds at (18,64) for its dash
+  cooldown to hop over holes into a pocket with a 7-gem camp (G3, ~(21,66)), kills it with the dash, stands on the reward 3-4
+  rounds (r126-129 in 010b54dd), steps off to (20,66) (no capture: its bag stays 7) and our Vendetta takes it at r134; the HoR
+  dashes out at r133. 3-5 times a game (stalls r97/117/329/1245/1609/1642/1840/1852/1962).
+- Code: group_score (brain.cpp 6771) / farm_group (8824) value a group by distance to its tiles, not by whether this body can
+  stand on a reachable tile within its attack range of a live camp (melee: an adjacent standable tile; ranged: range 3).
+  Fix: in group_score skip (or price as unreachable) a camp with no reachable attack tile for this kit unless the body holds a
+  crystal (hop_task 7384 / island_task 7476 already need one); in capture_group, the hand-off that made the HoR step off a
+  reward it stood on should not apply when the taker is not already adjacent (cf. g23_capfix 1, brain.cpp 6928).
+
+B4. CHIPPING / WAITING INSIDE A RANGE-5 MONOLITH OR RANGE-4 ELK (BUG; est. ~1 game; part of A3's residue)
+- Measured camp attack distances (60 replays): wolf <= 3, elk <= 4, golem <= 4, monolith <= 5 (61 hits at 5). The comment in
+  cast_en_route (brain.cpp ~8718) still says "A camp at 4 is outside every camp's reach (3)"; the safety test below it uses
+  camps[j].range, so the caster itself is safe, but its chip wakes the whole group for every other body passing by.
+- 00anvil 70d8f57d: both teams chip the 20,000-hp monolith G10 at (18,5) (200 gems). Our Vesper b4 hits it from (21,4) (range 3)
+  while it hits back for 126/round: 14 of our passive runs in that game are monolith hits (Vesper r889-904: 2,900 -> 1,136 hp
+  walking around G9 (gem group (20,7-9), respawn due ~r921) inside the monolith's range 5 without attacking; Marcella r997-1011,
+  r435-444 down to 18%; Vesper died r323-330 and r592-598 at the end of such runs).
+- 00swirl bfe31ac3: elk group G10 ((19-20,13-14), range 4) beside both spawns' path is hit at r12/r20/r28 by our Marcella's
+  damage spell (ability 2, no follow-up attack: the en-route pattern) and is not finished for 140 rounds; our Marcella b3 walks home and back through its reach r57-63 (670 -> 250 hp), r78-83,
+  r93-104 taking 60/round without hitting it (recamp: 3-6 separate passive entries per body on G10/G11 in r38-473).
+- Code: wait_group (8063): the v26_wait_safe branch only runs within g.radius + 4 of the group's centre and falls back to
+  go_group(g, 1) when its step fails; Nav::step_to (nav.cpp) treats the avoid set as walls and, if that search fails, takes
+  the plain shortest path through the camp's reach. Fix to test: when farming a camp whose range exceeds ours (monolith vs
+  range-3 bodies) count the incoming damage in group_score; never pick a wait tile inside an awake camp's reach of ANOTHER group.
+
+B5. RESPAWN WAITS BESIDE SMALL GROUPS (STRATEGY; for completeness)
+- 03ultrastarvation: b2 Ryth idles 17-18 rounds at (24,50) beside a respawning small group (G5) 5-8 times a game in all three
+  games. Starvation map; probably the right call, listed so it is not mistaken for a bug.
+
+=====================================================================================================
+C. WHAT I DID NOT FIND
+- No recall loops, spell waste, shopping or tribute failures beyond the opponents' rates (A4).
+- No new deterministic loop caused by capfix / watchfix: osc and long stalls dropped, blocks gone.
+- The v88-vs-v84 flip comparison points at fights (B1), not at movement bugs: in the 32 pairs v88's passive camp damage is LOWER
+  (2,445 vs 3,319 dmg/g) and its late rewards fewer (2.4 vs 5.7 per game).

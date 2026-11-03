@@ -7,6 +7,16 @@ ladder loop (earlier sessions were forbidden to). Still: commit/push only when t
 
 ## STATUS (newest first)
 
+**Nov 3, 01:05 UTC — LIVE: website v86 = `bots/g23rc`** ("GOD v23 rc1: v84 + caught-ally rescue that commits (g23 bits 192)"),
+activated 01:00:56Z by this agent (rank 72 / 1990 at activation); `previous` = v85 (rollback: `ladder_loop.py rollback --execute`).
+Local: panel +42 (deaths 8.4 vs 8.7), held-out 103 maps 95/206 −2 (deaths 8.0 vs 8.4), 0 faults. Paired groups queued 01:02-01:05:
+all 30 of `paired_cand_shared30.json` (3-way: v84 old, v85, candidate) + 20 of `paired_cand_rest71.json`; quota resets 02:01Z → queue
+the other 51. Report: `python3 experiments/ladder_nov2/three_way.py experiments/ladder_nov2/paired_cand_shared30.json
+experiments/ladder_nov2/paired_cand_rest71.json`; rules in `DEPLOY_CHECKLIST.md` (rollback if net flips vs v84 < 0 with p < 0.2, or ≥ 6
+net worse than v85 on the shared 30, or ranked ≥ 40 games below Elo expectation by > 1.5 SE). **`_85tolb` (TOL alone after the 15 + 1
+fixes; 16th = the altar-lock tribute timer t4 shared bit 7 of bytes 2-5 with the clock, now off under g23_tol) −190 [−272, −107]**,
+monster damage 85k vs 104k, gold 5137 vs 6372: still broken (bodies not farming) → trace before any further TOL work.
+
 **Nov 3, 01:00 UTC.** Ladder: rank 67, rating 2003, v85 live (100 ranked since 21:15Z: 62/100, Elo-expected 54.6, z +1.5, perf 2057).
 Panel vs god84 since 23:40 (172 games each, `g85_run7..11.log`): `_85v2n` one-step +42 (deaths 7.0 vs 7.5); `_85r` **rescue** (bit 64)
 +70 (deaths 8.0 vs 8.7); `_85r2` rescue + one-step −2; `_85dr` / `_85draft` v84's `v23_draft` +72 / +67 (**the same games**: 171 of

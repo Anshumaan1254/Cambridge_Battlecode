@@ -452,6 +452,16 @@ bool Brain::g23_veto(std::vector<Enemy*>& E, Enemy*& tgt, bool fight, bool killa
 			}
 			if (n_en > n_us)
 				continue;
+			if (P.g24_rescue_pw)
+			{
+				// g24_rescue_pw (F2b, fights/REPORT.txt S2): bodies are not power: the rescue also needs the join bar at the caught ally
+				const float ra = g23_ratio(a.pos, E, nullptr, nullptr, nullptr);
+				if (ra < P.g23_r_join)
+				{
+					G24T("g24_rescue_pw", "ally=%d R=%.2f n_us=%d n_en=%d", i, ra, n_us, n_en);
+					continue;
+				}
+			}
 			// the enemy on it that we can reach soonest, lowest health first
 			for (auto* e : E)
 			{
@@ -473,6 +483,20 @@ bool Brain::g23_veto(std::vector<Enemy*>& E, Enemy*& tgt, bool fight, bool killa
 		lure = true;
 	if (fight && lure && (P.g23_veto_bits & 1))
 		fight = false;
+	if (P.g24_lure && fight && !killable && td > my_reach)
+	{
+		// g24_lure (F4, fights/REPORT.txt S4): the lure veto on every non-killable fight, rescues included, held 3 rounds on that target
+		const int ti = static_cast<int>(tgt - W.enemies.data());
+		const bool lure_all = !in_awake_camp_range() && camp_danger.is_set(tgt->pos);
+		const bool held = ti >= 0 && ti < 8 && round < g24_lure_off[static_cast<std::size_t>(ti)];
+		if (lure_all || held)
+		{
+			if (lure_all && ti >= 0 && ti < 8)
+				g24_lure_off[static_cast<std::size_t>(ti)] = round + 3;
+			G24T("g24_lure", "tgt=%d td=%d rescue=%d held=%d", ti, td, static_cast<int>(rescued), static_cast<int>(held && !lure_all));
+			fight = false;
+		}
+	}
 	if ((P.g23_veto_bits & 2) && fight && !killable && !ally_fight && !rescued && !in_reach && td > my_reach + 1 && !tgt->channeling && !tgt->tributing)
 		fight = false; // one approach step at most
 	if (fight && !killable && td > my_reach && !in_reach && !tgt->channeling && !tgt->tributing)
@@ -587,6 +611,8 @@ bool Brain::g23_leave(std::vector<Enemy*>& E, Enemy& tgt)
 					break;
 				}
 	};
+	// g24_flee_dash bit 1 (F1): dash out first when a chaser could hit us after a walk step; the walk below starts from the landing
+	const bool g24_dashed = (P.g24_flee_dash & 1) && g24_flee_dash_cast(E, "leave");
 	vec2 help{ -1, -1 };
 	int hd = BIG;
 	for (const auto& a : W.allies)
@@ -644,6 +670,11 @@ bool Brain::g23_leave(std::vector<Enemy*>& E, Enemy& tgt)
 	{
 		swing();
 		return true;
+	}
+	if (g24_dashed)
+	{
+		swing();
+		return true; // dashed out: no step back in to hit
 	}
 	return engage(tgt);
 }

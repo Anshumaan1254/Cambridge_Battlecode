@@ -1285,6 +1285,17 @@ struct Params
 								// Ruin on a lone-monolith map; counter-picks promote Marcella / Heart of Ruin
 	// ===== GOD v24 switches (docs/plans/god24_plan.md); every one 0 = v88 =====
 	// ---- g24 C1 fights (F1-F5) ----
+	int g24_flee_dash = 0;		// F1 bits: 1 combat()'s two flee branches and g23_leave() dash first when a chaser could hit us after a walk step (Heart of
+								// Ruin included: strike_dash_hold ignored); landing = fewest enemy next-turn reaches, then nearest home, never a sleeping
+								// camp's wake or an awake camp's range; 2 can_escape counts our dash only with bit 1 or a kit without a strike dash
+	float g24_abandon_r = 0.f;	// F2a > 0: group_score gives a group up at tadv < max(v23_abandon_r, this) (x0.5 big) unless it is our task group and
+								// g23_keep_farm (plan 0.67)
+	int g24_rescue_pw = 0;		// F2b 1: g23_veto's rescue also needs g23_ratio at the caught ally >= g23_r_join
+	int g24_fresh = 0;			// F3 > 0: for this many rounds after our respawn a fight not killable and not in reach needs adv >= g24_fresh_adv (plan 40)
+	float g24_fresh_adv = 1.5f;
+	int g24_lure = 0;			// F4 1: g23_veto's lure veto on every non-killable fight (rescues included), held 3 rounds on that target
+	int g24_hit_is_fight = 0;	// F5 1: hit last round counts as being in a fight for the fz_engage hold (adv >= fight_back_margin, an enemy within
+								// my_reach + 1)
 	// ---- g24 C2 economy (E1, E2) ----
 	// ---- g24 C3 Marcella funnel (E3, N1-N3) ----
 	// ---- g24 C5 execution (X1-X3) ----

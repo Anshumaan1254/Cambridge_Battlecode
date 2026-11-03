@@ -6,6 +6,13 @@
 #include "world.h"
 #include "tp_adapter.h"
 
+// GOD v24 C1 (fights F1-F5): one trace line each time a g24 rule fires: "G24 <switch> <round> <body> <why>" (Brain methods only).
+#if defined(LEGEND_TRACE) || defined(G23_TRACE)
+#define G24T(sw, ...) (std::printf("G24 %s %d %d ", sw, round, world().my_index), std::printf(__VA_ARGS__), std::printf("\n"))
+#else
+#define G24T(...) (void)0
+#endif
+
 enum TaskKind : int
 {
 	T_NONE,
@@ -504,6 +511,9 @@ private:
 	std::uint32_t g23_chase_h = 0;
 	int g23_chase_best = 99, g23_chase_n = 0, g23_chase_round = -100;
 	std::array<int, 8> g23_chase_off{ -100, -100, -100, -100, -100, -100, -100, -100 };
+	// GOD v24 C1 (fights)
+	std::array<int, 8> g24_lure_off{ -100, -100, -100, -100, -100, -100, -100, -100 }; // g24_lure: the lure veto holds on this enemy until then
+	bool g24_flee_dash_cast(const std::vector<Enemy*>& E, const char* where); // g24_flee_dash bit 1: dash out of a fight we leave
 	bool g23_go_rally();
 	struct AllyMsg
 	{

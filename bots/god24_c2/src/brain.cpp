@@ -4804,7 +4804,32 @@ bool Brain::combat()
 	if (P.v27_rally)
 		for (const auto& a : W.allies)
 			can_call |= a.handle != self && a.alive && a.visible && !a.channeling && a.hp >= 0.5f * a.max_hp && cheb(a.pos, pos) <= 10;
-	if (!calm && ((((isolated || reserve) && adv < P.isolated_flee_adv && nearest_enemy <= P.flee_dist) || outmatched) && task != T_CAPTURE &&
+	bool iso_flee = (isolated || reserve) && adv < P.isolated_flee_adv && nearest_enemy <= P.flee_dist;
+	if (P.g24_hold && iso_flee && !outmatched && !calm && task != T_CAPTURE && !((calm_bits & 1) && g15_nthreat == 0) && adv >= P.g24_hold_r &&
+		hp >= P.g24_hold_hp * max_hp && task_group >= 0 && task_group < static_cast<int>(W.groups.size()))
+	{
+		// g24_hold (E1, economy S1): no pre-emptive isolated flee from an even contact at our rich (or own-half) task group: we left 35% of
+		// 1 v 1 contacts at hp >= 0.8 on contested big groups vs the top-30's 18%, and they die there 5% of the time when they stay.
+		// The outmatched, real-fight, cornered and burst rules stay; no avoid_note either (the flee does not happen).
+		const Group& hg = W.groups[static_cast<std::size_t>(task_group)];
+		const bool rich_g = hg.gems >= P.g24_hold_gems;
+		const bool own_g = P.g24_hold_own && hg.d_ally < hg.d_enemy;
+		if (rich_g || own_g)
+		{
+			int dg = BIG;
+			for (const auto t : hg.tiles)
+				dg = std::min(dg, cheb(pos, t));
+			if (dg <= kit.attack_range + 2)
+			{
+				iso_flee = false;
+#if defined(LEGEND_TRACE) || defined(G23_TRACE)
+				std::printf("G24 g24_hold %d %d %d %s adv=%.2f hp=%.2f d=%d ne=%d n=%d\n", round, W.my_index, task_group, rich_g ? "gems" : "own", adv,
+					hp / std::max(1.f, max_hp), dg, nearest_enemy, static_cast<int>(E.size()));
+#endif
+			}
+		}
+	}
+	if (!calm && ((iso_flee || outmatched) && task != T_CAPTURE &&
 		 !((calm_bits & 1) && g15_nthreat == 0)) || // v15: nobody here is coming at us: keep farming
 		(solo_vs_group && nearest_enemy <= P.g22_solo_leave && !(task == T_CAPTURE && nearest_enemy > 4)))
 	{
@@ -7013,18 +7038,40 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			// IC's whole team in a few rounds while our join rule let one body farm it alone (harmless groups were never "heavy").
 			const bool rich = (P.g18_rich && g.harmless && g.gems >= P.g18_rich_gems && solo_rounds > P.join_min_rounds) ||
 				(P.v23_prize && g.id == W.prize_g && round < P.v23_prize_until && solo_rounds > P.join_min_rounds); // v23_prize: the whole team on it
-			const bool heavy = rich || follow_g || g.monolith || g.elk || (!g.harmless && (solo_rounds > P.join_min_rounds || g.attackers >= 2));
+			const bool heavy0 = rich || follow_g || g.monolith || g.elk || (!g.harmless && (solo_rounds > P.join_min_rounds || g.attackers >= 2));
 			const int max_join = P.mi_two_bodies ? std::min(P.max_join, 1) : P.max_join; // mi_two_bodies (default branch)
+			int join_cap = g.monolith ? 4 : 1 + max_join;
+			// g24_join (E2, economy S2): before g24_join_until a group of g24_join_gems+ gems (harmless included) is open to joiners once one body
+			// needs more than g24_join_min rounds; the joiner may arrive within g24_join_reach x that time and is credited g24_join_share.
+			// We were alone on 45% of our opening visits to 30+-gem groups vs the top-30's 17% (harmless ones always alone).
+			const bool j24 = P.g24_join && round < P.g24_join_until && g.gems >= P.g24_join_gems;
+			bool heavy = heavy0 || (j24 && solo_rounds > P.g24_join_min);
+			// g24_scarce (draft_bank S1): on a gem-scarce map a 12+-gem group the rule above calls light takes one joiner (claimers < 2), all
+			// game (our solo share of 12+-gem kills there 0.72 vs the top-30's 0.59)
+			bool s24 = false;
+			if (P.g24_scarce && W.scarce_mode && !heavy && g.gems >= 12)
+				heavy = true, s24 = true, join_cap = 2;
 			// commit_keep: we are already hitting it; the join limits are for walking in, not for leaving a camp half done
 			// (17 unopposed official games: 67 camps we had hit left on this rule).
 			const bool committed = P.commit_keep && g.id == task_group && g.st == ST_ALIVE && round - target_hit_round <= 2;
-			if (!committed && (!heavy || (!follow_g && claimers >= (g.monolith ? 4 : 1 + max_join) && !(W.obj_mode && g.objective && P.obj_team))))
+			if (!committed && (!heavy || (!follow_g && claimers >= join_cap && !(W.obj_mode && g.objective && P.obj_team))))
 				{ WHY(6); return -1; }
 			// A joiner that arrives after the claimers are done walked for nothing (pilgrimage: Cassi crossed the map between
 			// two 68-gem packs for 300 rounds, hitting each one a few times before someone else captured it).
-			if (P.join_reach > 0.f && !g.monolith && !(W.obj_mode && g.objective) && static_cast<float>(d_adj + wait) > P.join_reach * solo_rounds)
+			const float reach = j24 ? P.g24_join_reach : P.join_reach;
+			if (reach > 0.f && !g.monolith && !(W.obj_mode && g.objective) && static_cast<float>(d_adj + wait) > reach * solo_rounds)
 				{ WHY(13); return -1; }
-			share = rich ? P.g18_rich_share : P.join_share;
+			share = rich ? P.g18_rich_share : j24 ? P.g24_join_share : P.join_share;
+#if defined(LEGEND_TRACE) || defined(G23_TRACE)
+			if (j24 || s24)
+			{
+				// one line per scoring the g24 rule changed: opened (heavy), reach (the old reach test would drop it), share (credit only)
+				const bool open = !heavy0 && !committed;
+				const bool reach_x = P.join_reach > 0.f && !g.monolith && !(W.obj_mode && g.objective) && static_cast<float>(d_adj + wait) > P.join_reach * solo_rounds;
+				std::printf("G24 %s %d %d %d %s gems=%d solo=%.1f cl=%d d=%d\n", s24 ? "g24_scarce" : "g24_join", round, W.my_index, g.id,
+					open ? "heavy" : reach_x ? "reach" : "share", g.gems, solo_rounds, claimers, d_adj + wait);
+			}
+#endif
 		}
 		// Rounds to clear the group with the given helpers; false when it cannot be done in max_trips.
 		auto plan = [&](float helpers_dps, bool helper_melee, float& t) {

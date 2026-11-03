@@ -1,5 +1,8 @@
 #include "world.h"
 #include "params.h"
+#if defined(LEGEND_TRACE) || defined(G23_TRACE)
+#include <cstdio>
+#endif
 
 World& world()
 {

@@ -237,3 +237,16 @@ Never leave a worse bot live overnight: if the agent cannot monitor, roll back b
   or anchor the pattern (`pgrep -f "^/bin/bash /home/claude/analysis/queueN.sh"`).
 - bench2 resumes from `experiments/ab2/<tag>/rows.jsonl`: after changing a variant's code, use a NEW tag (or move the old rows), else the
   old result is printed again (happened with `_85sf`).
+- `pkill -f "<text>"` / `pgrep -f` from a Bash call matches that call's own shell (its command line contains the text): exit 144 and
+  nothing killed. Kill by PID (`ps -eo pid,args | grep ...`) or stop the background task.
+- Container restarts kill background runs. bench2 writes rows only after the whole batch: salvage finished games with
+  `python3 -I tools/g23port/salvage_bench2.py <tag>` (reads `g/*.json` with bench2.team_stats, appends rows, deletes them) — copy of it in
+  `tools/g23port/salvage_bench2.py`; then re-run the same bench2 command, it plays only the rest.
+- One local panel (172 games) has SE ≈ 40 gems; the best of ~20 variants reaches +70..+110 by luck alone. Replicate on the held-out pool
+  and look at deaths / kills (less noisy) before believing a margin. Two near-identical builds can share 171 of 172 games (`_85dr` /
+  `_85draft`): that is one sample, not two.
+- Do not "fix" a measured behaviour from a theory without a trace: the rescue commit (bit 128) bypassed the strike-first holds and was
+  worse on both pools than the uncommitted rescue it was meant to repair.
+- A body waiting for a respawn must never stand on the group's spawn tiles: the engine reports state 3 with cooldown 0 while a tile is
+  occupied, so "timer ≤ 0 = alive" deadlocks (TOL bodies stood 600+ turns).
+- Other teams queue unranked groups against our live version: not every unranked game in `matches list` is one of ours.

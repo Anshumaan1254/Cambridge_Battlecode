@@ -6074,9 +6074,13 @@ bool Brain::tribute(bool force)
 	// A long bank trip is worth a bigger bag: the threshold rises with the cheapest way to an altar from here,
 	// so a body far from every altar keeps farming and banks when its route passes close to one.
 	const int need = bank_min(recall_bank ? via_home : dist);
+	const bool capped = P.g23_bankcap > 0 && static_cast<int>(gems) >= P.g23_bankcap;
+	if (capped && !recall_bank && !endgame && W.spawn_altar_d < BIG && W.dist_home(pos) > P.recall_min_dist && safe_to_recall() &&
+		(dist > via_home || altar_unsafe(a) || bag_needs_escort(a)))
+		recall_bank = true; // g23_bankcap: the field altar is far or hot: bank the big bag at the spawn altar
 	const bool stalled = round < pw_bank_until; // v27_watch: a carrier that stood still banks now
 	const bool want = stalled || (P.v23_bank ? (force || endgame || winning || committed || v23_bank_want(dist))
-								 : (force || endgame || winning || risky || committed || static_cast<int>(gems) >= need || dist <= P.tribute_near ||
+								 : (force || endgame || winning || risky || committed || capped || static_cast<int>(gems) >= need || dist <= P.tribute_near ||
 									  (static_cast<int>(gems) >= 10 && on_the_way(a))));
 	if (!want)
 		return false;

@@ -1226,6 +1226,9 @@ struct Params
 								// g23_hurtwait_r rounds (map_fail S2: on elk_arena 32 of our bodies stood under 60% health beside the centre group when it
 								// respawned and the enemy's 2,300-2,500-health bodies arrived; we lost 28 of the 46 cycles we opened)
 	int g23_hurtwait_r = 30;
+	int g23_bankcap = 0;		// > 0: a bag of this many gems is banked now (the trip-length threshold can reach 2 x tribute_min = 108): at a safe
+								// field altar, else by a recall to the spawn altar when the recall is safe (v88 ladder losses: 20+ gems carried for
+								// 150+ rounds 1.19 times a game vs 0.39, 72 vs 49 gems lost on death a game; a Ryth carried 92 gems for 367 rounds)
 	int g23_watchfix = 0;		// 1: base-code fixes from the ladder replays (map_fail/REPORT.md B2, B3): (a) a respawning group whose timer reads 0 is
 								// waited for next to its tiles, never farmed onto them (an occupied spawn tile keeps the timer at 0: 166 idle rounds on
 								// islands); a timer stuck at 0 for 12+ rounds is not a legit wait for the watchdog; (b) a travel dash is not progress

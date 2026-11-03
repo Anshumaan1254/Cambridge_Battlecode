@@ -1,5 +1,5 @@
 --- god84/src/brain.cpp	2026-11-02 17:31:12.756024356 +0000
-+++ god85/src/brain.cpp	2026-11-03 05:31:58.120765047 +0000
++++ god85/src/brain.cpp	2026-11-03 06:27:46.057515364 +0000
 @@ -21,7 +21,7 @@
  #else
  #define WHY(n) (sc_why = (n)) // v27_commit reads it: a safety rejection drops a committed target, a join / pair rule does not
@@ -308,7 +308,22 @@
  	if (hp >= threshold)
  	{
  		// On spawn, health is restored only after a turn ends there: after a recall or a walk home, rest one
-@@ -6127,6 +6214,8 @@
+@@ -5987,9 +6074,13 @@
+ 	// A long bank trip is worth a bigger bag: the threshold rises with the cheapest way to an altar from here,
+ 	// so a body far from every altar keeps farming and banks when its route passes close to one.
+ 	const int need = bank_min(recall_bank ? via_home : dist);
++	const bool capped = P.g23_bankcap > 0 && static_cast<int>(gems) >= P.g23_bankcap;
++	if (capped && !recall_bank && !endgame && W.spawn_altar_d < BIG && W.dist_home(pos) > P.recall_min_dist && safe_to_recall() &&
++		(dist > via_home || altar_unsafe(a) || bag_needs_escort(a)))
++		recall_bank = true; // g23_bankcap: the field altar is far or hot: bank the big bag at the spawn altar
+ 	const bool stalled = round < pw_bank_until; // v27_watch: a carrier that stood still banks now
+ 	const bool want = stalled || (P.v23_bank ? (force || endgame || winning || committed || v23_bank_want(dist))
+-								 : (force || endgame || winning || risky || committed || static_cast<int>(gems) >= need || dist <= P.tribute_near ||
++								 : (force || endgame || winning || risky || committed || capped || static_cast<int>(gems) >= need || dist <= P.tribute_near ||
+ 									  (static_cast<int>(gems) >= 10 && on_the_way(a))));
+ 	if (!want)
+ 		return false;
+@@ -6127,6 +6218,8 @@
  	// An enemy channelling a tribute (posted as an opportunity) is the cheapest kill in the game, and the
  	// only way to stop a winning tribute: answer it from farther and at lower health than a rally.
  	const bool opp = C.alert_kind == AL_OPPORTUNITY;
@@ -317,7 +332,7 @@
  	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
  	const bool their_endgame = theirs >= P.endgame_alarm;
  	float hp_gate = opp ? (their_endgame ? 0.25f : 0.4f) : P.rally_hp;
-@@ -6144,6 +6233,8 @@
+@@ -6144,6 +6237,8 @@
  	if (hp < hp_gate * max_hp || ((task == T_CAPTURE || reward_here()) && !their_endgame))
  		return false;
  	const int d = cheb(C.alert_pos, pos);
@@ -326,7 +341,7 @@
  	if (d > max_d || d < 2)
  		return false;
  	// v15 g15_calm & 8: a body working a group (a camp hit in the last 3 rounds, waiting on its respawn) keeps at it unless the rally is
-@@ -6567,7 +6658,7 @@
+@@ -6567,7 +6662,7 @@
  	ust_anchor = pos; // waiting out a cooldown on the ring is not being stuck
  	ust_since = round;
  	const bool save_cc = enemy_near_d <= P.hold_cc_dist;
@@ -335,7 +350,7 @@
  	bool did = false;
  	if (!hold_spells && !cast_done)
  	{
-@@ -6847,6 +6938,9 @@
+@@ -6847,6 +6942,9 @@
  				if (da > P.gold_rank_d)
  					continue;
  				const double gm = funnel(a.type);
@@ -345,7 +360,7 @@
  				if (gm > my_gm + 1e-9 || (std::fabs(gm - my_gm) <= 1e-9 && (da < d_tile || (da == d_tile && i < W.my_index))))
  					{ WHY(4); return -1; }
  			}
-@@ -6883,10 +6977,14 @@
+@@ -6883,10 +6981,14 @@
  		}
  		eta = d_tile;
  		time = static_cast<float>(eta) + 6.f;
@@ -360,7 +375,7 @@
  		const int avail = g.ready_round - round;
  		if (avail > d_adj + (W.obj_mode && g.objective ? P.obj_max_wait : P.max_wait) * (sc_relaxed ? 3 : 1))
  			{ WHY(5); return -1; }
-@@ -6939,7 +7037,8 @@
+@@ -6939,7 +7041,8 @@
  			if (g.harmless)
  				return true;
  			// Camps hit the nearest champion: a ranged champion next to a melee ally takes almost nothing.
@@ -370,7 +385,7 @@
  #ifdef XM_TRACE
  			// The uncorrected model, logged next to the new one so both are scored on the same episodes.
  			const bool xm_tank0 = !(kit.ranged && helper_melee);
-@@ -7095,6 +7194,8 @@
+@@ -7095,6 +7198,8 @@
  	float value = ((P.no_altar_gold && W.no_altar_now() && !g.unlock ? 0.f : static_cast<float>(g.gems)) + gold_v * static_cast<float>(g.gold)) * share;
  	if (P.handoff)
  		value *= value_mult_handoff;
@@ -379,7 +394,7 @@
  	if (P.heavy_value != 1.f && (g.monolith || g.gems >= P.om_heavy))
  		value *= P.heavy_value; // heavy groups (a monolith, or om_heavy+ gems) worth more: the objective persona (x3) plays us level
  	if (P.pxs_style)
-@@ -7141,7 +7242,8 @@
+@@ -7141,7 +7246,8 @@
  				edps += sc_recent[static_cast<std::size_t>(k)].dps;
  			}
  		const bool dive = P.big_reward_dive > 0 && g.st == ST_REWARD && g.enemy_on_tile && g.gems >= P.big_reward_dive && hp >= 0.25f * max_hp;
@@ -389,7 +404,7 @@
  		{
  			// big_reward: a group worth a death or two is fought for with the whole team close by
  			const bool big = P.big_reward > 0 && g.gems >= P.big_reward;
-@@ -7157,7 +7259,7 @@
+@@ -7157,7 +7263,7 @@
  				{ WHY(10); return -1; }
  		}
  	}
@@ -398,7 +413,7 @@
  		time += 12.f;
  	if (P.v24_ci_escort && (type == CT::cassi || type == CT::issac))
  	{
-@@ -7267,6 +7369,13 @@
+@@ -7267,6 +7373,13 @@
  			return 1e4f / std::max(1.f, finish);
  		}
  	}
@@ -412,7 +427,7 @@
  	if (P.tp_own && tp_own_.ok && g.id >= 0 && g.id < static_cast<int>(tp_own_.owner.size()) &&
  		tp_own_.owner[static_cast<std::size_t>(g.id)] == tp_own_.slot)
  		return value / std::max(1.f, time) * (1.f + P.tp_own_bonus);
-@@ -7463,6 +7572,8 @@
+@@ -7463,6 +7576,8 @@
  	auto& W = world();
  	if (task != T_CAPTURE && cast_en_route())
  		return;
@@ -421,7 +436,7 @@
  	if (P.style == 1 || round < P.deathball_until || (P.pxs_style && style_now() == 3) || (P.spar_db && sparring_window()))
  	{
  		int leader = -1;
-@@ -7735,6 +7846,18 @@
+@@ -7735,6 +7850,18 @@
  			}
  		}
  	}
@@ -440,7 +455,7 @@
  	if (best < 0)
  	{
  		IDL();
-@@ -7934,7 +8057,7 @@
+@@ -7934,7 +8061,7 @@
  	case ST_REWARD: task = T_CAPTURE; IDL(); capture_group(g); break;
  	case ST_RESPAWN:
  		task = T_WAIT;
@@ -449,7 +464,7 @@
  		{
  			// Ring bodies wait outside the camps' reach: a respawned elk hits whoever stands on its tile's neighbours.
  			IDL();
-@@ -7943,10 +8066,14 @@
+@@ -7943,10 +8070,14 @@
  			else
  				task = T_WAIT;
  		}
@@ -466,7 +481,7 @@
  	}
  }
  
-@@ -8596,6 +8723,14 @@
+@@ -8596,6 +8727,14 @@
  			const int d = cheb(pos, g.camps[i].pos);
  			if (g.hp[i] <= 0 || !W.camp_occ.is_set(g.camps[i].pos) || d < 4 || d > reach)
  				continue;
@@ -481,7 +496,7 @@
  			// A camp at 4 is outside every camp's reach (3); a group whose other camps stand closer than that could hit us.
  			bool safe = true;
  			for (std::size_t j = 0; j < g.camps.size(); ++j)
-@@ -8775,7 +8910,7 @@
+@@ -8775,7 +8914,7 @@
  	// Keep burst for a fight only when one is likely within the cooldown: an unused ready spell is lost value
  	// (8-round cooldowns), and an enemy 7-9 tiles away led to a fight within 8 rounds only 13% of the time.
  	const bool save_cc = enemy_near_d <= P.hold_cc_dist;
@@ -490,7 +505,7 @@
  	if (P.varg_splash_pos && type == CT::varg && can_move)
  	{
  		// Varg's splash hits every camp next to the target: stand next to the camp with the most live neighbours. From
-@@ -8813,6 +8948,8 @@
+@@ -8813,6 +8952,8 @@
  				step(goal, false, false);
  		}
  	}

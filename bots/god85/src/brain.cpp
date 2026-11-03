@@ -7192,6 +7192,8 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 	float value = ((P.no_altar_gold && W.no_altar_now() && !g.unlock ? 0.f : static_cast<float>(g.gems)) + gold_v * static_cast<float>(g.gold)) * share;
 	if (P.handoff)
 		value *= value_mult_handoff;
+	if (P.g23_open_safe > 0 && round < P.g23_open_safe && g.d_ally + P.g23_open_safe_margin > g.d_enemy)
+		value *= P.g23_open_safe_mult; // g23_open_safe: in the opening, groups their stack reaches as early as we do are worth less
 	if (P.heavy_value != 1.f && (g.monolith || g.gems >= P.om_heavy))
 		value *= P.heavy_value; // heavy groups (a monolith, or om_heavy+ gems) worth more: the objective persona (x3) plays us level
 	if (P.pxs_style)

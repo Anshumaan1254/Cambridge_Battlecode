@@ -1217,6 +1217,11 @@ struct Params
 	int g23_holdsafe = 0;		// 1: combat()'s holds (px_hold, strike_first 1 / 2: "let them come, hit first") do not stand inside an awake camp's reach:
 								// step out first, not into enemy reach (map_fail B1: our passive camp-damage runs with an enemy within 6: 347 / 52
 								// deaths vs their 143 / 12)
+	int g23_open_safe = 0;		// > 0: before this round a group we do not reach at least g23_open_safe_margin steps before them counts its value x
+								// g23_open_safe_mult (map_fail S1: on crater 11 of our 22 first targets were the centre elk, which their 5-body
+								// stack reached as early; 79% of our opening visits there ended without a kill, ours by the near wolves would not)
+	int g23_open_safe_margin = 4;
+	float g23_open_safe_mult = 0.5f;
 	int g23_watchfix = 0;		// 1: base-code fixes from the ladder replays (map_fail/REPORT.md B2, B3): (a) a respawning group whose timer reads 0 is
 								// waited for next to its tiles, never farmed onto them (an occupied spawn tile keeps the timer at 0: 166 idle rounds on
 								// islands); a timer stuck at 0 for 12+ rounds is not a legit wait for the watchdog; (b) a travel dash is not progress

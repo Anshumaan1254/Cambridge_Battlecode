@@ -3,6 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
+- **!!! Nov 3: International Qualifiers entry = the SELECTED version at 2026-11-03T23:59Z (best so far: v88 = `bots/g23rcf`).**
 - **Session 24 (Nov 2-3, a remote session, IN PROGRESS): GOD v23 + the ladder loop.** The user now allows this agent to submit / activate
   (ladder testing with rollback, target rank < 30). Logged in from the container (session to Nov 9). Team HouseOfCoders rank 86 / 825
   (1955) on Nov 2; Nov 3 01:00 UTC rank 67 / 2007 on website v85 (the user's other session; rank 30 = 2174). Base for this session's work:

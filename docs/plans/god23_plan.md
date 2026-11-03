@@ -7,6 +7,14 @@ ladder loop (earlier sessions were forbidden to). Still: commit/push only when t
 
 ## STATUS (newest first)
 
+**Nov 3, 04:40 UTC — !!! INTERNATIONAL QUALIFIERS: entry = the SELECTED version at 2026-11-03T23:59Z !!!** (from `cambc submissions list
+--json`: `upcomingTournament`). Rule for any agent: stop deploying candidates by ~21:00Z and leave the version with the best paired
+record selected (now **v88**, `bots/g23rcf`); re-check `Selected:` after 23:00Z. v89 (v88 + `v23_build`) lost to v88 on the same
+games (net −10 of 245) → rolled back at 04:20 (the tool's activate hit HTTP 503; re-activated by hand; an old version is recompiled,
+~10 min "queued"). Next ladder candidate: `bots/g23rcf24` (v88 + `v24_build 31`) at the 05:12Z quota reset with
+`paired_c5.json` (columns v84 old, v85, v86, v87, v88, v89). Local screens now: `_rsf3` (strike_first 3), `_rpxh` (px_hold 2 +
+px_burst_wait 2) — the "hit first" holds that are off in v84 (hitting first is the z +11.6 exchange factor).
+
 **Nov 3, 04:20 UTC — LIVE: website v89 = `bots/g23rcfb`** (v88 + `v23_build 1`: v84's own kit build orders, Jungle first, Bruiser
 stacks, Power focus on Marcella), pinned 04:11:33Z, previous v88. Local: s4 +43 (deaths 7.9 vs 8.9), held-out −36 (deaths 7.8 vs 8.3;
 misses the −30 filter by 6, deployed as a ladder test, deviation logged). 50 groups of `paired_c4.json` queued 04:12 (49 with v84/v85/

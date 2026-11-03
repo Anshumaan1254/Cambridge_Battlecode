@@ -6386,15 +6386,17 @@ bool Brain::tribute(bool force)
 	// farming (the bag is safer moving with us than dying at their altar) unless the game is on the line.
 	// v23 4.6: unsafe = an enemy seen within 4 of it in the last 8 rounds; a bag at the cap walks in anyway.
 	if ((P.v23_bank ? v23_altar_unsafe(a) && static_cast<int>(gems) < P.v23_bank_cap : altar_unsafe(a)) && !endgame && !winning && !force && !stalled)
-		return false;
+		return P.g24_bank_hold && g24_bank_hold_fire(a, "unsafe");
 	if (!P.v23_bank && !endgame && !winning && !force && !stalled && bag_needs_escort(a))
 	{
 		// v8 escort_bag: the bag is a long channel at a hot altar: call the team first (keep farming / healing meanwhile).
 		auto& C = comms();
 		if (!(C.fresh(round, 6) && C.alert_kind == AL_OPPORTUNITY))
 			C.post(AL_DANGER, W.altars[static_cast<std::size_t>(a)], round);
-		return false;
+		return P.g24_bank_hold && g24_bank_hold_fire(a, "escort");
 	}
+	if (P.g24_bank_hold)
+		g24_bh_open = false, g24_bh_wait_until = -1000; // the hold cleared: the bank walk goes on
 	task = T_TRIBUTE;
 	const vec2 altar = W.altars[static_cast<std::size_t>(a)];
 #ifdef PROBE18T

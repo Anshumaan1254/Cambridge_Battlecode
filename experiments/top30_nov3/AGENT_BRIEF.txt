@@ -1,0 +1,53 @@
+COMMON BRIEF FOR THE TOP-30 ANALYSIS AGENTS (Nov 3 2026)
+
+Goal of the whole exercise: a plan that lists every way our bot (team HouseOfCoders, id 5a103c90-b00b-4d46-8ace-6a3bb058dc72, rank ~70,
+rating ~2000) falls short of the top-30 teams (rating 2190-2550), with numbers, the cause in our code and a fix. You own ONE stream
+(given in your task). Measure, compare, locate the cause in our code, propose the fix. Do not speculate without numbers.
+
+Game: Cambridge Battlecode 2026a (docs/ENGINE_FACTS.md has the rules that matter: camps, groups, respawns, captures, altars/tributes,
+recall, items, champions). 1000 banked gems win; else more gems at round 2000. Repo root: /home/claude/cambridge_battlecode.
+
+DATA
+1. Top-30 dataset: experiments/top30_nov3/
+   - ladder.json (the ladder at fetch time, teams[] with rank, rating, name, id), teams.json (strength on the kept games),
+   - lists/<teamId8>.jsonl: each top-30 team's last 400 ranked matches (results, maps, draftPicks, sides, endReason, createdAt),
+   - matches_current.jsonl: the union, 6795 distinct ranked matches on the 86-map pool (maps/s4), engine 2.0.0, 45 teams,
+   - selection.jsonl + replays/<matchId>.repl26a (top-30 vs top-30 games, up to 14 per map; still downloading, ~1200 planned),
+   - dec/<matchId>.json: decoded replays (decode_loop.sh keeps decoding new downloads; check `ls dec | wc -l` and re-run your
+     scripts at the end), mj/<matchId>.json: the map JSON (groups, altars, spawns, symmetry) for that game, id2map.json.
+2. Our dataset: experiments/ladder_nov2/: matches_me.jsonl (all our matches), replays/ + dec/ + mj/ (315 decoded games: 142 ranked
+   on v84-v87 (Nov 2), 109 unranked paired games + 9 ranked on v88 (Nov 3, the current live bot), 37 unranked on v84-87, 18 older).
+   Our live versions: v84 (= bots/god84/src), v88 (= bots/g23rcf/src: v84 + rescue a caught ally + reward-capture fixes +
+   respawn/watchdog fixes). Use v88 games where the question is "what does the live bot do", v84-v88 together for volume.
+3. Decoded format: read experiments/ladder_nov2/map_fail/analyze.py and experiments/ladder_nov2/agent_fights/extract.py first; they
+   show meta (bodies with index/team/type, camps, drafts, finalRound), rounds[r].ch (per-champion state: index, x, y at [3],[4],
+   alive at [7], hp, gems...), rounds[r].campHp, events (Attack, Cast ability, Move, Death, CaptureGems/CaptureGold, Submit...).
+   Camp groups per map: experiments/ladder_nov2/map_fail/mapgroups.py (full_groups) with half_groups.json (8 maps) and
+   experiments/ladder_nov2/v88_bugs/half_groups_ext.json (more maps); experiments/ladder_nov2/map_fail/groups.mjs builds half-group
+   tables for any map from maps/s4/<map>.map26a (read its header for usage). Champion ids: 0 Ryth, 1 Vesper Vale, 2 Vendetta,
+   3 Cassi&Issac, 4 Stellar, 5 Prism, 6 Marcella, 7 Willow, 8 Ren, 9 Varg, 10 Tavi, 11 Heart of Ruin.
+4. Earlier findings to build on (do not redo them, extend them to the top-30 benchmark): experiments/ladder_nov2/agent_fights/REPORT.md
+   (how we die, exchange factors: item gap z +12.3, hitting first +11.6), experiments/ladder_nov2/map_fail/REPORT.md +
+   out/opening_findings.txt (worst maps: opening economy gap, contested big groups, passive camp damage, kill-and-leave),
+   experiments/ladder_nov2/v88_bugs/REPORT.txt (v88: capture + respawn fixes confirmed; deaths in fights, long carries),
+   docs/strategy_v2/31_GOD_V23_METHOD.md (the design method), docs/strategy_v2/28_IC_RANKED_STUDY.md, 29_GOD_V21_TOP3.md (older
+   top-team studies, engine 2.0.0).
+5. Our code: bots/g23rcf/src (live), bots/god85/src (= live + every switch of this session, most off; params.h has one comment per
+   switch with its measurement). brain.cpp: turn() ~l.995, farm() ~7550 (target choice), group_score() 6771 (the scorer),
+   combat() 3925-4830 (fight decision stack), safety() 5364, tribute() 6026 (banking), home_trip() ~6320 (shop/heal trips),
+   wait_group() 8055, farm_group() ~8830, capture_group() 8094; draft.cpp (picks), world.cpp (camp group model); g23.cpp (this
+   session's modules). Hitting first and the item gap decide exchanges; deaths are our biggest measured gap.
+
+RULES
+- No local games or builds (cambc run / run-batch / build): CPUs are shared. Python / node analysis only. No cambc submit / activate /
+  match-groups create. `cambc matches download <id> -o FILE` is allowed if you need a specific extra replay (keep it under the
+  top30_nov3/replays/ or ladder_nov2/replays/ folders and decode as decode_loop.sh does).
+- Write everything under experiments/top30_nov3/<your stream>/ (scripts + outputs). You cannot write .md files: write REPORT.txt.
+- Always compare like with like: same map (or map class: size, number of groups, altars, monolith maps), both teams' rating when
+  relevant, contested vs unopposed. Report per-game means and counts, with n. Separate BUG (deterministic misbehaviour of ours)
+  from STRATEGY (a rule they follow that we do not).
+- For every shortcoming: (a) the number for us vs top-30, (b) 2-3 example match ids + rounds + body indices, (c) the code location
+  (file:line, function) and the rule responsible, (d) a concrete fix (what rule, what threshold, where it hooks), (e) a rough
+  gain estimate. Rank by estimated gems or games.
+- Budget ~75 minutes. Re-run your final scripts once the decode count stops growing, then write REPORT.txt and reply with a
+  summary of at most 30 lines.

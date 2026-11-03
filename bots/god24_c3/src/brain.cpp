@@ -6081,17 +6081,38 @@ bool Brain::tribute(bool force)
 		recall_bank = false; // v23 4.6: a field altar within 15 steps beats a recall to the spawn altar
 	// A long bank trip is worth a bigger bag: the threshold rises with the cheapest way to an altar from here,
 	// so a body far from every altar keeps farming and banks when its route passes close to one.
-	const int need = bank_min(recall_bank ? via_home : dist);
+	int need = bank_min(recall_bank ? via_home : dist);
+	// GOD v24 C3 g24_marc_funnel 1: our Marcella (2 gold a gem banked) banks from max(20, tribute_min / 2) at a safe field altar (not the
+	// spawn altar) within g24_mf_altar steps: the nemesis teams' Marcella banks 40% of her captures within 20 rounds, ours 18%. A walk to
+	// that altar only: a bag this rule banks never starts a recall (the failed g23_bankcap forced recalls).
+	bool mf_bank = false;
+	[[maybe_unused]] const int need0 = need;
+	if ((P.g24_marc_funnel & 1) && type == CT::marcella && dist <= P.g24_mf_altar && !altar_unsafe(a) &&
+		static_cast<std::size_t>(a) < W.altar_approach.size())
+	{
+		int a_home = BIG;
+		for (const auto t : W.altar_approach[static_cast<std::size_t>(a)])
+			a_home = std::min(a_home, W.dist_home(t));
+		const int nf = std::max(20, tribute_min / 2);
+		if (a_home > W.spawn_altar_d && nf < need && static_cast<int>(gems) >= nf)
+		{
+			need = nf;
+			mf_bank = true;
+			recall_bank = false;
+		}
+	}
 	const bool capped = P.g23_bankcap > 0 && static_cast<int>(gems) >= P.g23_bankcap;
 	if (capped && !recall_bank && !endgame && W.spawn_altar_d < BIG && W.dist_home(pos) > P.recall_min_dist && safe_to_recall() &&
 		(dist > via_home || altar_unsafe(a) || bag_needs_escort(a)))
 		recall_bank = true; // g23_bankcap: the field altar is far or hot: bank the big bag at the spawn altar
 	const bool stalled = round < pw_bank_until; // v27_watch: a carrier that stood still banks now
-	const bool want = stalled || (P.v23_bank ? (force || endgame || winning || committed || v23_bank_want(dist))
+	const bool want = stalled || mf_bank || (P.v23_bank ? (force || endgame || winning || committed || v23_bank_want(dist))
 								 : (force || endgame || winning || risky || committed || capped || static_cast<int>(gems) >= need || dist <= P.tribute_near ||
 									  (static_cast<int>(gems) >= 10 && on_the_way(a))));
 	if (!want)
 		return false;
+	if (mf_bank && task != T_TRIBUTE)
+		G24MF("bank gems=%d need=%d was=%d dist=%d altar=%d", static_cast<int>(gems), need, need0, dist, a);
 #ifdef LEGEND_TRACE
 	debug_block({
 		if (task != T_TRIBUTE)
@@ -6110,6 +6131,8 @@ bool Brain::tribute(bool force)
 			hot |= cheb(W.altars[static_cast<std::size_t>(a)], av_pos[static_cast<std::size_t>(k)]) <= av_rad[static_cast<std::size_t>(k)];
 		if (hot)
 		{
+			if (mf_bank)
+				return false; // g24_marc_funnel: the small bag waits (no new recall)
 			if (W.dist_home(pos) > P.recall_min_dist && W.spawn_altar_d < BIG && safe_to_recall())
 				recall_bank = true;
 			else
@@ -6977,6 +7000,32 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 						{ WHY(4); return -1; }
 				}
 		}
+		// GOD v24 C3 g24_marc_funnel. mf_me: we are our Marcella and the reward is hers (bit 1: >= 10 gems or >= 60 gold within g24_mf_r
+		// steps, no enemy champion within 4 of it; bit 2: within 2 steps and we are not in a fight): no yield to a body it is worth less to.
+		const bool mf_big = g.gems >= 10 || g.gold >= 60;
+		const bool mf_me = P.g24_marc_funnel && type == CT::marcella &&
+			(((P.g24_marc_funnel & 1) && mf_big && d_tile <= P.g24_mf_r && !g24_mf_hot(g, 4)) ||
+				((P.g24_marc_funnel & 2) && d_tile <= 2 && g24_mf_calm(pos, hp, max_hp)));
+		if ((P.g24_marc_funnel & 1) && mf_big && !(capture_group_id == g.id && g.mask.is_set(pos)) && round - g.reward_round < P.g24_mf_wait &&
+			!(g24_mf_g == g.id && round - g24_mf_since < P.g24_mf_wait))
+		{
+			// bit 1: a body that does not hold the reward yields it to our Marcella within g24_mf_r steps when she takes it (claims the group
+			// or stands on it: the g23_capfix 1 guard) and it is worth more to her; only in the first g24_mf_wait rounds of the reward (then
+			// anyone takes it: no reward left lying). The body that holds it is handled by capture_group().
+			const int m = g24_mf_marc();
+			if (m >= 0)
+			{
+				const auto& a = W.allies[static_cast<std::size_t>(m)];
+				const int dm = nav().group_dist(g, a.pos);
+				if (dm <= P.g24_mf_r && ((m < 6 && C.claim[static_cast<std::size_t>(m)] == g.id) || g.mask.is_set(a.pos)) &&
+					g24_mf_val(a.type, g) > g24_mf_val(type, g) + 1e-9 && !g24_mf_hot(g, 4))
+				{
+					G24MF("yield g=%d dm=%d d=%d gems=%d gold=%d", g.id, dm, d_tile, g.gems, g.gold);
+					WHY(4);
+					return -1;
+				}
+			}
+		}
 		if (P.mi_capture && !(capture_group_id == g.id && g.mask.is_set(pos)))
 		{
 			// GOD v12 (teamplan capture.h mode 1, LEARNED: the strong teams' choice in 65% of shared captures): among the living bodies
@@ -6984,9 +7033,10 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			// index; the others move on.
 			// GOD v15 mi_capture 2: the gold a reward is worth to the body that takes it: Vesper Vale's bonus on the gold, Marcella's 2 gold
 			// per gem when she banks it (IC's Marcella ends games with 106 shard equivalents, its Vesper with 94, its Cassi & Issac with 9).
+			// g24_marc_funnel (mf_me): our Marcella compares by that gold (gold + 2 x gems for her, gold x gold_mult for the others).
 			auto funnel = [&](bc::champion_type ct) {
 				const auto& k = tpa::kit_of(static_cast<int>(ct));
-				return P.mi_capture == 2 ? k.gold_mult * static_cast<double>(g.gold) + k.tribute_gold * static_cast<double>(g.gems) : k.gold_mult;
+				return P.mi_capture == 2 || mf_me ? k.gold_mult * static_cast<double>(g.gold) + k.tribute_gold * static_cast<double>(g.gems) : k.gold_mult;
 			};
 			const double my_gm = funnel(type);
 			for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 8; ++i)
@@ -7003,12 +7053,25 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 					continue;
 				if (gm > my_gm + 1e-9 || (std::fabs(gm - my_gm) <= 1e-9 && (da < d_tile || (da == d_tile && i < W.my_index))))
 					{ WHY(4); return -1; }
+#if defined(G23_TRACE) || defined(LEGEND_TRACE)
+				if (mf_me && P.mi_capture != 2)
+				{
+					// trace only: the gold_mult order would have yielded it
+					const double og = tpa::kit_of(static_cast<int>(a.type)).gold_mult, om = tpa::kit_of(static_cast<int>(type)).gold_mult;
+					if (og > om + 1e-9 || (std::fabs(og - om) <= 1e-9 && (da < d_tile || (da == d_tile && i < W.my_index))))
+						G24MF("outrank g=%d ally=%d da=%d d=%d", g.id, i, da, d_tile);
+				}
+#endif
 			}
 		}
 		// One body captures; if allies claim it, the lowest index takes it unless we are clearly nearer
 		// (the joiner may still be walking in while we stand next to the reward).
 		if (claimers && first_claimer < W.my_index && closer_lower_claimer && !outrank_lower)
-			{ WHY(4); return -1; }
+		{
+			if (!mf_me)
+				{ WHY(4); return -1; }
+			G24MF("outrank_claim g=%d claimer=%d d=%d", g.id, first_claimer, d_tile); // g24_marc_funnel: our Marcella takes it
+		}
 		if (P.no_split && !(P.big_reward > 0 && g.gems >= P.big_reward && g.enemy_on_tile))
 		{
 			// One collector per reward: allies standing on the tiles when it lands split it with no speed-up, and the
@@ -7029,6 +7092,15 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 				if (P.handoff && P.anchors && is_anchor && !body_is_anchor(i))
 				{
 					value_mult_handoff = P.handoff_bonus; // F4: the ally holds it for us (capture_group steps it off when we arrive)
+					continue;
+				}
+				if (mf_me && g24_mf_val(a.type, g) + 1e-9 < g24_mf_val(type, g))
+				{
+					// g24_marc_funnel: the F4 hand-off path for our Marcella: the ally holds it for her (capture_group steps it off when she
+					// stands on it)
+					if (value_mult_handoff == 1.f)
+						G24MF("take_held g=%d holder=%d d=%d", g.id, i, d_tile);
+					value_mult_handoff = P.handoff_bonus;
 					continue;
 				}
 				if (!on || a_arr < my_arr || (a_arr == my_arr && i < W.my_index))
@@ -7252,7 +7324,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 	}
 
 	float value = ((P.no_altar_gold && W.no_altar_now() && !g.unlock ? 0.f : static_cast<float>(g.gems)) + gold_v * static_cast<float>(g.gold)) * share;
-	if (P.handoff)
+	if (P.handoff || value_mult_handoff != 1.f) // != 1 without P.handoff: only g24_marc_funnel sets it
 		value *= value_mult_handoff;
 	if (P.g23_open_safe > 0 && round < P.g23_open_safe && g.d_ally + P.g23_open_safe_margin > g.d_enemy)
 		value *= P.g23_open_safe_mult; // g23_open_safe: in the opening, groups their stack reaches as early as we do are worth less
@@ -8210,6 +8282,89 @@ bool Brain::capture_group(Group& g)
 				capture_group_id = g.id, capture_since = round;
 			place_ward(round - ward_round > 4);
 			return true;
+		}
+	}
+	if (P.g24_marc_funnel && g.st == ST_REWARD && type != CT::marcella)
+	{
+		// GOD v24 C3 g24_marc_funnel: the reward goes to our Marcella (2 gold a gem when she banks it). Only when it is worth more to her,
+		// she takes it (stands on it, or claims the group: the g23_capfix 1 guard) and no enemy champion is within 4 of it.
+		auto& W = world();
+		const int m = g24_mf_marc();
+		if (m >= 0 && g24_mf_val(W.allies[static_cast<std::size_t>(m)].type, g) > g24_mf_val(type, g) + 1e-9)
+		{
+			const auto& a = W.allies[static_cast<std::size_t>(m)];
+			const bool on = g.mask.is_set(pos), a_on = g.mask.is_set(a.pos);
+			const bool a_takes = a_on || (m < 6 && comms().claim[static_cast<std::size_t>(m)] == g.id);
+			const int dm = nav().group_dist(g, a.pos);
+			const int cap_t = static_cast<int>(bc::constants::capture_time);
+			const bool b1 = (P.g24_marc_funnel & 1) && (g.gems >= 10 || g.gold >= 60) && dm <= P.g24_mf_r && a_takes && !g24_mf_hot(g, 4);
+			// bit 2 (g24_carry_cap): she is within 2 steps and not in a fight; our own capture landing next round is kept unless she is on it
+			const bool b2 = (P.g24_marc_funnel & 2) && on && dm <= 2 && a_takes && g24_mf_calm(a.pos, a.hp, a.max_hp) &&
+				(a_on || capture_group_id != g.id || round < capture_since + cap_t);
+			auto step_off = [&]() {
+				bc::bitboard off;
+				off.draw_chebyshev(pos, 1.f);
+				off &= ~g.mask & ~W.walls & ~W.ally_occ & ~W.enemy_occ & ~W.camp_occ;
+				return !off.is_empty() && step(off, false, false);
+			};
+			if (on && ((b1 && a_on) || b2))
+			{
+				// She stands on it (bit 1: the tiles never empty, her capture keeps our timer) or is next to it (bit 2): step off, she takes it alone.
+				if (step_off())
+				{
+					G24MF("stepoff g=%d dm=%d bit=%d gems=%d", g.id, dm, b2 && !(b1 && a_on) ? 2 : 1, g.gems);
+					blacklist[static_cast<std::size_t>(g.id)] = round + cap_t + 1;
+					capture_group_id = -1;
+					g24_mf_g = -1;
+					task = T_NONE;
+					return true;
+				}
+			}
+			else if (b1 && a_on && !on && g24_mf_g == g.id && g24_mf_since >= g.reward_round)
+			{
+				// we waited next to it and she stands on it now: hers
+				G24MF("handed g=%d waited=%d", g.id, round - g24_mf_since);
+				blacklist[static_cast<std::size_t>(g.id)] = round + cap_t + 1;
+				g24_mf_g = -1;
+				task = T_NONE;
+				return false;
+			}
+			else if (b1 && !a_on && (on || (g24_mf_g == g.id && g24_mf_since >= g.reward_round)))
+			{
+				// bit 1, she is on her way: we defer our capture at most g24_mf_wait rounds (once per reward), then capture ourselves.
+				if (on && (g24_mf_g != g.id || g24_mf_since < g.reward_round))
+					g24_mf_g = g.id, g24_mf_since = round;
+				if (round - g24_mf_since < P.g24_mf_wait)
+				{
+					if (g.id == task_group)
+						task_progress = round;
+					if (on)
+					{
+						if (capture_group_id != g.id)
+							capture_group_id = g.id, capture_since = round;
+						if (round + dm <= capture_since + cap_t - 1)
+						{
+							// she steps on before our capture lands: hold the tiles (the timer keeps running), no capture-recall
+							G24MF("hold g=%d dm=%d since=%d", g.id, dm, capture_since);
+							place_ward(round - ward_round > 4);
+							return true;
+						}
+						if (round == g24_mf_since && step_off())
+						{
+							// she arrives after it would land: leave the tiles (our capture stops) and wait next to them (decided once: a
+							// hold she stops keeping pace with falls through to our own capture below)
+							G24MF("wait_off g=%d dm=%d", g.id, dm);
+							capture_group_id = -1;
+							return true;
+						}
+					}
+					else
+					{
+						G24MF("wait g=%d dm=%d left=%d", g.id, dm, P.g24_mf_wait - (round - g24_mf_since));
+						return true; // off the tiles: do not step back on while she comes
+					}
+				}
+			}
 		}
 	}
 	if (g.mask.is_set(pos))

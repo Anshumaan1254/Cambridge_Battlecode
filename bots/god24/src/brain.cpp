@@ -32,6 +32,14 @@ static int g_idle = 0, g_mfail = 0; // trace only: the last farming decision poi
 #else
 #define XM(stmt) (void)0
 #endif
+// GOD v24 C3: one line each time a g24_marc_funnel rule fires: "G24 marc_funnel <round> <body> <why>"
+#if defined(G23_TRACE)
+#define G24MF(fmt, ...) std::printf("G24 marc_funnel %d %d " fmt "\n", round, world().my_index, __VA_ARGS__)
+#elif defined(LEGEND_TRACE)
+#define G24MF(fmt, ...) debug_block({ std::printf("G24 marc_funnel %d %d " fmt "\n", round, world().my_index, __VA_ARGS__); })
+#else
+#define G24MF(fmt, ...) (void)0
+#endif
 
 namespace
 {
@@ -2659,6 +2667,90 @@ bool Brain::go_home_step(bool avoid)
 	return moved;
 }
 
+// GOD v24 g24_flee_dash bit 1 (F1, fights/REPORT.txt S1): a body leaving a fight with its dash ready dashes first when a chaser could hit it
+// after a walk step (a melee / dash-ready enemy within 3, +2 with its dash ready; a ranged one within its range + 1). Heart of Ruin
+// included: the cast bypasses mob_dash()'s strike_dash_hold, and nav's try_dash() (no landing in danger, >= 2 home steps) is not used.
+// Landing within the dash range: fewest enemies whose next-turn reach covers it (attack range, +1 melee, +2 dash ready, 4 with a damage /
+// stun spell ready), then nearest home; a danger tile is allowed when best, never one that wakes a sleeping camp or in an awake camp's
+// range. The walk step of the caller follows from the landing tile.
+bool Brain::g24_flee_dash_cast(const std::vector<Enemy*>& E, const char* where)
+{
+	if (!(P.g24_flee_dash & 1) || kit.dash < 0 || !ready(kit.dash))
+		return false;
+	auto& W = world();
+	bool chased = false;
+	for (auto* e : E)
+	{
+		const int de = cheb(pos, e->pos);
+		const bool e_dash = e->ready(e->kit.dash);
+		if (((!e->kit.ranged || e_dash) && de <= 3 + (e_dash ? 2 : 0)) || (e->kit.ranged && de <= e->kit.attack_range + 1))
+			chased = true;
+	}
+	if (!chased)
+		return false;
+	std::array<int, 16> reach{};
+	const std::size_t ne = std::min<std::size_t>(E.size(), reach.size());
+	for (std::size_t k = 0; k < ne; ++k)
+	{
+		const Enemy& e = *E[k];
+		int r = e.kit.attack_range + (e.kit.ranged ? 0 : 1) + (e.ready(e.kit.dash) ? 2 : 0);
+		if (e.ready(e.kit.dmg) || e.ready(e.kit.cc) || e.ready(e.kit.aoe))
+			r = std::max(r, 4);
+		reach[k] = r;
+	}
+	auto covered = [&](vec2 p) {
+		int n = 0;
+		for (std::size_t k = 0; k < ne; ++k)
+			n += cheb(p, E[k]->pos) <= reach[k];
+		return n;
+	};
+	const int rng = std::max(1, static_cast<int>(kit.dash_range));
+	const int rad = kit.dash_mod > 0.f ? std::max(0, static_cast<int>(kit.dash_radius)) : 0;
+	const bc::bitboard blocked = Nav::blocked_now(pos);
+	const int n0 = covered(pos), h0 = W.dist_home(pos);
+	const int keep_ok = nowake_ok;
+	nowake_ok = -1; // no camp may be woken by a landing while we leave
+	vec2 best = pos;
+	int best_n = BIG, best_h = BIG;
+	for (int dy = -rng; dy <= rng; ++dy)
+		for (int dx = -rng; dx <= rng; ++dx)
+		{
+			const vec2 p{ pos.x + dx, pos.y + dy };
+			if ((dx == 0 && dy == 0) || !bc::map::is_in_bounds(p) || blocked.is_set(p) || camp_danger.is_set(p) || W.enemy_spawn.is_set(p))
+				continue;
+			if ((std::abs(dx) >= 2 || std::abs(dy) >= 2) && bc::map::walls().is_set(vec2{ pos.x + dx / 2, pos.y + dy / 2 }))
+				continue;
+			const int h = W.dist_home(p);
+			if (h >= BIG)
+				continue;
+			const int n = covered(p);
+			if (n > best_n || (n == best_n && h >= best_h))
+				continue;
+			if (wakes_sleeper(p, rad))
+				continue;
+			best_n = n, best_h = h, best = p;
+		}
+	nowake_ok = keep_ok;
+	// a landing that neither leaves a reach nor gains a step home is no escape
+	if (best == pos || !(best_n < n0 || best_h < h0))
+		return false;
+	try
+	{
+		if (bc::self().abilities()[static_cast<std::size_t>(kit.dash)].use(best))
+		{
+			G24T("g24_flee_dash", "%s from=(%d,%d) to=(%d,%d) n=%d->%d home=%d->%d type=%d hp=%.2f", where, pos.x, pos.y, best.x, best.y, n0, best_n, h0, best_h,
+				 static_cast<int>(type), hp / max_hp);
+			cast_done = true;
+			after_move(true);
+			return true;
+		}
+	}
+	catch (...)
+	{
+	}
+	return false;
+}
+
 void Brain::prebuild_fields()
 {
 	{
@@ -4243,7 +4335,11 @@ bool Brain::combat()
 	const float t_die = hp / std::max(1.f, incoming);
 	const int dh = W.dist_home(pos);
 	const bool on_spawn = W.ally_spawn.is_set(pos);
-	const bool can_escape = on_spawn || !chaser || (ready(kit.dash) && !chaser_dash) || static_cast<float>(dh) + 1.f < t_die;
+	// g24_flee_dash bit 2 (F1): our dash is an escape only when the flee step can cast it (bit 1, or a dash that is no strike spell)
+	const bool g24_own_dash = !(P.g24_flee_dash & 2) || (P.g24_flee_dash & 1) || kit.dash_mod <= 0.f;
+	const bool can_escape = on_spawn || !chaser || (ready(kit.dash) && g24_own_dash && !chaser_dash) || static_cast<float>(dh) + 1.f < t_die;
+	if (!g24_own_dash && chaser && !chaser_dash && ready(kit.dash) && !can_escape)
+		G24T("g24_flee_dash", "can_escape=0 (strike dash not counted) dh=%d t_die=%.1f", dh, t_die);
 
 	// sup_mode 4: leaving toward a helper that arrives within 3 rounds (one step, never into more enemy reach) instead of home:
 	// one-by-one retreats were the biggest loss pattern (19 of 33 deaths alone on nx61x61, 22 of 45 on contest_v3).
@@ -4583,13 +4679,33 @@ bool Brain::combat()
 		// we are outside), one approach step at most toward a target nobody of ours is fighting, no chase that does not close, never
 		// deeper into their half, the second wave (an ally within 6 whose message says FIGHT: join at adv >= g23_r_join).
 		fight = g23_veto(E, tgt, fight, killable, in_reach, adv, d, my_reach);
+		// g24_fresh (F3, fights/REPORT.txt S3): a body that respawned within g24_fresh rounds starts no fight that is neither killable nor
+		// in reach (rescue, ally_defend, second wave, proactive) below adv g24_fresh_adv
+		if (P.g24_fresh > 0 && fight && !killable && !in_reach && round - respawn_round <= P.g24_fresh && adv < P.g24_fresh_adv)
+		{
+			G24T("g24_fresh", "since_respawn=%d adv=%.2f tgt=%d d=%d", round - respawn_round, adv, static_cast<int>(tgt - W.enemies.data()), cheb(pos, tgt->pos));
+			fight = false;
+		}
 		d = cheb(pos, tgt->pos); // the later rules (fz_engage, calm, strike holds) measure the target we now have
 		g23_keep_farm = !fight && !in_reach && adv >= P.g23_keep_r;
 		if (P.g23_veto_bits & 128)
 			rescue_commit = fight && g23_rescue_now;
 	}
 	if (fz_engage_eff > 0 && fight && !rescue_commit && !in_reach && !killable && last_fight_round < round - 1 && d > fz_engage_eff && !tgt->channeling && !tgt->tributing)
-		fight = false; // v14 fz_engage: not yet in a fight and the target is still far: keep doing what we do
+	{
+		// g24_hit_is_fight (F5, fights/REPORT.txt S6): hit last round by an enemy within my_reach + 1 at adv >= fight_back_margin is a fight
+		bool g24_hit = false;
+		if (P.g24_hit_is_fight && last_hit_round >= round - 1 && adv >= P.fight_back_margin)
+			for (auto* e : E)
+				if (cheb(pos, e->pos) <= my_reach + 1)
+				{
+					g24_hit = true;
+					G24T("g24_hit_is_fight", "hit=%d adv=%.2f attacker_d=%d tgt_d=%d", last_hit_round, adv, cheb(pos, e->pos), d);
+					break;
+				}
+		if (!g24_hit)
+			fight = false; // v14 fz_engage: not yet in a fight and the target is still far: keep doing what we do
+	}
 	if (P.fz_chase > 0 && !in_reach)
 	{
 		// v14 fz_chase: a same-speed target walking away is never caught; once the distance has not shrunk for fz_chase rounds the chase
@@ -4774,6 +4890,7 @@ bool Brain::combat()
 			{
 			}
 		}
+		const bool g24_dashed = (P.g24_flee_dash & 1) && g24_flee_dash_cast(E, "reach"); // F1: dash out first, then the walk
 		if (toward_help() || go_home_step(true))
 		{
 			// Melee champions can still swing after walking.
@@ -4786,6 +4903,8 @@ bool Brain::combat()
 					}
 			return true;
 		}
+		if (g24_dashed)
+			return true; // dashed out: no step back in to hit
 		return engage(*tgt); // cornered: hit back
 	}
 	// Leave before they reach us: alone (or with half the team dead) against a stronger group, start walking
@@ -4804,7 +4923,32 @@ bool Brain::combat()
 	if (P.v27_rally)
 		for (const auto& a : W.allies)
 			can_call |= a.handle != self && a.alive && a.visible && !a.channeling && a.hp >= 0.5f * a.max_hp && cheb(a.pos, pos) <= 10;
-	if (!calm && ((((isolated || reserve) && adv < P.isolated_flee_adv && nearest_enemy <= P.flee_dist) || outmatched) && task != T_CAPTURE &&
+	bool iso_flee = (isolated || reserve) && adv < P.isolated_flee_adv && nearest_enemy <= P.flee_dist;
+	if (P.g24_hold && iso_flee && !outmatched && !calm && task != T_CAPTURE && !((calm_bits & 1) && g15_nthreat == 0) && adv >= P.g24_hold_r &&
+		hp >= P.g24_hold_hp * max_hp && task_group >= 0 && task_group < static_cast<int>(W.groups.size()))
+	{
+		// g24_hold (E1, economy S1): no pre-emptive isolated flee from an even contact at our rich (or own-half) task group: we left 35% of
+		// 1 v 1 contacts at hp >= 0.8 on contested big groups vs the top-30's 18%, and they die there 5% of the time when they stay.
+		// The outmatched, real-fight, cornered and burst rules stay; no avoid_note either (the flee does not happen).
+		const Group& hg = W.groups[static_cast<std::size_t>(task_group)];
+		const bool rich_g = hg.gems >= P.g24_hold_gems;
+		const bool own_g = P.g24_hold_own && hg.d_ally < hg.d_enemy;
+		if (rich_g || own_g)
+		{
+			int dg = BIG;
+			for (const auto t : hg.tiles)
+				dg = std::min(dg, cheb(pos, t));
+			if (dg <= kit.attack_range + 2)
+			{
+				iso_flee = false;
+#if defined(LEGEND_TRACE) || defined(G23_TRACE)
+				std::printf("G24 g24_hold %d %d %d %s adv=%.2f hp=%.2f d=%d ne=%d n=%d\n", round, W.my_index, task_group, rich_g ? "gems" : "own", adv,
+					hp / std::max(1.f, max_hp), dg, nearest_enemy, static_cast<int>(E.size()));
+#endif
+			}
+		}
+	}
+	if (!calm && ((iso_flee || outmatched) && task != T_CAPTURE &&
 		 !((calm_bits & 1) && g15_nthreat == 0)) || // v15: nobody here is coming at us: keep farming
 		(solo_vs_group && nearest_enemy <= P.g22_solo_leave && !(task == T_CAPTURE && nearest_enemy > 4)))
 	{
@@ -4825,6 +4969,7 @@ bool Brain::combat()
 			{
 			}
 		}
+		const bool g24_dashed = (P.g24_flee_dash & 1) && g24_flee_dash_cast(E, "outmatch"); // F1: dash out first, then the walk
 		if (toward_help() || go_home_step(true))
 			return true;
 		if (W.ally_spawn.is_set(pos))
@@ -4832,6 +4977,8 @@ bool Brain::combat()
 			task = T_WAIT; // already home: hold here (healing) rather than step out to them and back
 			return true;
 		}
+		if (g24_dashed)
+			return true;
 	}
 	return false;
 }
@@ -6073,17 +6220,38 @@ bool Brain::tribute(bool force)
 		recall_bank = false; // v23 4.6: a field altar within 15 steps beats a recall to the spawn altar
 	// A long bank trip is worth a bigger bag: the threshold rises with the cheapest way to an altar from here,
 	// so a body far from every altar keeps farming and banks when its route passes close to one.
-	const int need = bank_min(recall_bank ? via_home : dist);
+	int need = bank_min(recall_bank ? via_home : dist);
+	// GOD v24 C3 g24_marc_funnel 1: our Marcella (2 gold a gem banked) banks from max(20, tribute_min / 2) at a safe field altar (not the
+	// spawn altar) within g24_mf_altar steps: the nemesis teams' Marcella banks 40% of her captures within 20 rounds, ours 18%. A walk to
+	// that altar only: a bag this rule banks never starts a recall (the failed g23_bankcap forced recalls).
+	bool mf_bank = false;
+	[[maybe_unused]] const int need0 = need;
+	if ((P.g24_marc_funnel & 1) && type == CT::marcella && dist <= P.g24_mf_altar && !altar_unsafe(a) &&
+		static_cast<std::size_t>(a) < W.altar_approach.size())
+	{
+		int a_home = BIG;
+		for (const auto t : W.altar_approach[static_cast<std::size_t>(a)])
+			a_home = std::min(a_home, W.dist_home(t));
+		const int nf = std::max(20, tribute_min / 2);
+		if (a_home > W.spawn_altar_d && nf < need && static_cast<int>(gems) >= nf)
+		{
+			need = nf;
+			mf_bank = true;
+			recall_bank = false;
+		}
+	}
 	const bool capped = P.g23_bankcap > 0 && static_cast<int>(gems) >= P.g23_bankcap;
 	if (capped && !recall_bank && !endgame && W.spawn_altar_d < BIG && W.dist_home(pos) > P.recall_min_dist && safe_to_recall() &&
 		(dist > via_home || altar_unsafe(a) || bag_needs_escort(a)))
 		recall_bank = true; // g23_bankcap: the field altar is far or hot: bank the big bag at the spawn altar
 	const bool stalled = round < pw_bank_until; // v27_watch: a carrier that stood still banks now
-	const bool want = stalled || (P.v23_bank ? (force || endgame || winning || committed || v23_bank_want(dist))
+	const bool want = stalled || mf_bank || (P.v23_bank ? (force || endgame || winning || committed || v23_bank_want(dist))
 								 : (force || endgame || winning || risky || committed || capped || static_cast<int>(gems) >= need || dist <= P.tribute_near ||
 									  (static_cast<int>(gems) >= 10 && on_the_way(a))));
 	if (!want)
 		return false;
+	if (mf_bank && task != T_TRIBUTE)
+		G24MF("bank gems=%d need=%d was=%d dist=%d altar=%d", static_cast<int>(gems), need, need0, dist, a);
 #ifdef LEGEND_TRACE
 	debug_block({
 		if (task != T_TRIBUTE)
@@ -6102,6 +6270,8 @@ bool Brain::tribute(bool force)
 			hot |= cheb(W.altars[static_cast<std::size_t>(a)], av_pos[static_cast<std::size_t>(k)]) <= av_rad[static_cast<std::size_t>(k)];
 		if (hot)
 		{
+			if (mf_bank)
+				return false; // g24_marc_funnel: the small bag waits (no new recall)
 			if (W.dist_home(pos) > P.recall_min_dist && W.spawn_altar_d < BIG && safe_to_recall())
 				recall_bank = true;
 			else
@@ -6785,6 +6955,54 @@ void Brain::chip_passing()
 	}
 }
 
+// ---- GOD v24 C3 (P.g24_marc_funnel): rewards go to our Marcella (2 gold a gem when she banks; nemesis/REPORT.txt S1, draft_bank S2) ----
+int Brain::g24_mf_marc() const
+{
+	// Our Marcella when the funnel can use her this round: drafted, alive, in sight now, not channelling; -1 when we are her.
+	if (type == CT::marcella)
+		return -1;
+	auto& W = world();
+	for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 8; ++i)
+	{
+		const auto& a = W.allies[static_cast<std::size_t>(i)];
+		if (i != W.my_index && a.type == CT::marcella)
+			return a.alive && a.visible && a.seen_round == round && !a.channeling ? i : -1;
+	}
+	return -1;
+}
+
+double Brain::g24_mf_val(bc::champion_type t, const Group& g) const
+{
+	const auto& k = tpa::kit_of(static_cast<int>(t));
+	return k.gold_mult * static_cast<double>(g.gold) + k.tribute_gold * static_cast<double>(g.gems); // Marcella: gold + 2 x gems
+}
+
+bool Brain::g24_mf_hot(const Group& g, int r) const
+{
+	if (g.enemy_on_tile)
+		return true;
+	for (const auto& e : world().enemies)
+	{
+		if (!e.alive || e.seen_round < round - 2 || cheb(e.pos, g.center) > g.radius + r)
+			continue;
+		bc::bitboard near;
+		near.draw_chebyshev(e.pos, static_cast<float>(r));
+		if (!(near & g.mask).is_empty())
+			return true;
+	}
+	return false;
+}
+
+bool Brain::g24_mf_calm(vec2 p, float h, float mh) const
+{
+	if (h < 0.4f * mh)
+		return false;
+	for (const auto& e : world().enemies)
+		if (e.alive && e.seen_round >= round - 2 && cheb(e.pos, p) <= 6)
+			return false;
+	return true;
+}
+
 float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_override) const
 {
 	sc_why = 0;
@@ -6921,6 +7139,32 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 						{ WHY(4); return -1; }
 				}
 		}
+		// GOD v24 C3 g24_marc_funnel. mf_me: we are our Marcella and the reward is hers (bit 1: >= 10 gems or >= 60 gold within g24_mf_r
+		// steps, no enemy champion within 4 of it; bit 2: within 2 steps and we are not in a fight): no yield to a body it is worth less to.
+		const bool mf_big = g.gems >= 10 || g.gold >= 60;
+		const bool mf_me = P.g24_marc_funnel && type == CT::marcella &&
+			(((P.g24_marc_funnel & 1) && mf_big && d_tile <= P.g24_mf_r && !g24_mf_hot(g, 4)) ||
+				((P.g24_marc_funnel & 2) && d_tile <= 2 && g24_mf_calm(pos, hp, max_hp)));
+		if ((P.g24_marc_funnel & 1) && mf_big && !(capture_group_id == g.id && g.mask.is_set(pos)) && round - g.reward_round < P.g24_mf_wait &&
+			!(g24_mf_g == g.id && round - g24_mf_since < P.g24_mf_wait))
+		{
+			// bit 1: a body that does not hold the reward yields it to our Marcella within g24_mf_r steps when she takes it (claims the group
+			// or stands on it: the g23_capfix 1 guard) and it is worth more to her; only in the first g24_mf_wait rounds of the reward (then
+			// anyone takes it: no reward left lying). The body that holds it is handled by capture_group().
+			const int m = g24_mf_marc();
+			if (m >= 0)
+			{
+				const auto& a = W.allies[static_cast<std::size_t>(m)];
+				const int dm = nav().group_dist(g, a.pos);
+				if (dm <= P.g24_mf_r && ((m < 6 && C.claim[static_cast<std::size_t>(m)] == g.id) || g.mask.is_set(a.pos)) &&
+					g24_mf_val(a.type, g) > g24_mf_val(type, g) + 1e-9 && !g24_mf_hot(g, 4))
+				{
+					G24MF("yield g=%d dm=%d d=%d gems=%d gold=%d", g.id, dm, d_tile, g.gems, g.gold);
+					WHY(4);
+					return -1;
+				}
+			}
+		}
 		if (P.mi_capture && !(capture_group_id == g.id && g.mask.is_set(pos)))
 		{
 			// GOD v12 (teamplan capture.h mode 1, LEARNED: the strong teams' choice in 65% of shared captures): among the living bodies
@@ -6928,9 +7172,10 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			// index; the others move on.
 			// GOD v15 mi_capture 2: the gold a reward is worth to the body that takes it: Vesper Vale's bonus on the gold, Marcella's 2 gold
 			// per gem when she banks it (IC's Marcella ends games with 106 shard equivalents, its Vesper with 94, its Cassi & Issac with 9).
+			// g24_marc_funnel (mf_me): our Marcella compares by that gold (gold + 2 x gems for her, gold x gold_mult for the others).
 			auto funnel = [&](bc::champion_type ct) {
 				const auto& k = tpa::kit_of(static_cast<int>(ct));
-				return P.mi_capture == 2 ? k.gold_mult * static_cast<double>(g.gold) + k.tribute_gold * static_cast<double>(g.gems) : k.gold_mult;
+				return P.mi_capture == 2 || mf_me ? k.gold_mult * static_cast<double>(g.gold) + k.tribute_gold * static_cast<double>(g.gems) : k.gold_mult;
 			};
 			const double my_gm = funnel(type);
 			for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 8; ++i)
@@ -6947,12 +7192,25 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 					continue;
 				if (gm > my_gm + 1e-9 || (std::fabs(gm - my_gm) <= 1e-9 && (da < d_tile || (da == d_tile && i < W.my_index))))
 					{ WHY(4); return -1; }
+#if defined(G23_TRACE) || defined(LEGEND_TRACE)
+				if (mf_me && P.mi_capture != 2)
+				{
+					// trace only: the gold_mult order would have yielded it
+					const double og = tpa::kit_of(static_cast<int>(a.type)).gold_mult, om = tpa::kit_of(static_cast<int>(type)).gold_mult;
+					if (og > om + 1e-9 || (std::fabs(og - om) <= 1e-9 && (da < d_tile || (da == d_tile && i < W.my_index))))
+						G24MF("outrank g=%d ally=%d da=%d d=%d", g.id, i, da, d_tile);
+				}
+#endif
 			}
 		}
 		// One body captures; if allies claim it, the lowest index takes it unless we are clearly nearer
 		// (the joiner may still be walking in while we stand next to the reward).
 		if (claimers && first_claimer < W.my_index && closer_lower_claimer && !outrank_lower)
-			{ WHY(4); return -1; }
+		{
+			if (!mf_me)
+				{ WHY(4); return -1; }
+			G24MF("outrank_claim g=%d claimer=%d d=%d", g.id, first_claimer, d_tile); // g24_marc_funnel: our Marcella takes it
+		}
 		if (P.no_split && !(P.big_reward > 0 && g.gems >= P.big_reward && g.enemy_on_tile))
 		{
 			// One collector per reward: allies standing on the tiles when it lands split it with no speed-up, and the
@@ -6973,6 +7231,15 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 				if (P.handoff && P.anchors && is_anchor && !body_is_anchor(i))
 				{
 					value_mult_handoff = P.handoff_bonus; // F4: the ally holds it for us (capture_group steps it off when we arrive)
+					continue;
+				}
+				if (mf_me && g24_mf_val(a.type, g) + 1e-9 < g24_mf_val(type, g))
+				{
+					// g24_marc_funnel: the F4 hand-off path for our Marcella: the ally holds it for her (capture_group steps it off when she
+					// stands on it)
+					if (value_mult_handoff == 1.f)
+						G24MF("take_held g=%d holder=%d d=%d", g.id, i, d_tile);
+					value_mult_handoff = P.handoff_bonus;
 					continue;
 				}
 				if (!on || a_arr < my_arr || (a_arr == my_arr && i < W.my_index))
@@ -7013,18 +7280,40 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			// IC's whole team in a few rounds while our join rule let one body farm it alone (harmless groups were never "heavy").
 			const bool rich = (P.g18_rich && g.harmless && g.gems >= P.g18_rich_gems && solo_rounds > P.join_min_rounds) ||
 				(P.v23_prize && g.id == W.prize_g && round < P.v23_prize_until && solo_rounds > P.join_min_rounds); // v23_prize: the whole team on it
-			const bool heavy = rich || follow_g || g.monolith || g.elk || (!g.harmless && (solo_rounds > P.join_min_rounds || g.attackers >= 2));
+			const bool heavy0 = rich || follow_g || g.monolith || g.elk || (!g.harmless && (solo_rounds > P.join_min_rounds || g.attackers >= 2));
 			const int max_join = P.mi_two_bodies ? std::min(P.max_join, 1) : P.max_join; // mi_two_bodies (default branch)
+			int join_cap = g.monolith ? 4 : 1 + max_join;
+			// g24_join (E2, economy S2): before g24_join_until a group of g24_join_gems+ gems (harmless included) is open to joiners once one body
+			// needs more than g24_join_min rounds; the joiner may arrive within g24_join_reach x that time and is credited g24_join_share.
+			// We were alone on 45% of our opening visits to 30+-gem groups vs the top-30's 17% (harmless ones always alone).
+			const bool j24 = P.g24_join && round < P.g24_join_until && g.gems >= P.g24_join_gems;
+			bool heavy = heavy0 || (j24 && solo_rounds > P.g24_join_min);
+			// g24_scarce (draft_bank S1): on a gem-scarce map a 12+-gem group the rule above calls light takes one joiner (claimers < 2), all
+			// game (our solo share of 12+-gem kills there 0.72 vs the top-30's 0.59)
+			bool s24 = false;
+			if (P.g24_scarce && W.scarce_mode && !heavy && g.gems >= 12)
+				heavy = true, s24 = true, join_cap = 2;
 			// commit_keep: we are already hitting it; the join limits are for walking in, not for leaving a camp half done
 			// (17 unopposed official games: 67 camps we had hit left on this rule).
 			const bool committed = P.commit_keep && g.id == task_group && g.st == ST_ALIVE && round - target_hit_round <= 2;
-			if (!committed && (!heavy || (!follow_g && claimers >= (g.monolith ? 4 : 1 + max_join) && !(W.obj_mode && g.objective && P.obj_team))))
+			if (!committed && (!heavy || (!follow_g && claimers >= join_cap && !(W.obj_mode && g.objective && P.obj_team))))
 				{ WHY(6); return -1; }
 			// A joiner that arrives after the claimers are done walked for nothing (pilgrimage: Cassi crossed the map between
 			// two 68-gem packs for 300 rounds, hitting each one a few times before someone else captured it).
-			if (P.join_reach > 0.f && !g.monolith && !(W.obj_mode && g.objective) && static_cast<float>(d_adj + wait) > P.join_reach * solo_rounds)
+			const float reach = j24 ? P.g24_join_reach : P.join_reach;
+			if (reach > 0.f && !g.monolith && !(W.obj_mode && g.objective) && static_cast<float>(d_adj + wait) > reach * solo_rounds)
 				{ WHY(13); return -1; }
-			share = rich ? P.g18_rich_share : P.join_share;
+			share = rich ? P.g18_rich_share : j24 ? P.g24_join_share : P.join_share;
+#if defined(LEGEND_TRACE) || defined(G23_TRACE)
+			if (j24 || s24)
+			{
+				// one line per scoring the g24 rule changed: opened (heavy), reach (the old reach test would drop it), share (credit only)
+				const bool open = !heavy0 && !committed;
+				const bool reach_x = P.join_reach > 0.f && !g.monolith && !(W.obj_mode && g.objective) && static_cast<float>(d_adj + wait) > P.join_reach * solo_rounds;
+				std::printf("G24 %s %d %d %d %s gems=%d solo=%.1f cl=%d d=%d\n", s24 ? "g24_scarce" : "g24_join", round, W.my_index, g.id,
+					open ? "heavy" : reach_x ? "reach" : "share", g.gems, solo_rounds, claimers, d_adj + wait);
+			}
+#endif
 		}
 		// Rounds to clear the group with the given helpers; false when it cannot be done in max_trips.
 		auto plan = [&](float helpers_dps, bool helper_melee, float& t) {
@@ -7196,7 +7485,7 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 	}
 
 	float value = ((P.no_altar_gold && W.no_altar_now() && !g.unlock ? 0.f : static_cast<float>(g.gems)) + gold_v * static_cast<float>(g.gold)) * share;
-	if (P.handoff)
+	if (P.handoff || value_mult_handoff != 1.f) // != 1 without P.handoff: only g24_marc_funnel sets it
 		value *= value_mult_handoff;
 	if (P.g23_open_safe > 0 && round < P.g23_open_safe && g.d_ally + P.g23_open_safe_margin > g.d_enemy)
 		value *= P.g23_open_safe_mult; // g23_open_safe: in the opening, groups their stack reaches as early as we do are worth less
@@ -7261,6 +7550,15 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 			// of its rounds with an enemy within 8, v75 at 6%)
 			if (tadv < (P.v23_contact ? P.v23_abandon_r : P.target_threat_adv) * (big ? 0.5f : 1.f))
 				{ WHY(10); return -1; }
+			// g24_abandon_r (F2a, fights/REPORT.txt S2): between the v23 bar and this one the body walked into the stronger group; give it up
+			// unless it is our task group and nobody can hit us next turn (g23_keep_farm)
+			if (P.g24_abandon_r > 0.f && !(g.id == task_group && g23_keep_farm) &&
+				tadv < std::max(P.v23_contact ? P.v23_abandon_r : P.target_threat_adv, P.g24_abandon_r) * (big ? 0.5f : 1.f))
+			{
+				G24T("g24_abandon_r", "g=%d tadv=%.2f big=%d task=%d", g.id, tadv, static_cast<int>(big), static_cast<int>(g.id == task_group));
+				WHY(10);
+				return -1;
+			}
 		}
 	}
 	if (round - g.enemy_round < 12 && !(P.g23_farm && P.g23_fight && g.id == task_group && g23_keep_farm))
@@ -8154,6 +8452,89 @@ bool Brain::capture_group(Group& g)
 				capture_group_id = g.id, capture_since = round;
 			place_ward(round - ward_round > 4);
 			return true;
+		}
+	}
+	if (P.g24_marc_funnel && g.st == ST_REWARD && type != CT::marcella)
+	{
+		// GOD v24 C3 g24_marc_funnel: the reward goes to our Marcella (2 gold a gem when she banks it). Only when it is worth more to her,
+		// she takes it (stands on it, or claims the group: the g23_capfix 1 guard) and no enemy champion is within 4 of it.
+		auto& W = world();
+		const int m = g24_mf_marc();
+		if (m >= 0 && g24_mf_val(W.allies[static_cast<std::size_t>(m)].type, g) > g24_mf_val(type, g) + 1e-9)
+		{
+			const auto& a = W.allies[static_cast<std::size_t>(m)];
+			const bool on = g.mask.is_set(pos), a_on = g.mask.is_set(a.pos);
+			const bool a_takes = a_on || (m < 6 && comms().claim[static_cast<std::size_t>(m)] == g.id);
+			const int dm = nav().group_dist(g, a.pos);
+			const int cap_t = static_cast<int>(bc::constants::capture_time);
+			const bool b1 = (P.g24_marc_funnel & 1) && (g.gems >= 10 || g.gold >= 60) && dm <= P.g24_mf_r && a_takes && !g24_mf_hot(g, 4);
+			// bit 2 (g24_carry_cap): she is within 2 steps and not in a fight; our own capture landing next round is kept unless she is on it
+			const bool b2 = (P.g24_marc_funnel & 2) && on && dm <= 2 && a_takes && g24_mf_calm(a.pos, a.hp, a.max_hp) &&
+				(a_on || capture_group_id != g.id || round < capture_since + cap_t);
+			auto step_off = [&]() {
+				bc::bitboard off;
+				off.draw_chebyshev(pos, 1.f);
+				off &= ~g.mask & ~W.walls & ~W.ally_occ & ~W.enemy_occ & ~W.camp_occ;
+				return !off.is_empty() && step(off, false, false);
+			};
+			if (on && ((b1 && a_on) || b2))
+			{
+				// She stands on it (bit 1: the tiles never empty, her capture keeps our timer) or is next to it (bit 2): step off, she takes it alone.
+				if (step_off())
+				{
+					G24MF("stepoff g=%d dm=%d bit=%d gems=%d", g.id, dm, b2 && !(b1 && a_on) ? 2 : 1, g.gems);
+					blacklist[static_cast<std::size_t>(g.id)] = round + cap_t + 1;
+					capture_group_id = -1;
+					g24_mf_g = -1;
+					task = T_NONE;
+					return true;
+				}
+			}
+			else if (b1 && a_on && !on && g24_mf_g == g.id && g24_mf_since >= g.reward_round)
+			{
+				// we waited next to it and she stands on it now: hers
+				G24MF("handed g=%d waited=%d", g.id, round - g24_mf_since);
+				blacklist[static_cast<std::size_t>(g.id)] = round + cap_t + 1;
+				g24_mf_g = -1;
+				task = T_NONE;
+				return false;
+			}
+			else if (b1 && !a_on && (on || (g24_mf_g == g.id && g24_mf_since >= g.reward_round)))
+			{
+				// bit 1, she is on her way: we defer our capture at most g24_mf_wait rounds (once per reward), then capture ourselves.
+				if (on && (g24_mf_g != g.id || g24_mf_since < g.reward_round))
+					g24_mf_g = g.id, g24_mf_since = round;
+				if (round - g24_mf_since < P.g24_mf_wait)
+				{
+					if (g.id == task_group)
+						task_progress = round;
+					if (on)
+					{
+						if (capture_group_id != g.id)
+							capture_group_id = g.id, capture_since = round;
+						if (round + dm <= capture_since + cap_t - 1)
+						{
+							// she steps on before our capture lands: hold the tiles (the timer keeps running), no capture-recall
+							G24MF("hold g=%d dm=%d since=%d", g.id, dm, capture_since);
+							place_ward(round - ward_round > 4);
+							return true;
+						}
+						if (round == g24_mf_since && step_off())
+						{
+							// she arrives after it would land: leave the tiles (our capture stops) and wait next to them (decided once: a
+							// hold she stops keeping pace with falls through to our own capture below)
+							G24MF("wait_off g=%d dm=%d", g.id, dm);
+							capture_group_id = -1;
+							return true;
+						}
+					}
+					else
+					{
+						G24MF("wait g=%d dm=%d left=%d", g.id, dm, P.g24_mf_wait - (round - g24_mf_since));
+						return true; // off the tiles: do not step back on while she comes
+					}
+				}
+			}
 		}
 	}
 	if (g.mask.is_set(pos))

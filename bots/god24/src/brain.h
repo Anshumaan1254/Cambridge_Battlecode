@@ -6,6 +6,13 @@
 #include "world.h"
 #include "tp_adapter.h"
 
+// GOD v24 C1 (fights F1-F5): one trace line each time a g24 rule fires: "G24 <switch> <round> <body> <why>" (Brain methods only).
+#if defined(LEGEND_TRACE) || defined(G23_TRACE)
+#define G24T(sw, ...) (std::printf("G24 %s %d %d ", sw, round, world().my_index), std::printf(__VA_ARGS__), std::printf("\n"))
+#else
+#define G24T(...) (void)0
+#endif
+
 enum TaskKind : int
 {
 	T_NONE,
@@ -274,6 +281,12 @@ private:
 	std::vector<int> enemy_tribute_seen; // F6: rounds we saw an enemy tributing at each altar
 	bool chain_keep(const Group& g, int recall_t, bool bag, bool rich); // F5: a nearby target beats the home trip
 	bool body_is_anchor(int i) const { return i >= 0 && i < 8 && anchor_now[static_cast<std::size_t>(i)]; }
+	// GOD v24 C3 (P.g24_marc_funnel): rewards go to our Marcella
+	int g24_mf_marc() const;									  // our living Marcella's ally index (-1: none, dead, or we are her)
+	double g24_mf_val(bc::champion_type t, const Group& g) const; // the reward's gold to a body of type t (gold x gold_mult + gems x tribute gold)
+	bool g24_mf_hot(const Group& g, int r) const;				  // an enemy champion within r of a tile of the group
+	bool g24_mf_calm(vec2 p, float h, float mh) const;			  // bit 2: a body at p is not in a fight (no enemy within 6, health >= 40%)
+	int g24_mf_g = -1, g24_mf_since = -1000;					  // holder: we defer the capture of group g24_mf_g to her since this round
 	bool plan_ward(bool force); // P.ward_plan
 	bool v14_ward(bool force);  // P.ward_v14 (false: ward_v14 2 leaves it to v13's rule)
 	bool ally_committed(const Ally& a) const; // P.g22_msg: the ally's priority says it is in a fight
@@ -504,6 +517,9 @@ private:
 	std::uint32_t g23_chase_h = 0;
 	int g23_chase_best = 99, g23_chase_n = 0, g23_chase_round = -100;
 	std::array<int, 8> g23_chase_off{ -100, -100, -100, -100, -100, -100, -100, -100 };
+	// GOD v24 C1 (fights)
+	std::array<int, 8> g24_lure_off{ -100, -100, -100, -100, -100, -100, -100, -100 }; // g24_lure: the lure veto holds on this enemy until then
+	bool g24_flee_dash_cast(const std::vector<Enemy*>& E, const char* where); // g24_flee_dash bit 1: dash out of a fight we leave
 	bool g23_go_rally();
 	struct AllyMsg
 	{
@@ -512,7 +528,7 @@ private:
 	std::array<AllyMsg, 8> g23_ally{};
 	void g23_read_allies();
 	int g23_decide(std::vector<Enemy*>& E, Enemy*& tgt, float allies_burst, bool in_reach, float incoming);
-	float g23_dps_of(float str_, float focus_, const Kit& k, bool reset_ready, bool spell_ready, float hp_frac, bc::champion_type t) const;
+	float g23_dps_of(float str_, float focus_, const Kit& k, bool reset_ready, bool spell_ready, float hp_frac, bc::champion_type t, bool enemy = false) const;
 	float g23_ratio(vec2 contact, const std::vector<Enemy*>& E, int* new_enemy, int* reinf_us, int* reinf_them) const;
 	bool g23_escape_test(const std::vector<Enemy*>& E, float incoming) const;
 	Enemy* g23_pick_target(std::vector<Enemy*>& E, Enemy* fallback) const;

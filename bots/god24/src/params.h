@@ -1285,8 +1285,48 @@ struct Params
 								// Ruin on a lone-monolith map; counter-picks promote Marcella / Heart of Ruin
 	// ===== GOD v24 switches (docs/plans/god24_plan.md); every one 0 = v88 =====
 	// ---- g24 C1 fights (F1-F5) ----
+	int g24_flee_dash = 0;		// F1 bits: 1 combat()'s two flee branches and g23_leave() dash first when a chaser could hit us after a walk step (Heart of
+								// Ruin included: strike_dash_hold ignored); landing = fewest enemy next-turn reaches, then nearest home, never a sleeping
+								// camp's wake or an awake camp's range; 2 can_escape counts our dash only with bit 1 or a kit without a strike dash
+	float g24_abandon_r = 0.f;	// F2a > 0: group_score gives a group up at tadv < max(v23_abandon_r, this) (x0.5 big) unless it is our task group and
+								// g23_keep_farm (plan 0.67)
+	int g24_rescue_pw = 0;		// F2b 1: g23_veto's rescue also needs g23_ratio at the caught ally >= g23_r_join
+	int g24_fresh = 0;			// F3 > 0: for this many rounds after our respawn a fight not killable and not in reach needs adv >= g24_fresh_adv (plan 40)
+	float g24_fresh_adv = 1.5f;
+	int g24_lure = 0;			// F4 1: g23_veto's lure veto on every non-killable fight (rescues included), held 3 rounds on that target
+	int g24_hit_is_fight = 0;	// F5 1: hit last round counts as being in a fight for the fz_engage hold (adv >= fight_back_margin, an enemy within
+								// my_reach + 1)
 	// ---- g24 C2 economy (E1, E2) ----
+	int g24_hold = 0;			// 1 (E1): combat()'s isolated pre-emptive flee (alone, adv < isolated_flee_adv) does not fire (and no avoid_note) while
+								// our task group has >= g24_hold_gems gems (g24_hold_own: or lies on our half), we are within attack range + 2 of it,
+								// hp >= g24_hold_hp x max_hp and adv >= g24_hold_r; outmatched / real-fight / cornered / burst rules unchanged
+	int g24_hold_gems = 30;
+	float g24_hold_r = 0.8f;
+	float g24_hold_hp = 0.5f;
+	int g24_hold_own = 0;
+	int g24_join = 0;			// 1 (E2): group_score's join rule before round g24_join_until for groups of >= g24_join_gems gems: heavy also when one
+								// body needs > g24_join_min rounds (harmless groups included), reach test g24_join_reach, joiner's share g24_join_share
+	int g24_join_gems = 30;
+	int g24_join_until = 300;
+	float g24_join_min = 6.f;
+	float g24_join_reach = 2.f;
+	float g24_join_share = 0.9f;
+	int g24_scarce = 0;			// 1 (E2 scarce maps): on maps with gems of all groups / champions per team <= g24_scarce_gpc (W.scarce_mode), a gem
+								// group of >= 12 gems that the join rule calls light takes one joiner (claimers < 2), all game
+	int g24_scarce_gpc = 92;
 	// ---- g24 C3 Marcella funnel (E3, N1-N3) ----
+	int g24_marc_funnel = 0;	// bits (E3; only while we drafted Marcella and she is alive; never with an enemy champion within 4 of the reward):
+								// 1 a reward with >= 10 gems or >= 60 gold yields to her within g24_mf_r steps when she claims it or stands on it (her value
+								// gold + 2 x gems, the others' gold x gold_mult); a holder keeps the tile without a capture-recall while she can arrive before
+								// its capture lands, else steps off and waits at most g24_mf_wait rounds, and steps off once she stands on it; she banks from
+								// max(20, tribute_min / 2) at a safe field altar within g24_mf_altar steps (no new recall); 2 (g24_carry_cap) a body on any
+								// reward steps off when she is within 2 steps and not in a fight
+	int g24_mf_r = 8;
+	int g24_mf_wait = 6;
+	int g24_mf_altar = 12;
+	int g24_marc_focus = 0;		// 1 (N1): g23_pick_target() divides an enemy Marcella's key by 1 + bag / 40, and by 1.3 more when her strength >= 1.5 x design
+	int g24_marc_threat = 0;	// 1 (N2): g23_dps_of() counts an enemy Marcella's ready reset x1.5 (its stun), g23_ratio() our damage x0.85 while one with the
+								// reset ready is within 2 of the contact
 	// ---- g24 C5 execution (X1-X3) ----
 	// ===== end of GOD v24 switches =====
 };

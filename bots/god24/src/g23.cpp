@@ -57,10 +57,11 @@ bool stun_ready(const Enemy& e) { return (e.kit.cc >= 0 && e.ready(e.kit.cc)) ||
 
 // Damage a body deals per round in a fight: basic attack (x2 with a reset ready) + its best ready spell over 3 rounds; Heart of Ruin
 // hits harder the lower it is; Varg's splash lands on the neighbours too.
-float Brain::g23_dps_of(float str_, float focus_, const Kit& k, bool reset_ready, bool spell_ready, float hp_frac, CT t) const
+float Brain::g23_dps_of(float str_, float focus_, const Kit& k, bool reset_ready, bool spell_ready, float hp_frac, CT t, bool enemy) const
 {
 	// over a 5-round exchange: the basic attack every round, one reset swing and one spell if they are up now (cooldowns are 8)
-	float d = str_ * (reset_ready ? 1.2f : 1.f);
+	// g24_marc_threat (N2): an enemy Marcella's enhanced reset also stuns (a round of our damage lost): x1.5
+	float d = str_ * (reset_ready ? (P.g24_marc_threat && enemy && t == CT::marcella ? 1.5f : 1.2f) : 1.f);
 	if (spell_ready)
 		d += focus_ * best_mod(k) / 5.f;
 	if (t == CT_HOR)
@@ -117,6 +118,7 @@ float Brain::g23_ratio(vec2 contact, const std::vector<Enemy*>& E, int* new_enem
 	}
 	float their_hp = 0, their_dps = 0;
 	int mask = 0;
+	bool marc_stun = false; // g24_marc_threat
 	for (auto* e : E)
 	{
 		const int d = cheb(e->pos, contact);
@@ -129,9 +131,12 @@ float Brain::g23_ratio(vec2 contact, const std::vector<Enemy*>& E, int* new_enem
 			mask |= 1 << idx;
 		const float w = d <= enemy_reach(*e) + 2 ? 1.f : P.g23_far_w;
 		const bool sp = e->ready(e->kit.dmg) || e->ready(e->kit.cc) || e->ready(e->kit.aoe) || (e->ready(e->kit.dash) && e->kit.dash_mod > 0.f);
-		float dps = g23_dps_of(e->str, e->focus, e->kit, e->ready(e->kit.reset), sp, e->hp / std::max(1.f, e->max_hp), e->type);
+		float dps = g23_dps_of(e->str, e->focus, e->kit, e->ready(e->kit.reset), sp, e->hp / std::max(1.f, e->max_hp), e->type, true);
 		if ((P.fm_buffs & 2) && e->stunned)
 			dps *= 0.5f;
+		// g24_marc_threat: her reset (cooldown read while visible, world.cpp) is up within 2 of the contact: its stun costs our side a round
+		if (P.g24_marc_threat && e->type == CT::marcella && d <= 2 && e->ready(e->kit.reset))
+			marc_stun = true;
 		their_hp += w * (e->hp + ((P.fm_buffs & 1) ? e->shield : 0.f));
 		their_dps += w * dps;
 	}
@@ -178,6 +183,13 @@ float Brain::g23_ratio(vec2 contact, const std::vector<Enemy*>& E, int* new_enem
 	if (reinf_them)
 		*reinf_them = rt;
 	g23_emask_now = mask;
+	if (marc_stun)
+	{
+		our_dps *= 0.85f; // g24_marc_threat (N2)
+#ifdef G23_TRACE
+		std::printf("G24 marc_threat %d %d contact=(%d,%d) stun\n", round, W.my_index, contact.x, contact.y);
+#endif
+	}
 	if (their_hp <= 0.f || their_dps <= 0.f)
 		return 99.f;
 	const float t_us = our_hp / their_dps, t_them = their_hp / std::max(1.f, our_dps);
@@ -270,6 +282,19 @@ Enemy* Brain::g23_pick_target(std::vector<Enemy*>& E, Enemy* fallback) const
 		if (e->gems >= 20)
 			bonus += 200.f;
 		float key = (ehp - bonus) / std::max(1.f, mine + allies_d);
+		if (P.g24_marc_focus && e->type == CT::marcella)
+		{
+			// g24_marc_focus (N1): her bag is worth 3x to them (gems + 2 gold a gem); itemized (seen strength >= 1.5 x design) she carries
+			// their item lead. Smaller key = first target (a negative key is scaled the other way).
+			float f = 1.f + static_cast<float>(e->gems) / 40.f;
+			const float bs = static_cast<float>(bc::champion_designs[static_cast<std::size_t>(e->type)].base_stats().base_strength);
+			if (bs > 0.f && e->str >= 1.5f * bs)
+				f *= 1.3f;
+			key = key > 0.f ? key / f : key * f;
+#ifdef G23_TRACE
+			std::printf("G24 marc_focus %d %d bag=%u str=%.0f base=%.0f f=%.2f key=%.1f\n", round, W.my_index, e->gems, e->str, bs, f, key);
+#endif
+		}
 		if (ehp <= mine + allies_d)
 			key -= 1e6f;
 		if (static_cast<int>(e - W.enemies.data()) == focus_idx)
@@ -452,6 +477,16 @@ bool Brain::g23_veto(std::vector<Enemy*>& E, Enemy*& tgt, bool fight, bool killa
 			}
 			if (n_en > n_us)
 				continue;
+			if (P.g24_rescue_pw)
+			{
+				// g24_rescue_pw (F2b, fights/REPORT.txt S2): bodies are not power: the rescue also needs the join bar at the caught ally
+				const float ra = g23_ratio(a.pos, E, nullptr, nullptr, nullptr);
+				if (ra < P.g23_r_join)
+				{
+					G24T("g24_rescue_pw", "ally=%d R=%.2f n_us=%d n_en=%d", i, ra, n_us, n_en);
+					continue;
+				}
+			}
 			// the enemy on it that we can reach soonest, lowest health first
 			for (auto* e : E)
 			{
@@ -473,6 +508,20 @@ bool Brain::g23_veto(std::vector<Enemy*>& E, Enemy*& tgt, bool fight, bool killa
 		lure = true;
 	if (fight && lure && (P.g23_veto_bits & 1))
 		fight = false;
+	if (P.g24_lure && fight && !killable && td > my_reach)
+	{
+		// g24_lure (F4, fights/REPORT.txt S4): the lure veto on every non-killable fight, rescues included, held 3 rounds on that target
+		const int ti = static_cast<int>(tgt - W.enemies.data());
+		const bool lure_all = !in_awake_camp_range() && camp_danger.is_set(tgt->pos);
+		const bool held = ti >= 0 && ti < 8 && round < g24_lure_off[static_cast<std::size_t>(ti)];
+		if (lure_all || held)
+		{
+			if (lure_all && ti >= 0 && ti < 8)
+				g24_lure_off[static_cast<std::size_t>(ti)] = round + 3;
+			G24T("g24_lure", "tgt=%d td=%d rescue=%d held=%d", ti, td, static_cast<int>(rescued), static_cast<int>(held && !lure_all));
+			fight = false;
+		}
+	}
 	if ((P.g23_veto_bits & 2) && fight && !killable && !ally_fight && !rescued && !in_reach && td > my_reach + 1 && !tgt->channeling && !tgt->tributing)
 		fight = false; // one approach step at most
 	if (fight && !killable && td > my_reach && !in_reach && !tgt->channeling && !tgt->tributing)
@@ -587,6 +636,8 @@ bool Brain::g23_leave(std::vector<Enemy*>& E, Enemy& tgt)
 					break;
 				}
 	};
+	// g24_flee_dash bit 1 (F1): dash out first when a chaser could hit us after a walk step; the walk below starts from the landing
+	const bool g24_dashed = (P.g24_flee_dash & 1) && g24_flee_dash_cast(E, "leave");
 	vec2 help{ -1, -1 };
 	int hd = BIG;
 	for (const auto& a : W.allies)
@@ -644,6 +695,11 @@ bool Brain::g23_leave(std::vector<Enemy*>& E, Enemy& tgt)
 	{
 		swing();
 		return true;
+	}
+	if (g24_dashed)
+	{
+		swing();
+		return true; // dashed out: no step back in to hit
 	}
 	return engage(tgt);
 }

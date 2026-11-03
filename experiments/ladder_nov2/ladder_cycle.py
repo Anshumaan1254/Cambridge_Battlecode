@@ -109,7 +109,7 @@ def main():
         r = subprocess.run(['cambc', 'submit', a.submit, '-n', a.note[:80]], capture_output=True, text=True, cwd=ROOT)
         print('  submit:', (r.stdout + r.stderr).strip()[-200:], flush=True)
         t0 = time.time()
-        while time.time() - t0 < 300:
+        while time.time() - t0 < 330:
             new = [x for x in submissions() if x.get('version') not in before]
             if new and new[0].get('status') in ('active', 'inactive'):
                 a.test = new[0]['version']
@@ -126,7 +126,7 @@ def main():
             wait_live(a.best)
             return
         print(f'  built: v{a.test} at {now():%H:%M:%S}', flush=True)
-        if (next_slot(start) - now()).total_seconds() < 300:
+        if (next_slot(start) - now()).total_seconds() < 240:
             # too late to make it live, queue and switch back with margin: the upload is live by itself (follow-newest): revert now
             log(f'{now():%Y-%m-%dT%H:%MZ} CYCLE v{a.test} built too late for this window ({(next_slot(start) - now()).total_seconds():.0f} s to the slot): '
                 f'back to v{a.best}; run again with --test {a.test}')
@@ -145,7 +145,7 @@ def main():
         return
     print(f'  v{a.test} live after {w:.0f} s at {now():%H:%M:%S}', flush=True)
     # wait for free quota (rolling hour) while there is time to queue and still switch back with margin
-    while (slot - now()).total_seconds() > 300:
+    while (slot - now()).total_seconds() > 260:
         try:
             q = json.loads(subprocess.run(['cambc', 'match-groups', 'quota', '--json'], capture_output=True, text=True, cwd=ROOT).stdout)['quota']
             if q['limit'] - q['used'] >= min(a.min_free, a.max):
@@ -155,7 +155,7 @@ def main():
         time.sleep(10)
     left = (slot - now()).total_seconds()
     queued = 0
-    if left > 240:
+    if left > 200:
         r = subprocess.run([sys.executable, os.path.join(HERE, 'ladder_loop.py'), 'paired-run', '--plan', a.plan, '--max', str(a.max),
                             '--execute'], capture_output=True, text=True, cwd=ROOT)
         queued = sum(1 for l in r.stdout.splitlines() if l.strip().startswith('queued '))

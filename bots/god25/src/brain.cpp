@@ -6703,6 +6703,18 @@ int gold_rank_of(CT t)
 	}
 }
 
+// GOD v25 g24_cap_rank: capture priority on a gold tie (carries first, the tank last)
+static int g24_cap_rank_of(CT t)
+{
+	if (t == CT::marcella)
+		return 3;
+	if (t == CT::vesper_vale)
+		return 2;
+	if (t == CT_HOR)
+		return 0;
+	return 1;
+}
+
 bool Brain::ally_melee(int ally) const
 {
 	const auto t = world().allies[static_cast<std::size_t>(ally)].type;
@@ -7248,6 +7260,23 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 				// g23_capfix 1: yield only to an ally that takes it (claims the group or stands on it)
 				if ((P.g23_capfix & 1) && !(i < 6 && C.claim[static_cast<std::size_t>(i)] == g.id) && !g.mask.is_set(a.pos))
 					continue;
+				if (P.g24_cap_rank && std::fabs(gm - my_gm) <= 1e-9)
+				{
+					// GOD v25 g24_cap_rank (confusion study S2): on a gold tie the carry takes the reward, not the nearest body (our Heart of
+					// Ruin took 25% of the team's captured gems vs 16% on the top-30 teams, Marcella 19% vs 33%): Marcella > Vesper Vale >
+					// the rest > Heart of Ruin, when the higher-ranked ally is at most g24_cap_rank_d steps farther than we are.
+					const int ra = g24_cap_rank_of(a.type), rm = g24_cap_rank_of(type);
+					if (ra > rm && da <= d_tile + P.g24_cap_rank_d)
+					{
+#ifdef G24_TRACE
+						std::printf("G24 cap_rank body=%d r=%d yield g=%d ally=%d type=%d da=%d d=%d\n", W.my_index, round, g.id, i, static_cast<int>(a.type), da, d_tile);
+#endif
+						WHY(4);
+						return -1;
+					}
+					if (ra < rm)
+						continue; // a lower-ranked ally does not take it from us
+				}
 				if (gm > my_gm + 1e-9 || (std::fabs(gm - my_gm) <= 1e-9 && (da < d_tile || (da == d_tile && i < W.my_index))))
 					{ WHY(4); return -1; }
 			}

@@ -7,6 +7,15 @@ ladder loop (earlier sessions were forbidden to). Still: commit/push only when t
 
 ## STATUS (newest first)
 
+**Nov 3, 03:20 UTC — v88 KEPT live.** Paired (same 50 groups, 250 games): v88 134/250 vs v84 121 (net +13, p 0.20), v85 +7 of 150,
+v86 +7, v87 +3 (73 flips: the capture / watchdog fixes change many games, net level vs v87). Ladder ranks so far: v86 → v87 → v88 each
+a little better vs v84 (+6, +10, +13 of 250); rank 68, rating ~2000. **Corrections:** strike_first, px_hold, px_burst_wait are OFF in v84
+(so the "commit skips strike holds" story was wrong, and `g23_holdsafe` is a no-op: `_rcfh` = `_rcf` game for game); new code with all
+switches off is NOT exactly inert on fuel-limited maps (17 of 86 map pairs differ for `_hs`): struct / layout changes move fuel there,
+so read every local margin with ±80 noise. Exact mirror = 86/172, margin 0. **Next:** opening-stack screens on v88's config (`_osq3`
+= squads of 3 until r150, `_odb60` = deathball until r60; `g85_run22.log`) for map_fail S1 (we split and flee; they stack and finish:
+62% of their crater visits end in a kill, 21% of ours); the 51 never-replayed groups of `paired_c3.json` are spare quota.
+
 **Nov 3, 02:55 UTC — LIVE: website v88 = `bots/g23rcf`** (rescue + `g23_capfix 7` + `g23_watchfix 1`), activated 02:52:00Z (rank 67 /
 2000); `previous` = v87. Local: s4 +6, held-out −7 (level; every rescue combination regressed from g23r's lucky +112), capture
 mechanism verified in 16 local games (our kills left 30+ rounds 6 vs v84's 18, never captured 3 vs 10). **At 03:02Z (quota):**

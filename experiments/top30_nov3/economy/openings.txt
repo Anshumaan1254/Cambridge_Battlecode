@@ -1,0 +1,142 @@
+== A. Which rule picks the team FIRST group (the group most of the team hits first; ties: earliest)? % of team-games
+-- TOP30 (n=655)
+   nearest                           52.1%
+   richest_within_1.5xnear           48.2%
+   nearest_gems                      45.3%
+   richest_within_2xnear             44.9%
+   best_val/(d+10)                   29.3%
+   best_val/(d+10) own side          29.3%
+   best_val/(d+25)                   21.5%
+   best_gems/(d+10)                  16.9%
+   richest_own_side                  16.0%
+   richest_gems_own_side             13.7%
+-- US v84-v88 (n=305)
+   nearest                           48.5%
+   nearest_gems                      41.6%
+   richest_within_1.5xnear           37.4%
+   richest_within_2xnear             34.4%
+   best_val/(d+10)                   24.3%
+   best_val/(d+10) own side          24.3%
+   best_val/(d+25)                   13.4%
+   best_gems/(d+10)                  11.8%
+   richest_own_side                  11.5%
+   richest_gems_own_side              8.5%
+-- US v88 (n=119)
+   nearest                           45.4%
+   nearest_gems                      38.7%
+   richest_within_1.5xnear           34.5%
+   richest_within_2xnear             30.3%
+   best_val/(d+10)                   26.1%
+   best_val/(d+10) own side          26.1%
+   best_gems/(d+10)                  13.4%
+   best_val/(d+25)                   11.8%
+   richest_own_side                   9.2%
+   richest_gems_own_side              7.6%
+
+== B. Team first group: bodies on it, value, distance, time to kill, captured by own team; second group
+-- TOP30 (n=655)
+   bodies on 1st group                              3.5
+   bodies on 1st group (of nbody)                   0.8
+   % 1st group has >= 3 bodies                     72.2
+   % 1st group has all bodies                      45.5
+   1st group value                                 62.6
+   1st group gems                                  18.5
+   1st group d                                     13.3
+   1st group rank                                   2.2
+   1st group first hit r                           11.8
+   1st group time to kill                          24.6
+   % 1st group killed                              96.3
+   % 1st group captured by own                     93.7
+   2nd group bodies                                 2.9
+   2nd group value                                 56.9
+   2nd group d                                     20.2
+   2nd group first hit r                           27.4
+   2nd group first - 1st kill (overlap<0)          -8.1
+   groups hit by r150                               6.4
+   groups killed by r150                            5.7
+   % of hit groups killed                          88.4
+   mean bodies per group hit                        2.5
+   mean ttk of killed groups                       24.5
+   gems of groups killed by r150                   75.3
+   gems killed & captured own by r150              71.2
+   gems killed & captured by ENEMY by r150          1.6
+-- US v84-v88 (n=305)
+   bodies on 1st group                              2.9
+   bodies on 1st group (of nbody)                   0.7
+   % 1st group has >= 3 bodies                     60.7
+   % 1st group has all bodies                      31.5
+   1st group value                                 58.8
+   1st group gems                                  13.6
+   1st group d                                     12.1
+   1st group rank                                   2.0
+   1st group first hit r                           10.7
+   1st group time to kill                          29.0
+   % 1st group killed                              95.1
+   % 1st group captured by own                     86.9
+   2nd group bodies                                 2.4
+   2nd group value                                 58.1
+   2nd group d                                     17.6
+   2nd group first hit r                           23.3
+   2nd group first - 1st kill (overlap<0)         -16.3
+   groups hit by r150                               5.5
+   groups killed by r150                            4.5
+   % of hit groups killed                          81.6
+   mean bodies per group hit                        2.2
+   mean ttk of killed groups                       29.3
+   gems of groups killed by r150                   48.7
+   gems killed & captured own by r150              43.9
+   gems killed & captured by ENEMY by r150          2.4
+-- US v88 (n=119)
+   bodies on 1st group                              2.9
+   bodies on 1st group (of nbody)                   0.7
+   % 1st group has >= 3 bodies                     57.1
+   % 1st group has all bodies                      31.1
+   1st group value                                 58.8
+   1st group gems                                  13.8
+   1st group d                                     12.9
+   1st group rank                                   2.3
+   1st group first hit r                           10.9
+   1st group time to kill                          30.9
+   % 1st group killed                              95.8
+   % 1st group captured by own                     94.1
+   2nd group bodies                                 2.5
+   2nd group value                                 58.5
+   2nd group d                                     17.4
+   2nd group first hit r                           23.3
+   2nd group first - 1st kill (overlap<0)         -18.5
+   groups hit by r150                               5.7
+   groups killed by r150                            4.9
+   % of hit groups killed                          84.6
+   mean bodies per group hit                        2.1
+   mean ttk of killed groups                       30.0
+   gems of groups killed by r150                   57.6
+   gems killed & captured own by r150              53.4
+   gems killed & captured by ENEMY by r150          3.1
+
+== C. Stacking by group value: bodies on the group vs its gems (visits r1-150)
+-- TOP30: 10-29g: n=1272 bodies 2.68 ttk 24.4 killed 89%; 30-59g: n=358 bodies 3.25 ttk 28.6 killed 77%; 60g+: n=161 bodies 3.28 ttk 47.7 killed 57%; <10g: n=2384 bodies 1.96 ttk 19.2 killed 93%
+-- US v84-v88: 10-29g: n=503 bodies 2.46 ttk 31.4 killed 80%; 30-59g: n=134 bodies 2.74 ttk 39.0 killed 56%; 60g+: n=69 bodies 2.35 ttk 39.3 killed 30%; <10g: n=968 bodies 1.70 ttk 25.1 killed 92%
+-- US v88: 10-29g: n=231 bodies 2.25 ttk 29.5 killed 82%; 30-59g: n=49 bodies 2.76 ttk 35.6 killed 73%; 60g+: n=26 bodies 2.35 ttk 39.3 killed 35%; <10g: n=374 bodies 1.73 ttk 26.4 killed 93%
+
+== D. Per-body first target by champion (top30): rank by distance and value
+-- TOP30
+   Marcella     n= 575 rank 2.85 val 72 d 15 first hit r23 bodies 3.34
+   HeartOfRuin  n= 535 rank 3.18 val 72 d 18 first hit r20 bodies 3.32
+   VesperVale   n= 484 rank 2.97 val 64 d 18 first hit r17 bodies 3.11
+   Vendetta     n= 432 rank 2.81 val 69 d 17 first hit r19 bodies 3.10
+   Ryth         n= 235 rank 2.75 val 70 d 16 first hit r23 bodies 3.27
+   Willow       n= 186 rank 2.70 val 81 d 17 first hit r24 bodies 4.11
+   Cassi        n= 144 rank 2.70 val 66 d 15 first hit r20 bodies 3.90
+   Issac        n= 142 rank 2.74 val 65 d 15 first hit r16 bodies 4.05
+   Prism        n=  84 rank 3.00 val 74 d 15 first hit r21 bodies 3.04
+   Tavi         n=  60 rank 2.87 val 77 d 17 first hit r25 bodies 3.52
+   Ren          n=  51 rank 3.20 val 70 d 26 first hit r16 bodies 3.00
+   Varg         n=  50 rank 2.62 val 91 d 12 first hit r23 bodies 3.54
+   Stellar      n=   2 rank 9.50 val 80 d 33 first hit r39 bodies 2.00
+-- US v84-v88
+   HeartOfRuin  n= 301 rank 3.34 val 59 d 15 first hit r20 bodies 2.39
+   VesperVale   n= 269 rank 3.14 val 71 d 19 first hit r21 bodies 2.65
+   Vendetta     n= 253 rank 3.03 val 67 d 17 first hit r18 bodies 2.47
+   Ryth         n= 239 rank 3.46 val 75 d 18 first hit r30 bodies 2.60
+   Marcella     n= 209 rank 2.75 val 62 d 14 first hit r19 bodies 2.00
+   Varg         n=  34 rank 2.44 val 121 d 17 first hit r23 bodies 3.35

@@ -1,0 +1,27 @@
+ADDENDUM FOR THE SECOND ROUND OF HELPERS (Nov 3 2026, 08:05Z). Read AGENT_BRIEF.txt first; this file changes it.
+
+The first round of stream agents was stopped at ~07:10Z before writing their REPORT.txt. Their scripts and tables are in place and
+were re-run at 07:58Z on the data available then. Do NOT re-extract replays (the extractions take 10-20 minutes each and the
+tables already cover 150-650 top-30 sides and 200-305 of our games). Start from the tables, read the scripts only to understand a
+definition, and spend your time on (c) the cause in our code and (d) the fix. Run small extra queries on the existing jsonl
+outputs when a number is missing.
+
+Data caveat: our games in these tables are loss-heavy (objectives: ME win 0.20; ME88 = the v88 paired + ranked LOSSES, win 0.00).
+Compare like with like: ME vs OPP (same games), ME vs TOPl (the losing top-30 side) for loss-conditioned numbers, and the economy
+tables' "map-matched" column (right of the |). Say which comparison each number is.
+
+Live bot: bots/g23rcf/src (v88). params.h holds every switch and its value; brain.cpp is ~9,000 lines (see AGENT_BRIEF.txt for the
+function map: turn ~995, combat 3925-4830, safety 5364, tribute 6026, home_trip ~6320, group_score 6771, farm ~7550, wait_group 8055,
+capture_group 8094, farm_group ~8830); g23.cpp = this week's fight engine (g23_fight 2 is live) and rescue (g23_veto_bits 64).
+Line numbers drift: grep for the function name. Our ledger of what was already tried and failed: docs/plans/god24_plan.md section
+2.A and experiments/ladder_nov2/loop_log.md. If your fix is one of the failed ones (dive filter, camp zone, disengage, hurt-wait,
+bank cap, strike_first, squads, deathball, kit builds), say so and say what is different about your version.
+
+Output: experiments/top30_nov3/<stream>/REPORT.txt, then reply with at most 30 lines. Each shortcoming as:
+  S<n> <title> [BUG | STRATEGY] est. gain <gems/game or games per 100>
+   number: ours vs comparison (n), and the like-with-like column used
+   examples: 2-3 match ids + rounds + body indices
+   cause: file:function (line) and the rule, quoted
+   fix: the rule, thresholds, the hook (file:function), a switch name g24_<x> in params.h, default off
+   test: the metric that the fix must move on local games (a mechanism check), and the expected size
+Rank by estimated gain. Hard deadline: 08:45Z. No local games or builds, no cambc submit / activate / match-groups.

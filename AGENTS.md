@@ -3,7 +3,7 @@
 Read this first. It records what has been done on this bot, what was measured, what failed, what is
 running or unfinished, and what to do next, so a new agent can continue without the original chat.
 
-- **!!! Nov 3: International Qualifiers entry = the SELECTED version at 2026-11-03T23:59Z (best so far: v88 = `bots/g23rcf`).**
+- **!!! Nov 3: International Qualifiers entry = the SELECTED version at 2026-11-03T23:59Z. At 21:16Z the selected version is v103 "GPTA 8.4.0 Shastra" (the user's other session; not measured by this session). Best ladder-measured version of this session: v94 (`bots/gpta94`; v97 = v94 + endgame bag + Marcella stun odds tied it on all 195 shared games). Everything stacked on v94 lost on the ladder: v96 (all fixes) -15, v98 (economy half: hold + farm through contact, join, scarce, commit_keep) -20 (p 0.00). Plan for Nov 4+: `docs/plans/god25_final_plan.md` (one change at a time, ladder SPRT, local = disaster filter only; unranked groups play the SELECTED version).**
 - **Session 24 (Nov 2-3, a remote session, IN PROGRESS): GOD v23 + the ladder loop.** The user now allows this agent to submit / activate
   (ladder testing with rollback, target rank < 30). Logged in from the container (session to Nov 9). Team HouseOfCoders rank 86 / 825
   (1955) on Nov 2; Nov 3 01:00 UTC rank 67 / 2007 on website v85 (the user's other session; rank 30 = 2174). Base for this session's work:

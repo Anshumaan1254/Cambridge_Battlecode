@@ -7,6 +7,8 @@ ladder loop (earlier sessions were forbidden to). Still: commit/push only when t
 
 ## STATUS (newest first)
 
+**Nov 3, 21:16 UTC (qualifiers check).** Selected = v103 "GPTA 8.4.0 Shastra" (the user's other session, uploaded 20:48Z); the user stopped this session's tests at 19:01Z ('Stop now') and took over the selection, so this session did not activate anything. Ladder paired results today (same opponents / maps / sides): v94 best; v95 (v88 + all fixes) = v88; v96 (v94 + all fixes) -15 vs v94; v97 (v94 + endgame bag + Marcella stun odds) = v94 on 195 games; v98 (v97 + economy half) -20 vs v94. Local panels predicted none of these (v95 +133, v96 +105, v98 +40 locally). Unranked groups play the SELECTED version (a test with v98 active but v94 selected played v94). Deep-research plan: `docs/plans/god25_final_plan.md` (reports/Bulletproof final bot plan.md); notes `research_notes/Bulletproof final bot plan/`.
+
 **Nov 3, 06:30 UTC — RANKED-SAFE TESTING (the user's rule, 11:26 IST): the best version (v88) is live at every ranked slot (UTC
 minute % 10 == 0); a test version is live only between slots.** Tool: `experiments/ladder_nov2/ladder_cycle.py` — after a slot it
 activates `--test N` (or uploads `--submit BOT --note ...`; an upload goes live by itself when built, ~3 min), queues paired groups

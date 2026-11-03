@@ -1225,6 +1225,8 @@ struct Params
 	float g23_prime_perstep = 0.8f;
 	int g23_open_maxd = 25;		// the opening (everyone to P0 first) only when P0 is within this many steps
 	int g23_alive_eta = 12;		// with P0 alive now, bodies within this many rounds of it commit (the others farm)
+	int g23_prime_sticky = 0;	// a body that held the PRIME role last turn ranks itself this many rounds nearer (the roster flipped a body's role every
+								// ~15 turns: 70-100 flips a game, each a walk toward the prime group and back)
 	int g23_rally_wait = 40;	// the rally wait is a deadline, not a max_wait
 	int g23_force_rounds = 25;	// force F(g): the bodies that clear g within this many rounds at the roster's damage
 	int g23_hold_extra = 2;		// bodies added to the roster when an enemy holds the group

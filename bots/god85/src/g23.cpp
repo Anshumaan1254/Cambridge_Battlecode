@@ -977,7 +977,8 @@ void Brain::g23_tol_tick()
 		// committed: it arrives in time (alive now: within 25 rounds; respawning: at most 6 rounds after the respawn)
 		if (eta >= BIG || eta > (ready_in <= 0 ? P.g23_alive_eta : ready_in + 6))
 			continue;
-		cs[static_cast<std::size_t>(n++)] = { eta, -static_cast<int>(ahp * 100.f), i };
+		const int rank_eta = P.g23_prime_sticky > 0 && i == W.my_index && g23_role_round == round - 1 ? eta - P.g23_prime_sticky : eta;
+		cs[static_cast<std::size_t>(n++)] = { rank_eta, -static_cast<int>(ahp * 100.f), i };
 	}
 	std::sort(cs.begin(), cs.begin() + n, [](const Cand& a, const Cand& b) { return a.eta != b.eta ? a.eta < b.eta : a.hpk != b.hpk ? a.hpk < b.hpk : a.idx < b.idx; });
 	bool mine = false;

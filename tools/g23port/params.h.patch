@@ -1,6 +1,6 @@
 --- god84/src/params.h	2026-11-02 17:31:12.755566245 +0000
-+++ god85/src/params.h	2026-11-03 00:41:43.251239690 +0000
-@@ -1187,6 +1187,70 @@
++++ god85/src/params.h	2026-11-03 01:13:16.019497625 +0000
+@@ -1187,6 +1187,72 @@
  	float pxs_obj_mult = 3.f;
  	float pxs_raid_mult = 3.f;	// styles 2 / 3: groups on the other team's half are worth this much more (a raid, not just a lower penalty)
  	int pxs_deny_bodies = 2;	// style 6: bodies 0 .. n-1 camp the other team's altars
@@ -42,6 +42,8 @@
 +	float g23_prime_perstep = 0.8f;
 +	int g23_open_maxd = 25;		// the opening (everyone to P0 first) only when P0 is within this many steps
 +	int g23_alive_eta = 12;		// with P0 alive now, bodies within this many rounds of it commit (the others farm)
++	int g23_prime_sticky = 0;	// a body that held the PRIME role last turn ranks itself this many rounds nearer (the roster flipped a body's role every
++								// ~15 turns: 70-100 flips a game, each a walk toward the prime group and back)
 +	int g23_rally_wait = 40;	// the rally wait is a deadline, not a max_wait
 +	int g23_force_rounds = 25;	// force F(g): the bodies that clear g within this many rounds at the roster's damage
 +	int g23_hold_extra = 2;		// bodies added to the roster when an enemy holds the group

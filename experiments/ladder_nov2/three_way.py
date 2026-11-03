@@ -45,8 +45,8 @@ def main():
     tot = {}
     for p in plans:
         plan = json.load(open(p))
-        c = {'groups': 0, 'n': 0, 'new_w': 0, 'old_w': 0, 'lw': 0, 'wl': 0, 'n85': 0, 'v85_w': 0, 'new_w85': 0, 'lw85': 0, 'wl85': 0,
-             'pending': 0}
+        c = {'groups': 0, 'n': 0, 'new_w': 0, 'old_w': 0, 'lw': 0, 'wl': 0, 'pending': 0}
+        extra = {}  # column -> [n, col wins, new wins, L->W, W->L]
         for g in plan:
             gid = g.get('new_group')
             if not gid or str(gid).startswith('?'):
@@ -57,9 +57,10 @@ def main():
                 continue
             pairs = L.pair_group(g, games)
             c['groups'] += 1
-            v85 = g.get('v85') or [None] * len(pairs)
+            cols = [k for k in g if k not in ('old', 'maps', 'sides') and isinstance(g[k], list) and len(g[k]) == len(pairs)
+                    and all(x in ('win', 'loss', None) for x in g[k])]
             line = []
-            for (mp, sd, old, new), o85 in zip(pairs, v85):
+            for gi, (mp, sd, old, new) in enumerate(pairs):
                 if new is None:
                     c['pending'] += 1
                     line.append('.')
@@ -69,28 +70,34 @@ def main():
                 c['old_w'] += old == 'win'
                 c['lw'] += old == 'loss' and new == 'win'
                 c['wl'] += old == 'win' and new == 'loss'
-                if o85 in ('win', 'loss'):
-                    c['n85'] += 1
-                    c['v85_w'] += o85 == 'win'
-                    c['new_w85'] += new == 'win'
-                    c['lw85'] += o85 == 'loss' and new == 'win'
-                    c['wl85'] += o85 == 'win' and new == 'loss'
+                for k in cols:
+                    o = g[k][gi]
+                    if o in ('win', 'loss'):
+                        e = extra.setdefault(k, [0, 0, 0, 0, 0])
+                        e[0] += 1
+                        e[1] += o == 'win'
+                        e[2] += new == 'win'
+                        e[3] += o == 'loss' and new == 'win'
+                        e[4] += o == 'win' and new == 'loss'
                 line.append('W' if new == 'win' else 'L')
-            print(f"  {g.get('opp', '?')[:22]:<22} v84 {''.join('W' if o == 'win' else 'L' for o in g['old'])}"
-                  f"{' v85 ' + ''.join('W' if o == 'win' else 'L' for o in g['v85']) if g.get('v85') else '          '}"
-                  f" new {''.join(line)}")
+            ex = ''.join(f" {k} " + ''.join('W' if o == 'win' else 'L' if o == 'loss' else '.' for o in g[k]) for k in cols)
+            print(f"  {g.get('opp', '?')[:22]:<22} v84 {''.join('W' if o == 'win' else 'L' for o in g['old'])}{ex} new {''.join(line)}")
         tot[p] = c
         print(f"{os.path.basename(p)}: {c['groups']} groups, {c['n']} games done ({c['pending']} pending)")
         print(f"   vs v84: new {c['new_w']}/{c['n']} old {c['old_w']}/{c['n']} | flips L->W {c['lw']} W->L {c['wl']} net {c['lw'] - c['wl']:+d}"
               f" p={sign_p(c['lw'], c['wl']):.2f}")
-        if c['n85']:
-            print(f"   vs v85: new {c['new_w85']}/{c['n85']} v85 {c['v85_w']}/{c['n85']} | flips L->W {c['lw85']} W->L {c['wl85']}"
-                  f" net {c['lw85'] - c['wl85']:+d} p={sign_p(c['lw85'], c['wl85']):.2f}")
+        for k, e in sorted(extra.items()):
+            print(f"   vs {k}: new {e[2]}/{e[0]} {k} {e[1]}/{e[0]} | flips L->W {e[3]} W->L {e[4]} net {e[3] - e[4]:+d} p={sign_p(e[3], e[4]):.2f}")
+            tot.setdefault('_extra', {}).setdefault(k, [0, 0, 0, 0, 0])
+            tot['_extra'][k] = [a + b for a, b in zip(tot['_extra'][k], e)]
+    ex_tot = tot.pop('_extra', {})
     if len(tot) > 1:
         lw = sum(c['lw'] for c in tot.values())
         wl = sum(c['wl'] for c in tot.values())
         n = sum(c['n'] for c in tot.values())
         print(f"ALL vs v84: {n} games, flips L->W {lw} W->L {wl} net {lw - wl:+d} p={sign_p(lw, wl):.2f}")
+        for k, e in sorted(ex_tot.items()):
+            print(f"ALL vs {k}: {e[0]} games, new {e[2]} {k} {e[1]} | flips L->W {e[3]} W->L {e[4]} net {e[3] - e[4]:+d} p={sign_p(e[3], e[4]):.2f}")
 
 
 if __name__ == '__main__':

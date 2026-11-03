@@ -1,0 +1,117 @@
+BUSHES AND EMBLEMS vs THE TOP-30 (stream bush_emblem, Nov 3 2026)          scripts + tables: experiments/top30_nov3/bush_emblem/
+==========================================================================================================================================
+Data. Bushes: the fights stream's rows (fights/out/{top,our}_{games,fights,deaths,retreats}.jsonl, same fight / win definitions:
+win = more deaths, else >=1.3x damage and >=150) joined to positions + bush tiles from dec/ + mj/ (bush_extract.py -> out/*_bush.jsonl;
+159 top-30 vs top-30 games, 223 of ours of which 91 v88). Emblems: economy/rows_{top30,ours}.jsonl builds (656 top-30 team-games,
+305 ours v84-v88 + their opponents). Sides: TW / TL = winning / losing top-30 side; US / OPP = us / our opponent in the same games
+(loss-heavy: compare US with OPP and with TL); US88 = v88 only. Map class by bush share of passable tiles: lo <3%, mid 3-6%, hi >=6%.
+Tables: bush_tables.txt (A openings, B deaths, C presence, D retreats, E per champion, F stratified), retreat_strat.txt,
+emblem_tables.txt, state_phase.txt, marc_fights.txt.
+
+HEADLINE. Bushes are a small lever: at equal items and numbers, opening an exchange from a bush adds +1.4 points of win share
+in the top-30 games (n 609 vs 1839; TW -2.5, TL +6.6), +3.1 pooled over all sides; we already open from bushes about as often as the
+top-30 (21.9% vs TW 23.4 / TL 25.5 / OPP 21.4) and are killed from bushes less often than they are (20.1% vs 25%). The one bush rule with a
+real effect is RETREATING into a bush (deaths within 8 rounds -7 to -12 points at equal hp, power ratio and map class). Emblems are
+the bigger lever, and the gap is one champion: the top-30 Marcella builds FOCUS (74% of her first 20 shards), ours builds 0% focus,
+and with the shard gap and body counts held, exchanges with a focus Marcella are won +9.4 points more often (top-30) / +9.1 (our
+2000-rated opponents). Top-30 build choices depend on the phase, not on gem lead, enemy roster or map (all within +-10 points).
+
+------------------------------------------------------------------------------------------------------------------------------------------
+S1 Our Marcella builds strength / health; every strong team builds her focus [STRATEGY] est. +5-8 gems/g, +1-2 games/100
+ number: Marcella's first 20 shards: focus 0% / str 36% / hp 64% (US, n=217 bodies) vs focus 74% / hp 21% / str 5% (top-30, n=602),
+   focus 54-65% in OPP (2000-rated). Every phase: US p1-p4 focus 0%; TW 79/65/62/63%. First emblem: ours Jungle-hp 92%; theirs
+   Prospector-foc 30%, Treasure-foc 17%, Capture-foc 17% (economy/builds.txt). Exchange outcome (marc_fights.py: decided exchanges with
+   a Marcella taking part, her side's win share; Mantel-Haenszel within participant-shard-gap bin x body-count gap):
+   TOP focus-Marcella 60.8% (n=1844) vs str/hp-Marcella 49.4% (n=237): stratified +9.4 pts; OPP focus 67.4% (n=1236) vs str/hp
+   56.2% (n=283): +9.1 pts; US (all str/hp) 45.7% (n=1152). Like with like: shard gap and numbers held, two independent populations.
+   Game result within the top-30 does not separate them (51% vs 49%, n 507 / 90): the effect is in exchanges, not proven in games.
+   Mechanism: her slot-1 spell is 2 x focus at range 4 (+14 focus = +28 burst per shard): a ranged first hit / finisher on a fleeing
+   body, which the exchange factors (hitting first z +11.6, item gap z +12.3) reward; our rough dps model (agent_fights/extract.py dps)
+   rates strength higher for sustained melee (5.1 vs 3.5 a round per shard), which is why our lists never moved.
+ examples: b7889fff (adgato_gemcombat1, v88) r206-236 and r401-427: our 0:Marcella + 1:HoR (+2:Ryth) vs 3:Vesper 4:HoR 5:Marcella
+   at shards 7-6 / 13-15, we lose both with deaths; 6fa9287c (01hooks, v88) r22-39 3:Marcella vs 7:Marcella, shards 0-0, lost.
+ cause: bots/god24/src/brain.cpp build_for() (build_style 2, l.444):
+     case CT::marcella: rep(v, I::jungle_shard_of_health, 5); rep(v, I::monster_shard_of_strength, 5);
+                        rep(v, I::durability_shard_of_health, 5); cycle(v, { I::bruiser_shard_of_strength, I::bruiser_shard_of_health }, 12);
+   then build_tail 1 appends Power in "the damage stat" (strength for her), v26_prosp turns Monster-str into Prospector-str.
+   The purchase rule (brain.cpp shop() l.2174) is a fixed list, no state: "while (build_idx < build.size() && gold >= 30 ...)
+   { const I item = build[build_idx]; ... me.buy(item, n); build_idx += n; }".
+ fix: g24_marc_build 1 (params.h, default 0), applied at the end of Brain::init() after v26_prosp, Marcella only:
+   Prospector-foc x5, Jungle-foc x5, Bruiser-hp x5, then cycle {Bruiser-foc, Bruiser-hp, Power-foc} (= the top-30 order: ECON first in
+   focus, Jungle/Bruiser in p2, Bruiser/Durab/Power from r400; e1 Prospect-foc, e2 Jungle-foc, e3 Jungle-foc/Monster-foc/Durab-hp).
+   Combat code must read her focus: check that the spell-damage estimate (kit dmg_mod x focus) feeds g23_fight's power and the kill-time
+   planner (nemesis N2 says our model under-rates an itemized Marcella: same term).
+   Differs from v23_build (-10 on the ladder): v23 rebuilt all five bodies (Jungle first everywhere, Power-foc x10 on Marcella with Jungle
+   first); this changes one body and keeps an ECON first emblem. Differs from v24_build 31 (+15 local, -5 held-out, never laddered):
+   v24 bit 4 already has Treasure-foc / Jungle-foc / Bruiser for her but was only tested together with the other four lists; run bit 4
+   alone (or g24_marc_build) so the one change with an exchange measurement is not diluted. Prospector over Treasure: top e1 30% vs 17%.
+ test: (1) Marcella first-20 focus share >= 60% (from 0%); (2) marc_fights.py on the local replays: exchanges with our Marcella,
+   stratified win share +5 points or more vs v88 on the same maps; (3) her spell damage share of her champion damage up (from the
+   Cast ability events). Then the ladder paired test (§5) as one switch.
+
+S2 Retreats cross open ground; a bush in the way is not used [STRATEGY] est. 0.1-0.3 deaths/g (1.5-4 gems/g)
+ number: retreats (fights-stream rows) that end in / start in a bush: US 21.2% (n=10490), US88 23.6% (n=4021) vs TW 25.8% (n=5386),
+   TL 25.0% (n=6334), OPP 21.7%. Death within 8 rounds, bush retreat minus open-ground retreat, Mantel-Haenszel within hp quarter x
+   power-ratio bin x map class: TOP -7.0 pts (n 2974 / 8746), OPP -6.3, US -8.8, US88 -12.3 (n 948 / 3073). v88 open-ground retreats
+   die 22.9% within 8 r (TW 13.5%, TL 23.9%). Like with like: strata as above; v88 vs TL for the loss-conditioned rate.
+   Caveat: observational (a body that reaches a bush may be less pressed); the size is consistent across all four populations.
+ examples: v88 6fa9287c (01hooks) r454 body 1 Vesper (pw 0.85, hp 48%) retreats over open ground, dies within 8; c5df3d07
+   (00happy_halloween) r191 body 1 Vesper (hp 51%); 853d2055 (01hooks) r67 body 0 HoR (hp 12%).
+ cause: brain.cpp go_home_step() (l.2621): the retreat is "Nav::step_field(pos, W.home, 0, avoid ? &av : nullptr, ...)" plus
+   v23_flee_away's "step that opens the distance ... the one that loses least toward home"; no bush term anywhere in nav.cpp,
+   go_home_step, safety() or the flee in combat() (grep bush: only wards, the off pxs proxy styles and the v23 rally tile).
+ fix: g24_bush_flee 1 (default 0), hook go_home_step(avoid) before the field step, only when a visible enemy is within 5: among the
+   8 neighbours that keep or open the distance to the nearest enemy and lose <= 1 home step, prefer a bush tile whose 8-connected
+   cluster holds no visible enemy (precompute cluster ids once in World::init_static from bc::map::bushes()); 2 = also accept a 2-step
+   path into such a bush when hp >= 40% and no enemy is within 2. Never into a bush next to a camp's reach (camp_danger).
+ test: share of retreats into / in a bush on hi maps >= 33% (US 29.0%, US88 33.0%, TW 36.8%, TL 33.1%) and >= 25% overall (US88
+   23.6%); deaths within 8 r of a
+   retreat -2 pts on bush >= 6% maps (bush_extract.py + retreat_strat.py on local replays); no change on lo maps.
+
+S3 Fewer holds in bushes next to camps / altars, and next to contact [STRATEGY] est. 0-2 gems/g
+ number: stationary bush rounds within 5 of a camp / altar per 100 alive rounds: US 1.41 (US88 1.61) vs TW 1.90, TL 1.93, OPP 1.96;
+   lo maps 0.49 vs 1.09-1.55; hi maps US 2.34 (US88 3.24) vs 3.08-3.35. Contact rounds (enemy within 6) spent in a bush: US 9.7% vs
+   TW 10.6 / TL 11.5 / OPP 9.3. What it buys is small: exchanges opened from a bush at equal shards / numbers +1.4 pts (TOP),
+   +2.2 (US), +4.9 (OPP); hidden opener +1.7 / +0.8 / +4.1 (bush_tables.txt F).
+ examples: top carriers killed from a bush (killer in a bush the round before): 9bbd782f (00breadcrumbs) r124 0:Prism bag 63 by
+   4:Vesper; a0de3daa (00packs) r835 0:Marcella bag 35 by 3:Prism; 5ece845f (01elk_arena) r1233 3:Vesper bag 27 by 6:Vesper.
+ cause: brain.cpp wait_group() (l.8382) picks "next to the tiles when that is safe, else within 2, else within 4" (v26_wait_safe),
+   no bush preference; v88 already holds more on hi maps (3.24), the gap is lo / mid maps.
+ fix: g24_bush_wait 1 (default 0): in wait_group's goal search, when the goal set at a radius has a bush tile, restrict the goal to
+   its bush tiles (same radius ladder, same exclusions). No new waits, only where we already wait. Low priority.
+ test: holds@obj >= 1.8 per 100 alive rounds; no rise in respawn-block rounds (watchfix metric) or wait-to-capture delay.
+
+S4 Wards (known, plan X3) [BUG-like] est. 0-10 gems/g (plan's estimate)
+ number: wards placed in a bush US 40.8% (n=50,920; US88 40.9%) vs TW 66.7%, TL 70.6%, OPP 39.8%; lo maps 19% vs 49-61%; hi 56% vs
+   80-82%. Bush placement rule switched off outside lone-monolith maps: params.h ward_bush_maps 1 ("unconditional bush warding lost");
+   ward_v14 1 is live but only "the best bush tile in placement reach (2)". Fix and test as in god24_plan X3 (g24_ward_keep,
+   g24_bush_ward on bush >= 6% maps). Nothing new from this stream beyond the per-class numbers above.
+
+S5 First emblem on the front line is Jungle health; the top-30 buy an ECON emblem first and switch to fight items earlier
+   [STRATEGY] est. +2-4 gems/g (weak evidence; after S1)
+ number: share of first-phase (r<=200) emblems in ECON families (Prospector / Treasure / Capture / Monster / Tribute): HoR US 25% vs
+   TW 52% / TL 50% / OPP 60%; Ryth 10% vs 57 / 69 / 57%; Marcella 16% vs 62 / 69 / 58%. Ours are Jungle-hp (HoR 88%, Ryth 81%,
+   Marcella 92% of first emblems). Then r201-400: FIGHT families (Bruiser / Power) 22-30% of our emblems vs TOP 37-47%, OPP 38-44%
+   (state_phase.txt). Within the top-30, an ECON-first team (>=60% of first emblems) earns +4% gold r151-400 (1294 vs 1243) but does
+   not win more (49% vs 55%, n 474 / 174): treat as an economy lever only.
+ cause: build_for() build_style 2: HoR "rep(v, I::jungle_shard_of_health, 5); rep(v, I::treasure_shard_of_focus, 5); ..." (Ren/HoR
+   case), Ryth and Marcella the same Jungle-hp first.
+ fix: g24_build_econ 1 (default 0): on HoR and Ryth swap the first two emblems (Treasure / Prospector first, Jungle second); keep the
+   rest. Not the v24_build 31 package (all five lists rewritten) and not v23 (Jungle first everywhere).
+ test: first emblem round of HoR / Ryth unchanged or earlier; gold income r151-400 +5%; camp deaths in r1-300 not up (Jungle later).
+
+NOT GAPS (checked; do not spend time here)
+- Being ambushed: our champion deaths with the killer in a bush in r-3..r-1: 20.1% (n=1963) vs top-30 25.1-25.2% (n 813 / 1919);
+  hi maps 24.1% vs 33-37%. Carriers killed from a bush: ours 17.8% (n=439) vs 20-22%. Our kills from bushes (OPP deaths) 21.0%.
+- Opening from bushes: US 21.9% of openings vs TW 23.4 / TL 25.5 / OPP 21.4 (hi maps 31.7 vs 30.5 / 34.2).
+- Build state-dependence: within a phase the top-30's FIGHT share moves +6-10 pts when ahead in gems (p2 47% vs 37-41%) and not at all
+  when behind; Durability / Jungle share 10-17% whatever the enemy roster (Marcella, 2+ ranged, other); ECON share the same on
+  gem-scarce and gem-rich maps (18-26%). A gem-lead or roster rule has nothing to copy; the phase order and Marcella's stat do.
+- Shop timing: 80-89% of shop trips are recalls for every side (respawn trips ~0-1%); we spend faster (unspent gold per body at
+  r300 16-23 vs TW 35-42, OPP 36-46; at r600 20-25 vs 37-68): the item gap is income (plan E4), not hoarding.
+- What they do with gold when behind: nothing different (unspent gold and families the same as when even).
+
+PROPOSED BUILD RULE (for the user's "state-dependent" ask): the data supports a phase rule, not a gem-lead rule:
+  r <= ~250: first emblem in an ECON family in the champion's damage stat (Marcella FOCUS, Vesper / Vendetta / Varg strength, HoR
+  focus); r 250-400: Jungle / Bruiser; after ~400: Bruiser / Power / Durability. Implement as S1 (Marcella) first, S5 second, each its
+  own switch; leave the gem-lead / roster hooks out (no measured effect to copy).

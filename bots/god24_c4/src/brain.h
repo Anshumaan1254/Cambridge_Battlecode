@@ -527,7 +527,7 @@ private:
 	std::array<vec2, 16> g24_pw_pos{};	// g24_pace 4: our tile at the end of each recent round, and that round
 	std::array<int, 16> g24_pw_posr{ -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100 };
 	int g24_bh_last = -1000, g24_bh_wait_until = -1000; // g24_bank_hold: start of the last hold episode, end of the wait
-	bool g24_bh_open = false;			// ... the hold fired on the last tribute() that got that far
+	bool g24_bh_held = false, g24_bh_prev = false; // ... a hold branch ended this / the previous tribute() call (one episode while it repeats)
 	bool g24_bank_hold_fire(int altar, const char* why); // true: the turn is used (recall or wait)
 	std::array<int, 3> g24_left_g{ -1, -1, -1 };		  // g24_flip_mem: the last 3 targets left and the round each was left
 	std::array<int, 3> g24_left_r{ -1000, -1000, -1000 };

@@ -124,9 +124,9 @@ void World::init_static()
 	// altar_contested is computed on first use (contested()): ~17k fuel on altar-rich maps, not needed in the opening.
 	altar_contested.clear();
 	altar_enemy_round.assign(altars.size(), -1000);
-	bush_cl.clear();
 	if (P.g24_bush_flee)
 	{
+		bush_cl.clear();
 		// GOD v24 g24_bush_flee: label the 8-connected bush clusters once (one positions() export, plain flood fill; no per-tile host calls)
 		const auto bp = bc::map::bushes().positions();
 		if (!bp.empty())

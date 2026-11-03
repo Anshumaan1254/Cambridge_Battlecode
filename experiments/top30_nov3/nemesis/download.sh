@@ -1,17 +1,21 @@
 #!/bin/bash
 # download + decode the selected games (ours vs nemesis / easy teams) into ladder_nov2/replays + dec + mj.
-# The platform rate-limits downloads (HTTP 429) and the top-30 fetcher runs in parallel: poll every 0.5 s, up to 150 tries.
+# The platform rate-limits downloads (HTTP 429, "retry after N seconds") and the top-30 fetcher runs in parallel with 3 jobs:
+# honour the named wait (+1 s), up to 60 tries per file. Order = selection_ordered.json (nemesis losses first, round robin).
 cd /home/claude/cambridge_battlecode/experiments
-LIST=${1:-top30_nov3/nemesis/selection.json}
+LIST=${1:-top30_nov3/nemesis/selection_ordered.json}
 python3 -I -c "
 import json
 for s in json.load(open('$LIST')):
     print(s['mid'], s['map'])
 " | while read mid map; do
   f=ladder_nov2/replays/$mid.repl26a
-  for try in $(seq 1 150); do
+  for try in $(seq 1 60); do
     [ -s $f ] && break
-    cambc matches download $mid -o $f >/dev/null 2>&1 || { rm -f $f; sleep 0.5; }
+    out=$(cambc matches download $mid -o $f 2>&1) && break
+    rm -f $f
+    w=$(echo "$out" | grep -o "after [0-9]* seconds" | grep -o "[0-9]*")
+    sleep $(( ${w:-1} + 1 ))
   done
   [ -s $f ] || echo "FAIL $mid"
   if [ -s $f ] && [ ! -s ladder_nov2/dec/$mid.json ]; then

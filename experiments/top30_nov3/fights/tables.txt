@@ -1,254 +1,90 @@
 # Fights and deaths: top-30 vs our v84-v88 games
-top: 95 games, deaths 1866, fights 2909, exchanges 1840
-our: 169 games, deaths 3078, fights 5631, exchanges 3774
-our games by version: {'v84': 114, 'old': 18, 'v88': 37}
-top games: ranks of the teams Counter({20: 75, 0: 56, 10: 55, 30: 4})
+top: 149 games, deaths 2809, fights 4288, exchanges 2685
+our: 215 games, deaths 3784, fights 7092, exchanges 4722
+our games by version: {'v84': 114, 'old': 18, 'v88': 83}
+top games: ranks of the teams Counter({20: 114, 0: 91, 10: 87, 30: 6})
 
 ## Q1 Deaths
 
 ### deaths
-| | TOP | TOPw | TOPl | US | US88 | OPP |
-|---|---|---|---|---|---|---|
-| team-games | 190 | 95 | 95 | 151 | 37 | 151 |
-| deaths per team-game | 9.7 | 6.3 | 13.2 | 9.5 | 13.0 | 8.5 |
-| deaths per 1000 rounds | 9.2 | 5.9 | 12.5 | 7.8 | 10.9 | 7.0 |
-| deaths per 1000 body-rounds | 2.10 | 1.35 | 2.85 | 1.81 | 2.62 | 1.61 |
-| cause: champion / camp / both | 81% / 7% / 13% | 73% / 11% / 16% | 84% / 4% / 11% | 74% / 5% / 22% | 79% / 3% / 18% | 77% / 8% / 15% |
-| champion deaths: victim never hit back (10 r) | 29% | 24% | 32% | 25% | 20% | 18% |
-|   ...per team-game | 2.68 | 1.35 | 4.01 | 2.24 | 2.49 | 1.44 |
-| champion deaths: landed <= 1 hit in 10 r | 41% | 34% | 44% | 33% | 25% | 27% |
-| champion deaths in a fight the victim's team opened | 38% | 35% | 39% | 35% | 44% | 39% |
-| carrying gems / gems lost per death | 33% / 11.7 | 34% / 11.7 | 32% / 11.8 | 21% / 5.5 | 18% / 4.7 | 26% / 6.5 |
-| gems lost per team-game | 114.5 | 73.3 | 155.6 | 52.6 | 61.1 | 55.0 |
-| gems lost per team-game, bags >= 20 | 100.8 | 64.2 | 137.3 | 44.8 | 53.4 | 45.5 |
-| no ally within 6 (r-5..r-1) | 30% | 31% | 30% | 28% | 25% | 33% |
-| outnumbered by >= 0.5 body | 29% | 31% | 28% | 35% | 36% | 41% |
-| local R at r-5 (median, champion deaths) | 0.54 | 0.66 | 0.48 | 0.50 | 0.41 | 0.44 |
-| >= 2 steps toward the nearest enemy, last 8 r | 49% | 45% | 50% | 61% | 59% | 39% |
-| no retreat step in the last 10 r (champion deaths) | 34% | 31% | 36% | 32% | 30% | 21% |
-| hp 5 r before: mean / < 50% | 60% / 43% | 53% / 52% | 63% / 39% | 57% / 45% | 61% / 41% | 53% / 52% |
-| hit by a camp the enemy woke (last 5 r) | 6% | 10% | 4% | 13% | 8% | 4% |
-| stunned in the last 3 r | 29% | 31% | 28% | 40% | 36% | 42% |
-| died within 40 r of respawn | 12% | 6% | 16% | 12% | 19% | 7% |
-| killed someone in the last 10 r | 4% | 6% | 3% | 3% | 4% | 4% |
-| on the enemy half | 26% | 38% | 20% | 32% | 22% | 36% |
-| was farming when first hit | 14% | 15% | 14% | 9% | 9% | 13% |
-| attackers' shards per body minus victim's (champion deaths, mean) | 34.5 | 20.3 | 41.0 | 32.2 | 37.3 | 14.7 |
+| | TOP | TOPw | TOPl | US | USl | USw | US88 | OPP |
+|---|---|---|---|---|---|---|---|---|
+| team-games | 298 | 149 | 149 | 197 | 178 | 19 | 83 | 197 |
+| deaths per team-game | 9.4 | 5.8 | 13.1 | 9.4 | 9.9 | 4.5 | 10.8 | 8.0 |
+| deaths per 1000 rounds | 9.0 | 5.5 | 12.5 | 7.8 | 8.3 | 3.5 | 9.2 | 6.6 |
+| deaths per 1000 body-rounds | 2.03 | 1.24 | 2.83 | 1.82 | 1.93 | 0.81 | 2.20 | 1.53 |
+| cause: champion / camp / both | 79% / 6% / 14% | 73% / 11% / 16% | 82% / 5% / 14% | 75% / 4% / 21% | 75% / 4% / 21% | 59% / 9% / 31% | 78% / 3% / 20% | 77% / 8% / 15% |
+| champion deaths: victim never hit back (10 r) | 30% | 24% | 32% | 24% | 24% | 21% | 21% | 18% |
+|   ...per team-game | 2.62 | 1.23 | 4.01 | 2.16 | 2.30 | 0.84 | 2.16 | 1.29 |
+| champion deaths: landed <= 1 hit in 10 r | 41% | 34% | 44% | 32% | 32% | 31% | 28% | 27% |
+| champion deaths in a fight the victim's team opened | 37% | 36% | 37% | 35% | 35% | 36% | 39% | 39% |
+| carrying gems / gems lost per death | 31% / 10.2 | 32% / 10.1 | 31% / 10.3 | 22% / 5.7 | 22% / 5.8 | 19% / 4.1 | 22% / 5.5 | 26% / 6.2 |
+| gems lost per team-game | 96.4 | 58.1 | 134.7 | 54.0 | 57.8 | 18.5 | 59.7 | 49.7 |
+| gems lost per team-game, bags >= 20 | 83.3 | 50.0 | 116.6 | 45.3 | 48.4 | 16.8 | 49.9 | 39.6 |
+| no ally within 6 (r-5..r-1) | 31% | 33% | 30% | 28% | 28% | 37% | 26% | 35% |
+| outnumbered by >= 0.5 body | 28% | 31% | 27% | 34% | 34% | 41% | 34% | 40% |
+| local R at r-5 (median, champion deaths) | 0.48 | 0.65 | 0.43 | 0.50 | 0.50 | 0.43 | 0.43 | 0.43 |
+| >= 2 steps toward the nearest enemy, last 8 r | 49% | 45% | 50% | 60% | 60% | 53% | 57% | 37% |
+| no retreat step in the last 10 r (champion deaths) | 33% | 30% | 34% | 33% | 33% | 26% | 32% | 22% |
+| hp 5 r before: mean / < 50% | 59% / 44% | 52% / 54% | 62% / 40% | 57% / 45% | 58% / 44% | 45% / 64% | 59% / 43% | 52% / 53% |
+| hit by a camp the enemy woke (last 5 r) | 7% | 9% | 6% | 13% | 13% | 21% | 10% | 4% |
+| stunned in the last 3 r | 28% | 30% | 27% | 41% | 41% | 42% | 40% | 40% |
+| died within 40 r of respawn | 12% | 6% | 15% | 12% | 13% | 2% | 15% | 6% |
+| killed someone in the last 10 r | 4% | 5% | 3% | 4% | 4% | 2% | 5% | 4% |
+| on the enemy half | 27% | 40% | 22% | 30% | 30% | 38% | 24% | 36% |
+| was farming when first hit | 15% | 16% | 14% | 9% | 9% | 8% | 7% | 13% |
+| attackers' shards per body minus victim's (champion deaths, mean) | 35.3 | 17.9 | 42.5 | 32.5 | 33.5 | 10.2 | 35.4 | 13.2 |
 
 ### deaths per 1000 rounds by map size class and champions per team (team-games in brackets)
-size TOP: big: 6.2 (44), mid<4000: 9.7 (84), small<1600: 10.7 (62)
-size US: big: 3.6 (26), mid<4000: 7.4 (60), small<1600: 10.1 (65)
-size US88: big: 2.6 (5), mid<4000: 10.8 (12), small<1600: 13.3 (20)
-size OPP: big: 5.0 (26), mid<4000: 6.7 (60), small<1600: 8.1 (65)
-champs TOP: 3: 6.8 (36), 4: 12.1 (36), 5: 9.2 (118)
-champs US: 3: 6.4 (27), 4: 11.0 (41), 5: 6.7 (83)
-champs US88: 3: 7.8 (10), 4: 16.3 (9), 5: 9.8 (18)
-champs OPP: 3: 4.3 (27), 4: 9.0 (41), 5: 6.9 (83)
+size TOP: big: 6.2 (64), mid<4000: 8.9 (138), small<1600: 11.1 (96)
+size US: big: 3.6 (38), mid<4000: 8.0 (81), small<1600: 9.9 (78)
+size US88: big: 3.3 (17), mid<4000: 10.2 (33), small<1600: 11.7 (33)
+size OPP: big: 5.2 (38), mid<4000: 6.3 (81), small<1600: 7.6 (78)
+champs TOP: 3: 6.7 (50), 4: 11.7 (64), 5: 8.9 (184)
+champs US: 3: 5.9 (38), 4: 11.3 (46), 5: 7.1 (113)
+champs US88: 3: 6.2 (21), 4: 15.1 (14), 5: 9.0 (48)
+champs OPP: 3: 4.1 (38), 4: 8.4 (46), 5: 6.9 (113)
 
 ## Q2 Engagement rules
 
 ### engagement (opener = the team that landed the first champion hit of the fight)
-| | TOP | TOPw | TOPl | US | US88 | OPP |
-|---|---|---|---|---|---|---|
-| fights per game / exchanges per game | 30.1 / 19.0 | 30.1 / 19.0 | 30.1 / 19.0 | 32.9 / 22.1 | 28.6 / 19.7 | 32.9 / 22.1 |
-| we hit first (share of our exchanges) | 50% | 49% | 51% | 52% | 53% | 48% |
-| opened exchanges: win share (decided) | 61% | 76% | 45% | 59% | 49% | 64% |
-| received exchanges: win share (decided) | 39% | 55% | 24% | 36% | 28% | 41% |
-| one-sided fights we opened (no answer) per team-game | 5.5 | 6.4 | 4.6 | 4.4 | 3.6 | 6.4 |
-| one-sided fights we took (never hit back) per team-game | 5.5 | 4.6 | 6.4 | 6.4 | 5.2 | 4.4 |
-| opener: R at contact median | 1.91 | 2.39 | 1.59 | 1.99 | 1.78 | 2.00 |
-| opener: share R < 0.67 | 23% | 17% | 27% | 16% | 21% | 19% |
-| opener: share R < 1.0 | 31% | 27% | 36% | 26% | 30% | 29% |
-| opener: bodies within 6: ours / theirs (mean) | 1.74 / 1.97 | 1.74 / 1.91 | 1.74 / 2.02 | 1.79 / 1.85 | 1.93 / 1.92 | 1.77 / 2.00 |
-| opener: fewer bodies than them | 37% | 36% | 39% | 30% | 28% | 39% |
-| opener: hp fraction (mean) | 90% | 89% | 91% | 88% | 90% | 89% |
-| opener: hp < 50% | 3% | 3% | 4% | 5% | 4% | 4% |
-| opener: nearest ally > 6 tiles | 38% | 39% | 36% | 33% | 28% | 32% |
-| opener: nearest ally distance (median) | 4.0 | 5.0 | 4.0 | 4.0 | 4.0 | 4.0 |
-| opener approach: walk-in / received / mutual / static | 29% / 20% / 23% / 27% | 30% / 20% / 22% / 27% | 28% / 19% / 23% / 28% | 30% / 16% / 25% / 29% | 32% / 18% / 23% / 27% | 27% / 21% / 27% / 24% |
-| walk-ins per team-game | 4.3 | 4.6 | 4.0 | 4.8 | 4.5 | 4.6 |
-| walk-in exchanges: win share | 61% | 74% | 48% | 56% | 44% | 68% |
-| walk-in exchanges at R < 0.8: share / win share | 6% / 43% | 6% / 59% | 7% / 31% | 6% / 26% | 10% / 16% | 6% / 42% |
-| received exchanges: answer latency (rounds, mean) | 1.9 | 1.9 | 1.9 | 2.2 | 2.3 | 1.8 |
-| received exchanges: answered within 1 round | 54% | 52% | 56% | 48% | 44% | 57% |
-| opener: shards per participant, ours - theirs (mean) | 2.3 | 14.5 | -9.4 | -2.5 | -10.6 | 5.8 |
-| deaths in opened exchanges per team-game: ours / theirs | 3.25 / 3.98 | 1.88 / 5.26 | 4.62 / 2.71 | 3.21 / 4.01 | 5.51 / 3.27 | 2.98 / 4.55 |
-| deaths in received exchanges per team-game: ours / theirs | 3.98 / 3.25 | 2.71 / 4.62 | 5.26 / 1.88 | 4.55 / 2.98 | 5.32 / 2.16 | 4.01 / 3.21 |
+| | TOP | TOPw | TOPl | US | USl | USw | US88 | OPP |
+|---|---|---|---|---|---|---|---|---|
+| fights per game / exchanges per game | 28.8 / 18.0 | 28.8 / 18.0 | 28.8 / 18.0 | 32.5 / 21.6 | 32.1 / 21.2 | 36.1 / 25.4 | 30.0 / 20.0 | 32.5 / 21.6 |
+| we hit first (share of our exchanges) | 50% | 51% | 49% | 52% | 51% | 58% | 52% | 48% |
+| opened exchanges: win share (decided) | 61% | 76% | 44% | 57% | 53% | 83% | 51% | 65% |
+| received exchanges: win share (decided) | 39% | 56% | 24% | 35% | 31% | 64% | 29% | 43% |
+| one-sided fights we opened (no answer) per team-game | 5.4 | 6.2 | 4.6 | 4.2 | 4.0 | 6.6 | 3.6 | 6.6 |
+| one-sided fights we took (never hit back) per team-game | 5.4 | 4.6 | 6.2 | 6.6 | 6.9 | 4.2 | 6.4 | 4.2 |
+| opener: R at contact median | 1.95 | 2.46 | 1.58 | 1.96 | 1.89 | 2.61 | 1.81 | 1.90 |
+| opener: share R < 0.67 | 22% | 17% | 28% | 18% | 19% | 9% | 22% | 20% |
+| opener: share R < 1.0 | 31% | 25% | 36% | 27% | 28% | 17% | 30% | 30% |
+| opener: bodies within 6: ours / theirs (mean) | 1.76 / 1.97 | 1.76 / 1.92 | 1.75 / 2.02 | 1.76 / 1.83 | 1.78 / 1.84 | 1.59 / 1.78 | 1.78 / 1.83 | 1.74 / 1.98 |
+| opener: fewer bodies than them | 37% | 35% | 38% | 30% | 29% | 34% | 29% | 38% |
+| opener: hp fraction (mean) | 90% | 89% | 90% | 88% | 88% | 86% | 89% | 89% |
+| opener: hp < 50% | 4% | 4% | 4% | 5% | 5% | 6% | 4% | 4% |
+| opener: nearest ally > 6 tiles | 37% | 38% | 36% | 35% | 34% | 42% | 35% | 34% |
+| opener: nearest ally distance (median) | 4.0 | 4.0 | 4.0 | 4.0 | 4.0 | 5.0 | 4.0 | 4.0 |
+| opener approach: walk-in / received / mutual / static | 29% / 19% / 23% / 27% | 30% / 19% / 22% / 27% | 29% / 19% / 24% / 27% | 30% / 16% / 24% / 29% | 31% / 15% / 24% / 30% | 23% / 22% / 28% / 25% | 31% / 17% / 23% / 30% | 27% / 21% / 27% / 24% |
+| walk-ins per team-game | 4.2 | 4.6 | 3.7 | 4.6 | 4.6 | 4.9 | 4.3 | 4.7 |
+| walk-in exchanges: win share | 62% | 76% | 46% | 57% | 56% | 73% | 53% | 69% |
+| walk-in exchanges at R < 0.8: share / win share | 6% / 41% | 5% / 58% | 8% / 30% | 6% / 32% | 7% / 33% | 2% / 0% | 8% / 33% | 6% / 42% |
+| received exchanges: answer latency (rounds, mean) | 1.9 | 2.0 | 1.9 | 2.2 | 2.2 | 2.1 | 2.2 | 1.7 |
+| received exchanges: answered within 1 round | 54% | 53% | 55% | 48% | 48% | 51% | 47% | 59% |
+| opener: shards per participant, ours - theirs (mean) | 3.4 | 16.3 | -10.0 | -3.2 | -5.8 | 14.8 | -7.8 | 7.4 |
+| deaths in opened exchanges per team-game: ours / theirs | 3.10 / 3.97 | 1.80 / 5.50 | 4.40 / 2.44 | 3.16 / 3.73 | 3.34 / 3.23 | 1.47 / 8.37 | 4.11 / 3.01 | 2.75 / 4.58 |
+| deaths in received exchanges per team-game: ours / theirs | 3.97 / 3.10 | 2.44 / 4.40 | 5.50 / 1.80 | 4.58 / 2.75 | 4.84 / 2.54 | 2.16 / 4.63 | 4.96 / 2.06 | 3.73 / 3.16 |
 
 ### win share of the opener by R band (opener side power / enemy power within 6 of the opener; decided exchanges; n in brackets)
-TOP: <0.5: 17% of openings, win 35% (268) | 0.5-0.8: 9% of openings, win 47% (136) | 0.8-1.25: 12% of openings, win 64% (178) | 1.25-2: 13% of openings, win 63% (199) | >2: 48% of openings, win 70% (766)
-TOPw: <0.5: 13% of openings, win 53% (101) | 0.5-0.8: 8% of openings, win 70% (60) | 0.8-1.25: 13% of openings, win 80% (90) | 1.25-2: 11% of openings, win 82% (89) | >2: 55% of openings, win 81% (438)
-TOPl: <0.5: 21% of openings, win 24% (167) | 0.5-0.8: 10% of openings, win 29% (76) | 0.8-1.25: 12% of openings, win 48% (88) | 1.25-2: 14% of openings, win 48% (110) | >2: 42% of openings, win 57% (328)
-US: <0.5: 12% of openings, win 28% (174) | 0.5-0.8: 8% of openings, win 40% (124) | 0.8-1.25: 13% of openings, win 54% (175) | 1.25-2: 17% of openings, win 58% (229) | >2: 49% of openings, win 71% (698)
-US88: <0.5: 15% of openings, win 15% (48) | 0.5-0.8: 9% of openings, win 34% (29) | 0.8-1.25: 12% of openings, win 47% (34) | 1.25-2: 16% of openings, win 54% (52) | >2: 47% of openings, win 61% (154)
-OPP: <0.5: 13% of openings, win 31% (179) | 0.5-0.8: 10% of openings, win 58% (115) | 0.8-1.25: 13% of openings, win 57% (169) | 1.25-2: 14% of openings, win 67% (189) | >2: 50% of openings, win 74% (687)
+TOP: <0.5: 17% of openings, win 37% (393) | 0.5-0.8: 9% of openings, win 48% (199) | 0.8-1.25: 12% of openings, win 61% (254) | 1.25-2: 13% of openings, win 61% (298) | >2: 49% of openings, win 71% (1151)
+TOPw: <0.5: 13% of openings, win 55% (152) | 0.5-0.8: 7% of openings, win 71% (83) | 0.8-1.25: 12% of openings, win 75% (130) | 1.25-2: 12% of openings, win 79% (145) | >2: 55% of openings, win 81% (680)
+TOPl: <0.5: 21% of openings, win 25% (241) | 0.5-0.8: 10% of openings, win 31% (116) | 0.8-1.25: 12% of openings, win 47% (124) | 1.25-2: 13% of openings, win 45% (153) | >2: 42% of openings, win 56% (471)
+US: <0.5: 13% of openings, win 27% (242) | 0.5-0.8: 9% of openings, win 45% (161) | 0.8-1.25: 12% of openings, win 53% (219) | 1.25-2: 16% of openings, win 56% (287) | >2: 49% of openings, win 69% (889)
+USl: <0.5: 14% of openings, win 26% (226) | 0.5-0.8: 9% of openings, win 43% (148) | 0.8-1.25: 13% of openings, win 49% (194) | 1.25-2: 16% of openings, win 53% (249) | >2: 47% of openings, win 65% (748)
+USw: <0.5: 6% of openings, win 44% (16) | 0.5-0.8: 6% of openings, win 69% (13) | 0.8-1.25: 11% of openings, win 76% (25) | 1.25-2: 17% of openings, win 79% (38) | >2: 58% of openings, win 91% (141)
+US88: <0.5: 16% of openings, win 21% (116) | 0.5-0.8: 9% of openings, win 48% (66) | 0.8-1.25: 12% of openings, win 46% (78) | 1.25-2: 16% of openings, win 51% (110) | >2: 47% of openings, win 62% (345)
+OPP: <0.5: 14% of openings, win 36% (247) | 0.5-0.8: 9% of openings, win 56% (146) | 0.8-1.25: 13% of openings, win 61% (222) | 1.25-2: 15% of openings, win 69% (248) | >2: 48% of openings, win 75% (861)
 
 ### win share of the receiver by its R band (its power / theirs within 6 of the contact tile)
-TOP: <0.5: 29%, win 22% (471) | 0.5-0.8: 11%, win 35% (184) | 0.8-1.25: 13%, win 33% (197) | 1.25-2: 12%, win 41% (188) | >2: 33%, win 58% (523)
-TOPw: <0.5: 23%, win 38% (181) | 0.5-0.8: 12%, win 46% (95) | 0.8-1.25: 12%, win 47% (88) | 1.25-2: 13%, win 55% (97) | >2: 40%, win 71% (316)
-TOPl: <0.5: 36%, win 12% (290) | 0.5-0.8: 11%, win 24% (89) | 0.8-1.25: 15%, win 22% (109) | 1.25-2: 12%, win 27% (91) | >2: 27%, win 39% (207)
-US: <0.5: 27%, win 17% (375) | 0.5-0.8: 11%, win 31% (156) | 0.8-1.25: 16%, win 36% (197) | 1.25-2: 15%, win 41% (190) | >2: 32%, win 53% (428)
-US88: <0.5: 35%, win 13% (111) | 0.5-0.8: 8%, win 41% (27) | 0.8-1.25: 17%, win 32% (50) | 1.25-2: 13%, win 26% (34) | >2: 27%, win 43% (81)
-OPP: <0.5: 28%, win 23% (409) | 0.5-0.8: 15%, win 29% (212) | 0.8-1.25: 15%, win 42% (211) | 1.25-2: 15%, win 51% (218) | >2: 26%, win 65% (359)
-
-### steps toward the nearest enemy within 6 by local power band (per team-game; death within 6 rounds after the step)
-TOP: weak: toward 35.2/g (7.6 per 1000 body-r) die6 10%, away 124.5/g | par: toward 47.4/g (10.2 per 1000 body-r) die6 4%, away 66.1/g | strong: toward 228.4/g (49.2 per 1000 body-r) die6 2%, away 138.1/g | weak+nmore: toward 4.0/g die6 20% | weak+neq: toward 14.5/g die6 9% | weak+nless: toward 16.7/g die6 9%
-TOPw: weak: toward 25.2/g (5.4 per 1000 body-r) die6 6%, away 93.1/g | par: toward 45.4/g (9.8 per 1000 body-r) die6 3%, away 58.4/g | strong: toward 261.7/g (56.4 per 1000 body-r) die6 1%, away 149.1/g | weak+nmore: toward 1.3/g die6 13% | weak+neq: toward 10.7/g die6 7% | weak+nless: toward 13.2/g die6 6%
-TOPl: weak: toward 45.3/g (9.8 per 1000 body-r) die6 12%, away 156.0/g | par: toward 49.3/g (10.6 per 1000 body-r) die6 5%, away 73.8/g | strong: toward 195.1/g (42.0 per 1000 body-r) die6 3%, away 127.1/g | weak+nmore: toward 6.7/g die6 21% | weak+neq: toward 18.3/g die6 10% | weak+nless: toward 20.3/g die6 10%
-US: weak: toward 49.3/g (9.3 per 1000 body-r) die6 11%, away 140.2/g | par: toward 67.1/g (12.7 per 1000 body-r) die6 4%, away 93.8/g | strong: toward 316.7/g (60.0 per 1000 body-r) die6 2%, away 218.2/g | weak+nmore: toward 5.6/g die6 15% | weak+neq: toward 22.1/g die6 10% | weak+nless: toward 21.5/g die6 12%
-US88: weak: toward 57.8/g (11.7 per 1000 body-r) die6 15%, away 142.2/g | par: toward 60.1/g (12.1 per 1000 body-r) die6 6%, away 82.6/g | strong: toward 262.1/g (52.9 per 1000 body-r) die6 2%, away 180.8/g | weak+nmore: toward 10.4/g die6 17% | weak+neq: toward 25.7/g die6 13% | weak+nless: toward 21.8/g die6 17%
-OPP: weak: toward 32.6/g (6.2 per 1000 body-r) die6 8%, away 130.6/g | par: toward 51.4/g (9.7 per 1000 body-r) die6 3%, away 77.2/g | strong: toward 253.5/g (48.0 per 1000 body-r) die6 1%, away 167.6/g | weak+nmore: toward 1.8/g die6 19% | weak+neq: toward 13.2/g die6 6% | weak+nless: toward 17.7/g die6 8%
-
-### dives (>= 2 steps toward the nearest enemy within 4 rounds at R < 0.67) and chases (3+ steps after a target that keeps its distance)
-TOP: dives 7.7/g, die8 11%, deaths 0.88/g, gems lost 9.4/g; dives with fewer bodies 43%; chases 34.3/g, die10 1%, deaths 0.38/g, killer = target 19%
-TOPw: dives 5.6/g, die8 8%, deaths 0.46/g, gems lost 7.5/g; dives with fewer bodies 46%; chases 36.9/g, die10 0%, deaths 0.15/g, killer = target 7%
-TOPl: dives 9.9/g, die8 13%, deaths 1.29/g, gems lost 11.2/g; dives with fewer bodies 41%; chases 31.7/g, die10 2%, deaths 0.62/g, killer = target 22%
-US: dives 11.7/g, die8 14%, deaths 1.61/g, gems lost 9.3/g; dives with fewer bodies 39%; chases 50.1/g, die10 1%, deaths 0.56/g, killer = target 16%
-US88: dives 14.2/g, die8 20%, deaths 2.81/g, gems lost 10.3/g; dives with fewer bodies 32%; chases 41.5/g, die10 1%, deaths 0.62/g, killer = target 22%
-OPP: dives 7.1/g, die8 8%, deaths 0.59/g, gems lost 3.3/g; dives with fewer bodies 47%; chases 38.9/g, die10 1%, deaths 0.39/g, killer = target 27%
-
-## Q3 Disengage (retreat = first away step from an enemy within 5 after taking a champion hit in the last 3 rounds)
-
-### disengage
-| | TOP | TOPw | TOPl | US | US88 | OPP |
-|---|---|---|---|---|---|---|
-| retreats per team-game | 38.9 | 35.9 | 41.9 | 48.6 | 47.5 | 45.9 |
-| hp at retreat start: mean / median | 63% / 66% | 63% / 65% | 64% / 67% | 62% / 64% | 61% / 62% | 62% / 64% |
-| retreat starts at hp >= 60% / 40-60% / < 40% | 57% / 21% / 22% | 56% / 23% / 22% | 58% / 20% / 22% | 55% / 22% / 23% | 52% / 23% / 25% | 54% / 22% / 24% |
-| caught (dead within 8 r) | 17% | 13% | 22% | 16% | 23% | 15% |
-| caught: hp >= 60% / 40-60% / < 40% | 10% / 16% / 37% | 6% / 11% / 33% | 14% / 22% / 41% | 9% / 15% / 35% | 13% / 23% / 42% | 7% / 16% / 32% |
-| caught when a dash/stun was ready within reach | 18% | 13% | 23% | 18% | 23% | 18% |
-| caught when none ready | 17% | 12% | 21% | 14% | 22% | 13% |
-| step toward an ally / toward spawn / neither | 50% / 77% / 16% | 51% / 77% / 16% | 49% / 77% / 16% | 48% / 87% / 10% | 46% / 89% / 9% | 51% / 80% / 15% |
-| caught: step toward an ally / not | 17% / 18% | 12% / 13% | 21% / 22% | 17% / 16% | 22% / 23% | 15% / 15% |
-| used a dash (0..+2 r) / stun (-1..+2) / recall (0..+3) | 25% / 12% / 9% | 24% / 11% / 10% | 26% / 13% / 8% | 15% / 9% / 2% | 14% / 9% / 2% | 24% / 13% / 8% |
-| dash available (dasher, ready) and used | 76% (of 1690) | 74% (of 772) | 77% (of 918) | 38% (of 1984) | 37% (of 484) | 71% (of 1847) |
-| pursued (nearest enemy stepped after us in 0..+3 r) | 72% | 70% | 74% | 64% | 65% | 76% |
-| caught when pursued / not pursued | 20% / 11% | 15% / 8% | 24% / 14% | 18% / 12% | 26% / 18% | 17% / 9% |
-| enemies within 4 three rounds later (mean) | 0.95 | 0.92 | 0.98 | 0.98 | 1.04 | 1.08 |
-| retreat starts with R < 0.67 / 0.67-1.5 / > 1.5 | 48% / 24% / 28% | 41% / 24% / 35% | 53% / 24% / 23% | 41% / 25% / 34% | 47% / 24% / 29% | 47% / 26% / 27% |
-| champion deaths: hp when the last retreat began (mean) | 57% | 51% | 60% | 49% | 51% | 51% |
-| champion deaths: no retreat step in the last 10 r | 34% | 31% | 36% | 32% | 30% | 21% |
-| champion deaths: last retreat began at hp < 30% | 14% | 19% | 11% | 21% | 21% | 21% |
-
-## Q4 Focus and group play
-
-### focus / group
-| | TOP | TOPw | TOPl | US | US88 | OPP |
-|---|---|---|---|---|---|---|
-| champion hits per team-game | 213.8 | 219.7 | 207.9 | 293.0 | 299.7 | 281.0 |
-| allies hitting the same target within +-2 r (mean per hit) | 0.66 | 0.67 | 0.65 | 0.77 | 0.90 | 0.65 |
-| hits with >= 1 helper / >= 2 | 46% / 16% | 46% / 17% | 46% / 15% | 53% / 20% | 61% / 24% | 46% / 15% |
-| hits with an ally within 6 but no helper | 29% | 30% | 29% | 28% | 25% | 29% |
-| hits landed with no ally within 6 | 25% | 25% | 26% | 20% | 15% | 25% |
-| hits landed outnumbered (enemies within 6 > allies + 1) | 22% | 20% | 23% | 17% | 17% | 24% |
-| exchange participations per team-game | 35.1 | 35.2 | 34.9 | 42.8 | 40.7 | 42.0 |
-| participations alone (no ally within 6 at first own hit) | 24% | 24% | 25% | 20% | 17% | 23% |
-|   died in the fight: alone / with allies | 20% / 18% | 13% / 12% | 27% / 24% | 20% / 15% | 30% / 23% | 17% / 15% |
-| participations alone against 2+ enemies within 6 | 11% | 10% | 11% | 8% | 8% | 10% |
-|   died | 25% | 17% | 32% | 31% | 40% | 24% |
-| participations with an ally within 8 but none within 6 | 6% | 7% | 6% | 7% | 6% | 7% |
-| bodies per side in an exchange (mean participants) | 2.01 | 2.00 | 2.03 | 2.12 | 2.23 | 2.03 |
-
-## Q5 Champion matchups
-
-TOP: deaths per team-game by victim champion (deaths per drafted body in brackets)
-  HeartOfRuin: 1.79 (2.1), Marcella: 1.52 (1.7), Vendetta: 1.41 (2.2), VesperVale: 1.01 (1.4), Cassi: 0.87 (3.6), Issac: 0.87 (3.6), Willow: 0.71 (2.2), Ryth: 0.63 (1.8), Prism: 0.28 (1.9), Tavi: 0.24 (2.8), Ren: 0.22 (2.7), Varg: 0.18 (2.1), Stellar: 0.03 (5.0)
-  killer: Marcella: 3.53, VesperVale: 2.11, HeartOfRuin: 1.03, Vendetta: 0.88, camp: 0.81, Prism: 0.49, Ryth: 0.18, Cassi: 0.16, Ren: 0.15, Issac: 0.12, Willow: 0.09, Tavi: 0.09, Varg: 0.08, Stellar: 0.02
-  kills per team-game by our champion: Marcella: 3.53 (3.9 per drafted body), VesperVale: 2.11 (2.9 per drafted body), HeartOfRuin: 1.03 (1.2 per drafted body), Vendetta: 0.88 (1.3 per drafted body), Prism: 0.49 (3.3 per drafted body), Ryth: 0.18 (0.5 per drafted body), Cassi: 0.16 (0.7 per drafted body), Ren: 0.15 (1.9 per drafted body), Issac: 0.12 (0.5 per drafted body), Willow: 0.09 (0.3 per drafted body), Tavi: 0.09 (1.1 per drafted body), Varg: 0.08 (0.9 per drafted body), Stellar: 0.02 (3.0 per drafted body)
-
-US: deaths per team-game by victim champion (deaths per drafted body in brackets)
-  Vendetta: 2.50 (3.0), HeartOfRuin: 2.36 (2.4), Ryth: 1.81 (2.2), VesperVale: 1.75 (2.0), Marcella: 1.01 (1.4), Varg: 0.11 (1.1)
-  killer: Marcella: 3.42, VesperVale: 1.95, Vendetta: 1.17, HeartOfRuin: 0.91, camp: 0.90, Ryth: 0.54, Ren: 0.15, Tavi: 0.12, Varg: 0.11, Willow: 0.09, Issac: 0.08, Cassi: 0.08, Stellar: 0.01, Prism: 0.01
-  kills per team-game by our champion: Vendetta: 2.28 (2.7 per drafted body), VesperVale: 1.80 (2.0 per drafted body), HeartOfRuin: 1.45 (1.5 per drafted body), Ryth: 1.05 (1.3 per drafted body), Marcella: 0.97 (1.4 per drafted body), Varg: 0.05 (0.5 per drafted body)
-
-US88: deaths per team-game by victim champion (deaths per drafted body in brackets)
-  Vendetta: 3.35 (4.0), HeartOfRuin: 3.22 (3.2), Ryth: 2.35 (3.1), VesperVale: 2.27 (2.8), Marcella: 1.70 (2.2), Varg: 0.08 (1.5)
-  killer: Marcella: 4.08, VesperVale: 3.38, Vendetta: 1.89, HeartOfRuin: 1.59, camp: 0.97, Ryth: 0.62, Ren: 0.14, Stellar: 0.05, Prism: 0.05, Varg: 0.05, Willow: 0.05, Tavi: 0.03, Cassi: 0.03, Issac: 0.03
-  kills per team-game by our champion: Vendetta: 1.81 (2.2 per drafted body), HeartOfRuin: 1.35 (1.4 per drafted body), VesperVale: 1.16 (1.4 per drafted body), Marcella: 0.84 (1.1 per drafted body), Ryth: 0.76 (1.0 per drafted body), Varg: 0.03 (0.5 per drafted body)
-
-OPP: deaths per team-game by victim champion (deaths per drafted body in brackets)
-  VesperVale: 1.35 (1.7), Vendetta: 1.34 (2.1), Marcella: 1.33 (1.4), HeartOfRuin: 1.23 (2.0), Ryth: 1.20 (2.0), Willow: 0.40 (2.8), Cassi: 0.39 (2.8), Issac: 0.39 (2.8), Ren: 0.31 (2.1), Varg: 0.31 (2.0), Tavi: 0.25 (2.2), Prism: 0.03 (1.0)
-  killer: Vendetta: 2.28, VesperVale: 1.80, HeartOfRuin: 1.45, Ryth: 1.05, Marcella: 0.97, camp: 0.91, Varg: 0.05
-  kills per team-game by our champion: Marcella: 3.42 (3.5 per drafted body), VesperVale: 1.95 (2.5 per drafted body), Vendetta: 1.17 (1.8 per drafted body), HeartOfRuin: 0.91 (1.5 per drafted body), Ryth: 0.54 (0.9 per drafted body), Ren: 0.15 (1.0 per drafted body), Tavi: 0.12 (1.1 per drafted body), Varg: 0.11 (0.7 per drafted body), Willow: 0.09 (0.6 per drafted body), Issac: 0.08 (0.6 per drafted body), Cassi: 0.08 (0.6 per drafted body), Stellar: 0.01 (2.0 per drafted body), Prism: 0.01 (0.5 per drafted body)
-
-### victim x killer matrix (US, champion deaths per team-game) and the situation of the top pairs
-  HeartOfRuin<-Marcella: 0.92, Vendetta<-Marcella: 0.91, Ryth<-Marcella: 0.66, Vendetta<-VesperVale: 0.59, HeartOfRuin<-VesperVale: 0.51, VesperVale<-Marcella: 0.50, Marcella<-Marcella: 0.41, VesperVale<-VesperVale: 0.38, Ryth<-VesperVale: 0.30, HeartOfRuin<-Vendetta: 0.29, VesperVale<-Vendetta: 0.26, HeartOfRuin<-HeartOfRuin: 0.25
-  TOP: HeartOfRuin<-Marcella: 0.63, Marcella<-Marcella: 0.56, Vendetta<-Marcella: 0.48, HeartOfRuin<-VesperVale: 0.44, VesperVale<-Marcella: 0.41, Marcella<-VesperVale: 0.37, Cassi<-Marcella: 0.33, Issac<-Marcella: 0.33, Vendetta<-VesperVale: 0.29, Ryth<-Marcella: 0.24, Willow<-Marcella: 0.23, VesperVale<-VesperVale: 0.21
-  killed by Marcella: US 3.42/g, TOP 3.53/g
-    US  n=517: chased the killer (2+ steps toward it in 4 r) 42%, killer 5+ tiles away 3 r before 35%, took a spell in the last 3 r 90%, took a dash 8%, stunned 37%, never hit back 29%, alone 25%, hp5 64%
-    TOP n=670: chased the killer (2+ steps toward it in 4 r) 32%, killer 5+ tiles away 3 r before 41%, took a spell in the last 3 r 83%, took a dash 6%, stunned 25%, never hit back 35%, alone 29%, hp5 63%
-  killed by HeartOfRuin: US 0.91/g, TOP 1.03/g
-    US  n=137: chased the killer (2+ steps toward it in 4 r) 23%, killer 5+ tiles away 3 r before 11%, took a spell in the last 3 r 15%, took a dash 86%, stunned 82%, never hit back 13%, alone 36%, hp5 44%
-    TOP n=195: chased the killer (2+ steps toward it in 4 r) 14%, killer 5+ tiles away 3 r before 15%, took a spell in the last 3 r 23%, took a dash 78%, stunned 68%, never hit back 10%, alone 34%, hp5 46%
-  killed by Vendetta: US 1.17/g, TOP 0.88/g
-    US  n=177: chased the killer (2+ steps toward it in 4 r) 25%, killer 5+ tiles away 3 r before 11%, took a spell in the last 3 r 14%, took a dash 8%, stunned 20%, never hit back 15%, alone 36%, hp5 55%
-    TOP n=167: chased the killer (2+ steps toward it in 4 r) 20%, killer 5+ tiles away 3 r before 14%, took a spell in the last 3 r 8%, took a dash 8%, stunned 13%, never hit back 17%, alone 41%, hp5 58%
-  killed by VesperVale: US 1.95/g, TOP 2.11/g
-    US  n=294: chased the killer (2+ steps toward it in 4 r) 45%, killer 5+ tiles away 3 r before 25%, took a spell in the last 3 r 22%, took a dash 10%, stunned 32%, never hit back 30%, alone 29%, hp5 64%
-    TOP n=401: chased the killer (2+ steps toward it in 4 r) 32%, killer 5+ tiles away 3 r before 30%, took a spell in the last 3 r 13%, took a dash 7%, stunned 14%, never hit back 38%, alone 27%, hp5 63%
-  killed by Ryth: US 0.54/g, TOP 0.18/g
-    US  n=82: chased the killer (2+ steps toward it in 4 r) 35%, killer 5+ tiles away 3 r before 12%, took a spell in the last 3 r 67%, took a dash 12%, stunned 74%, never hit back 21%, alone 34%, hp5 54%
-    TOP n=35: chased the killer (2+ steps toward it in 4 r) 3%, killer 5+ tiles away 3 r before 14%, took a spell in the last 3 r 71%, took a dash 14%, stunned 74%, never hit back 6%, alone 26%, hp5 44%
-  killed by Tavi: US 0.12/g, TOP 0.09/g
-    US  n=18: chased the killer (2+ steps toward it in 4 r) 39%, killer 5+ tiles away 3 r before 22%, took a spell in the last 3 r 83%, took a dash 6%, stunned 89%, never hit back 44%, alone 22%, hp5 48%
-    TOP n=18: chased the killer (2+ steps toward it in 4 r) 61%, killer 5+ tiles away 3 r before 50%, took a spell in the last 3 r 89%, took a dash 6%, stunned 67%, never hit back 22%, alone 33%, hp5 49%
-  killed by Willow: US 0.09/g, TOP 0.09/g
-    US  n=13: chased the killer (2+ steps toward it in 4 r) 62%, killer 5+ tiles away 3 r before 8%, took a spell in the last 3 r 54%, took a dash 15%, stunned 85%, never hit back 8%, alone 46%, hp5 69%
-    TOP n=18: chased the killer (2+ steps toward it in 4 r) 28%, killer 5+ tiles away 3 r before 17%, took a spell in the last 3 r 33%, took a dash 22%, stunned 28%, never hit back 6%, alone 28%, hp5 49%
-  killed by Ren: US 0.15/g, TOP 0.15/g
-    US  n=22: chased the killer (2+ steps toward it in 4 r) 23%, killer 5+ tiles away 3 r before 18%, took a spell in the last 3 r 86%, took a dash 0%, stunned 82%, never hit back 23%, alone 18%, hp5 47%
-    TOP n=29: chased the killer (2+ steps toward it in 4 r) 14%, killer 5+ tiles away 3 r before 34%, took a spell in the last 3 r 55%, took a dash 14%, stunned 62%, never hit back 21%, alone 17%, hp5 60%
-  killed by Varg: US 0.11/g, TOP 0.08/g
-    US  n=16: chased the killer (2+ steps toward it in 4 r) 44%, killer 5+ tiles away 3 r before 6%, took a spell in the last 3 r 25%, took a dash 6%, stunned 31%, never hit back 6%, alone 31%, hp5 49%
-    TOP n=15: chased the killer (2+ steps toward it in 4 r) 20%, killer 5+ tiles away 3 r before 13%, took a spell in the last 3 r 53%, took a dash 27%, stunned 33%, never hit back 0%, alone 40%, hp5 54%
-  killed by Cassi: US 0.08/g, TOP 0.16/g
-    US  n=12: chased the killer (2+ steps toward it in 4 r) 50%, killer 5+ tiles away 3 r before 58%, took a spell in the last 3 r 92%, took a dash 17%, stunned 42%, never hit back 8%, alone 25%, hp5 44%
-    TOP n=31: chased the killer (2+ steps toward it in 4 r) 42%, killer 5+ tiles away 3 r before 52%, took a spell in the last 3 r 90%, took a dash 13%, stunned 68%, never hit back 29%, alone 23%, hp5 57%
-  killed by Issac: US 0.08/g, TOP 0.12/g
-    US  n=12: chased the killer (2+ steps toward it in 4 r) 33%, killer 5+ tiles away 3 r before 25%, took a spell in the last 3 r 67%, took a dash 8%, stunned 50%, never hit back 25%, alone 42%, hp5 53%
-    TOP n=22: chased the killer (2+ steps toward it in 4 r) 18%, killer 5+ tiles away 3 r before 14%, took a spell in the last 3 r 27%, took a dash 18%, stunned 36%, never hit back 18%, alone 41%, hp5 53%
-  Marcella pattern (within 4 of her for 3+ of the last 5 r and took her spell): US 2.17/g, TOP 1.92/g
-
-## Q6 Item gap at fight time and the exchange model
-
-TOP: 3128 decided exchanges, win share 50%; shards per participant ours 31.5 vs theirs 31.5 (gap +0.0); hit first 50%; mean logR -0.00; body diff +0.00
-  logistic win model: first +1.038 (z +12.2), logR +0.267 (z +4.6), gap +0.033 (z +13.5), nd +0.112 (z +1.8), const -0.52
-  win share by item gap band: -99..-10: 18% (666), -10..-3: 33% (390), -3..3: 49% (824), 3..10: 66% (422), 10..99: 82% (686)
-  win share hit first / second: 61% / 39%
-  win share by R band: <0.5: 32% (995), 0.5-0.8: 47% (372), 0.8-1.25: 50% (394), 1.25-2: 53% (372), >2: 68% (995)
-  item gap by game phase: r0-200: +0.0 (426), r200-400: +0.0 (592), r400-700: +0.0 (890), r700-1000: +0.0 (668), r1000-3000: +0.0 (552)
-
-US: 2760 decided exchanges, win share 48%; shards per participant ours 23.2 vs theirs 27.9 (gap -4.7); hit first 51%; mean logR +0.05; body diff +0.08
-  logistic win model: first +1.075 (z +11.8), logR +0.376 (z +5.4), gap +0.043 (z +13.5), nd +0.079 (z +1.0), const -0.59
-  win share by item gap band: -99..-10: 20% (668), -10..-3: 31% (388), -3..3: 52% (820), 3..10: 69% (353), 10..99: 78% (464)
-  win share hit first / second: 59% / 36%
-  win share by R band: <0.5: 26% (738), 0.5-0.8: 42% (373), 0.8-1.25: 47% (409), 1.25-2: 57% (401), >2: 65% (839)
-  item gap by game phase: r0-200: +0.2 (364), r200-400: -1.0 (433), r400-700: -3.1 (692), r700-1000: -5.9 (608), r1000-3000: -10.2 (663)
-
-OPP: 2760 decided exchanges, win share 52%; shards per participant ours 27.9 vs theirs 23.2 (gap +4.7); hit first 49%; mean logR -0.05; body diff -0.08
-  logistic win model: first +1.074 (z +11.8), logR +0.380 (z +5.5), gap +0.043 (z +13.4), nd +0.075 (z +1.0), const -0.49
-  win share by item gap band: -99..-10: 21% (447), -10..-3: 31% (324), -3..3: 46% (815), 3..10: 67% (424), 10..99: 80% (682)
-  win share hit first / second: 64% / 41%
-  win share by R band: <0.5: 35% (838), 0.5-0.8: 43% (402), 0.8-1.25: 53% (408), 1.25-2: 58% (374), >2: 74% (738)
-  item gap by game phase: r0-200: -0.2 (364), r200-400: +1.0 (433), r400-700: +3.1 (692), r700-1000: +5.9 (608), r1000-3000: +10.2 (663)
-
-US88: 623 decided exchanges, win share 39%; shards per participant ours 20.5 vs theirs 34.0 (gap -13.5); hit first 51%; mean logR -0.14; body diff +0.10
-  logistic win model: first +0.967 (z +5.0), logR +0.430 (z +2.7), gap +0.034 (z +5.6), nd +0.005 (z +0.0), const -0.70
-  win share by item gap band: -99..-10: 19% (213), -10..-3: 27% (92), -3..3: 51% (185), 3..10: 58% (57), 10..99: 82% (55)
-  win share hit first / second: 49% / 28%
-  win share by R band: <0.5: 19% (204), 0.5-0.8: 34% (77), 0.8-1.25: 42% (96), 1.25-2: 45% (69), >2: 59% (177)
-  item gap by game phase: r0-200: +0.4 (90), r200-400: -3.6 (92), r400-700: -10.6 (162), r700-1000: -23.4 (135), r1000-3000: -22.3 (144)
-
-counterfactual with the TOP model on our 2760 exchanges: predicted win share 49% (actual 48%, TOP actual 50%)
-  shift first to the TOP mean (+0.51 -> +0.50): 48% (-0.2 pts)
-  shift logR to the TOP mean (+0.05 -> -0.00): 48% (-0.3 pts)
-  shift gap to the TOP mean (-4.65 -> +0.00): 52% (+3.0 pts)
-  shift nd to the TOP mean (+0.08 -> +0.00): 48% (-0.2 pts)
-  deaths per decided exchange: US 0.40 (they 0.36); TOP 0.42
-  hit first: US share 51% deaths/exch 0.32 win 59%; TOP share 50% deaths/exch 0.37 win 61%
-  hit second: US share 49% deaths/exch 0.49 win 36%; TOP share 50% deaths/exch 0.46 win 39%
-  R < 0.67: US share 34% deaths/exch 0.55 win 30%; TOP share 39% deaths/exch 0.51 win 36%
-  R >= 1.5: US share 40% deaths/exch 0.30 win 63%; TOP share 39% deaths/exch 0.32 win 64%
-  gap <= -5: US share 36% deaths/exch 0.66 win 22%; TOP share 32% deaths/exch 0.65 win 21%
-  gap >= 5: US share 25% deaths/exch 0.12 win 77%; TOP share 32% deaths/exch 0.16 win 79%
+TOP: <0.5: 31%, win 21% (718) | 0.5-0.8: 11%, win 37% (268) | 0.8-1.25: 13%, win 35% (284) | 1.25-2: 12%, win 41% (275) | >2: 33%, win 58% (770)
+TOPw: <0.5: 23%, win 37% (252) | 0.5-0.8: 11%, win 52% (130) | 0.8-1.25: 13%, win 47% (130) | 1.25-2: 13%, win 53% (145) | >2: 40%, win 71% (459)

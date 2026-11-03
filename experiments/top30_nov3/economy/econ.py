@@ -412,6 +412,14 @@ def analyse(job):
                     c0, c1 = S.get(r - 1, {}).get(b), S.get(r, {}).get(b)
                     if c0 and c1 and c1[9] > c0[9]:
                         ge += c1[9] - c0[9]
+            # gold income = gold spent on shards (30 x shard-equivalents gained) + change of unspent gold (consumables ignored):
+            # the capture-recall-shop pattern lands a reward and spends it in the same round, so c[9] deltas miss it
+            gi = 0
+            for b in tb:
+                c0 = S.get(a - 1, {}).get(b) or S.get(a, {}).get(b)
+                c1 = S.get(z, {}).get(b)
+                if c0 and c1:
+                    gi += 30 * (shard_eq(c1[11])[0] - shard_eq(c0[11])[0]) + (c1[9] - c0[9])
             bank = sum(g for (r, who, g) in banked if a <= r <= z and team[who] == t)
             lost = 0
             for b in tb:
@@ -421,7 +429,7 @@ def analyse(job):
                         lost += c0[8] if c0 else 0
             rounds = z - a + 1
             ph.append({'a': a, 'z': z, 'rounds': rounds, 'brounds': sum(st.values()), 'hits': hits_n, 'hits_c': hits_c, 'dmg': round(dmg),
-                       'gems': gems, 'gold_cap': gold, 'ncap': ncap, 'gold_earned': ge, 'banked': bank, 'lost': lost,
+                       'gems': gems, 'gold_cap': gold, 'ncap': ncap, 'gold_earned': ge, 'gold_income': gi, 'banked': bank, 'lost': lost,
                        'hits_goldg': hits_goldg, 'ncap_goldg': ncap_goldg, 'gold_goldg': gold_goldg, 'cap_big': cap_big,
                        'cap_enemy_side': cap_enemy_side, 'hits_enemy_side': hits_enemy_side,
                        'st': dict(st), 'st_c': dict(st_c), 'deaths': sum(1 for b in tb for r in deaths[b] if a <= r <= z)})

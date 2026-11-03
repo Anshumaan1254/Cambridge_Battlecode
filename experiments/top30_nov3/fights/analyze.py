@@ -92,7 +92,7 @@ def table(title, cols, rows):
         print(f'| {name} | ' + ' | '.join(str(v) for v in vals) + ' |')
 
 
-GROUPS = [g for g in ['TOP', 'TOPw', 'TOPl', 'US', 'US88', 'OPP'] if team_games(g)[1]]
+GROUPS = [g for g in ['TOP', 'TOPw', 'TOPl', 'US', 'USl', 'USw', 'US88', 'OPP'] if team_games(g)[1]]
 
 # ------------------------------------------------------------------ data summary
 print('# Fights and deaths: top-30 vs our v84-v88 games')
@@ -510,3 +510,44 @@ if len(ex_top) >= 50 and len(ex_us) >= 50:
         b = [e for e in ex_top if cond(e)]
         print(f"  {name}: US share {pct(len(a) / len(ex_us))} deaths/exch {mean_or([e['dead_t'] for e in a], 0):.2f} win {pct(mean_or([e['y'] for e in a], 0))}; "
               f"TOP share {pct(len(b) / len(ex_top))} deaths/exch {mean_or([e['dead_t'] for e in b], 0):.2f} win {pct(mean_or([e['y'] for e in b], 0))}")
+
+
+# ------------------------------------------------------------------ Q5b champion usage: hits, spells, items, kills per 1000 body-rounds
+print('\n## Q5b Champion usage per 1000 rounds alive (hits landed on champions by kind; kills; deaths; shards at r500)')
+for g in [x for x in ('TOP', 'TOPw', 'TOPl', 'US', 'USl', 'US88', 'OPP') if x in GROUPS]:
+    ds, tg = team_games(g)
+    keys = {(x['mid'], t) for x, t in tg}
+    ht, n = rows_of(g, HT)
+    dd, _ = rows_of(g, D)
+    kills = [d for d in D[ds] if (d['mid'], 1 - d['t']) in keys and d['killer'] != 'camp']
+    alive = Counter()
+    for gm, t in tg:
+        for c in gm['drafts'][t]:
+            if c == 'CassiAndIssac':
+                alive['Cassi'] += gm['final']
+                alive['Issac'] += gm['final']
+            else:
+                alive[c] += gm['final']
+    out = []
+    for c in ('Marcella', 'VesperVale', 'Vendetta', 'HeartOfRuin', 'Ryth', 'Tavi', 'Prism', 'Willow', 'Cassi', 'Issac', 'Ren', 'Varg', 'Stellar'):
+        a = alive[c] / 1000.0
+        if a < 3:
+            continue
+        hc = [h for h in ht if h['champ'] == c]
+        sp = [h for h in hc if h['kind'] in ('spell', 'area', 'dash')]
+        k = sum(1 for d in kills if d['killer'] == c)
+        dv = sum(1 for d in dd if d['champ'] == c)
+        out.append(f"{c}: hits {len(hc) / a:.0f} (spells {len(sp) / a:.1f}), kills {k / a:.2f}, deaths {dv / a:.2f}, helpers/hit {mean_or([h['helpers'] for h in hc], 0):.2f}")
+    print(f'{g}: ' + ' | '.join(out))
+
+# ------------------------------------------------------------------ respawn deaths and spawn context
+print('\n## Deaths within 40 rounds of a respawn: where')
+for g in [x for x in ('TOP', 'TOPw', 'TOPl', 'US', 'USl', 'US88', 'OPP') if x in GROUPS]:
+    dd, n = rows_of(g, D)
+    rs = [d for d in dd if d['age'] is not None and d['age'] <= 40]
+    if not rs:
+        continue
+    print(f"{g}: {len(rs) / n:.2f}/g ({pct(len(rs) / max(1, len(dd)))} of deaths); within 8 tiles of own spawn {pct(sum(1 for d in rs if d['d_own'] is not None and d['d_own'] <= 8) / len(rs))}, "
+          f"enemy half {pct(sum(d['enemy_half'] for d in rs) / len(rs))}, 2+ steps toward the enemy {pct(sum(d['tw8'] >= 2 for d in rs) / len(rs))}, "
+          f"alone {pct(sum(1 for d in rs if d['al5'] is not None and d['al5'] < 0.5) / len(rs))}, outnumbered {pct(sum(1 for d in rs if d['al5'] is not None and d['en5'] - d['al5'] - 1 >= 0.5) / len(rs))}, "
+          f"age median {median([d['age'] for d in rs]):.0f}, killer camp {pct(sum(d['killer'] == 'camp' for d in rs) / len(rs))}")

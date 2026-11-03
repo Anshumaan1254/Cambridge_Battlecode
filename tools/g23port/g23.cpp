@@ -515,6 +515,8 @@ bool Brain::g23_leave(std::vector<Enemy*>& E, Enemy& tgt)
 	auto& W = world();
 	post_danger(tgt.pos);
 	task = T_FLEE;
+	if (P.g23_divefilter || P.g23_campzone)
+		g_hard_block = nullptr; // leaving keeps every step open
 	avoid_note(E); // v27_avoid: groups near them are no target for a while
 	g23_leave_round = round;
 	if (!kit.ranged && can_attack)

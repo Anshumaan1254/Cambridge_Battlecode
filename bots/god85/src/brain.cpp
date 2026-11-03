@@ -2602,6 +2602,8 @@ bool Brain::pocket_dash()
 
 bool Brain::go_home_step(bool avoid)
 {
+	if (P.g23_divefilter || P.g23_campzone)
+		g_hard_block = nullptr; // retreats keep the base behaviour (the block is for approaches)
 	auto& W = world();
 	if (P.pocket_fix && W.dist_home(pos) >= BIG && pocket_dash())
 		return true;
@@ -4199,7 +4201,7 @@ bool Brain::combat()
 			if (cheb(pos, e->pos) < cheb(pos, tgt->pos))
 				tgt = e;
 	}
-	const int d = cheb(pos, tgt->pos);
+	int d = cheb(pos, tgt->pos); // non-const: g23_fight 2 may switch the target (rescue, second wave)
 	// P.ren_reflect (agent survive): Ren returns 0.2 x focus of every hit to its attacker, so a fight on Ren costs each of
 	// our hitters that much per round on top of the enemies' damage. The estimate left it out: ladder fragment r78-88, our
 	// Stellar (750) and Ren hit their Ren (1,900 max health) for 10 rounds, Stellar lost ~70 a round and died.
@@ -4568,6 +4570,7 @@ bool Brain::combat()
 		// we are outside), one approach step at most toward a target nobody of ours is fighting, no chase that does not close, never
 		// deeper into their half, the second wave (an ally within 6 whose message says FIGHT: join at adv >= g23_r_join).
 		fight = g23_veto(E, tgt, fight, killable, in_reach, adv, d, my_reach);
+		d = cheb(pos, tgt->pos); // the later rules (fz_engage, calm, strike holds) measure the target we now have
 		g23_keep_farm = !fight && !in_reach && adv >= P.g23_keep_r;
 	}
 	if (fz_engage_eff > 0 && fight && !in_reach && !killable && last_fight_round < round - 1 && d > fz_engage_eff && !tgt->channeling && !tgt->tributing)
@@ -5103,6 +5106,8 @@ bool Brain::engage(Enemy& e)
 
 bool Brain::go_home()
 {
+	if (P.g23_divefilter || P.g23_campzone)
+		g_hard_block = nullptr; // retreats keep the base behaviour (the block is for approaches)
 	auto& W = world();
 	task = T_HOME;
 	if (W.ally_spawn.is_set(pos))

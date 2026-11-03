@@ -274,6 +274,12 @@ private:
 	std::vector<int> enemy_tribute_seen; // F6: rounds we saw an enemy tributing at each altar
 	bool chain_keep(const Group& g, int recall_t, bool bag, bool rich); // F5: a nearby target beats the home trip
 	bool body_is_anchor(int i) const { return i >= 0 && i < 8 && anchor_now[static_cast<std::size_t>(i)]; }
+	// GOD v24 C3 (P.g24_marc_funnel): rewards go to our Marcella
+	int g24_mf_marc() const;									  // our living Marcella's ally index (-1: none, dead, or we are her)
+	double g24_mf_val(bc::champion_type t, const Group& g) const; // the reward's gold to a body of type t (gold x gold_mult + gems x tribute gold)
+	bool g24_mf_hot(const Group& g, int r) const;				  // an enemy champion within r of a tile of the group
+	bool g24_mf_calm(vec2 p, float h, float mh) const;			  // bit 2: a body at p is not in a fight (no enemy within 6, health >= 40%)
+	int g24_mf_g = -1, g24_mf_since = -1000;					  // holder: we defer the capture of group g24_mf_g to her since this round
 	bool plan_ward(bool force); // P.ward_plan
 	bool v14_ward(bool force);  // P.ward_v14 (false: ward_v14 2 leaves it to v13's rule)
 	bool ally_committed(const Ally& a) const; // P.g22_msg: the ally's priority says it is in a fight
@@ -512,7 +518,7 @@ private:
 	std::array<AllyMsg, 8> g23_ally{};
 	void g23_read_allies();
 	int g23_decide(std::vector<Enemy*>& E, Enemy*& tgt, float allies_burst, bool in_reach, float incoming);
-	float g23_dps_of(float str_, float focus_, const Kit& k, bool reset_ready, bool spell_ready, float hp_frac, bc::champion_type t) const;
+	float g23_dps_of(float str_, float focus_, const Kit& k, bool reset_ready, bool spell_ready, float hp_frac, bc::champion_type t, bool enemy = false) const;
 	float g23_ratio(vec2 contact, const std::vector<Enemy*>& E, int* new_enemy, int* reinf_us, int* reinf_them) const;
 	bool g23_escape_test(const std::vector<Enemy*>& E, float incoming) const;
 	Enemy* g23_pick_target(std::vector<Enemy*>& E, Enemy* fallback) const;

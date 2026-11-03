@@ -1287,6 +1287,18 @@ struct Params
 	// ---- g24 C1 fights (F1-F5) ----
 	// ---- g24 C2 economy (E1, E2) ----
 	// ---- g24 C3 Marcella funnel (E3, N1-N3) ----
+	int g24_marc_funnel = 0;	// bits (E3; only while we drafted Marcella and she is alive; never with an enemy champion within 4 of the reward):
+								// 1 a reward with >= 10 gems or >= 60 gold yields to her within g24_mf_r steps when she claims it or stands on it (her value
+								// gold + 2 x gems, the others' gold x gold_mult); a holder keeps the tile without a capture-recall while she can arrive before
+								// its capture lands, else steps off and waits at most g24_mf_wait rounds, and steps off once she stands on it; she banks from
+								// max(20, tribute_min / 2) at a safe field altar within g24_mf_altar steps (no new recall); 2 (g24_carry_cap) a body on any
+								// reward steps off when she is within 2 steps and not in a fight
+	int g24_mf_r = 8;
+	int g24_mf_wait = 6;
+	int g24_mf_altar = 12;
+	int g24_marc_focus = 0;		// 1 (N1): g23_pick_target() divides an enemy Marcella's key by 1 + bag / 40, and by 1.3 more when her strength >= 1.5 x design
+	int g24_marc_threat = 0;	// 1 (N2): g23_dps_of() counts an enemy Marcella's ready reset x1.5 (its stun), g23_ratio() our damage x0.85 while one with the
+								// reset ready is within 2 of the contact
 	// ---- g24 C5 execution (X1-X3) ----
 	// ===== end of GOD v24 switches =====
 };

@@ -32,6 +32,14 @@ static int g_idle = 0, g_mfail = 0; // trace only: the last farming decision poi
 #else
 #define XM(stmt) (void)0
 #endif
+// GOD v24 C3: one line each time a g24_marc_funnel rule fires: "G24 marc_funnel <round> <body> <why>"
+#if defined(G23_TRACE)
+#define G24MF(fmt, ...) std::printf("G24 marc_funnel %d %d " fmt "\n", round, world().my_index, __VA_ARGS__)
+#elif defined(LEGEND_TRACE)
+#define G24MF(fmt, ...) debug_block({ std::printf("G24 marc_funnel %d %d " fmt "\n", round, world().my_index, __VA_ARGS__); })
+#else
+#define G24MF(fmt, ...) (void)0
+#endif
 
 namespace
 {
@@ -6783,6 +6791,54 @@ void Brain::chip_passing()
 				if (spells_on_camp(g, i, true))
 					return;
 	}
+}
+
+// ---- GOD v24 C3 (P.g24_marc_funnel): rewards go to our Marcella (2 gold a gem when she banks; nemesis/REPORT.txt S1, draft_bank S2) ----
+int Brain::g24_mf_marc() const
+{
+	// Our Marcella when the funnel can use her this round: drafted, alive, in sight now, not channelling; -1 when we are her.
+	if (type == CT::marcella)
+		return -1;
+	auto& W = world();
+	for (int i = 0; i < static_cast<int>(W.allies.size()) && i < 8; ++i)
+	{
+		const auto& a = W.allies[static_cast<std::size_t>(i)];
+		if (i != W.my_index && a.type == CT::marcella)
+			return a.alive && a.visible && a.seen_round == round && !a.channeling ? i : -1;
+	}
+	return -1;
+}
+
+double Brain::g24_mf_val(bc::champion_type t, const Group& g) const
+{
+	const auto& k = tpa::kit_of(static_cast<int>(t));
+	return k.gold_mult * static_cast<double>(g.gold) + k.tribute_gold * static_cast<double>(g.gems); // Marcella: gold + 2 x gems
+}
+
+bool Brain::g24_mf_hot(const Group& g, int r) const
+{
+	if (g.enemy_on_tile)
+		return true;
+	for (const auto& e : world().enemies)
+	{
+		if (!e.alive || e.seen_round < round - 2 || cheb(e.pos, g.center) > g.radius + r)
+			continue;
+		bc::bitboard near;
+		near.draw_chebyshev(e.pos, static_cast<float>(r));
+		if (!(near & g.mask).is_empty())
+			return true;
+	}
+	return false;
+}
+
+bool Brain::g24_mf_calm(vec2 p, float h, float mh) const
+{
+	if (h < 0.4f * mh)
+		return false;
+	for (const auto& e : world().enemies)
+		if (e.alive && e.seen_round >= round - 2 && cheb(e.pos, p) <= 6)
+			return false;
+	return true;
 }
 
 float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_override) const

@@ -1,0 +1,302 @@
+diff -ru bots/god24/src/brain.cpp bots/god24_c1/src/brain.cpp
+--- bots/god24/src/brain.cpp	2026-11-03 08:14:23.269938413 +0000
++++ bots/god24_c1/src/brain.cpp	2026-11-03 11:38:28.419366052 +0000
+@@ -2659,6 +2659,90 @@
+ 	return moved;
+ }
+ 
++// GOD v24 g24_flee_dash bit 1 (F1, fights/REPORT.txt S1): a body leaving a fight with its dash ready dashes first when a chaser could hit it
++// after a walk step (a melee / dash-ready enemy within 3, +2 with its dash ready; a ranged one within its range + 1). Heart of Ruin
++// included: the cast bypasses mob_dash()'s strike_dash_hold, and nav's try_dash() (no landing in danger, >= 2 home steps) is not used.
++// Landing within the dash range: fewest enemies whose next-turn reach covers it (attack range, +1 melee, +2 dash ready, 4 with a damage /
++// stun spell ready), then nearest home; a danger tile is allowed when best, never one that wakes a sleeping camp or in an awake camp's
++// range. The walk step of the caller follows from the landing tile.
++bool Brain::g24_flee_dash_cast(const std::vector<Enemy*>& E, const char* where)
++{
++	if (!(P.g24_flee_dash & 1) || kit.dash < 0 || !ready(kit.dash))
++		return false;
++	auto& W = world();
++	bool chased = false;
++	for (auto* e : E)
++	{
++		const int de = cheb(pos, e->pos);
++		const bool e_dash = e->ready(e->kit.dash);
++		if (((!e->kit.ranged || e_dash) && de <= 3 + (e_dash ? 2 : 0)) || (e->kit.ranged && de <= e->kit.attack_range + 1))
++			chased = true;
++	}
++	if (!chased)
++		return false;
++	std::array<int, 16> reach{};
++	const std::size_t ne = std::min<std::size_t>(E.size(), reach.size());
++	for (std::size_t k = 0; k < ne; ++k)
++	{
++		const Enemy& e = *E[k];
++		int r = e.kit.attack_range + (e.kit.ranged ? 0 : 1) + (e.ready(e.kit.dash) ? 2 : 0);
++		if (e.ready(e.kit.dmg) || e.ready(e.kit.cc) || e.ready(e.kit.aoe))
++			r = std::max(r, 4);
++		reach[k] = r;
++	}
++	auto covered = [&](vec2 p) {
++		int n = 0;
++		for (std::size_t k = 0; k < ne; ++k)
++			n += cheb(p, E[k]->pos) <= reach[k];
++		return n;
++	};
++	const int rng = std::max(1, static_cast<int>(kit.dash_range));
++	const int rad = kit.dash_mod > 0.f ? std::max(0, static_cast<int>(kit.dash_radius)) : 0;
++	const bc::bitboard blocked = Nav::blocked_now(pos);
++	const int n0 = covered(pos), h0 = W.dist_home(pos);
++	const int keep_ok = nowake_ok;
++	nowake_ok = -1; // no camp may be woken by a landing while we leave
++	vec2 best = pos;
++	int best_n = BIG, best_h = BIG;
++	for (int dy = -rng; dy <= rng; ++dy)
++		for (int dx = -rng; dx <= rng; ++dx)
++		{
++			const vec2 p{ pos.x + dx, pos.y + dy };
++			if ((dx == 0 && dy == 0) || !bc::map::is_in_bounds(p) || blocked.is_set(p) || camp_danger.is_set(p) || W.enemy_spawn.is_set(p))
++				continue;
++			if ((std::abs(dx) >= 2 || std::abs(dy) >= 2) && bc::map::walls().is_set(vec2{ pos.x + dx / 2, pos.y + dy / 2 }))
++				continue;
++			const int h = W.dist_home(p);
++			if (h >= BIG)
++				continue;
++			const int n = covered(p);
++			if (n > best_n || (n == best_n && h >= best_h))
++				continue;
++			if (wakes_sleeper(p, rad))
++				continue;
++			best_n = n, best_h = h, best = p;
++		}
++	nowake_ok = keep_ok;
++	// a landing that neither leaves a reach nor gains a step home is no escape
++	if (best == pos || !(best_n < n0 || best_h < h0))
++		return false;
++	try
++	{
++		if (bc::self().abilities()[static_cast<std::size_t>(kit.dash)].use(best))
++		{
++			G24T("g24_flee_dash", "%s from=(%d,%d) to=(%d,%d) n=%d->%d home=%d->%d type=%d hp=%.2f", where, pos.x, pos.y, best.x, best.y, n0, best_n, h0, best_h,
++				 static_cast<int>(type), hp / max_hp);
++			cast_done = true;
++			after_move(true);
++			return true;
++		}
++	}
++	catch (...)
++	{
++	}
++	return false;
++}
++
+ void Brain::prebuild_fields()
+ {
+ 	{
+@@ -4243,7 +4327,11 @@
+ 	const float t_die = hp / std::max(1.f, incoming);
+ 	const int dh = W.dist_home(pos);
+ 	const bool on_spawn = W.ally_spawn.is_set(pos);
+-	const bool can_escape = on_spawn || !chaser || (ready(kit.dash) && !chaser_dash) || static_cast<float>(dh) + 1.f < t_die;
++	// g24_flee_dash bit 2 (F1): our dash is an escape only when the flee step can cast it (bit 1, or a dash that is no strike spell)
++	const bool g24_own_dash = !(P.g24_flee_dash & 2) || (P.g24_flee_dash & 1) || kit.dash_mod <= 0.f;
++	const bool can_escape = on_spawn || !chaser || (ready(kit.dash) && g24_own_dash && !chaser_dash) || static_cast<float>(dh) + 1.f < t_die;
++	if (!g24_own_dash && chaser && !chaser_dash && ready(kit.dash) && !can_escape)
++		G24T("g24_flee_dash", "can_escape=0 (strike dash not counted) dh=%d t_die=%.1f", dh, t_die);
+ 
+ 	// sup_mode 4: leaving toward a helper that arrives within 3 rounds (one step, never into more enemy reach) instead of home:
+ 	// one-by-one retreats were the biggest loss pattern (19 of 33 deaths alone on nx61x61, 22 of 45 on contest_v3).
+@@ -4583,13 +4671,33 @@
+ 		// we are outside), one approach step at most toward a target nobody of ours is fighting, no chase that does not close, never
+ 		// deeper into their half, the second wave (an ally within 6 whose message says FIGHT: join at adv >= g23_r_join).
+ 		fight = g23_veto(E, tgt, fight, killable, in_reach, adv, d, my_reach);
++		// g24_fresh (F3, fights/REPORT.txt S3): a body that respawned within g24_fresh rounds starts no fight that is neither killable nor
++		// in reach (rescue, ally_defend, second wave, proactive) below adv g24_fresh_adv
++		if (P.g24_fresh > 0 && fight && !killable && !in_reach && round - respawn_round <= P.g24_fresh && adv < P.g24_fresh_adv)
++		{
++			G24T("g24_fresh", "since_respawn=%d adv=%.2f tgt=%d d=%d", round - respawn_round, adv, static_cast<int>(tgt - W.enemies.data()), cheb(pos, tgt->pos));
++			fight = false;
++		}
+ 		d = cheb(pos, tgt->pos); // the later rules (fz_engage, calm, strike holds) measure the target we now have
+ 		g23_keep_farm = !fight && !in_reach && adv >= P.g23_keep_r;
+ 		if (P.g23_veto_bits & 128)
+ 			rescue_commit = fight && g23_rescue_now;
+ 	}
+ 	if (fz_engage_eff > 0 && fight && !rescue_commit && !in_reach && !killable && last_fight_round < round - 1 && d > fz_engage_eff && !tgt->channeling && !tgt->tributing)
+-		fight = false; // v14 fz_engage: not yet in a fight and the target is still far: keep doing what we do
++	{
++		// g24_hit_is_fight (F5, fights/REPORT.txt S6): hit last round by an enemy within my_reach + 1 at adv >= fight_back_margin is a fight
++		bool g24_hit = false;
++		if (P.g24_hit_is_fight && last_hit_round >= round - 1 && adv >= P.fight_back_margin)
++			for (auto* e : E)
++				if (cheb(pos, e->pos) <= my_reach + 1)
++				{
++					g24_hit = true;
++					G24T("g24_hit_is_fight", "hit=%d adv=%.2f attacker_d=%d tgt_d=%d", last_hit_round, adv, cheb(pos, e->pos), d);
++					break;
++				}
++		if (!g24_hit)
++			fight = false; // v14 fz_engage: not yet in a fight and the target is still far: keep doing what we do
++	}
+ 	if (P.fz_chase > 0 && !in_reach)
+ 	{
+ 		// v14 fz_chase: a same-speed target walking away is never caught; once the distance has not shrunk for fz_chase rounds the chase
+@@ -4774,6 +4882,7 @@
+ 			{
+ 			}
+ 		}
++		const bool g24_dashed = (P.g24_flee_dash & 1) && g24_flee_dash_cast(E, "reach"); // F1: dash out first, then the walk
+ 		if (toward_help() || go_home_step(true))
+ 		{
+ 			// Melee champions can still swing after walking.
+@@ -4786,6 +4895,8 @@
+ 					}
+ 			return true;
+ 		}
++		if (g24_dashed)
++			return true; // dashed out: no step back in to hit
+ 		return engage(*tgt); // cornered: hit back
+ 	}
+ 	// Leave before they reach us: alone (or with half the team dead) against a stronger group, start walking
+@@ -4825,6 +4936,7 @@
+ 			{
+ 			}
+ 		}
++		const bool g24_dashed = (P.g24_flee_dash & 1) && g24_flee_dash_cast(E, "outmatch"); // F1: dash out first, then the walk
+ 		if (toward_help() || go_home_step(true))
+ 			return true;
+ 		if (W.ally_spawn.is_set(pos))
+@@ -4832,6 +4944,8 @@
+ 			task = T_WAIT; // already home: hold here (healing) rather than step out to them and back
+ 			return true;
+ 		}
++		if (g24_dashed)
++			return true;
+ 	}
+ 	return false;
+ }
+@@ -7261,6 +7375,15 @@
+ 			// of its rounds with an enemy within 8, v75 at 6%)
+ 			if (tadv < (P.v23_contact ? P.v23_abandon_r : P.target_threat_adv) * (big ? 0.5f : 1.f))
+ 				{ WHY(10); return -1; }
++			// g24_abandon_r (F2a, fights/REPORT.txt S2): between the v23 bar and this one the body walked into the stronger group; give it up
++			// unless it is our task group and nobody can hit us next turn (g23_keep_farm)
++			if (P.g24_abandon_r > 0.f && !(g.id == task_group && g23_keep_farm) &&
++				tadv < std::max(P.v23_contact ? P.v23_abandon_r : P.target_threat_adv, P.g24_abandon_r) * (big ? 0.5f : 1.f))
++			{
++				G24T("g24_abandon_r", "g=%d tadv=%.2f big=%d task=%d", g.id, tadv, static_cast<int>(big), static_cast<int>(g.id == task_group));
++				WHY(10);
++				return -1;
++			}
+ 		}
+ 	}
+ 	if (round - g.enemy_round < 12 && !(P.g23_farm && P.g23_fight && g.id == task_group && g23_keep_farm))
+diff -ru bots/god24/src/brain.h bots/god24_c1/src/brain.h
+--- bots/god24/src/brain.h	2026-11-03 08:14:23.269849829 +0000
++++ bots/god24_c1/src/brain.h	2026-11-03 11:37:21.953574034 +0000
+@@ -6,6 +6,13 @@
+ #include "world.h"
+ #include "tp_adapter.h"
+ 
++// GOD v24 C1 (fights F1-F5): one trace line each time a g24 rule fires: "G24 <switch> <round> <body> <why>" (Brain methods only).
++#if defined(LEGEND_TRACE) || defined(G23_TRACE)
++#define G24T(sw, ...) (std::printf("G24 %s %d %d ", sw, round, world().my_index), std::printf(__VA_ARGS__), std::printf("\n"))
++#else
++#define G24T(...) (void)0
++#endif
++
+ enum TaskKind : int
+ {
+ 	T_NONE,
+@@ -504,6 +511,9 @@
+ 	std::uint32_t g23_chase_h = 0;
+ 	int g23_chase_best = 99, g23_chase_n = 0, g23_chase_round = -100;
+ 	std::array<int, 8> g23_chase_off{ -100, -100, -100, -100, -100, -100, -100, -100 };
++	// GOD v24 C1 (fights)
++	std::array<int, 8> g24_lure_off{ -100, -100, -100, -100, -100, -100, -100, -100 }; // g24_lure: the lure veto holds on this enemy until then
++	bool g24_flee_dash_cast(const std::vector<Enemy*>& E, const char* where); // g24_flee_dash bit 1: dash out of a fight we leave
+ 	bool g23_go_rally();
+ 	struct AllyMsg
+ 	{
+diff -ru bots/god24/src/g23.cpp bots/god24_c1/src/g23.cpp
+--- bots/god24/src/g23.cpp	2026-11-03 08:14:23.269887651 +0000
++++ bots/god24_c1/src/g23.cpp	2026-11-03 11:38:21.583366208 +0000
+@@ -452,6 +452,16 @@
+ 			}
+ 			if (n_en > n_us)
+ 				continue;
++			if (P.g24_rescue_pw)
++			{
++				// g24_rescue_pw (F2b, fights/REPORT.txt S2): bodies are not power: the rescue also needs the join bar at the caught ally
++				const float ra = g23_ratio(a.pos, E, nullptr, nullptr, nullptr);
++				if (ra < P.g23_r_join)
++				{
++					G24T("g24_rescue_pw", "ally=%d R=%.2f n_us=%d n_en=%d", i, ra, n_us, n_en);
++					continue;
++				}
++			}
+ 			// the enemy on it that we can reach soonest, lowest health first
+ 			for (auto* e : E)
+ 			{
+@@ -473,6 +483,20 @@
+ 		lure = true;
+ 	if (fight && lure && (P.g23_veto_bits & 1))
+ 		fight = false;
++	if (P.g24_lure && fight && !killable && td > my_reach)
++	{
++		// g24_lure (F4, fights/REPORT.txt S4): the lure veto on every non-killable fight, rescues included, held 3 rounds on that target
++		const int ti = static_cast<int>(tgt - W.enemies.data());
++		const bool lure_all = !in_awake_camp_range() && camp_danger.is_set(tgt->pos);
++		const bool held = ti >= 0 && ti < 8 && round < g24_lure_off[static_cast<std::size_t>(ti)];
++		if (lure_all || held)
++		{
++			if (lure_all && ti >= 0 && ti < 8)
++				g24_lure_off[static_cast<std::size_t>(ti)] = round + 3;
++			G24T("g24_lure", "tgt=%d td=%d rescue=%d held=%d", ti, td, static_cast<int>(rescued), static_cast<int>(held && !lure_all));
++			fight = false;
++		}
++	}
+ 	if ((P.g23_veto_bits & 2) && fight && !killable && !ally_fight && !rescued && !in_reach && td > my_reach + 1 && !tgt->channeling && !tgt->tributing)
+ 		fight = false; // one approach step at most
+ 	if (fight && !killable && td > my_reach && !in_reach && !tgt->channeling && !tgt->tributing)
+@@ -587,6 +611,8 @@
+ 					break;
+ 				}
+ 	};
++	// g24_flee_dash bit 1 (F1): dash out first when a chaser could hit us after a walk step; the walk below starts from the landing
++	const bool g24_dashed = (P.g24_flee_dash & 1) && g24_flee_dash_cast(E, "leave");
+ 	vec2 help{ -1, -1 };
+ 	int hd = BIG;
+ 	for (const auto& a : W.allies)
+@@ -645,6 +671,11 @@
+ 		swing();
+ 		return true;
+ 	}
++	if (g24_dashed)
++	{
++		swing();
++		return true; // dashed out: no step back in to hit
++	}
+ 	return engage(tgt);
+ }
+ 
+diff -ru bots/god24/src/params.h bots/god24_c1/src/params.h
+--- bots/god24/src/params.h	2026-11-03 08:17:09.219606026 +0000
++++ bots/god24_c1/src/params.h	2026-11-03 11:37:15.047367730 +0000
+@@ -1285,6 +1285,17 @@
+ 								// Ruin on a lone-monolith map; counter-picks promote Marcella / Heart of Ruin
+ 	// ===== GOD v24 switches (docs/plans/god24_plan.md); every one 0 = v88 =====
+ 	// ---- g24 C1 fights (F1-F5) ----
++	int g24_flee_dash = 0;		// F1 bits: 1 combat()'s two flee branches and g23_leave() dash first when a chaser could hit us after a walk step (Heart of
++								// Ruin included: strike_dash_hold ignored); landing = fewest enemy next-turn reaches, then nearest home, never a sleeping
++								// camp's wake or an awake camp's range; 2 can_escape counts our dash only with bit 1 or a kit without a strike dash
++	float g24_abandon_r = 0.f;	// F2a > 0: group_score gives a group up at tadv < max(v23_abandon_r, this) (x0.5 big) unless it is our task group and
++								// g23_keep_farm (plan 0.67)
++	int g24_rescue_pw = 0;		// F2b 1: g23_veto's rescue also needs g23_ratio at the caught ally >= g23_r_join
++	int g24_fresh = 0;			// F3 > 0: for this many rounds after our respawn a fight not killable and not in reach needs adv >= g24_fresh_adv (plan 40)
++	float g24_fresh_adv = 1.5f;
++	int g24_lure = 0;			// F4 1: g23_veto's lure veto on every non-killable fight (rescues included), held 3 rounds on that target
++	int g24_hit_is_fight = 0;	// F5 1: hit last round counts as being in a fight for the fz_engage hold (adv >= fight_back_margin, an enemy within
++								// my_reach + 1)
+ 	// ---- g24 C2 economy (E1, E2) ----
+ 	// ---- g24 C3 Marcella funnel (E3, N1-N3) ----
+ 	// ---- g24 C5 execution (X1-X3) ----

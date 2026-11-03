@@ -1331,6 +1331,30 @@ struct Params
 	int g24_cap_rank = 0;		// 1: on a gold tie in group_score's capture order, Marcella > Vesper Vale > the rest > Heart of Ruin take the reward
 	int g24_cap_rank_d = 2;		// ... when the higher-ranked ally claiming it is at most this many steps farther than we are
 	// ---- g24 C5 execution (X1-X3) ----
+	int g24_pace = 0;			// bits (confusion/REPORT.txt S1, flee / farm pacing near enemies): 1 side ban: while the v27_avoid memory runs (round <
+								// av_until) group_score gives up a group within g24_pace_r of an enemy we fled from that is nearer to it than our tile
+								// at the flee was, minus 1 (we would walk through them); not our task group under g23_keep_farm, not a group on our half
+								// where tadv >= 1; 2 osc_guard() also runs with fz_osc 0, over g24_pace_win rounds, and a T_FLEE turn counts as quiet
+								// (enemy_near_d > 5 dropped: no hit taken for 3 rounds, no attack / cast); a catch blacklists the task group fz_osc_bl
+								// rounds and holds the avoid memory fz_osc_bl rounds; 4 progress_watch(): healing is no progress while an enemy was
+								// within 12 in the last 3 rounds, and a move > 3 from the anchor is no progress when it comes back within 1 of a tile
+								// of the last 2..12 rounds (a there-and-back)
+	int g24_pace_r = 9;			// = outmatch_flee_dist + 1
+	int g24_pace_win = 12;
+	int g24_bank_hold = 0;		// 1 (confusion S3): a carrier of >= g24_bank_hold_bag gems that wants to bank and is held by altar_unsafe /
+								// bag_needs_escort for the 2nd hold episode within g24_bank_hold_win rounds recalls to the spawn altar (safe_to_recall,
+								// dist_home > recall_min_dist), else waits on its tile (T_WAIT, no farm walk) until the hold clears or
+								// g24_bank_hold_wait rounds pass
+	int g24_bank_hold_bag = 30;
+	int g24_bank_hold_win = 20;
+	int g24_bank_hold_wait = 12;
+	int g24_flip_mem = 0;		// 1 (confusion S4): farm()'s flip guard remembers the last 3 targets left (a return within g24_flip_mem_win rounds
+								// needs flip_margin x); group_score's +12 enemy surcharge fades (12 - rounds since the sighting) instead of ending
+	int g24_flip_mem_win = 20;
+	int g24_bush_flee = 0;		// bits (bush_emblem/REPORT.txt S2): 1 go_home_step(avoid) with a visible enemy within 5 steps into a bush whose
+								// 8-connected cluster holds no visible enemy, among the neighbours that keep or open the distance to the nearest
+								// enemy and do not lengthen the way home (dist_home <= now), never next to an awake camp's reach; 2 also a 2-step
+								// path into such a bush (first step taken) when hp >= 40% and no enemy within 2
 	// ===== end of GOD v24 switches =====
 };
 

@@ -124,6 +124,46 @@ void World::init_static()
 	// altar_contested is computed on first use (contested()): ~17k fuel on altar-rich maps, not needed in the opening.
 	altar_contested.clear();
 	altar_enemy_round.assign(altars.size(), -1000);
+	if (P.g24_bush_flee)
+	{
+		bush_cl.clear();
+		// GOD v24 g24_bush_flee: label the 8-connected bush clusters once (one positions() export, plain flood fill; no per-tile host calls)
+		const auto bp = bc::map::bushes().positions();
+		if (!bp.empty())
+		{
+			bush_cl.assign(static_cast<std::size_t>(W) * static_cast<std::size_t>(H), -1);
+			for (auto p : bp)
+				bush_cl[static_cast<std::size_t>(p.y * W + p.x)] = -2;
+			std::vector<int> stk;
+			stk.reserve(bp.size());
+			short n = 0;
+			for (auto p : bp)
+			{
+				const int i0 = p.y * W + p.x;
+				if (bush_cl[static_cast<std::size_t>(i0)] != -2)
+					continue;
+				bush_cl[static_cast<std::size_t>(i0)] = n;
+				stk.push_back(i0);
+				while (!stk.empty())
+				{
+					const int i = stk.back();
+					stk.pop_back();
+					const int x = i % W, y = i / W;
+					for (int dy = -1; dy <= 1; ++dy)
+						for (int dx = -1; dx <= 1; ++dx)
+						{
+							const int nx = x + dx, ny = y + dy;
+							if ((dx || dy) && nx >= 0 && ny >= 0 && nx < W && ny < H && bush_cl[static_cast<std::size_t>(ny * W + nx)] == -2)
+							{
+								bush_cl[static_cast<std::size_t>(ny * W + nx)] = n;
+								stk.push_back(ny * W + nx);
+							}
+						}
+				}
+				++n;
+			}
+		}
+	}
 
 	walls_no_holes = bc::map::walls() | bc::map::altars() | enemy_spawn;
 	// 1-wide hole crossings: a hole tile with standable ground on both opposite sides is one dash (range 2)

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Builds and shops by champion: top-30 vs us.   python3 -I economy/builds.py > economy/builds.txt"""
-import json, sys
+import json, sys, os
 from collections import Counter, defaultdict
-ECO = '/home/claude/cambridge_battlecode/experiments/top30_nov3/economy'
+ECO = os.environ.get('ECO', '/home/claude/cambridge_battlecode/experiments/top30_nov3/economy')
 FAM = ['Monster', 'Power', 'Durab', 'Treasure', 'Jungle', 'Home', 'Bruiser', 'Tribute', 'Capture', 'Prospect', 'Hunter', 'Skirmish', 'Greed', 'Collect']
 ST = ['str', 'foc', 'hp']
 

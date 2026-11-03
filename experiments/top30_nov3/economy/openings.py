@@ -4,9 +4,9 @@
     python3 -I economy/openings.py > economy/openings.txt
     python3 -I economy/openings.py dump <map>   # per-game body sequences on one map (top30 games then ours)
 """
-import json, sys
+import json, sys, os
 from collections import Counter, defaultdict
-ECO = '/home/claude/cambridge_battlecode/experiments/top30_nov3/economy'
+ECO = os.environ.get('ECO', '/home/claude/cambridge_battlecode/experiments/top30_nov3/economy')
 
 
 def load(name):

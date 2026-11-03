@@ -398,6 +398,13 @@ def analyse(job):
             gems = sum(c[3] for c in caps if a <= c[0] <= z and team[c[1]] == t)
             gold = sum(c[4] for c in caps if a <= c[0] <= z and team[c[1]] == t)
             ncap = sum(1 for c in caps if a <= c[0] <= z and team[c[1]] == t and c[3] > 0)
+            # gold-only groups (gems 0) vs gem groups: hits and captures
+            hits_goldg = sum(1 for b in tb for (r, gid, ci) in hits[b] if a <= r <= z and gid is not None and G[gid]['gems'] == 0)
+            ncap_goldg = sum(1 for c in caps if a <= c[0] <= z and team[c[1]] == t and c[2] is not None and G[c[2]]['gems'] == 0)
+            gold_goldg = sum(c[4] for c in caps if a <= c[0] <= z and team[c[1]] == t and c[2] is not None and G[c[2]]['gems'] == 0)
+            cap_big = sum(c[3] for c in caps if a <= c[0] <= z and team[c[1]] == t and c[2] is not None and G[c[2]]['gems'] >= 30)
+            cap_enemy_side = sum(c[3] for c in caps if a <= c[0] <= z and team[c[1]] == t and c[2] is not None and gd[t][c[2]] is not None and gd[1 - t][c[2]] is not None and gd[t][c[2]] > gd[1 - t][c[2]])
+            hits_enemy_side = sum(1 for b in tb for (r, gid, ci) in hits[b] if a <= r <= z and gid is not None and gd[t][gid] is not None and gd[1 - t][gid] is not None and gd[t][gid] > gd[1 - t][gid])
             # gold earned: positive deltas of c[9]
             ge = 0
             for b in tb:
@@ -415,6 +422,8 @@ def analyse(job):
             rounds = z - a + 1
             ph.append({'a': a, 'z': z, 'rounds': rounds, 'brounds': sum(st.values()), 'hits': hits_n, 'hits_c': hits_c, 'dmg': round(dmg),
                        'gems': gems, 'gold_cap': gold, 'ncap': ncap, 'gold_earned': ge, 'banked': bank, 'lost': lost,
+                       'hits_goldg': hits_goldg, 'ncap_goldg': ncap_goldg, 'gold_goldg': gold_goldg, 'cap_big': cap_big,
+                       'cap_enemy_side': cap_enemy_side, 'hits_enemy_side': hits_enemy_side,
                        'st': dict(st), 'st_c': dict(st_c), 'deaths': sum(1 for b in tb for r in deaths[b] if a <= r <= z)})
         row['phases'] = ph
         mycaps = sorted(c for c in caps if team[c[1]] == t)
@@ -610,7 +619,7 @@ def main():
         jobs = [j for j in jobs if os.path.basename(j[0])[:-5] not in done]
     print(len(jobs), 'games', '(incremental, %d done)' % len(done), flush=True)
     n = 0
-    with Pool(2) as pool, open(out, 'a' if done else 'w') as f:
+    with Pool(3) as pool, open(out, 'a' if done else 'w') as f:
         for rows in pool.imap_unordered(work, jobs, chunksize=2):
             for r in rows:
                 f.write(json.dumps(r) + '\n')

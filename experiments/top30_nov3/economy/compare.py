@@ -8,7 +8,7 @@ difference, each map weighted by min(n_top30, n_ours) (like for like: same map).
 """
 import json, sys, os
 from collections import Counter, defaultdict
-ECO = '/home/claude/cambridge_battlecode/experiments/top30_nov3/economy'
+ECO = os.environ.get('ECO', '/home/claude/cambridge_battlecode/experiments/top30_nov3/economy')
 FAM = ['Monster', 'Power', 'Durab', 'Treasure', 'Jungle', 'Home', 'Bruiser', 'Tribute', 'Capture', 'Prospect', 'Hunter', 'Skirmish', 'Greed', 'Collect']
 STATN = ['str', 'foc', 'hp']
 PH = ['1-150', '151-400', '401-800', '801+']

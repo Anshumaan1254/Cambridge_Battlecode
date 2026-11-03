@@ -1222,6 +1222,10 @@ struct Params
 								// stack reached as early; 79% of our opening visits there ended without a kill, ours by the near wolves would not)
 	int g23_open_safe_margin = 4;
 	float g23_open_safe_mult = 0.5f;
+	float g23_hurtwait = 0.f;	// > 0: a body below this health share does not wait for (or walk to) a respawning group where an enemy was seen within
+								// g23_hurtwait_r rounds (map_fail S2: on elk_arena 32 of our bodies stood under 60% health beside the centre group when it
+								// respawned and the enemy's 2,300-2,500-health bodies arrived; we lost 28 of the 46 cycles we opened)
+	int g23_hurtwait_r = 30;
 	int g23_watchfix = 0;		// 1: base-code fixes from the ladder replays (map_fail/REPORT.md B2, B3): (a) a respawning group whose timer reads 0 is
 								// waited for next to its tiles, never farmed onto them (an occupied spawn tile keeps the timer at 0: 166 idle rounds on
 								// islands); a timer stuck at 0 for 12+ rounds is not a legit wait for the watchdog; (b) a travel dash is not progress

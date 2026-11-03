@@ -1,6 +1,6 @@
 --- god84/src/params.h	2026-11-02 17:31:12.755566245 +0000
-+++ god85/src/params.h	2026-11-03 03:23:26.830745391 +0000
-@@ -1187,6 +1187,95 @@
++++ god85/src/params.h	2026-11-03 05:31:58.118833338 +0000
+@@ -1187,6 +1187,99 @@
  	float pxs_obj_mult = 3.f;
  	float pxs_raid_mult = 3.f;	// styles 2 / 3: groups on the other team's half are worth this much more (a raid, not just a lower penalty)
  	int pxs_deny_bodies = 2;	// style 6: bodies 0 .. n-1 camp the other team's altars
@@ -39,6 +39,10 @@
 +								// stack reached as early; 79% of our opening visits there ended without a kill, ours by the near wolves would not)
 +	int g23_open_safe_margin = 4;
 +	float g23_open_safe_mult = 0.5f;
++	float g23_hurtwait = 0.f;	// > 0: a body below this health share does not wait for (or walk to) a respawning group where an enemy was seen within
++								// g23_hurtwait_r rounds (map_fail S2: on elk_arena 32 of our bodies stood under 60% health beside the centre group when it
++								// respawned and the enemy's 2,300-2,500-health bodies arrived; we lost 28 of the 46 cycles we opened)
++	int g23_hurtwait_r = 30;
 +	int g23_watchfix = 0;		// 1: base-code fixes from the ladder replays (map_fail/REPORT.md B2, B3): (a) a respawning group whose timer reads 0 is
 +								// waited for next to its tiles, never farmed onto them (an occupied spawn tile keeps the timer at 0: 166 idle rounds on
 +								// islands); a timer stuck at 0 for 12+ rounds is not a legit wait for the watchdog; (b) a travel dash is not progress

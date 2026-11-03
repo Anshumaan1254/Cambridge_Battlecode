@@ -6983,6 +6983,8 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 	}
 	case ST_RESPAWN:
 	{
+		if (P.g23_hurtwait > 0.f && hp < P.g23_hurtwait * max_hp && round - g.enemy_round < P.g23_hurtwait_r)
+			{ WHY(16); return -1; } // g23_hurtwait: hurt, the enemy contests it: heal first
 		const int avail = g.ready_round - round;
 		if (avail > d_adj + (W.obj_mode && g.objective ? P.obj_max_wait : P.max_wait) * (sc_relaxed ? 3 : 1))
 			{ WHY(5); return -1; }

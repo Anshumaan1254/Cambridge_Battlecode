@@ -57,10 +57,11 @@ bool stun_ready(const Enemy& e) { return (e.kit.cc >= 0 && e.ready(e.kit.cc)) ||
 
 // Damage a body deals per round in a fight: basic attack (x2 with a reset ready) + its best ready spell over 3 rounds; Heart of Ruin
 // hits harder the lower it is; Varg's splash lands on the neighbours too.
-float Brain::g23_dps_of(float str_, float focus_, const Kit& k, bool reset_ready, bool spell_ready, float hp_frac, CT t) const
+float Brain::g23_dps_of(float str_, float focus_, const Kit& k, bool reset_ready, bool spell_ready, float hp_frac, CT t, bool enemy) const
 {
-	// over a 5-round exchange: the basic attack every round, one reset swing and one spell if they are up now (cooldowns are 8)
-	float d = str_ * (reset_ready ? 1.2f : 1.f);
+	// over a 5-round exchange: the basic attack every round, one reset swing and one spell if they are up now (cooldowns are 8);
+	// an enemy Marcella's enhanced reset also stuns (a round of our damage lost): x1.5
+	float d = str_ * (reset_ready ? (enemy && t == CT::marcella ? 1.5f : 1.2f) : 1.f);
 	if (spell_ready)
 		d += focus_ * best_mod(k) / 5.f;
 	if (t == CT_HOR)
@@ -81,7 +82,7 @@ float Brain::g23_ratio(vec2 contact, const std::vector<Enemy*>& E, int* new_enem
 	const auto& C = comms();
 	const int cr = P.g23_contact_r;
 	const bool my_spell = ready(kit.dmg) || ready(kit.cc) || ready(kit.aoe) || (ready(kit.dash) && kit.dash_mod > 0.f);
-	float our_hp = hp + ((P.fm_buffs & 1) ? my_shield : 0.f), our_dps = g23_dps_of(str, focus, kit, ready(kit.reset), my_spell, hp / max_hp, type);
+	float our_hp = hp + ((P.fm_buffs & 1) ? my_shield : 0.f), our_dps = g23_dps_of(str, focus, kit, ready(kit.reset), my_spell, hp / max_hp, type, false);
 	int ru = 1, rt = 0;
 	for (int i = 0; i < static_cast<int>(W.allies.size()); ++i)
 	{
@@ -113,10 +114,11 @@ float Brain::g23_ratio(vec2 contact, const std::vector<Enemy*>& E, int* new_enem
 		const float ahp = a.visible ? a.hp : msg ? static_cast<float>(g23_ally[k].hpb + 0.5f) / 16.f * a.max_hp : 0.5f * a.max_hp;
 		// allies' cooldowns are not stored: half a spell on average
 		our_hp += w * ahp;
-		our_dps += w * g23_dps_of(a.str, 0.5f * a.focus, a.kit, false, true, ahp / std::max(1.f, a.max_hp), a.type);
+		our_dps += w * g23_dps_of(a.str, 0.5f * a.focus, a.kit, false, true, ahp / std::max(1.f, a.max_hp), a.type, false);
 	}
 	float their_hp = 0, their_dps = 0;
 	int mask = 0;
+	bool marc_stun = false; // an enemy Marcella with her reset up stands within 2 of the contact
 	for (auto* e : E)
 	{
 		const int d = cheb(e->pos, contact);
@@ -129,9 +131,12 @@ float Brain::g23_ratio(vec2 contact, const std::vector<Enemy*>& E, int* new_enem
 			mask |= 1 << idx;
 		const float w = d <= enemy_reach(*e) + 2 ? 1.f : P.g23_far_w;
 		const bool sp = e->ready(e->kit.dmg) || e->ready(e->kit.cc) || e->ready(e->kit.aoe) || (e->ready(e->kit.dash) && e->kit.dash_mod > 0.f);
-		float dps = g23_dps_of(e->str, e->focus, e->kit, e->ready(e->kit.reset), sp, e->hp / std::max(1.f, e->max_hp), e->type);
+		float dps = g23_dps_of(e->str, e->focus, e->kit, e->ready(e->kit.reset), sp, e->hp / std::max(1.f, e->max_hp), e->type, true);
 		if ((P.fm_buffs & 2) && e->stunned)
 			dps *= 0.5f;
+		// her reset (cooldown read every round she is visible, world.cpp) is up within 2 of the contact: its stun costs our side a round
+		if (e->type == CT::marcella && d <= 2 && e->ready(e->kit.reset))
+			marc_stun = true;
 		their_hp += w * (e->hp + ((P.fm_buffs & 1) ? e->shield : 0.f));
 		their_dps += w * dps;
 	}
@@ -145,7 +150,7 @@ float Brain::g23_ratio(vec2 contact, const std::vector<Enemy*>& E, int* new_enem
 			if (d > cr)
 				continue;
 			their_hp += 0.5f * e.hp;
-			their_dps += 0.5f * g23_dps_of(e.str, 0.5f * e.focus, e.kit, false, true, e.hp / std::max(1.f, e.max_hp), e.type);
+			their_dps += 0.5f * g23_dps_of(e.str, 0.5f * e.focus, e.kit, false, true, e.hp / std::max(1.f, e.max_hp), e.type, true);
 		}
 	// awake camps hitting us: the nearest champion within their range (no ally nearer); an enemy nearer takes them instead
 	for (const auto& g : W.groups)
@@ -178,6 +183,8 @@ float Brain::g23_ratio(vec2 contact, const std::vector<Enemy*>& E, int* new_enem
 	if (reinf_them)
 		*reinf_them = rt;
 	g23_emask_now = mask;
+	if (marc_stun)
+		our_dps *= 0.85f; // her stun takes a round off our damage
 	if (their_hp <= 0.f || their_dps <= 0.f)
 		return 99.f;
 	const float t_us = our_hp / their_dps, t_them = their_hp / std::max(1.f, our_dps);

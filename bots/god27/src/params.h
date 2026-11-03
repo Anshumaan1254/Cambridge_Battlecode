@@ -131,7 +131,7 @@ struct Params
 	int tribute_risky = 10;	   // bank before risky fights when carrying this many
 	int unsafe_altar_penalty = 14; // extra steps for a contested altar where enemies were just seen
 	int altar_enemy_memory = 8;    // rounds an enemy sighting near an altar keeps it unsafe
-	int endgame_margin = 12;   // extra rounds of slack for the final tribute
+	int endgame_margin = 40;   // extra rounds of slack for the final tribute
 	int endgame_alarm = 800;   // their score from which stopping their tributes overrides everything
 
 	// Session 11: ideas from the default branch (claude/lucid-pasteur-2jiojv: the Oct 16 "round-2" bot, b5d4e56, and its
@@ -409,7 +409,7 @@ struct Params
 	int flee_exit = 0;		   // 1: a body walking home from inside enemy reach / an awake camp's range takes a sideways step out of it when
 							   // every step toward home stays inside (nav.cpp step_field)
 	float commit_hit = 2.0f;	   // > 0: the current target's score x this while we hit it in the last 2 rounds (finish what we started)
-	int commit_keep = 0;	   // 1: a camp we hit in the last 2 rounds is not dropped by the join limits
+	int commit_keep = 1;	   // 1: a camp we hit in the last 2 rounds is not dropped by the join limits
 	float half_grade = 0.f;	   // > 0: enemy-half risk cost x min(1, (d_ally - d_enemy) / (half_grade x (d_ally + d_enemy))) (0 = flat cost)
 	int reward_claim_gone = 0; // 1: a living ally's claim that leaves a reward we cannot see means the reward was taken (shared-memory read)
 	int rich_treasure_first = 0; // build_style 2: Ren and Stellar open with Treasure (1) or with r2's first emblem
@@ -1298,7 +1298,7 @@ struct Params
 	// F5 g24_hit_is_fight: being hit last round counts as being in a fight for fz_engage's hold when adv >= fight_back_margin and the target is
 	// within my reach + 1 (answered within 1 round 48% vs 59%)
 	// ---- g24 C2 economy (E1, E2) ----
-	int g24_hold_gems = 30;		// E1 g24_hold: no isolated pre-emptive flee from our task group of >= this many gems within attack range + 2 at
+	int g24_hold_gems = 30;		// E1 g24_hold: no isolated pre-emptive flee from our task group (>= this many gems, hit in the last 2 rounds, or on our half) within attack range + 2 at
 	float g24_hold_r = 0.8f;	// adv >= g24_hold_r and hp >= g24_hold_hp x max
 	float g24_hold_hp = 0.5f;
 	int g24_join_gems = 30;		// E2 g24_join: before g24_join_until a group of >= g24_join_gems that one body clears in > g24_join_min rounds takes

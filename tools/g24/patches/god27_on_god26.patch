@@ -1,0 +1,161 @@
+diff -ru bots/god26/src/brain.cpp bots/god27/src/brain.cpp
+--- bots/god26/src/brain.cpp	2026-11-03 13:42:01.709980504 +0000
++++ bots/god27/src/brain.cpp	2026-11-03 13:49:14.575186592 +0000
+@@ -6123,9 +6123,10 @@
+ 	// A tribute cancelled this turn or last (a threat made it pointless): flee, fight or move on first.
+ 	if (round - tribute_cancel_round <= 2 && !endgame && !winning && !force)
+ 		return false;
+-	if (P.v27_avoid > 0 && round < av_until && !recall_bank && !force)
++	if (P.v27_avoid > 0 && round < av_until && !recall_bank && !force && !endgame && !winning)
+ 	{
+-		// v27_avoid: the altar is next to enemies we just fled from: bank at the spawn altar (recall) or keep the bag for now
++		// v27_avoid: the altar is next to enemies we just fled from: bank at the spawn altar (recall) or keep the bag for now.
++		// A winning or endgame bag skips this and walks to its altar below (it kept the bag to r2000: e36c7dd7, 0-0 tiebreaks).
+ 		bool hot = false;
+ 		for (int k = 0; k < av_n; ++k)
+ 			hot |= cheb(W.altars[static_cast<std::size_t>(a)], av_pos[static_cast<std::size_t>(k)]) <= av_rad[static_cast<std::size_t>(k)];
+diff -ru bots/god26/src/brain.h bots/god27/src/brain.h
+--- bots/god26/src/brain.h	2026-11-03 13:42:01.710365684 +0000
++++ bots/god27/src/brain.h	2026-11-03 13:50:03.734739326 +0000
+@@ -512,7 +512,7 @@
+ 	std::array<AllyMsg, 8> g23_ally{};
+ 	void g23_read_allies();
+ 	int g23_decide(std::vector<Enemy*>& E, Enemy*& tgt, float allies_burst, bool in_reach, float incoming);
+-	float g23_dps_of(float str_, float focus_, const Kit& k, bool reset_ready, bool spell_ready, float hp_frac, bc::champion_type t) const;
++	float g23_dps_of(float str_, float focus_, const Kit& k, bool reset_ready, bool spell_ready, float hp_frac, bc::champion_type t, bool enemy) const;
+ 	float g23_ratio(vec2 contact, const std::vector<Enemy*>& E, int* new_enemy, int* reinf_us, int* reinf_them) const;
+ 	bool g23_escape_test(const std::vector<Enemy*>& E, float incoming) const;
+ 	Enemy* g23_pick_target(std::vector<Enemy*>& E, Enemy* fallback) const;
+diff -ru bots/god26/src/g23.cpp bots/god27/src/g23.cpp
+--- bots/god26/src/g23.cpp	2026-11-03 13:41:38.125698715 +0000
++++ bots/god27/src/g23.cpp	2026-11-03 13:50:03.730766082 +0000
+@@ -57,10 +57,11 @@
+ 
+ // Damage a body deals per round in a fight: basic attack (x2 with a reset ready) + its best ready spell over 3 rounds; Heart of Ruin
+ // hits harder the lower it is; Varg's splash lands on the neighbours too.
+-float Brain::g23_dps_of(float str_, float focus_, const Kit& k, bool reset_ready, bool spell_ready, float hp_frac, CT t) const
++float Brain::g23_dps_of(float str_, float focus_, const Kit& k, bool reset_ready, bool spell_ready, float hp_frac, CT t, bool enemy) const
+ {
+-	// over a 5-round exchange: the basic attack every round, one reset swing and one spell if they are up now (cooldowns are 8)
+-	float d = str_ * (reset_ready ? 1.2f : 1.f);
++	// over a 5-round exchange: the basic attack every round, one reset swing and one spell if they are up now (cooldowns are 8);
++	// an enemy Marcella's enhanced reset also stuns (a round of our damage lost): x1.5
++	float d = str_ * (reset_ready ? (enemy && t == CT::marcella ? 1.5f : 1.2f) : 1.f);
+ 	if (spell_ready)
+ 		d += focus_ * best_mod(k) / 5.f;
+ 	if (t == CT_HOR)
+@@ -81,7 +82,7 @@
+ 	const auto& C = comms();
+ 	const int cr = P.g23_contact_r;
+ 	const bool my_spell = ready(kit.dmg) || ready(kit.cc) || ready(kit.aoe) || (ready(kit.dash) && kit.dash_mod > 0.f);
+-	float our_hp = hp + ((P.fm_buffs & 1) ? my_shield : 0.f), our_dps = g23_dps_of(str, focus, kit, ready(kit.reset), my_spell, hp / max_hp, type);
++	float our_hp = hp + ((P.fm_buffs & 1) ? my_shield : 0.f), our_dps = g23_dps_of(str, focus, kit, ready(kit.reset), my_spell, hp / max_hp, type, false);
+ 	int ru = 1, rt = 0;
+ 	for (int i = 0; i < static_cast<int>(W.allies.size()); ++i)
+ 	{
+@@ -113,10 +114,11 @@
+ 		const float ahp = a.visible ? a.hp : msg ? static_cast<float>(g23_ally[k].hpb + 0.5f) / 16.f * a.max_hp : 0.5f * a.max_hp;
+ 		// allies' cooldowns are not stored: half a spell on average
+ 		our_hp += w * ahp;
+-		our_dps += w * g23_dps_of(a.str, 0.5f * a.focus, a.kit, false, true, ahp / std::max(1.f, a.max_hp), a.type);
++		our_dps += w * g23_dps_of(a.str, 0.5f * a.focus, a.kit, false, true, ahp / std::max(1.f, a.max_hp), a.type, false);
+ 	}
+ 	float their_hp = 0, their_dps = 0;
+ 	int mask = 0;
++	bool marc_stun = false; // an enemy Marcella with her reset up stands within 2 of the contact
+ 	for (auto* e : E)
+ 	{
+ 		const int d = cheb(e->pos, contact);
+@@ -129,9 +131,12 @@
+ 			mask |= 1 << idx;
+ 		const float w = d <= enemy_reach(*e) + 2 ? 1.f : P.g23_far_w;
+ 		const bool sp = e->ready(e->kit.dmg) || e->ready(e->kit.cc) || e->ready(e->kit.aoe) || (e->ready(e->kit.dash) && e->kit.dash_mod > 0.f);
+-		float dps = g23_dps_of(e->str, e->focus, e->kit, e->ready(e->kit.reset), sp, e->hp / std::max(1.f, e->max_hp), e->type);
++		float dps = g23_dps_of(e->str, e->focus, e->kit, e->ready(e->kit.reset), sp, e->hp / std::max(1.f, e->max_hp), e->type, true);
+ 		if ((P.fm_buffs & 2) && e->stunned)
+ 			dps *= 0.5f;
++		// her reset (cooldown read every round she is visible, world.cpp) is up within 2 of the contact: its stun costs our side a round
++		if (e->type == CT::marcella && d <= 2 && e->ready(e->kit.reset))
++			marc_stun = true;
+ 		their_hp += w * (e->hp + ((P.fm_buffs & 1) ? e->shield : 0.f));
+ 		their_dps += w * dps;
+ 	}
+@@ -145,7 +150,7 @@
+ 			if (d > cr)
+ 				continue;
+ 			their_hp += 0.5f * e.hp;
+-			their_dps += 0.5f * g23_dps_of(e.str, 0.5f * e.focus, e.kit, false, true, e.hp / std::max(1.f, e.max_hp), e.type);
++			their_dps += 0.5f * g23_dps_of(e.str, 0.5f * e.focus, e.kit, false, true, e.hp / std::max(1.f, e.max_hp), e.type, true);
+ 		}
+ 	// awake camps hitting us: the nearest champion within their range (no ally nearer); an enemy nearer takes them instead
+ 	for (const auto& g : W.groups)
+@@ -178,6 +183,8 @@
+ 	if (reinf_them)
+ 		*reinf_them = rt;
+ 	g23_emask_now = mask;
++	if (marc_stun)
++		our_dps *= 0.85f; // her stun takes a round off our damage
+ 	if (their_hp <= 0.f || their_dps <= 0.f)
+ 		return 99.f;
+ 	const float t_us = our_hp / their_dps, t_them = their_hp / std::max(1.f, our_dps);
+diff -ru bots/god26/src/g24.cpp bots/god27/src/g24.cpp
+--- bots/god26/src/g24.cpp	2026-11-03 13:41:38.122421140 +0000
++++ bots/god27/src/g24.cpp	2026-11-03 13:50:25.302837398 +0000
+@@ -90,10 +90,12 @@
+ 
+ // ---------------------------------------------------------------------------------------------- E1 hold a contested big group
+ 
+-// E1 g24_hold: the isolated pre-emptive flee (combat(): no ally within 5 and adv < isolated_flee_adv 1.5) does not fire while we work a big
+-// group (>= g24_hold_gems) that we stand within attack range + 2 of, at adv >= g24_hold_r and health >=
+-// g24_hold_hp. Ladder: at a 1 v 1 contact on a contested big respawn at hp >= 0.8 we left 35% (top 30: 18%) and took 27% of those cycles
+-// (top 30: 50%). The outmatched, cornered, burst and real-fight rules are untouched: a blanket "flee less" (_fight1) lost 101.
++// E1 g24_hold: the isolated pre-emptive flee (combat(): no ally within 5 and adv < isolated_flee_adv 1.5) does not fire while we work a
++// group that we stand within attack range + 2 of, at adv >= g24_hold_r and health >= g24_hold_hp. A group qualifies when it is big
++// (>= g24_hold_gems), when we hit it in the last 2 rounds, or when it is on our half (nearer our spawn than theirs). Ladder: at a 1 v 1
++// contact on a contested big respawn at hp >= 0.8 we left 35% (top 30: 18%) and took 27% of those cycles (top 30: 50%); our hit share
++// under contact is half the opponents' and they capture more on our half. The outmatched, cornered, burst and real-fight rules are
++// untouched: a blanket "flee less" (_fight1) lost 101.
+ bool Brain::g24_hold_ok(float adv) const
+ {
+ 	auto& W = world();
+@@ -102,7 +104,9 @@
+ 	const auto& g = W.groups[static_cast<std::size_t>(task_group)];
+ 	if (g.st != ST_ALIVE && g.st != ST_REWARD)
+ 		return false;
+-	if (g.gems < P.g24_hold_gems)
++	const bool worked = round - target_hit_round <= 2;
++	const bool own = g.d_ally < g.d_enemy;
++	if (g.gems < P.g24_hold_gems && !worked && !own)
+ 		return false;
+ 	int d = BIG;
+ 	for (std::size_t i = 0; i < g.camps.size(); ++i)
+diff -ru bots/god26/src/params.h bots/god27/src/params.h
+--- bots/god26/src/params.h	2026-11-03 13:42:01.711705754 +0000
++++ bots/god27/src/params.h	2026-11-03 13:50:49.734933497 +0000
+@@ -131,7 +131,7 @@
+ 	int tribute_risky = 10;	   // bank before risky fights when carrying this many
+ 	int unsafe_altar_penalty = 14; // extra steps for a contested altar where enemies were just seen
+ 	int altar_enemy_memory = 8;    // rounds an enemy sighting near an altar keeps it unsafe
+-	int endgame_margin = 12;   // extra rounds of slack for the final tribute
++	int endgame_margin = 40;   // extra rounds of slack for the final tribute
+ 	int endgame_alarm = 800;   // their score from which stopping their tributes overrides everything
+ 
+ 	// Session 11: ideas from the default branch (claude/lucid-pasteur-2jiojv: the Oct 16 "round-2" bot, b5d4e56, and its
+@@ -409,7 +409,7 @@
+ 	int flee_exit = 0;		   // 1: a body walking home from inside enemy reach / an awake camp's range takes a sideways step out of it when
+ 							   // every step toward home stays inside (nav.cpp step_field)
+ 	float commit_hit = 2.0f;	   // > 0: the current target's score x this while we hit it in the last 2 rounds (finish what we started)
+-	int commit_keep = 0;	   // 1: a camp we hit in the last 2 rounds is not dropped by the join limits
++	int commit_keep = 1;	   // 1: a camp we hit in the last 2 rounds is not dropped by the join limits
+ 	float half_grade = 0.f;	   // > 0: enemy-half risk cost x min(1, (d_ally - d_enemy) / (half_grade x (d_ally + d_enemy))) (0 = flat cost)
+ 	int reward_claim_gone = 0; // 1: a living ally's claim that leaves a reward we cannot see means the reward was taken (shared-memory read)
+ 	int rich_treasure_first = 0; // build_style 2: Ren and Stellar open with Treasure (1) or with r2's first emblem
+@@ -1298,7 +1298,7 @@
+ 	// F5 g24_hit_is_fight: being hit last round counts as being in a fight for fz_engage's hold when adv >= fight_back_margin and the target is
+ 	// within my reach + 1 (answered within 1 round 48% vs 59%)
+ 	// ---- g24 C2 economy (E1, E2) ----
+-	int g24_hold_gems = 30;		// E1 g24_hold: no isolated pre-emptive flee from our task group of >= this many gems within attack range + 2 at
++	int g24_hold_gems = 30;		// E1 g24_hold: no isolated pre-emptive flee from our task group (>= this many gems, hit in the last 2 rounds, or on our half) within attack range + 2 at
+ 	float g24_hold_r = 0.8f;	// adv >= g24_hold_r and hp >= g24_hold_hp x max
+ 	float g24_hold_hp = 0.5f;
+ 	int g24_join_gems = 30;		// E2 g24_join: before g24_join_until a group of >= g24_join_gems that one body clears in > g24_join_min rounds takes

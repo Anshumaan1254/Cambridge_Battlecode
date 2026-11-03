@@ -90,10 +90,12 @@ bool Brain::g24_dash_out(const std::vector<Enemy*>& E)
 
 // ---------------------------------------------------------------------------------------------- E1 hold a contested big group
 
-// E1 g24_hold: the isolated pre-emptive flee (combat(): no ally within 5 and adv < isolated_flee_adv 1.5) does not fire while we work a big
-// group (>= g24_hold_gems) that we stand within attack range + 2 of, at adv >= g24_hold_r and health >=
-// g24_hold_hp. Ladder: at a 1 v 1 contact on a contested big respawn at hp >= 0.8 we left 35% (top 30: 18%) and took 27% of those cycles
-// (top 30: 50%). The outmatched, cornered, burst and real-fight rules are untouched: a blanket "flee less" (_fight1) lost 101.
+// E1 g24_hold: the isolated pre-emptive flee (combat(): no ally within 5 and adv < isolated_flee_adv 1.5) does not fire while we work a
+// group that we stand within attack range + 2 of, at adv >= g24_hold_r and health >= g24_hold_hp. A group qualifies when it is big
+// (>= g24_hold_gems), when we hit it in the last 2 rounds, or when it is on our half (nearer our spawn than theirs). Ladder: at a 1 v 1
+// contact on a contested big respawn at hp >= 0.8 we left 35% (top 30: 18%) and took 27% of those cycles (top 30: 50%); our hit share
+// under contact is half the opponents' and they capture more on our half. The outmatched, cornered, burst and real-fight rules are
+// untouched: a blanket "flee less" (_fight1) lost 101.
 bool Brain::g24_hold_ok(float adv) const
 {
 	auto& W = world();
@@ -102,7 +104,9 @@ bool Brain::g24_hold_ok(float adv) const
 	const auto& g = W.groups[static_cast<std::size_t>(task_group)];
 	if (g.st != ST_ALIVE && g.st != ST_REWARD)
 		return false;
-	if (g.gems < P.g24_hold_gems)
+	const bool worked = round - target_hit_round <= 2;
+	const bool own = g.d_ally < g.d_enemy;
+	if (g.gems < P.g24_hold_gems && !worked && !own)
 		return false;
 	int d = BIG;
 	for (std::size_t i = 0; i < g.camps.size(); ++i)

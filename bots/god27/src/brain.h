@@ -512,7 +512,7 @@ private:
 	std::array<AllyMsg, 8> g23_ally{};
 	void g23_read_allies();
 	int g23_decide(std::vector<Enemy*>& E, Enemy*& tgt, float allies_burst, bool in_reach, float incoming);
-	float g23_dps_of(float str_, float focus_, const Kit& k, bool reset_ready, bool spell_ready, float hp_frac, bc::champion_type t) const;
+	float g23_dps_of(float str_, float focus_, const Kit& k, bool reset_ready, bool spell_ready, float hp_frac, bc::champion_type t, bool enemy) const;
 	float g23_ratio(vec2 contact, const std::vector<Enemy*>& E, int* new_enemy, int* reinf_us, int* reinf_them) const;
 	bool g23_escape_test(const std::vector<Enemy*>& E, float incoming) const;
 	Enemy* g23_pick_target(std::vector<Enemy*>& E, Enemy* fallback) const;

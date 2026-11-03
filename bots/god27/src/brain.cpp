@@ -6123,9 +6123,10 @@ bool Brain::tribute(bool force)
 	// A tribute cancelled this turn or last (a threat made it pointless): flee, fight or move on first.
 	if (round - tribute_cancel_round <= 2 && !endgame && !winning && !force)
 		return false;
-	if (P.v27_avoid > 0 && round < av_until && !recall_bank && !force)
+	if (P.v27_avoid > 0 && round < av_until && !recall_bank && !force && !endgame && !winning)
 	{
-		// v27_avoid: the altar is next to enemies we just fled from: bank at the spawn altar (recall) or keep the bag for now
+		// v27_avoid: the altar is next to enemies we just fled from: bank at the spawn altar (recall) or keep the bag for now.
+		// A winning or endgame bag skips this and walks to its altar below (it kept the bag to r2000: e36c7dd7, 0-0 tiebreaks).
 		bool hot = false;
 		for (int k = 0; k < av_n; ++k)
 			hot |= cheb(W.altars[static_cast<std::size_t>(a)], av_pos[static_cast<std::size_t>(k)]) <= av_rad[static_cast<std::size_t>(k)];

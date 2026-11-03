@@ -1252,6 +1252,42 @@ void Brain::g23_dive_prepare()
 		}
 	if (E.empty() || W.ally_spawn.is_set(pos))
 		return;
+	g23_block.clear();
+	if (P.g23_campzone && d0 <= 6)
+	{
+		// awake camps of other groups than our target: the tiles in their reach where we would be the nearest champion (they hit us)
+		for (const auto& g : W.groups)
+		{
+			if (g.st != ST_ALIVE || !g.awake || g.harmless || g.id == task_group || cheb(g.center, pos) > 10)
+				continue;
+			for (std::size_t i = 0; i < g.camps.size(); ++i)
+			{
+				if (g.hp[i] <= 0 || g.camps[i].str <= 0)
+					continue;
+				const vec2 c = g.camps[i].pos;
+				const int rng = std::max(3, g.camps[i].range);
+				int de = BIG; // nearest enemy champion to the camp
+				for (auto* e : E)
+					de = std::min(de, cheb(e->pos, c));
+				for (int dy = -2; dy <= 2; ++dy)
+					for (int dx = -2; dx <= 2; ++dx)
+					{
+						const vec2 t{ pos.x + dx, pos.y + dy };
+						if ((dx == 0 && dy == 0) || !bc::map::is_in_bounds(t))
+							continue;
+						const int dt = cheb(t, c);
+						if (dt <= rng && dt <= de)
+							g23_block.set(t);
+					}
+			}
+		}
+	}
+	if (!P.g23_divefilter)
+	{
+		if (!g23_block.is_empty())
+			g_hard_block = &g23_block;
+		return;
+	}
 	float burst = 0;
 	for (auto* e : E)
 	{
@@ -1263,8 +1299,11 @@ void Brain::g23_dive_prepare()
 	}
 	const float R = g23_ratio(pos, E, nullptr, nullptr, nullptr);
 	if (!(R < P.g23_dive_r || burst >= hp))
+	{
+		if (!g23_block.is_empty())
+			g_hard_block = &g23_block; // the camp zone alone
 		return;
-	g23_block.clear();
+	}
 	for (int dy = -2; dy <= 2; ++dy)
 		for (int dx = -2; dx <= 2; ++dx)
 		{

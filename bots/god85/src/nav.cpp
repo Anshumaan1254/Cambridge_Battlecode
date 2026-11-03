@@ -256,7 +256,7 @@ bc::bitboard Nav::blocked_now(vec2 me)
 	b |= w.tele_occ;
 	if (P.fz_wardblock)
 		b |= w.ward_occ;
-	if (P.g23_divefilter && g_hard_block)
+	if ((P.g23_divefilter || P.g23_campzone) && g_hard_block)
 		b |= *g_hard_block;
 	b.set(me, false);
 	return b;

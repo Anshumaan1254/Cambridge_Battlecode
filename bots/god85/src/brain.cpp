@@ -971,7 +971,7 @@ void Brain::read_self()
 
 void Brain::turn()
 {
-	if (P.g23_divefilter)
+	if (P.g23_divefilter || P.g23_campzone)
 		g_hard_block = nullptr;
 	if (inited && P.no_split)
 		remember_positions();
@@ -1174,7 +1174,7 @@ void Brain::turn()
 		g23_read_allies();
 	if (P.g23_tol)
 		g23_tol_tick();
-	if (P.g23_divefilter)
+	if (P.g23_divefilter || P.g23_campzone)
 		g23_dive_prepare();
 	nowake_prepare();
 	if (P.v23_bank || P.v23_locks)
@@ -4390,7 +4390,7 @@ bool Brain::combat()
 				comms().post(AL_RALLY, tgt->pos, round);
 			learner().on_fight(round);
 			task = T_FIGHT;
-			if (P.g23_divefilter)
+			if (P.g23_divefilter || P.g23_campzone)
 				g_hard_block = nullptr; // g23_divefilter: a fight we chose may step in
 			return engage(*tgt);
 		}
@@ -4681,7 +4681,7 @@ bool Brain::combat()
 			comms().post(AL_RALLY, tgt->pos, round);
 		learner().on_fight(round);
 		task = T_FIGHT;
-		if (P.g23_divefilter)
+		if (P.g23_divefilter || P.g23_campzone)
 			g_hard_block = nullptr; // g23_divefilter: a fight we chose may step in
 		if (P.v23_hy & 4)
 		{

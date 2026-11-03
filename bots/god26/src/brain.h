@@ -403,6 +403,7 @@ private:
 	std::array<vec2, 16> osc_pos{};	 // v14 fz_osc: our tile at the end of each of the last 16 rounds
 	std::array<int, 16> osc_quiet{ -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100 }; // ... and the round, when it was a quiet walking round
 	void osc_guard();
+	int left_group = -1, left_round = -1000; // target we last switched away from (flip guard)
 	// no_split: positions at the end of the last turn (ours and the allies we saw)
 	void remember_positions();
 	vec2 my_prev_pos{ -1, -1 };
@@ -561,18 +562,6 @@ private:
 	int g24_mf_since = -100, g24_mf_g = -1;		  // E3 g24_marc_funnel: holding a reward for Marcella since, which group
 	int g24_marc_for(const Group& g) const;		  // E3: our Marcella's index when this reward should go to her, else -1
 	bool g24_hold_for_marc(Group& g);				  // E3: wait beside a reward for her; step aside when she is on it
-	// GOD v25 (wave 2: g24_pace, g24_bank_hold, g24_flip_mem, g24_bush_flee)
-	vec2 g24_av_me{ -1, -1 };				 // g24_pace: our tile when avoid_note() last stored enemies
-	bool g24_side_ban(const Group& g) const; // g24_pace: the enemy we fled from stands between us and g
-	int g24_pw_er = -1000;					 // g24_pace: last round a visible enemy was within 12
-	std::array<vec2, 16> g24_pw_pos{};		 // g24_pace: our tile at the end of each recent round, and that round
-	std::array<int, 16> g24_pw_posr{ -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100 };
-	int g24_bh_last = -1000, g24_bh_wait_until = -1000; // g24_bank_hold: start of the last hold episode, end of the wait
-	bool g24_bh_held = false, g24_bh_prev = false;		// ... a hold branch ended this / the previous tribute() call (one episode while it repeats)
-	bool g24_bank_hold_fire(int altar, const char* why); // true: the turn is used (recall or wait)
-	std::array<int, 3> g24_left_g{ -1, -1, -1 };		  // g24_flip_mem: the last 3 targets left and the round each was left
-	std::array<int, 3> g24_left_r{ -1000, -1000, -1000 };
-	bool g24_bush_step(); // g24_bush_flee: a retreat step into a bush cluster no visible enemy stands in
 };
 
 Brain& brain();

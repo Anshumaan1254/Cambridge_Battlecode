@@ -936,10 +936,11 @@ struct Params
 							  // one step in, one step back: v14's traced games, 2,000 such back-and-forth body-rounds in 80 games)
 	int fz_wardblock = 0;	  // 1: the wards we see (ours and theirs) count as blocked tiles in the step searches (v13: 646 of 1,171 blocked
 							  // moves were into a ward tile, most of them the other team's)
-	int fz_osc_bl = 20;		  // osc_guard (always on since GOD v25, window g24_pace_win): walking back and forth with no hit taken for 3 rounds, no
-							  // attack or cast, off spawn: at least 60% of the rounds moved and we end within 1 tile of where we were: drop the
-							  // target (blacklisted this many rounds) or the bank / home trip, and re-plan (v13: 32.6 such walks per 1000 alive
-							  // body-rounds, the ladder teams 11-15; 23% of target switches went back to the target left within 20 rounds)
+	int fz_osc = 0;			  // > 0: walking back and forth: over the last fz_osc rounds (a walking task, no attack or cast, no enemy within 5,
+							  // off spawn) at least 60% of them moved and we end within 1 tile of where we were: drop the target (blacklisted
+							  // fz_osc_bl rounds) or the bank / home trip, and re-plan (v13: 32.6 such walks per 1000 alive body-rounds, the
+							  // ladder teams 11-15; 23% of target switches went back to the target left within 20 rounds)
+	int fz_osc_bl = 20;
 	int mono_v14 = 0;		  // 1 (with mono_team): monolith groups whose other camps are harmless are team targets too, judged with their own
 							  // limits (mono_clear_max, mono_absorb: bodies rotate in front and heal between turns). The 600 ladder replays'
 							  // teams kill 1.44 monoliths a game on monolith maps (first kill r530-900); v13 dropped every one as too heavy
@@ -1310,24 +1311,9 @@ struct Params
 	int g24_mf_r = 3;			// a reward (gems >= 10 or gold >= 60) yields to our Marcella within g24_mf_r steps (her value gold + 2 x gems), the
 	int g24_mf_wait = 3;		// holder waits for her at most g24_mf_wait rounds, never with an enemy within 4; she banks from max(20, tribute_min / 2)
 	int g24_mf_altar = 12;		// gems with a field altar within g24_mf_altar steps
-	// ===== GOD v25: rules ported onto v94 (cap rank, wave 2), always on; the values below =====
+	// ===== GOD v25: rule ported onto v94 (cap rank), always on; the value below =====
 	int g24_cap_rank_d = 2;		// confusion S2: on a gold tie in group_score's capture order (mi_capture) the carry takes the reward: Marcella > Vesper
 								// Vale > the rest > Heart of Ruin, when the higher-ranked ally claiming it is at most this many steps farther
-	int g24_pace_r = 9;			// confusion S1 g24_pace: side ban: while the v27_avoid memory runs group_score gives up a group within g24_pace_r
-								// (= outmatch_flee_dist + 1) of an enemy we fled from that is nearer to it than our tile at the flee was, minus 1;
-								// not our task group under g23_keep_farm, not a group on our half where tadv >= 1
-	int g24_pace_win = 12;		// osc_guard over this many rounds, a T_FLEE turn is a walking turn and quiet = no hit taken for 3 rounds; a catch
-								// blacklists the task group and holds the avoid memory fz_osc_bl rounds; progress_watch(): healing is no progress
-								// while an enemy was within 12 in the last 3 rounds, nor a move > 3 off the anchor that comes back within 1 of a tile
-								// of the last 2..12 rounds
-	int g24_bank_hold_bag = 30;	// confusion S3 g24_bank_hold: a carrier of >= this many gems that wants to bank and is held by altar_unsafe /
-	int g24_bank_hold_win = 20;	// bag_needs_escort for the 2nd hold episode within g24_bank_hold_win rounds recalls to the spawn altar (safe_to_recall,
-	int g24_bank_hold_wait = 12; // dist_home > recall_min_dist), else waits on its tile (T_WAIT) until the hold clears or g24_bank_hold_wait rounds pass
-	int g24_flip_mem_win = 20;	// confusion S4 g24_flip_mem: farm()'s flip guard remembers the last 3 targets left (a return within this many rounds
-								// needs flip_margin x); group_score's +12 enemy surcharge fades (12 - rounds since the sighting)
-	// g24_bush_flee (bush_emblem S2): go_home_step(avoid) with a visible enemy within 5 steps into a bush whose 8-connected cluster holds no
-	// visible enemy, among the neighbours that keep or open the distance to the nearest enemy and do not lengthen the way home, never next to
-	// an awake camp's reach
 	// ===== end of GOD v24 / v25 =====
 };
 

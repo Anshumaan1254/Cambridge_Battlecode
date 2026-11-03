@@ -7822,7 +7822,17 @@ void Brain::farm()
 		}
 	}
 	if (best < 0 && P.g23_tol && g23_role == G23_PRIME && g23_nprime > 0 && g23_ready_in > 0 && hp >= 0.9f * max_hp && g23_go_rally())
+	{
+#ifdef G23_TRACE
+		std::printf("PT r=%d body=%d what=idle_rally eta=-1 ready=%d alive=0 st=-1 pos=(%d,%d) hp=%.0f gems=%d\n", round, W.my_index, g23_ready_in, pos.x, pos.y, hp,
+			static_cast<int>(gems));
+#endif
 		return; // v23: nothing finishes in time: wait at the prime group's rally
+	}
+#ifdef G23_TRACE
+	if (P.g23_tol && g23_role == G23_PRIME)
+		std::printf("PF r=%d body=%d best=%d task_group=%d pos=(%d,%d)\n", round, W.my_index, best, task_group, pos.x, pos.y);
+#endif
 	if (best < 0)
 	{
 		IDL();

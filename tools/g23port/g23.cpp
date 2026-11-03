@@ -920,7 +920,9 @@ void Brain::g23_tol_tick()
 	int ready_in;
 	if (sees)
 	{
-		ready_in = g.st == ST_RESPAWN ? std::max(0, g.ready_round - round) : 0;
+		// not alive = at least 1 (a blocked respawn reads 0 rounds; a reward being captured respawns capture + respawn rounds after we saw it)
+		ready_in = g.st == ST_RESPAWN ? std::max(1, g.ready_round - round)
+			: g.st == ST_REWARD ? std::max(1, g.reward_round + static_cast<int>(bc::constants::capture_time) + 1 + g.respawn - round) : 0;
 		g23_clock_write(ready_in, holds);
 		g23_enemy_holds = holds;
 	}
@@ -1018,25 +1020,41 @@ bool Brain::g23_prime_turn()
 	const int eta = g23_eta(g, pos);
 	if (eta >= BIG)
 		return false;
-	// own vision beats our own stale model; without vision the shared clock decides
-	const bool alive_now = g23_sees ? (g.st == ST_ALIVE || (g.st == ST_RESPAWN && g.ready_round <= round)) : g23_ready_in <= 0;
+	// own vision beats our own stale model; without vision the shared clock decides. A respawning group we see is never alive: its timer
+	// reads 0 when an occupied spawn tile blocks the respawn, and walking onto it (farm_group) kept it blocked for hundreds of rounds
+	// (01boss_battle trace: bodies stood 600+ turns at the prime group with st = RESPAWN).
+	const bool alive_now = g23_sees ? g.st == ST_ALIVE : g23_ready_in <= 0;
+#ifdef G23_TRACE
+	auto pt = [&](const char* what) { std::printf("PT r=%d body=%d what=%s eta=%d ready=%d alive=%d st=%d pos=(%d,%d) hp=%.0f gems=%d\n", round,
+		world().my_index, what, eta, g23_ready_in, static_cast<int>(alive_now), static_cast<int>(g.st), pos.x, pos.y, hp, static_cast<int>(gems)); };
+#else
+	auto pt = [](const char*) {};
+#endif
 	if (alive_now)
 	{
 		// the scorer's own checks still apply (enemy force at the group, their half while hurt, unreachable, survivability)
 		prepare_scoring();
 		int e2 = 0;
 		if (group_score(g, e2) <= 0.f)
+		{
+			pt("score0");
 			return false;
+		}
 		if (task_group != p0.g)
 			task_group = p0.g, task_since = round;
 		task = T_FARM;
 		if (P.g23_stage && g23_stage(g))
 			return true;
+		pt("farmP0");
 		farm_group(g);
 		return true;
 	}
 	if (eta + 1 < g23_ready_in)
+	{
+		pt("onway");
 		return false; // farm on the way (the constraint in group_score keeps it in time)
+	}
+	pt("rally");
 	return g23_go_rally();
 }
 

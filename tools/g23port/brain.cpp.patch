@@ -1,5 +1,5 @@
 --- god84/src/brain.cpp	2026-11-02 17:31:12.756024356 +0000
-+++ god85/src/brain.cpp	2026-11-03 00:42:07.587241137 +0000
++++ god85/src/brain.cpp	2026-11-03 01:06:38.963399373 +0000
 @@ -971,6 +971,8 @@
  
  void Brain::turn()
@@ -330,16 +330,26 @@
  	if (P.style == 1 || round < P.deathball_until || (P.pxs_style && style_now() == 3) || (P.spar_db && sparring_window()))
  	{
  		int leader = -1;
-@@ -7735,6 +7821,8 @@
+@@ -7735,6 +7821,18 @@
  			}
  		}
  	}
 +	if (best < 0 && P.g23_tol && g23_role == G23_PRIME && g23_nprime > 0 && g23_ready_in > 0 && hp >= 0.9f * max_hp && g23_go_rally())
++	{
++#ifdef G23_TRACE
++		std::printf("PT r=%d body=%d what=idle_rally eta=-1 ready=%d alive=0 st=-1 pos=(%d,%d) hp=%.0f gems=%d\n", round, W.my_index, g23_ready_in, pos.x, pos.y, hp,
++			static_cast<int>(gems));
++#endif
 +		return; // v23: nothing finishes in time: wait at the prime group's rally
++	}
++#ifdef G23_TRACE
++	if (P.g23_tol && g23_role == G23_PRIME)
++		std::printf("PF r=%d body=%d best=%d task_group=%d pos=(%d,%d)\n", round, W.my_index, best, task_group, pos.x, pos.y);
++#endif
  	if (best < 0)
  	{
  		IDL();
-@@ -7943,10 +8031,14 @@
+@@ -7943,10 +8041,14 @@
  			else
  				task = T_WAIT;
  		}
@@ -356,7 +366,7 @@
  	}
  }
  
-@@ -8775,7 +8867,7 @@
+@@ -8775,7 +8877,7 @@
  	// Keep burst for a fight only when one is likely within the cooldown: an unused ready spell is lost value
  	// (8-round cooldowns), and an enemy 7-9 tiles away led to a fight within 8 rounds only 13% of the time.
  	const bool save_cc = enemy_near_d <= P.hold_cc_dist;
@@ -365,7 +375,7 @@
  	if (P.varg_splash_pos && type == CT::varg && can_move)
  	{
  		// Varg's splash hits every camp next to the target: stand next to the camp with the most live neighbours. From
-@@ -8813,6 +8905,8 @@
+@@ -8813,6 +8915,8 @@
  				step(goal, false, false);
  		}
  	}

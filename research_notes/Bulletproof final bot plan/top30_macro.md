@@ -18,7 +18,42 @@ All 30 teams fit one fingerprint table built from 854 decoded top-30-vs-top-30 g
   - raids, locks and deaths are per game. gold@600 is unspent gold at r600. emb1 r is the round of the first emblem.
   - Sources: [table.md](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/table.md), [draft_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/draft_out.txt), definitions in [econ.py](/home/claude/cambridge_battlecode/experiments/top30_nov3/economy/econ.py), [extract_obj.py](/home/claude/cambridge_battlecode/experiments/top30_nov3/objectives/extract_obj.py), [extract_all.py](/home/claude/cambridge_battlecode/experiments/top30_nov3/draft_bank/extract_all.py)
 
-{{TABLE}}
+| rk | team | rating | n | core roster, 5-champ maps (games) | 1st pick | det | CI% | g300± | p2± | walk% | fight%c | recall%c | heldRec | bigArrN | trib/g | bag | Ma cap% | CI cap% | mid% | raids | locks | deaths | gold@600 | emb1 r |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | Mite | 2583 | 61 | VV-Vd-CI-Ma-HR (216/226) | VV 74% | 1.00 | 74 | +36 | +14.6 | 51 | 17 | 17 | 75 | 1.43 | 32.7 | 62 | 26 | 12 | 55 | 7.5 | 0.0 | 11.3 | 311 | 113 |
+| 2 | Intercontinental Fish | 2562 | 59 | Vd-CI-Ma-Wi-HR (117/238) | VV 50% | 1.00 | 98 | +32 | +7.9 | 56 | 13 | 19 | 66 | 1.41 | 27.1 | 37 | 27 | 21 | 52 | 8.2 | 4.6 | 12.7 | 238 | 122 |
+| 3 | Univardisty of Shingtonwash | 2524 | 68 | Ry-CI-Wi-Vg-HR (81/245) | Ry 71% | 0.86 | 43 | +20 | +8.4 | 52 | 13 | 26 | 179 | 1.79 | 49.8 | 20 | 18 | 12 | 59 | 14.3 | 0.0 | 7.7 | 328 | 184 |
+| 4 | Ad Astra | 2516 | 61 | VV-Vd-CI-Re-HR (56/225) | HR 56% | 1.00 | 58 | -28 | -8.8 | 54 | 18 | 21 | 102 | 1.35 | 19.6 | 53 | 23 | 7 | 53 | 14.0 | 0.0 | 11.0 | 297 | 121 |
+| 5 | newer team | 2481 | 68 | Vd-CI-Pr-Vg-HR (38/240) | Vd 43% | 1.00 | 39 | +25 | +13.8 | 53 | 14 | 18 | 83 | 1.38 | 25.5 | 33 | 32 | 10 | 55 | 4.6 | 5.9 | 10.5 | 244 | 92 |
+| 6 | NEETCoders | 2443 | 61 | Ry-VV-Vd-Ma-HR (120/238) | HR 76% | 1.00 | 26 | +10 | +4.6 | 55 | 21 | 4 | 38 | 1.44 | 23.0 | 51 | 29 | 2 | 54 | 8.8 | 0.8 | 9.3 | 221 | 98 |
+| 7 | BattleCats | 2381 | 55 | Ry-VV-Vd-Ma-HR (64/245) | Pr 36% | 0.98 | 3 | +2 | -2.6 | 56 | 16 | 16 | 61 | 1.23 | 16.3 | 69 | 27 | 2 | 48 | 10.2 | 2.7 | 9.4 | 180 | 128 |
+| 8 | test4 | 2366 | 59 | VV-CI-Ma-Wi-HR (240/240) | HR 83% | 1.00 | 100 | +13 | +3.2 | 57 | 16 | 18 | 75 | 1.32 | 24.7 | 71 | 46 | 15 | 52 | 8.2 | 0.3 | 12.8 | 268 | 116 |
+| 9 | print dont int | 2366 | 66 | Ry-Vd-Ma-Wi-HR (250/250) | Wi 84% | 1.00 | 0 | +13 | +6.3 | 51 | 18 | 19 | 73 | 1.22 | 32.2 | 31 | 38 | 0 | 45 | 12.8 | 0.5 | 6.8 | 203 | 107 |
+| 10 | Sponge(Albert and Bob) | 2362 | 61 | Ry-VV-Vd-Ma-HR (145/234) | HR 100% | 0.82 | 20 | -21 | -9.3 | 56 | 16 | 15 | 79 | 1.42 | 26.6 | 45 | 25 | 11 | 51 | 11.4 | 3.1 | 11.2 | 235 | 111 |
+| 11 | Trzy Kwaterki | 2346 | 56 | Ry-VV-Vd-Ma-HR (138/229) | Ma 98% | 0.93 | 0 | -17 | -0.4 | 54 | 17 | 23 | 77 | 1.30 | 18.9 | 48 | 37 | 0 | 60 | 12.1 | 3.7 | 10.1 | 196 | 110 |
+| 12 | T1 | 2344 | 62 | Ry-VV-Vd-Ma-HR (182/237) | VV 83% | 0.87 | 0 | -1 | -3.7 | 50 | 21 | 7 | 56 | 1.34 | 28.1 | 28 | 43 | 0 | 48 | 16.1 | 6.7 | 8.3 | 206 | 131 |
+| 13 | policy wonk | 2335 | 53 | Ma-Wi-Re-Ta-HR (81/239) | HR 75% | 0.74 | 0 | +9 | -0.8 | 53 | 20 | 16 | 64 | 1.53 | 15.7 | 56 | 33 | 0 | 65 | 15.0 | 1.8 | 11.5 | 214 | 121 |
+| 14 | subscribe to caterpillow | 2307 | 63 | Ry-VV-Vd-Ma-HR (254/254) | HR 100% | 0.99 | 0 | -17 | -6.3 | 48 | 16 | 36 | 211 | 1.20 | 21.8 | 41 | 25 | 0 | 55 | 9.8 | 2.4 | 10.2 | 183 | 123 |
+| 15 | Noobot | 2304 | 62 | Ry-VV-Ma-Wi-HR (266/266) | Ma 100% | 1.00 | 0 | +14 | +4.4 | 56 | 25 | 4 | 48 | 1.62 | 21.5 | 49 | 48 | 0 | 60 | 10.3 | 1.2 | 9.0 | 220 | 118 |
+| 16 | German Empire | 2289 | 60 | VV-Vd-Ma-Re-Ta (182/238) | Re 46% | 0.86 | 11 | +12 | +5.3 | 50 | 22 | 6 | 54 | 1.20 | 20.9 | 36 | 29 | 2 | 50 | 4.0 | 5.5 | 7.6 | 283 | 132 |
+| 17 | Supaswag | 2282 | 60 | VV-Vd-Ma-Wi-HR (182/254) | Ma 76% | 0.94 | 0 | +11 | +4.6 | 52 | 22 | 5 | 46 | 1.29 | 17.2 | 69 | 42 | 0 | 54 | 4.8 | 0.0 | 8.4 | 225 | 123 |
+| 18 | Nyx | 2271 | 55 | Ry-VV-Vd-Ma-HR (235/235) | VV 100% | 1.00 | 0 | -12 | -4.2 | 52 | 23 | 9 | 88 | 1.29 | 25.1 | 46 | 26 | 0 | 55 | 10.3 | 0.0 | 8.4 | 244 | 103 |
+| 19 | JukeFall | 2250 | 72 | Ry-VV-Vd-Ma-HR (241/253) | Vd 100% | 0.97 | 3 | -14 | -5.1 | 55 | 25 | 3 | 44 | 1.33 | 22.5 | 56 | 32 | 0 | 48 | 9.7 | 0.0 | 8.8 | 247 | 106 |
+| 20 | conqueror_of_openai | 2234 | 70 | Ry-VV-Vd-Ma-HR (233/233) | VV 100% | 0.86 | 0 | -45 | -15.8 | 51 | 14 | 15 | 74 | 1.42 | 22.7 | 36 | 36 | 0 | 54 | 9.9 | 1.2 | 9.3 | 239 | 106 |
+| 21 | SSSA | 2233 | 59 | VV-Vd-Ma-Wi-HR (155/241) | HR 84% | 0.96 | 13 | +22 | +8.1 | 55 | 19 | 10 | 51 | 1.39 | 15.8 | 56 | 36 | 1 | 57 | 8.4 | 2.1 | 11.2 | 220 | 93 |
+| 22 | :3 | 2231 | 58 | VV-Vd-Pr-Ma-HR (153/238) | HR 86% | 1.00 | 12 | -2 | +2.9 | 53 | 17 | 12 | 61 | 1.29 | 17.3 | 48 | 10 | 6 | 47 | 8.5 | 4.9 | 8.3 | 277 | 142 |
+| 23 | new team(4) | 2231 | 60 | Vd-Ma-Vg-Ta-HR (83/236) | HR 87% | 0.94 | 23 | -4 | -4.8 | 55 | 21 | 4 | 42 | 1.20 | 20.1 | 48 | 35 | 3 | 41 | 12.5 | 5.5 | 11.8 | 161 | 140 |
+| 24 | Rogue Lock Pickers | 2215 | 54 | VV-Vd-Ma-Wi-Ta (244/249) | VV 96% | 0.89 | 0 | +1 | +0.9 | 56 | 17 | 10 | 50 | 1.40 | 15.8 | 101 | 36 | 0 | 55 | 9.6 | 0.0 | 8.0 | 258 | 117 |
+| 25 | prism best girl | 2207 | 58 | Ry-VV-Pr-Ma-HR (211/243) | Pr 100% | 0.83 | 0 | +7 | +3.7 | 56 | 23 | 5 | 44 | 1.29 | 18.0 | 56 | 20 | 0 | 57 | 8.4 | 0.0 | 8.1 | 219 | 103 |
+| 26 | EE | 2203 | 49 | Ry-VV-Vd-Ma-HR (223/223) | VV 100% | 1.00 | 0 | -53 | -17.8 | 56 | 17 | 16 | 68 | 1.14 | 22.2 | 53 | 34 | 0 | 58 | 12.5 | 3.3 | 10.3 | 262 | 107 |
+| 27 | procless | 2201 | 25 | Ry-VV-Vd-Ma-HR (256/256) | HR 100% | 1.00 | 0 | +14 | +2.3 | 52 | 29 | 6 | 56 | 1.13 | 24.4 | 42 | 25 | 0 | 37 | 8.1 | 0.0 | 7.5 | 181 | 116 |
+| 28 | jazz | 2200 | 39 | VV-Ma-Wi-Ta-HR (144/265) | HR 79% | 1.00 | 7 | +8 | +1.4 | 57 | 17 | 15 | 63 | 1.32 | 16.6 | 63 | 45 | 2 | 56 | 8.7 | 0.0 | 11.8 | 153 | 100 |
+| 29 | MFF1 | 2196 | 47 | VV-Vd-CI-Ma-Wi (245/253) | VV 79% | 1.00 | 61 | -31 | -12.5 | 55 | 26 | 2 | 46 | 1.32 | 13.2 | 66 | 25 | 6 | 44 | 6.6 | 0.0 | 11.1 | 458 | 100 |
+| 30 | Olympus | 2192 | 27 | Vd-CI-Ma-Wi-HR (217/251) | Ma 84% | 0.92 | 72 | -8 | -8.8 | 54 | 18 | 16 | 74 | 1.28 | 25.3 | 248 | 41 | 12 | 40 | 7.5 | 4.0 | 17.2 | 123 | 159 |
+| - | **HouseOfCoders v84-v88 (all our decoded games, 80% losses)** | 1979 | 305 | Ry-VV-Vd-Ma-HR (172/235) | HR 54% | 1.00 | 0 | -52 | -20.5 | 61 | 17 | 15 | 78 | 1.39 | 20.7 | 33 | 14 | 0 | 49 | 13.2 | 1.1 | 9.3 | 96 | 144 |
+| - | OPP (our opponents, same games) | - | 305 | - | - | - | - | -6 | -2.6 | 53 | 21 | 11 | 70 | 1.40 | 30.2 | 42 | 28 | 3 | 59 | 14.0 | 3.0 | 9.2 | 230 | 136 |
+| - | TOP-30 losing sides (pooled) | - | 854 | - | - | - | - | -30 | -15.0 | 56 | 19 | 13 | 66 | 1.26 | 16.0 | 39 | 31 | 4 | 46 | 6.2 | 2.0 | 13.9 | 174 | 132 |
+| - | TOP-30 winning sides (pooled) | - | 854 | - | - | - | - | +30 | +15.0 | 52 | 19 | 14 | 80 | 1.44 | 29.6 | 70 | 32 | 4 | 59 | 13.6 | 1.8 | 5.8 | 305 | 104 |
 
 - Olympus's bag of 248 comes from one artifact game with a recorded bag of 2,769. Its other 12 games range from 18 to 61. Treat that cell, and the bag-size correlation below, as fragile — [fp_sides.jsonl](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_sides.jsonl)
 - Win rates inside these replays: Mite 0.656 (n=61 sides), IC 0.627 (59), UW 0.603 (68), Ad Astra 0.623 (61), newer team 0.441 (68), NEETCoders 0.508 (61), BattleCats 0.455 (55), test4 0.356 (59), print dont int 0.485 (66), Sponge 0.426 (61) — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)

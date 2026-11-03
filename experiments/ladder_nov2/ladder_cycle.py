@@ -126,7 +126,7 @@ def main():
             wait_live(a.best)
             return
         print(f'  built: v{a.test} at {now():%H:%M:%S}', flush=True)
-        if (next_slot(start) - now()).total_seconds() < 420:
+        if (next_slot(start) - now()).total_seconds() < 300:
             # too late to make it live, queue and switch back with margin: the upload is live by itself (follow-newest): revert now
             log(f'{now():%Y-%m-%dT%H:%MZ} CYCLE v{a.test} built too late for this window ({(next_slot(start) - now()).total_seconds():.0f} s to the slot): '
                 f'back to v{a.best}; run again with --test {a.test}')

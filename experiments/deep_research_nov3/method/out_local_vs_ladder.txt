@@ -1,0 +1,67 @@
+== 1. Local panel summaries (vs god84 = v84 on maps/s4, 172 games unless noted)
+  54 variants vs god84 on s4: per-game SD of the gem margin median 541 (range 491-578); SE of a 172-game margin 41; SE of a 172-game win% 3.8pp
+  across variants: corr(margin, win%) 0.93; slope 7.5 pp of win% per 100 gems of margin; intercept at margin 0: 49.5%
+  spread of variant margins vs god84: SD 72 gems (sampling SE of one variant ~41) ; win% SD 5.8pp (sampling SE 3.8pp)
+
+== 2. Chaos: mirror breaks of null / inert controls (exact mirror = every map pair cancels)
+  _85null_vs_god84: 88/172 margin +25 (SE 44); map pairs not mirrored 12/86; pairs won or lost on both sides 8/86
+  _hs_vs_god84: 88/172 margin +17 (SE 44); map pairs not mirrored 17/86; pairs won or lost on both sides 10/86
+  _rcfh_vs_god84: 87/172 margin +6 (SE 40); map pairs not mirrored 86/86; pairs won or lost on both sides 47/86
+  god29_vs_god84: 87/172 margin +21 (SE 41); map pairs not mirrored 86/86; pairs won or lost on both sides 39/86
+
+== 3. Local flip rates between variants on the same 172 games vs god84 (paired local comparison)
+  1431 variant pairs: flip rate median 45.9%, 10th pct 38.4%, 90th pct 51.7%
+  identical game sets (switch no-ops): [('_r80_vs_god84', '_rcf_vs_god84'), ('_r80_vs_god84', '_rcfh_vs_god84'), ('_r80_vs_god84', '_rpxh_vs_god84'), ('_rcf_vs_god84', '_rcfh_vs_god84'), ('_rcf_vs_god84', '_rpxh_vs_god84'), ('_rcfh_vs_god84', '_rpxh_vs_god84')]
+  lowest flip pairs: [('_r80_vs_god84', '_rcf_vs_god84', '0.0%'), ('_r80_vs_god84', '_rcfh_vs_god84', '0.0%'), ('_r80_vs_god84', '_rpxh_vs_god84', '0.0%'), ('_rcf_vs_god84', '_rcfh_vs_god84', '0.0%'), ('_rcf_vs_god84', '_rpxh_vs_god84', '0.0%'), ('_rcfh_vs_god84', '_rpxh_vs_god84', '0.0%'), ('_85dr_vs_god84', '_85draft_vs_god84', '0.6%'), ('_rr6_vs_god84', 'g23r_vs_god84', '2.9%')]
+  _rsf3_vs_god84 - _rcf_vs_god84: flips 55 (32%), net +15 (+8.7pp)
+  _rbuild_vs_god84 - _rcf_vs_god84: flips 82 (48%), net +4 (+2.3pp)
+  _ros_vs_god84 - _rcf_vs_god84: flips 68 (40%), net -4 (-2.3pp)
+  g23rc_vs_god84 - g23r_vs_god84: flips 16 (9%), net -8 (-4.7pp)
+  g23r_vs_god84 - _rcf_vs_god84: flips 73 (42%), net +11 (+6.4pp)
+  _hs_vs_god84 - _rcf_vs_god84: flips 81 (47%), net +1 (+0.6pp)
+
+== 4. Local vs ladder by deployed version
+  ver         local s4 vs v84        held-out vs v84     ladder vs v84 (net/n, pp, z)
+  v85   87/172   +21 ( +0.6pp)                             +4/150  +2.7pp z +0.63
+  v86   90/172   +42 ( +2.3pp)   95/206    -2 ( -3.9pp)    +6/250  +2.4pp z +0.76
+  v87   98/172  +112 ( +7.0pp)  101/206   +31 ( -1.0pp)   +10/250  +4.0pp z +1.29
+  v88   87/172    +6 ( +0.6pp)  101/206    -7 ( -1.0pp)   +13/250  +5.2pp z +1.39
+  v89   91/172   +43 ( +2.9pp)   95/206   -36 ( -3.9pp)    +3/250  +1.2pp z +0.34
+  v90  102/172   +89 ( +9.3pp)  111/206   +43 ( +3.9pp)    +3/250  +1.2pp z +0.34
+  v91   83/172   -23 ( -1.7pp)  112/206   +17 ( +4.4pp)    +2/ 30  +6.7pp z +0.53
+  v92   94/172   +13 ( +4.7pp)  122/206   +97 ( +9.2pp)    -1/180  -0.6pp z -0.13
+  n = 8 versions: Pearson(local s4 margin, ladder pp vs v84) = -0.31 (perm p 0.45); Spearman -0.40 (p 0.33); Pearson(s4 + held-out margin, ladder) -0.48 (p 0.23)
+  ladder effects vs v84: mean +2.8pp, SD across versions 2.4pp, mean sampling SE 5.6pp -> between-version true SD^2 = -25.9 (<= 0: the spread is all noise)
+
+  local paired vs v88 (both vs god84 on the same 172 games; win flips) and ladder vs v88:
+   v85: local net flips +0/172 (+0.0pp), margin diff +16; ladder vs v88 -7/150 (-4.7pp)
+   v86: local net flips +3/172 (+1.7pp), margin diff +36; ladder vs v88 -7/250 (-2.8pp)
+   v87: local net flips +11/172 (+6.4pp), margin diff +106; ladder vs v88 -3/250 (-1.2pp)
+   v89: local net flips +4/172 (+2.3pp), margin diff +37; ladder vs v88 -10/245 (-4.1pp)
+   v90: local net flips +15/172 (+8.7pp), margin diff +83; ladder vs v88 -9/245 (-3.7pp)
+   v91: local net flips -4/172 (-2.3pp), margin diff -28; ladder vs v88 +0/30 (+0.0pp)
+   v92: local net flips +7/172 (+4.1pp), margin diff +7; ladder vs v88 -10/180 (-5.6pp)
+   v95 local _g24allmc_vs_g23rcf: 100/172 (+8.1pp) margin +133, deaths 6.3 vs 10.4; ladder vs v88 -1/185 (-0.5pp)
+   v95 local _g24allmc_vs_g23rcf_heldout: 121/206 (+8.7pp) margin +63, deaths 6.0 vs 8.8; ladder vs v88 -1/185 (-0.5pp)
+
+== 5. Non-transitivity in the local panels (same variant, two references)
+  _rcf_vs_god84: 87/172 +6 | _rcf_vs_gpta75: 103/172 +136
+  _rsf3_vs_god84: 102/172 +89 | _rsf3_vs_gpta75: 103/172 +112
+  g23r_vs_god84: 98/172 +112 | g23r_vs_gpta75: 110/172 +161
+  _g24all_vs_g23rcf: 103/172 +113 | _g24all_vs_gpta94: 94/172 +1
+  baseline god84_vs_gpta75: 102/172 +79
+
+== 6. s4 vs held-out agreement (same variant): does the held-out pool replicate the s4 margin?
+  _g24all_vs_g23rcf            s4  +113  held-out   +76
+  _g24allm_vs_g23rcf           s4   +98  held-out  +107
+  _g24allmc_vs_g23rcf          s4  +133  held-out   +63
+  _rb24_vs_god84               s4   +15  held-out    -5
+  _rbuild_vs_god84             s4   +43  held-out   -36
+  _rcf_vs_god84                s4    +6  held-out    -7
+  _rhw_vs_god84                s4   +10  held-out   -12
+  _ros_vs_god84                s4   -23  held-out   +17
+  _rsf3_vs_god84               s4   +89  held-out   +43
+  g23r_vs_god84                s4  +112  held-out   +31
+  g23rc_vs_god84               s4   +42  held-out    -2
+  g29rcf_vs_god84              s4   +13  held-out   +97
+  n 12: Pearson +0.51 (perm p 0.09); mean s4 +54, mean held-out +31 (regression to the mean of the selected variants)

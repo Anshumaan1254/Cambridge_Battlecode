@@ -1,0 +1,99 @@
+== A. Win-rate points vs Elo at a 50% base: 1pp = 7 Elo, 2pp = 14 Elo, 3pp = 21 Elo, 5pp = 35 Elo, 10pp = 70 Elo
+   rank 30 (2192) - our rating (1979) = 213 Elo = 27pp more wins vs the same opponents
+
+== B. Paired ladder test (exact sign test on flips), games n needed for 80% power
+   f = flip (discordant) rate. Ladder: v86-v87 4.8% (near-identical), typical 25-35% (pooled 29.5%); local mirror panel 46%
+   1-sided alpha 0.05:
+     f 0.10 | 3pp:   741 games =  149 groups =  3.0 quota-h | 5pp:   268 games =   54 groups =  1.1 quota-h | 10pp:    68 games =   14 groups =  0.3 quota-h
+     f 0.20 | 3pp:  1434 games =  287 groups =  5.7 quota-h | 5pp:   531 games =  107 groups =  2.1 quota-h | 10pp:   136 games =   28 groups =  0.5 quota-h
+     f 0.29 | 3pp:  2054 games =  411 groups =  8.2 quota-h | 5pp:   751 games =  151 groups =  3.0 quota-h | 10pp:   195 games =   39 groups =  0.8 quota-h
+     f 0.35 | 3pp:  2469 games =  494 groups =  9.9 quota-h | 5pp:   902 games =  181 groups =  3.6 quota-h | 10pp:   234 games =   47 groups =  0.9 quota-h
+     f 0.46 | 3pp:  3225 games =  645 groups = 12.9 quota-h | 5pp:  1175 games =  235 groups =  4.7 quota-h | 10pp:   302 games =   61 groups =  1.2 quota-h
+   2-sided alpha 0.05:
+     f 0.10 | 3pp:   921 games =  185 groups =  3.7 quota-h | 5pp:   341 games =   69 groups =  1.4 quota-h | 10pp:    78 games =   16 groups =  0.3 quota-h
+     f 0.20 | 3pp:  1800 games =  360 groups =  7.2 quota-h | 5pp:   658 games =  132 groups =  2.6 quota-h | 10pp:   170 games =   34 groups =  0.7 quota-h
+     f 0.29 | 3pp:  2591 games =  519 groups = 10.4 quota-h | 5pp:   946 games =  190 groups =  3.8 quota-h | 10pp:   244 games =   49 groups =  1.0 quota-h
+     f 0.35 | 3pp:  3113 games =  623 groups = 12.5 quota-h | 5pp:  1136 games =  228 groups =  4.5 quota-h | 10pp:   292 games =   59 groups =  1.2 quota-h
+     f 0.46 | 3pp:  4074 games =  815 groups = 16.3 quota-h | 5pp:  1483 games =  297 groups =  5.9 quota-h | 10pp:   380 games =   76 groups =  1.5 quota-h
+   1-sided alpha 0.1:
+     f 0.10 | 3pp:   560 games =  112 groups =  2.2 quota-h | 5pp:   209 games =   42 groups =  0.8 quota-h | 10pp:    58 games =   12 groups =  0.2 quota-h
+     f 0.20 | 3pp:  1063 games =  213 groups =  4.3 quota-h | 5pp:   395 games =   79 groups =  1.6 quota-h | 10pp:   107 games =   22 groups =  0.4 quota-h
+     f 0.29 | 3pp:  1517 games =  304 groups =  6.1 quota-h | 5pp:   560 games =  112 groups =  2.2 quota-h | 10pp:   146 games =   30 groups =  0.6 quota-h
+     f 0.35 | 3pp:  1819 games =  364 groups =  7.3 quota-h | 5pp:   668 games =  134 groups =  2.7 quota-h | 10pp:   175 games =   35 groups =  0.7 quota-h
+     f 0.46 | 3pp:  2371 games =  475 groups =  9.5 quota-h | 5pp:   868 games =  174 groups =  3.5 quota-h | 10pp:   224 games =   45 groups =  0.9 quota-h
+   unpaired (independent samples, p~0.5), 3pp: 3435 games PER version
+   unpaired (independent samples, p~0.5), 5pp: 1237 games PER version
+   unpaired (independent samples, p~0.5), 10pp: 309 games PER version
+
+== C. What the current rule can and cannot see (KEEP if p < 0.2 two-sided, n = 250 paired, f = 0.295)
+   true gain  0.0pp: P(KEEP) = 0.08
+   true gain  3.0pp: P(KEEP) = 0.30
+   true gain  5.0pp: P(KEEP) = 0.52
+   true gain 10.0pp: P(KEEP) = 0.94
+   with 10 equal candidates each tested once at that rule: P(at least one false KEEP) = 0.57
+   SD of the net flips at n 250: 8.6 games = 3.4pp; 95% CI half-width 6.7pp
+
+== D. SPRT on paired games (trinomial, LLR checked after every 5-game group, truncated at 3000 games)
+   H0 0pp vs H1 5pp, alpha 0.05, beta 0.05 (LLR bounds -2.94 / +2.94), f 0.295:
+     true   -3pp: accept H1 0.001, accept H0 0.999, undecided 0.000; mean games    327 (90th pct   565) =  1.3 quota-hours
+     true   +0pp: accept H1 0.047, accept H0 0.952, undecided 0.002; mean games    644 (90th pct  1245) =  2.6 quota-hours
+     true   +2pp: accept H1 0.348, accept H0 0.613, undecided 0.039; mean games   1034 (90th pct  2180) =  4.1 quota-hours
+     true   +3pp: accept H1 0.636, accept H0 0.325, undecided 0.039; mean games   1034 (90th pct  2146) =  4.1 quota-hours
+     true   +5pp: accept H1 0.957, accept H0 0.042, undecided 0.001; mean games    647 (90th pct  1230) =  2.6 quota-hours
+     true  +10pp: accept H1 1.000, accept H0 0.000, undecided 0.000; mean games    240 (90th pct   380) =  1.0 quota-hours
+   H0 0pp vs H1 5pp, alpha 0.05, beta 0.2 (LLR bounds -1.56 / +2.77), f 0.295:
+     true   -3pp: accept H1 0.001, accept H0 0.999, undecided 0.000; mean games    179 (90th pct   335) =  0.7 quota-hours
+     true   +0pp: accept H1 0.045, accept H0 0.955, undecided 0.000; mean games    341 (90th pct   735) =  1.4 quota-hours
+     true   +2pp: accept H1 0.271, accept H0 0.727, undecided 0.003; mean games    539 (90th pct  1175) =  2.2 quota-hours
+     true   +3pp: accept H1 0.484, accept H0 0.513, undecided 0.003; mean games    590 (90th pct  1235) =  2.4 quota-hours
+     true   +5pp: accept H1 0.827, accept H0 0.173, undecided 0.000; mean games    486 (90th pct   930) =  1.9 quota-hours
+     true  +10pp: accept H1 0.995, accept H0 0.005, undecided 0.000; mean games    225 (90th pct   360) =  0.9 quota-hours
+   H0 0pp vs H1 4pp, alpha 0.05, beta 0.1 (LLR bounds -2.25 / +2.89), f 0.295:
+     true   -3pp: accept H1 0.001, accept H0 1.000, undecided 0.000; mean games    346 (90th pct   610) =  1.4 quota-hours
+     true   +0pp: accept H1 0.047, accept H0 0.944, undecided 0.009; mean games    766 (90th pct  1570) =  3.1 quota-hours
+     true   +2pp: accept H1 0.420, accept H0 0.512, undecided 0.067; mean games   1212 (90th pct  2660) =  4.8 quota-hours
+     true   +3pp: accept H1 0.712, accept H0 0.240, undecided 0.048; mean games   1129 (90th pct  2325) =  4.5 quota-hours
+     true   +5pp: accept H1 0.969, accept H0 0.030, undecided 0.001; mean games    686 (90th pct  1240) =  2.7 quota-hours
+     true  +10pp: accept H1 1.000, accept H0 0.000, undecided 0.000; mean games    276 (90th pct   420) =  1.1 quota-hours
+   H0 0pp vs H1 3pp, alpha 0.05, beta 0.1 (LLR bounds -2.25 / +2.89), f 0.295:
+     true   -3pp: accept H1 0.000, accept H0 1.000, undecided 0.000; mean games    510 (90th pct   870) =  2.0 quota-hours
+     true   +0pp: accept H1 0.046, accept H0 0.876, undecided 0.078; mean games   1277 (90th pct  2765) =  5.1 quota-hours
+     true   +2pp: accept H1 0.499, accept H0 0.269, undecided 0.232; mean games   1788 (90th pct  3000) =  7.2 quota-hours
+     true   +3pp: accept H1 0.819, accept H0 0.083, undecided 0.098; mean games   1474 (90th pct  2980) =  5.9 quota-hours
+     true   +5pp: accept H1 0.995, accept H0 0.004, undecided 0.002; mean games    815 (90th pct  1365) =  3.3 quota-hours
+     true  +10pp: accept H1 1.000, accept H0 0.000, undecided 0.000; mean games    343 (90th pct   490) =  1.4 quota-hours
+   H0 0pp vs H1 10pp, alpha 0.05, beta 0.05 (LLR bounds -2.94 / +2.94), f 0.295:
+     true   -3pp: accept H1 0.005, accept H0 0.995, undecided 0.000; mean games    112 (90th pct   200) =  0.4 quota-hours
+     true   +0pp: accept H1 0.040, accept H0 0.960, undecided 0.000; mean games    165 (90th pct   315) =  0.7 quota-hours
+     true   +2pp: accept H1 0.129, accept H0 0.872, undecided 0.000; mean games    223 (90th pct   440) =  0.9 quota-hours
+     true   +3pp: accept H1 0.216, accept H0 0.784, undecided 0.000; mean games    254 (90th pct   515) =  1.0 quota-hours
+     true   +5pp: accept H1 0.492, accept H0 0.508, undecided 0.000; mean games    290 (90th pct   595) =  1.2 quota-hours
+     true  +10pp: accept H1 0.963, accept H0 0.037, undecided 0.000; mean games    170 (90th pct   320) =  0.7 quota-hours
+
+== E. Ranked performance tracking (matches_me.jsonl, opponent ratings = Nov 3 ladder snapshot)
+   ranked games 2805 from 10-30 06:40 to 11-03 12:50 (4.26 days) = 659/day; with a rated opponent 2225
+   SE of a performance rating over   100 ranked games:  35.1 Elo (5.0pp)
+   SE of a performance rating over   300 ranked games:  20.2 Elo (2.9pp)
+   SE of a performance rating over   720 ranked games:  13.1 Elo (1.9pp)
+   SE of a performance rating over  2160 ranked games:   7.5 Elo (1.1pp)
+   SE of a performance rating over  5000 ranked games:   5.0 Elo (0.7pp)
+   displayed rating (K 4.6): relaxation 151 games = 5.5 h; stationary SD around true strength 20 Elo
+   v84     : 254/505 ranked, mean opp 1968, perf 1970 +- 16 (1 SE)
+   v85     :  66/110 ranked, mean opp 1988, perf 2059 +- 34 (1 SE)
+   v86+v87 :  21/ 40 ranked, mean opp 2011, perf 2028 +- 55 (1 SE)
+   v88     :   8/ 20 ranked, mean opp 2030, perf 1959 +- 80 (1 SE)
+   v89     :   4/ 10 ranked, mean opp 2007, perf 1936 +- 112 (1 SE)
+   v88b    :   7/ 10 ranked, mean opp 2019, perf 2166 +- 120 (1 SE)
+   v90     :   8/ 20 ranked, mean opp 1980, perf 1909 +- 80 (1 SE)
+   v88c    :   4/ 10 ranked, mean opp 1984, perf 1913 +- 112 (1 SE)
+   v91     :   2/  5 ranked, mean opp 1969, perf 1898 +- 159 (1 SE)
+   v88d    :   4/ 10 ranked, mean opp 1993, perf 1923 +- 112 (1 SE)
+   v94     :   2/  5 ranked, mean opp 1987, perf 1917 +- 159 (1 SE)
+
+== F. Per-game measure: win flips vs gem margin (local, pairs of variants on the same 172 games vs god84)
+   1425 variant pairs: mean z^2 win flips 2.52, gem margin 3.42 (1.0 = pure noise; larger = more signal detected); corr(z_win, z_margin) 0.93
+   (z^2 - 1) ratio margin/win = relative effective sample size of the margin: 1.60x
+
+== G. Transfer: ladder effect vs local paired effect (vs v88 / via god84), weighted regression
+   ladder_pp = -4.26 + +0.24 x local_pp ; slope SE 0.46 -> 95% CI [-0.65, +1.14] (1 = full transfer, 0 = none)
+   mean local predicted gain +4.5pp, mean ladder result -3.1pp (SE 1.4pp): difference z 3.8

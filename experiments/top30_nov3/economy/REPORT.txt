@@ -1,0 +1,157 @@
+ECONOMY + OBJECTIVES STREAMS: v88 (bots/g23rcf) vs the top 30. Nov 3 2026, 08:00-08:40Z (second-round helper, AGENT_BRIEF2 format)
+
+Inputs: economy/tables.txt (re-run 07:58Z; v88 rows n=119, 59 maps matched to 656 top-30 sides), economy/openings.txt, economy/rows_*.jsonl,
+objectives/out/stats.txt (TOP n=594 sides, ME n=305, OPP = ME's opponents in the same games, ME88 = v88 losses n=122).
+New queries (all on the existing jsonl, no re-extraction): economy/s2/q1.py (gold income, gems per capture / hit, by phase),
+q2.py + q3.py (opening visits: wasted hits, solo bodies on big groups, harmless vs attacking groups), q4.py (contact reaction split by
+numbers and health on contested big-group cycles), ex.py + ex2.py (examples).
+Column legend: "MM" = economy map-matched (top-30 vs v88, same maps, weight min(n) per map); "TOPl" = losing top-30 side, map-matched;
+"Q-ME88/TOP/OPP" = objectives table (ME88 is loss-only, so compare with OPP for the same games and with TOP for the benchmark).
+
+ANSWERS TO THE LEADS (short)
+- Lead 1 (gems per camp hit 0.86 vs 1.10, MM whole game): NOT lower-value camps and NOT stolen or shared kills. Gems per capture are
+  equal (MM r1-150 16.4 vs 16.6, r151-400 18.3 vs 18.5, r401-800 20.8 vs 22.0); kills the enemy captured are 0.9% vs 1.0% of opening hits.
+  The gap is (a) more damage per capture early: 21.6% of our opening hits are on visits that end without a kill vs 16.8% (MM), and we are
+  ALONE on 45% of our visits to >=30-gem groups vs 17% (MM, q2); (b) lower damage per hit later (MM 61.5 vs 66.9, 77.7 vs 94.6, 107.5 vs
+  131.3: the item gap, see S4); (c) fewer hits per 100 rounds later (68 vs 83, 48 vs 64), the walk share (52-54% vs 46-49%) being high
+  even UNOPPOSED (r401-800 50.0% vs 44.9%).
+- Lead 2 (contact): confirmed and explained in S1/S3: with an enemy within 6 our bodies flee on a rule, not on a fight result.
+- Lead 3 (opening): confirmed; the cause is our join rule (S2), not the first-target choice (nearest-group share 45% vs 44%, MM).
+- Lead 4 (contested respawn cycles): the biggest single gap (S1).
+- Lead 5 (shops): an INCOME gap, not a spending rule (S4). Do not touch the shop rules.
+- Lead 6 (territory): mostly the same contact rule on our half and in the middle (S5).
+- Lead 7 (wards): no turn or action cost; the cost is lost forward vision from re-warding near our spawn (S7, small).
+
+
+S1 We give up contested big groups at contact: we leave equal fights at full health [STRATEGY, rule-driven] est. gain +40 gems/game (+ about the same denied to them)
+ number: contested big-group respawn cycles (>=30 gems, |dA-dB| <= 20%), Q1: share of taken cycles we capture ME88 0.27 / ME 0.34 vs TOP 0.50,
+   OPP 0.66; when present within 4 AT the respawn: ME88 0.36 / ME 0.43 vs TOP 0.69, OPP 0.80; cycles we hit first and then lost: ME88 0.41 /
+   ME 0.43 vs TOP 0.20, OPP 0.13; gems captured on contested big groups per game ME88 108 / ME 175 vs TOP 239, OPP 352.
+   Reaction in the first 12 rounds of contact (q4.py, v88 contacts vs TOP): 1 v 1 at hp >= 0.8: we LEAVE 35% vs 18%, farm 24% vs 34%,
+   die 4% vs 5% (n 83 vs 406); with equal or more bodies than them: leave 16% vs 7%, farm 30% vs 52%, die 20% vs 16% (n 159 vs 861).
+   So staying at an even contact is not what kills the top teams (die 5%), and we leave twice as often.
+   Same mechanism in the economy tables (MM, v88): % of body-rounds hitting a camp with an enemy within 6: 3.3 vs 9.7 (r1-150), 3.4 vs 8.2,
+   2.7 vs 6.9, 3.0 vs 5.8 (r801+); walking 57-61% vs 45-53%; wait 1.6-2.6% vs 4.0-5.6% (they hold at the group; we walk).
+ examples (match, map, group, round, contact): 85179b55 02uncharted_lands G0 57g respawn r364, contact r375 1 v 1 hp 1.0 -> left, taken r422 by
+   them; e70ce6f5 03ambush_field G10 85g r277 1 v 1 hp 0.86 -> left, taken r351; e33a81a9 01fracture G24 44g r1241 1 v 1 hp 1.0 -> left, taken
+   r1290; 9afd7274 01fracture G25 44g hit first r908 by 1 body vs 1, left r913, taken r931 (body indices: objectives/out/games_me.jsonl
+   cycles[].react; run economy/s2/ex2.py).
+ cause: a chain of three rules, all fire at an even 1 v 1:
+   (1) brain.cpp combat() line 4794: "if (!calm && ((((isolated || reserve) && adv < P.isolated_flee_adv && nearest_enemy <= P.flee_dist) ||
+       outmatched) && task != T_CAPTURE ..." with isolated_flee_adv = 1.5 (params.h:75), flee_dist 5, backup_radius 5: a body with no ally
+       within 5 flees from any enemy that is not 1.5x weaker; then "flee_recall" (params.h:104) recalls if safe (Q6: our held recalls are
+       interrupted by a hit 33% vs 23%, "reposition" recalls 47% vs 36%).
+   (2) the flee calls avoid_note(E) (brain.cpp 2048) and v27_avoid = 12 (params.h:1134) makes every group within their reach + 2 untargetable
+       for 12 rounds: group_score line 6810 "if (P.v27_avoid > 0 && round < av_until && in_avoid(g)) { WHY(10); return -1; }". farm()'s hard
+       commit does not save it: line 7673 keeps the current target only "sc_why != 3 && sc_why != 9 && sc_why != 10 && sc_why != 1".
+       So the body walks to another group and comes back later ("came back after leaving" 148% of leaves).
+   (3) group_score line 7246: "if (round - g.enemy_round < 12 && !(P.g23_farm && ...)) time += 12.f;" (g23_farm = 0 in v88): every group an
+       enemy was seen at in the last 12 rounds costs 12 extra rounds, so a contested big group loses to an empty small one.
+ fix: g24_hold (default 0) in params.h with g24_hold_gems 30, g24_hold_r 0.8, g24_hold_hp 0.5:
+   (a) combat() line 4794: the "isolated" pre-emptive flee does not fire when task_group is a group with gems >= g24_hold_gems (or on our half,
+       see S5) that we are within attack range + 2 of, hp >= g24_hold_hp x max_hp, and adv >= g24_hold_r; the real fight / cornered / burst
+       rules and the outmatched rule (adv < 0.8 vs 2+) stay as they are. (b) In that case no avoid_note(). (c) group_score line 7246: no +12
+       for that group while (a) holds; this is what g23_farm 1 already does (written Nov 2, never measured: god23_plan.md l.220), so turn
+       g23_farm 1 on in the same variant (without g23_stage). (d) S2's join rule makes the second body come (bodies at the respawn 1.52 vs 1.72).
+   Not one of the failed ledger items: not a dive filter or disengage (fight decisions are untouched), not g19_hold (v18 era, every group):
+   it removes a pre-emptive flee only on >=30-gem groups at adv >= 0.8, where the top teams die 5% of the time when they stay.
+ test: local mechanism check on the 8 map_fail maps + s4: share of contested-cycle contacts with "left" (1 v 1, hp >= 0.8) 35% -> <= 20%;
+   % body-rounds hitting a camp with an enemy within 6 from ~3% to >= 6%; capture share of contested big cycles 0.27-0.34 -> >= 0.45;
+   deaths per game not up by more than 0.5. Expected: +1 contested big cycle a game (Q1 79 gems per ME88 capture) = +40 to +80 gems swing.
+
+
+S2 The opening (and every big group) is farmed by 1-2 bodies: the join rule keeps a second body off rich groups [STRATEGY + deterministic rule] est. gain +30 gems/game
+ number (v88, MM): gems captured by r150 66 vs 88, by r300 142 vs 197 (vs the LOSING top-30 side, map-matched: 66 vs 75 by r150, 142 vs 163 by r300, first gem capture r70 vs r57);
+   first gem capture r69 vs r53; all bodies on ONE
+   first group 12.0% vs 38.3%; bodies on the first target 2.36 vs 3.16; time to kill the team's first group 30.9 vs 24.6 rounds (openings.txt
+   pooled); big-group gems captured /100r 13.6 vs 22.6 (r1-150), 17.4 vs 32.9 (r151-400); opening visits to >=30-gem groups: alone 45% vs 17%,
+   killed 45% vs 55% (q2); harmless (gem / gold-only) >=30-gem groups: always alone (100% vs 37%, 1.00 vs 2.03 bodies, 5 maps, n small);
+   attacking >=30-gem groups: 2.51 vs 3.19 bodies, alone 32% vs 12%, killed 40% vs 52% (q3, 25 maps). 10-29 gem groups: 2.09 vs 2.53 bodies.
+ examples: adde6089 adgato_gemcombat2 body 4 Vendetta alone on G0 (56g, 8 gem camps, harmless) r18-24, left without a kill; 87897445
+   02stalactites body 5 Marcella G7 (77g harmless) r43; e33e2b41 02the_pack body 1 Marcella G0 (192g wolf pack) r7 and r83, 1 hit each; spread
+   openings: 853d2055 01hooks first groups per body [8,0,4,10], first gem capture r134, 22 gems by r150; 37765c83 00quarry [4,6,2,8].
+ cause: brain.cpp group_score(), claimers branch, lines 6997-7008:
+   "const bool heavy = rich || follow_g || g.monolith || g.elk || (!g.harmless && (solo_rounds > P.join_min_rounds || g.attackers >= 2));"
+   "if (!committed && (!heavy || ...)) { WHY(6); return -1; }" -> a harmless group of any size is never joined (g18_rich = 0, v23_prize = 0);
+   a group one body clears in <= 14 rounds (join_min_rounds) is never joined; a joiner must arrive within join_reach 1.2 x the claimers' clear
+   time (line 7006); and a joiner is credited join_share 0.6 of the value (line 7008), so a nearby empty small group outscores joining.
+ fix: g24_join (default 0), g24_join_gems 30, g24_join_until 300, g24_join_min 6.f, g24_join_reach 2.f, g24_join_share 0.9f; in group_score's
+   claimers branch: when g24_join && round < g24_join_until && g.gems >= g24_join_gems: heavy = solo_rounds > g24_join_min (harmless groups
+   included), the join_reach test uses g24_join_reach, share = g24_join_share. Up to max_join (3) extra bodies as now. Different from the failed
+   squads / deathball (g17_squad, deathball_until: followers walk with a leader and idle, monster damage 95k vs 103k) and from g18_rich (80+ gem
+   harmless only, level on v18 Oct 26): bodies still choose by score; only rich groups are opened to joiners, and a joiner still has to make
+   the kill faster. Optional second step: g24_join_until 2000 for groups with an enemy seen in the last 30 rounds (pairs with S1).
+ test: local: opening bodies per visit on >=30-gem groups 2.5 -> >= 3.0, alone share 45% -> <= 25%, first-group time to kill 31 -> <= 26,
+   gems captured by r300 +20 or more, monster damage r1-300 not down (the squad failure mode). Expected +25 to +35 gems by r300, +100 gold.
+
+
+S3 Farming through contact on small groups and in passing [STRATEGY] est. gain +15 gems/game (part of S1's mechanism; counted separately only for non-big groups)
+ number: MM v88: camp hits made with an enemy within 6 are 4.9-6.0% of our hits vs 10.1-13.5% (r1-800), 9.1 vs 13.5 (r801+); contested
+   body-rounds are 18-23% of all for both sides, so ~4% x 21% x 5 bodies x ~1150 rounds = ~50 more camp hits a game at their rate.
+ examples: as S1, plus every contact on a <30-gem group (Q1b ME contacts: farmed 26% vs TOP 38%, left 25% vs 15%).
+ cause: S1 (1)-(3). The +12 surcharge (line 7246) applies to every group, the isolated flee to every body without an ally within 5.
+ fix: g23_farm 1 (exists: "with the engine in AVOID (nobody can hit us next turn) at R >= g23_keep_r the current group keeps its score");
+   g24_hold_small 0/1: extend S1(a) to any group with hp >= 0.8 and no enemy that can hit us next turn (calm threat count 0).
+ test: hit% with an enemy within 6 3% -> >= 6%; walk% with an enemy within 6 57% -> <= 50%; deaths/game +0.3 at most.
+
+
+S4 Gold and items: the gap is income, not spending [STRATEGY, no shop change] est. gain: comes with S1-S2 (+150-300 gold/game)
+ number (q1.py, MM v88): gold income /100r (shards bought x 30 + unspent change) 284 vs 375 (r1-150), 338 vs 493, 353 vs 598, 327 vs 652 (r801+);
+   from camps 259 vs 314, 290 vs 380, 291 vs 422, 267 vs 435; non-camp gold (kills 50 each, Marcella's tribute gold, Vesper / Treasure +20%)
+   26 vs 61, 49 vs 113, 62 vs 177, 61 vs 217. Over a 1200-round game: camps -1,500 gold, non-camp -1,300 gold. Spending is not slow: unspent
+   gold at r300 67 vs 155, at r900 106 vs 240; shards bought per trip 1.64 vs 1.59; first emblem r146 vs r127 (follows the income).
+   Q3/Q6: shop visits 55-61 vs 93 (TOP) / 123 (OPP) and "held recalls for shopping" 7-8% vs 17-24% (gold at recall 32-35 vs 82-100) are the
+   same income gap seen at the recall: we shop at every capture-recall (shop_shards 4, shop_gold 150 rules) and arrive with less gold.
+ examples: any v88 row: rows_ours.jsonl phases[].gold_income vs gold_cap.
+ cause: camp gold: fewer wolf / big-group captures (S1, S2: wolves carry 90 gold); non-camp: fewer kills (OPP v88 dies 0.58/100r r401-800, our
+   bodies 0.94), fewer gems banked (MM 56 vs 99 /100r r401-800) and Marcella in 69% of our drafts vs 88% of theirs (draft stream).
+ fix: none in home_trip(); the levers are S1-S2. If the item stream wants a build lever: v24_build 31 (Treasure first; local +15, held-out -5,
+   not ladder-tested) is the only build change not yet refuted (v23_build lost on the ladder).
+ test: gold income /100r r151-400 338 -> >= 400 with S1+S2 on.
+
+
+S5 Territory: the enemy farms our half and the middle while we walk [STRATEGY] est. gain +15 gems/game (+ ~20 denied)
+ number (Q2): enemy captures on OUR half per game ME88 3.75 / ME 3.87 vs TOP 2.33 (OPP suffers 1.06): 51 gems/game (ME88) vs 28 (TOP); enemy
+   camp hits on our half 51 vs 27; gems captured in the middle band ME88 223 / ME 298 vs TOP 398, OPP 561; body-round share in the middle 0.28 vs
+   0.33 (OPP 0.36), on our own half 0.68 vs 0.62. First raid r282 vs r232 (we raid later, take 0.6 gems per raid vs 2.3).
+ examples: 0a4540a5 02harvest G20 114g respawn r899: our 1 body met 4, left r914, taken r942; c5df3d07 00happy_halloween G0 100g r681: 2 v 2,
+   left r693, taken r701 (both from ex2.py; mid-band big groups).
+ cause: the middle is where the contested big groups are (Q5 table: mid_big), so S1's chain decides it; on our half the same isolated flee
+   (adv < 1.5 within 5) hands an equal intruder the group, then v27_avoid keeps us off it for 12 rounds.
+ fix: g24_hold applies to every group on our half (d_ally < d_enemy) regardless of gems (g24_hold_own 1), and with g24_join (S2) a group
+   with an enemy seen in the last 30 rounds on our half or in the middle counts as heavy for joining.
+ test: enemy captures on our half 3.8 -> <= 2.8 a game; middle-band gems +50.
+
+
+S6 Late-game farming pace: fewer hits and weaker hits [consequence of S2 + S4, no separate fix] est. gain: included above
+ number (MM v88): camp hits /100r r401-800 68 vs 83, r801+ 48 vs 64; damage per hit 77.7 vs 94.6, 107.5 vs 131.3; walk share UNOPPOSED 50.0%
+   vs 44.9% (r401-800), 51.3 vs 46.5 (r801+); wait share unopposed equal (3.2 vs 3.3); deaths /100r equal (0.94 vs 1.05, v88 rows).
+ cause: damage per hit = items (S4). The unopposed walk excess matches the 2-body-per-group spread (S2: each body clears its own groups and
+   walks between them; their stacked bodies clear one group in fewer rounds and walk together).
+ fix / test: S2 with g24_join_until 2000 as a second variant; metric: unopposed walk share r401-800 50% -> <= 47%.
+
+
+S7 Wards: re-warded every 10 rounds wherever the body is, a third of them at our spawn [BUG-like, deterministic, small] est. gain +0-10 gems/game
+ number (Q4): wards per game ME88 215 / ME 230 vs TOP 147; re-wards 211 vs 142; bush share 0.41 vs 0.74 (bushy maps 0.46 vs 0.78); within 8 steps
+   of our spawn 0.33 vs 0.17; within 6 of a big group 0.27 vs 0.39; 46-49% placed after r600 vs 40%. Live wards at r300/r600 are the same
+   (4.3-4.4 vs 4.4-4.6, one per champion), and map share seen 0.25 vs 0.23: we see as much, but nearer home.
+ does it cost turns or actions? No: place_ward() runs at the end of turn() after the move / attack / cast (brain.cpp 1253, 1365) and its own
+   engine call; cooldown 1 round. The cost is placement: one ward per champion with infinite lifetime, so each re-ward deletes the
+   champion's previous (often forward) ward.
+ examples: 33abd1d4 03colosseum: 360 v88 wards, 187 within 8 of our spawn; 0a4540a5 02harvest 312 wards, 109 on a bush; a4006e83 02fields 291.
+ cause: brain.cpp place_ward() line 3160 / 3167: "if (!force && round - ward_round < 10) return;" then v14_ward() (3348) places on the best
+   tile in reach 2 of where the body stands, including the spawn area after every recall / respawn; when no bush is in reach it falls back to
+   a non-bush tile.
+ fix: g24_ward_keep (default 0): in place_ward(), when the champion's ward is live (ward_pos valid) do not re-place if the new tile is within
+   8 steps of our spawn, or is not a bush while the old one is, or is within 6 of the old ward; force placements (capture_group, tribute)
+   unchanged.
+ test: share of wards within 8 of our spawn 0.33 -> <= 0.15; bush share 0.41 -> >= 0.6; no change in turn time (CPU only).
+
+
+NOT CHANGED (checked, looks like a gap but is by design or measured):
+- bait recalls 3,847 vs 2,263 a game (Q6): g17_bait 1 (Mite's bait; measured +98 with g17_fakerec in v17).
+- first-target choice: nearest-group share 45% vs 44% (MM), own-side share 89% vs 87%: the target is fine, the number of bodies is not (S2).
+- capture execution: our kills captured by our team 98.0% vs 97.5% (v88, g23_capfix works).
+
+SUGGESTED ORDER: one variant = g24_hold 1 + g23_farm 1 (S1/S3/S5), a second = + g24_join 1 (S2); g24_ward_keep alone (no farming effect
+expected, CPU only). Mechanism checks first (local, 8 map_fail maps), then s4 vs v88, then a ladder pair. All switches default 0 = v88.

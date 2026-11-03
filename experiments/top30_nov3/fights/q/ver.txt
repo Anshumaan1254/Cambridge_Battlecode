@@ -1,0 +1,31 @@
+team-games {'OPP84': 114, 'US84': 114, 'US88': 91, 'OPP88': 91}
+  OPP84: weak: toward 33.5/g die6 8% | weak+nmore: toward 2.1/g die6 19% | weak+neq: toward 14.0/g die6 7% | par: toward 54.3/g die6 3%
+  OPP88: weak: toward 30.1/g die6 5% | weak+nmore: toward 0.8/g die6 10% | weak+neq: toward 12.7/g die6 4% | par: toward 41.9/g die6 2%
+  US84: weak: toward 46.5/g die6 10% | weak+nmore: toward 4.1/g die6 13% | weak+neq: toward 21.0/g die6 8% | par: toward 69.3/g die6 4%
+  US88: weak: toward 52.9/g die6 13% | weak+nmore: toward 8.0/g die6 17% | weak+neq: toward 24.6/g die6 12% | par: toward 58.8/g die6 5%
+  OPP84: deaths 8.96/g, walk-in champion deaths 3.36/g, respawn<40 0.57/g, enemy-woken camp 0.25/g, stunned3 44%
+  OPP88: deaths 6.40/g, walk-in champion deaths 1.92/g, respawn<40 0.31/g, enemy-woken camp 0.14/g, stunned3 35%
+  US84: deaths 8.42/g, walk-in champion deaths 5.03/g, respawn<40 0.74/g, enemy-woken camp 1.14/g, stunned3 42%
+  US88: deaths 10.65/g, walk-in champion deaths 5.98/g, respawn<40 1.49/g, enemy-woken camp 0.73/g, stunned3 39%
+HoR no-dash caught examples (v88): 122
+    f39bc1ca-e3c4-4cff-bda0-314270b30060 r 746 body 3 hp 0.57 n_en 1 pw 0.05 enemy Marcella
+    d8304698-8da4-4e67-b43b-aac8e583de79 r 1294 body 3 hp 0.59 n_en 2 pw 0.06 enemy HeartOfRuin
+    5b7f0c2e-728a-462b-bd48-786e8e3d0049 r 375 body 1 hp 0.21 n_en 2 pw 0.15 enemy Marcella
+    9c7cbc9f-cd31-4642-b14e-7b20a992404f r 1026 body 5 hp 0.24 n_en 1 pw 5.14 enemy HeartOfRuin
+Vesper/Vendetta no-dash caught examples (v88): 68
+    2ef5ac90-968a-4b05-861e-97644ecf254e r 848 body 2 Vendetta hp 0.19 d_enemy 1 enemy Vendetta
+    0929d08d-5904-4c25-8dc5-205e82ed0b87 r 1619 body 4 Vendetta hp 1.00 d_enemy 1 enemy Ren
+    602dd662-358d-4e03-8a6d-b14f7a7e1a59 r 129 body 5 Vendetta hp 0.08 d_enemy 1 enemy Marcella
+walk-in deaths pw5<0.67 with al5>=en5 (v88): 20 0.22/g
+    fd46f2d5-190f-4ca9-960f-dd49fe076a2e r 1072 body 5 HeartOfRuin killer Marcella al5 1.2 en5 0.8 pw5 0.24 hp5 1.00
+    6fa9287c-7482-447e-813c-e8aefb376e90 r 709 body 1 VesperVale killer Vendetta al5 2.0 en5 2.0 pw5 0.39 hp5 1.00
+    0929d08d-5904-4c25-8dc5-205e82ed0b87 r 1570 body 0 HeartOfRuin killer Marcella al5 2.4 en5 2.0 pw5 0.04 hp5 0.68
+    2bbe045f-7bc7-403d-87a3-69d06a3f92c2 r 769 body 7 Marcella killer VesperVale al5 2.0 en5 2.0 pw5 0.11 hp5 1.00
+enemy-woken camp deaths (v88): 66
+    010b54dd-ca8f-4c8f-8357-d0bb9d52ed06 r 997 body 1 HeartOfRuin killer HeartOfRuin tw8 0
+    4f472198-2b93-4c46-a3df-0c6749e1ee9a r 1479 body 7 Ryth killer camp tw8 3
+    372c305c-e55f-4d02-985f-2dfb159a5d9c r 903 body 2 HeartOfRuin killer HeartOfRuin tw8 0
+respawn<40 deaths (v88): 136
+    0929d08d-5904-4c25-8dc5-205e82ed0b87 r 1122 body 0 HeartOfRuin age 23 tw8 4 pw5 1.2719115365577611 d_own 11
+    bfe31ac3-182c-494a-b56d-43517b119789 r 1211 body 1 VesperVale age 5 tw8 1 pw5 0.3585481714979263 d_own 1
+    f39bc1ca-e3c4-4cff-bda0-314270b30060 r 717 body 5 Vendetta age 28 tw8 1 pw5 0.14586479356350335 d_own 31

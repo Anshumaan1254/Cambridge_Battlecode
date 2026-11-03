@@ -1207,6 +1207,13 @@ struct Params
 								// retreat step; a retreat started under 40% health with an enemy spell ready is caught 41% of the time, at 40%+ without one 8%)
 	float g23_rescue_hp = 0.5f;	// rescue: our own health share needed
 	int g23_rescue_r = 4;		// rescue: the caught ally is within this many tiles of us
+	int g23_capfix = 0;			// bits (map_fail opening study: on gemfight 36 of our 61 kills were not stepped on within 8 rounds, theirs 6 of 42;
+								// the reward sits frozen, its respawn timer starts only at the capture, and the enemy takes 1 in 5):
+								// 1 the mi_capture hand-off yields a reward only to an ally that claims it or stands on it (a near Vesper Vale
+								// walking elsewhere made every other body leave it); 2 a reward within g23_rew_d counts its time / g23_rew_mult;
+								// 4 en-route spells never kill a group's last live camp (Marcella killed lone camps from 4 tiles and walked on)
+	int g23_rew_d = 3;
+	float g23_rew_mult = 2.5f;
 	int g23_watchfix = 0;		// 1: base-code fixes from the ladder replays (map_fail/REPORT.md B2, B3): (a) a respawning group whose timer reads 0 is
 								// waited for next to its tiles, never farmed onto them (an occupied spawn tile keeps the timer at 0: 166 idle rounds on
 								// islands); a timer stuck at 0 for 12+ rounds is not a legit wait for the watchdog; (b) a travel dash is not progress

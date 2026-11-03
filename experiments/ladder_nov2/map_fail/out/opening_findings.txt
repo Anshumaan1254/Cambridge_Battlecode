@@ -1,0 +1,84 @@
+OPENING (rounds 1-150) ON 00crater, 00gemfight, 01elk_arena, 00gem_fields, 00quarry: WHAT EACH BODY DOES, OURS vs THEIRS
+Ranked games since 2026-11-02: crater 6 (1-5), gemfight 5 (0-5), elk_arena 8 (1-7), gem_fields 4 (0-4), quarry 11 (2-9). Pairs are "we/they".
+Data: out/opening_bodies.txt (every body: group sequence with arrival / first hit / kill / capture, time split, recalls, shops,
+deaths, abandoned approaches), out/opening_summary.txt (per map / result / team), out/opening_firstcap.txt (first capture of each
+team), out/reward_delay.txt + out/orphan_kills.txt (kill -> capture delay). Scripts: map_fail/opening.py, opening_summary.py,
+first_capture.py, reward_delay.py, orphan_kills.py.
+
+1. NUMBERS (losses; means per game unless stated)
+                          crater      gem_fields   gemfight    elk_arena   quarry
+first capture r           92 / 43     54 / 40      57 / 27     37 / 18     14 / 12
+gems captured by r150     21 / 91     57 / 155     26 / 103    10 / 63     25 / 105
+camp gold by r150         76 / 253    68 / 234     178 / 247   408 / 763   386 / 439
+item shards at r150       4 / 8       4 / 7        4 / 9       12 / 23     11 / 14
+bodies per group visit    1.7 / 2.8   2.0 / 2.5    2.0 / 2.9   1.7 / 1.9   1.25 / 1.8   (own bodies hitting the same group)
+distinct first targets/body 0.49/0.24 0.50 / 0.42  0.47 / 0.36 0.76 / 0.74 1.00 / 0.71  (1 = every body to a different group)
+visits ending in a kill   21% / 62%   51% / 54%    58% / 68%   53% / 75%   61% / 78%
+time %: hit + capture     7 / 21      15 / 20      17 / 24     15 / 21     21 / 27
+time %: wander + flee     33 / 14     19 / 15      19 / 12     14 / 6      15 / 8     (wander = moving with no camp hit in the next 40 rounds, not going home)
+kills left uncaptured (no step-on by the killer team within 8 rounds), rounds 1-300:
+                          0% / 5%     45% / 7%     59% / 10%   20% / 13%   14% / 7%
+  frozen reward-rounds    0 / 65      1797 / 389   4346 / 520  1624 / 873  1472 / 884  (respawn timers only start at the capture)
+bodies with no camp hit by r150: crater 3 of 25 ours (b4 Marcella 7355a70b, b9 Marcella 134223c4, ...) vs 0.
+Held recalls: elk_arena they 16.9% of body-rounds vs our 7.4%; we walk home 12.7% vs 9.1% (they recall from the field to shop/heal).
+
+2. THE OPPONENTS' OPENING RULES (that we do not follow)
+R1 Stack on ONE group and finish it, then move together. Crater 7355a70b (Gem Simons): all 5 bodies (b5-b9) on their nearest group G5
+   (18g/40$, 19 steps) r17-24, kill r24 with 5 bodies, capture r30; then b7/b8/b9 together to the centre G2 (36g elk) r40-57, capture
+   r63. 94d9d1cb (Zkey Farming): all 5 on the centre golem group G3 (64g/160$) r19-41, capture r47. They put 2.5-2.9 bodies on a
+   group (we 1.7-2.0) and 62% of their crater visits end in a kill (ours 21%).
+R2 Step onto the reward at once. 36 of their 42 gemfight kills were stepped on within 1 round (ours 19 of 61; 25 waited > 30 rounds,
+   4 never, 11 were captured by THEM). Same on gem_fields (27/42 vs 21/38) and quarry (159/204 vs 114/166).
+R3 Send bodies straight to the richest group when it is free. gemfight: 7 of their 22 first targets are the centre G0 (78g, 29
+   steps, #12 by distance; ours 1), e.g. a56c5e92 their b5 Vendetta hits G0 from r14, they capture 78g at r57; 02498171 their b0 Ren on G0 r19-32.
+   gem_fields: 12 of their 20 first targets are the same 71-gem elk group, 15 steps away (they stack 3-4 on it).
+R4 Recall (not walk) from the field to shop / heal (elk_arena 3.7 held recalls per body by r150 vs our 1.8; walk-home 9% vs 13%).
+
+3. WHERE OUR EXTRA WALKING COMES FROM
+a) Crater (wander 23% + flee 10% of body-rounds vs 8% + 6%): we split (2 bodies to the centre elk G2, 1 to the near wolf group, the
+   others late), the enemy blob arrives, our bodies stop, flee and wander. 7355a70b: b0 Vendetta + b3 Vesper hit G2 r21-26 (7 + 5 hits,
+   G2 not killed) and leave at r26 when the enemy 5-blob (done with G5 at r24) is near; b2 Ryth alone on our near wolf G4 r22-26, also
+   leaves; b4 Marcella never hits a camp in 150 rounds (walk-home 39, wander 55, flee 19, fight 20 rounds); b1 HoR dies r38. Our first
+   capture r95 (corner wolf group G0, 11g, 32 steps). Abandoned approaches: 6 per body vs 3.
+b) Kill-and-leave (gemfight, gem_fields; BUG candidate): the killer walks off and the reward sits. a56c5e92 (gemfight): b0 HoR + b1
+   Vesper kill the near-spawn group G11 (4g/60$, 2 steps) at r16; b0 steps ON the reward tile r17, dashes off r18 (capture needs 5
+   standing rounds), both walk to the centre; G11 is stepped on at r96 (+80). Same group, same rounds in 3701c833 (+36) and 02498171
+   (G12, +65). Marcella's en-route spell (cast_en_route: a damage spell on a camp exactly 4 tiles away) kills single 7-gem camps and
+   leaves them: G10 at r19 in ef5b72d0 (+198), 3701c833 (+125), a56c5e92 (+73, taken by THEM); G9 r21 02498171 (+277, THEM); G2 r13
+   (+254). 12 of the 36 gemfight orphans were spell kills from 4+ tiles, 22 basic attacks (Vesper from 3 tiles: ef5b72d0 G15 r135 never
+   taken, Vesper walked to the centre fight).
+c) Elk_arena: walk-home 12.7% vs 9.1% and flee 8.7% vs 4.7%; first capture r37 vs r18; 29 of our 145 kills orphaned (8 then taken by
+   them), e.g. 1ccccefa G0 (72g) killed r81 by b5/b6/b8, taken by THEM r128.
+
+4. FIRST CAPTURE: WHY OURS IS LATER (crater r92 vs r43, gemfight r57 vs r27, elk_arena r37 vs r18)
+- crater: we do not finish our first group (split + flee, R1); in 4 of 5 losses our first capture is a corner wolf group (11g) after
+  r95 or a single-body capture (134223c4: b5 G5 r126); they stack and capture r30-59.
+- gemfight: we kill the near group at r16-18 as fast as they do (their kill r7-12 with 3-5 bodies) but do not step on it (R2): our
+  first capture r32 / r32 / r58 / r74 / r89 vs theirs r13-32.
+- elk_arena: in 7 of 8 games their first capture is a nearest $$ gold pair (4-6 steps) killed by ONE body in 1-6 rounds and stepped on
+  at once (r12-19). Ours: the same pairs, but b712ee9e our Vesper kills G5 at r8 and it is captured at r39 (+25 orphaned); 98e86952 first
+  capture r51, b80bdabd r76. 11 of our first targets go to the centre G0 (rank #5 by distance) vs 7 of theirs.
+
+5. OUR SCORER'S CHOICE (inferred; bots/god85/src/brain.cpp group_score l. 6771-7363: score = (gems + 0.5 gold) x share / time,
+   time = approach + wait + kill time + 6 + risk terms; joining needs a heavy group: elk / 2+ attackers / > 14 solo rounds, max_join 3)
+- crater: 11 of 22 of our first targets are the centre elk G2 (36g/90$ = 81 value, 24 steps) over our nearest wolf group (18g/40$ = 38,
+  19 steps): value/time favours the richer group; the elk group needs 2+ bodies and the enemy reaches it at the same time (both teams
+  24 steps).
+- gem_fields: our bodies split between the 71g elk group (15 steps, #4) and the single 7g gems next to spawn (5 steps, #1: 7 of 20
+  first targets); they stack 12 of 19 on the 71g group.
+- quarry: first targets are similar (the 46g G8: 9 of our 36 vs 10 of their 36; gold-only pairs 27 vs 24), but every one of our
+  bodies goes to a different group (distinct 1.00 vs 0.71) and a visit has 1.25 of our bodies vs 1.8 of theirs; they get 105 gems
+  by r150 vs our 25.
+- No map-specific plan applies on these maps (params: mi_own / mi_next / mi_open = 0; known_maps.h lists only 00gemfight). Opening
+  switches present but off: v23_prize 0 (v23_prize_gems 120, until r150: the whole team on the map's prize group), v23_open_gold 1.0
+  (no gem-first opening), g18_rich 0, style 0 (no deathball), deathball_until 0, mono_follow_until only on lone-monolith maps.
+
+6. CODE TO LOOK AT FOR THE BUG PART (kill-and-leave)
+- cast_en_route (params.h:447 = 1; brain.cpp 8673-8714, called from farm() l. 7551): casts a damage spell on a camp of another of
+  our groups exactly 4 tiles away; on a one-camp group (120 hp) that is the kill, and the body walks on. Hypothesis: skip a camp whose
+  hp <= the spell's damage when it is the group's last live camp, or make that group the body's next capture.
+- Reward hand-off in group_score's ST_REWARD case (l. ~6852-6950): mi_capture 1 (params.h:906, the gold funnel: a body yields a
+  shared reward to a visible ally within gold_rank_d 5 with a higher gold multiplier, e.g. Vesper), together with the lower-index
+  closer-claimer rule (l. ~6935) and no_split (l. ~6937). Hypothesis: HoR (index 0) yields to Vesper (gold bonus) and Vesper yields to
+  the lower-index claimer HoR, so neither stands the 5 rounds; the a56c5e92 / 3701c833 / 02498171 openings (r16-18) show exactly this
+  pair (HoR + Vesper, killer at 1-3 tiles, step on for 1 round, then both leave).

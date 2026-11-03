@@ -1,5 +1,5 @@
 --- god84/src/brain.cpp	2026-11-02 17:31:12.756024356 +0000
-+++ god85/src/brain.cpp	2026-11-03 02:05:22.814431824 +0000
++++ god85/src/brain.cpp	2026-11-03 02:19:32.067711539 +0000
 @@ -971,6 +971,8 @@
  
  void Brain::turn()
@@ -299,7 +299,26 @@
  	bool did = false;
  	if (!hold_spells && !cast_done)
  	{
-@@ -6939,7 +7017,8 @@
+@@ -6847,6 +6925,9 @@
+ 				if (da > P.gold_rank_d)
+ 					continue;
+ 				const double gm = funnel(a.type);
++				// g23_capfix 1: yield only to an ally that takes it (claims the group or stands on it)
++				if ((P.g23_capfix & 1) && !(i < 6 && C.claim[static_cast<std::size_t>(i)] == g.id) && !g.mask.is_set(a.pos))
++					continue;
+ 				if (gm > my_gm + 1e-9 || (std::fabs(gm - my_gm) <= 1e-9 && (da < d_tile || (da == d_tile && i < W.my_index))))
+ 					{ WHY(4); return -1; }
+ 			}
+@@ -6883,6 +6964,8 @@
+ 		}
+ 		eta = d_tile;
+ 		time = static_cast<float>(eta) + 6.f;
++		if ((P.g23_capfix & 2) && d_tile <= P.g23_rew_d)
++			time = std::max(1.f, time / P.g23_rew_mult); // g23_capfix 2: a reward next to us is taken now (left, it freezes the group's respawn)
+ 		break;
+ 	}
+ 	case ST_RESPAWN:
+@@ -6939,7 +7022,8 @@
  			if (g.harmless)
  				return true;
  			// Camps hit the nearest champion: a ranged champion next to a melee ally takes almost nothing.
@@ -309,7 +328,7 @@
  #ifdef XM_TRACE
  			// The uncorrected model, logged next to the new one so both are scored on the same episodes.
  			const bool xm_tank0 = !(kit.ranged && helper_melee);
-@@ -7141,7 +7220,8 @@
+@@ -7141,7 +7225,8 @@
  				edps += sc_recent[static_cast<std::size_t>(k)].dps;
  			}
  		const bool dive = P.big_reward_dive > 0 && g.st == ST_REWARD && g.enemy_on_tile && g.gems >= P.big_reward_dive && hp >= 0.25f * max_hp;
@@ -319,7 +338,7 @@
  		{
  			// big_reward: a group worth a death or two is fought for with the whole team close by
  			const bool big = P.big_reward > 0 && g.gems >= P.big_reward;
-@@ -7157,7 +7237,7 @@
+@@ -7157,7 +7242,7 @@
  				{ WHY(10); return -1; }
  		}
  	}
@@ -328,7 +347,7 @@
  		time += 12.f;
  	if (P.v24_ci_escort && (type == CT::cassi || type == CT::issac))
  	{
-@@ -7267,6 +7347,13 @@
+@@ -7267,6 +7352,13 @@
  			return 1e4f / std::max(1.f, finish);
  		}
  	}
@@ -342,7 +361,7 @@
  	if (P.tp_own && tp_own_.ok && g.id >= 0 && g.id < static_cast<int>(tp_own_.owner.size()) &&
  		tp_own_.owner[static_cast<std::size_t>(g.id)] == tp_own_.slot)
  		return value / std::max(1.f, time) * (1.f + P.tp_own_bonus);
-@@ -7463,6 +7550,8 @@
+@@ -7463,6 +7555,8 @@
  	auto& W = world();
  	if (task != T_CAPTURE && cast_en_route())
  		return;
@@ -351,7 +370,7 @@
  	if (P.style == 1 || round < P.deathball_until || (P.pxs_style && style_now() == 3) || (P.spar_db && sparring_window()))
  	{
  		int leader = -1;
-@@ -7735,6 +7824,18 @@
+@@ -7735,6 +7829,18 @@
  			}
  		}
  	}
@@ -370,7 +389,7 @@
  	if (best < 0)
  	{
  		IDL();
-@@ -7934,7 +8035,7 @@
+@@ -7934,7 +8040,7 @@
  	case ST_REWARD: task = T_CAPTURE; IDL(); capture_group(g); break;
  	case ST_RESPAWN:
  		task = T_WAIT;
@@ -379,7 +398,7 @@
  		{
  			// Ring bodies wait outside the camps' reach: a respawned elk hits whoever stands on its tile's neighbours.
  			IDL();
-@@ -7943,10 +8044,14 @@
+@@ -7943,10 +8049,14 @@
  			else
  				task = T_WAIT;
  		}
@@ -396,7 +415,22 @@
  	}
  }
  
-@@ -8775,7 +8880,7 @@
+@@ -8596,6 +8706,14 @@
+ 			const int d = cheb(pos, g.camps[i].pos);
+ 			if (g.hp[i] <= 0 || !W.camp_occ.is_set(g.camps[i].pos) || d < 4 || d > reach)
+ 				continue;
++			if (P.g23_capfix & 4)
++			{
++				int live = 0;
++				for (std::size_t j = 0; j < g.camps.size(); ++j)
++					live += g.hp[j] > 0;
++				if (live <= 1)
++					continue; // g23_capfix 4: the last live camp is not killed in passing (nobody would capture the reward)
++			}
+ 			// A camp at 4 is outside every camp's reach (3); a group whose other camps stand closer than that could hit us.
+ 			bool safe = true;
+ 			for (std::size_t j = 0; j < g.camps.size(); ++j)
+@@ -8775,7 +8893,7 @@
  	// Keep burst for a fight only when one is likely within the cooldown: an unused ready spell is lost value
  	// (8-round cooldowns), and an enemy 7-9 tiles away led to a fight within 8 rounds only 13% of the time.
  	const bool save_cc = enemy_near_d <= P.hold_cc_dist;
@@ -405,7 +439,7 @@
  	if (P.varg_splash_pos && type == CT::varg && can_move)
  	{
  		// Varg's splash hits every camp next to the target: stand next to the camp with the most live neighbours. From
-@@ -8813,6 +8918,8 @@
+@@ -8813,6 +8931,8 @@
  				step(goal, false, false);
  		}
  	}

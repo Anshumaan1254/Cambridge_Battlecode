@@ -6925,6 +6925,9 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 				if (da > P.gold_rank_d)
 					continue;
 				const double gm = funnel(a.type);
+				// g23_capfix 1: yield only to an ally that takes it (claims the group or stands on it)
+				if ((P.g23_capfix & 1) && !(i < 6 && C.claim[static_cast<std::size_t>(i)] == g.id) && !g.mask.is_set(a.pos))
+					continue;
 				if (gm > my_gm + 1e-9 || (std::fabs(gm - my_gm) <= 1e-9 && (da < d_tile || (da == d_tile && i < W.my_index))))
 					{ WHY(4); return -1; }
 			}
@@ -6961,6 +6964,8 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 		}
 		eta = d_tile;
 		time = static_cast<float>(eta) + 6.f;
+		if ((P.g23_capfix & 2) && d_tile <= P.g23_rew_d)
+			time = std::max(1.f, time / P.g23_rew_mult); // g23_capfix 2: a reward next to us is taken now (left, it freezes the group's respawn)
 		break;
 	}
 	case ST_RESPAWN:
@@ -8701,6 +8706,14 @@ bool Brain::cast_en_route()
 			const int d = cheb(pos, g.camps[i].pos);
 			if (g.hp[i] <= 0 || !W.camp_occ.is_set(g.camps[i].pos) || d < 4 || d > reach)
 				continue;
+			if (P.g23_capfix & 4)
+			{
+				int live = 0;
+				for (std::size_t j = 0; j < g.camps.size(); ++j)
+					live += g.hp[j] > 0;
+				if (live <= 1)
+					continue; // g23_capfix 4: the last live camp is not killed in passing (nobody would capture the reward)
+			}
 			// A camp at 4 is outside every camp's reach (3); a group whose other camps stand closer than that could hit us.
 			bool safe = true;
 			for (std::size_t j = 0; j < g.camps.size(); ++j)

@@ -1,0 +1,337 @@
+Opening (rounds 1-150) per map / result / team. Time split = share of body-rounds (see opening.py).
+
+===== 00crater L (5 games)
+  team first camp hit r                                          we      20   they      20
+  body first camp hit r (mean)                                   we      50   they      30
+  bodies with no camp hit by r150 (total)                        we       3   they       0
+  first capture r                                                we      92   they      43
+  captures by r150 /game                                         we    1.20   they    5.20
+  gems captured by r150 /game                                    we      21   they      91
+  camp gold by r150 /game                                        we      76   they     253
+  item shards at r150 /team                                      we    4.00   they    7.60
+  first target: BFS steps from spawn                             we      23   they      22
+  first target: rank by distance (1 = nearest valued)            we    1.91   they    1.56
+  share of bodies whose first target is the nearest valued group we    0.36   they    0.44
+  distinct first targets / bodies (1 = all split, low = stacked) we    0.49   they    0.24
+  group visits started per body                                  we    1.68   they    3.16
+  own bodies hitting the same group in a visit                   we    1.71   they    2.78
+  hits per visit                                                 we       7   they      10
+  visits that killed the group                                   we    0.21   they    0.62
+  visits whose group we (this team) captured                     we    0.21   they    0.62
+  visits whose group the OTHER team captured                     we    0.00   they    0.00
+  visits with an enemy hitting the same group                    we    0.10   they    0.08
+  rounds from arrival (within 2) to first hit                    we    1.02   they    1.59
+  abandoned approaches per body                                  we       6   they       3
+  held recalls per body                                          we    2.32   they    1.24
+  shop visits per body                                           we    0.32   they    0.56
+  deaths by r150 /game                                           we    1.00   they    0.60
+  time split % (we | they):
+     walk-to      27.9 |  39.3
+     walk-home     9.1 |   5.1
+     walk-other   23.1 |   7.7
+     flee          9.9 |   5.9
+     hit           6.8 |  16.6
+     capture       0.4 |   4.0
+     fight         5.3 |   7.2
+     wait-ready    0.0 |   2.3
+     wait-alive    0.2 |   0.5
+     idle          0.5 |   0.9
+     recall        8.8 |   4.6
+     spawn         1.2 |   1.6
+     dead          6.7 |   4.3
+  first targets we: G2 Eggg 36g/90$ d24 #2 x11; G5 Wgg 18g/40$ d19 #1 x6; G1 Wg$ 11g/60$ d32 #5 x2; G4 Wgg 18g/40$ d19 #1 x2; G3 Ggggg 64g/160$ d24 #2 x1
+  first targets they: G5 Wgg 18g/40$ d19 #1 x10; G2 Eggg 36g/90$ d24 #2 x9; G3 Ggggg 64g/160$ d24 #2 x5; G4 Wgg 18g/40$ d19 #1 x1
+
+===== 00crater W (1 games)
+  team first camp hit r                                          we      21   they      17
+  body first camp hit r (mean)                                   we      51   they      59
+  bodies with no camp hit by r150 (total)                        we       0   they       0
+  first capture r                                                we     112   they      68
+  captures by r150 /game                                         we    1.00   they    4.00
+  gems captured by r150 /game                                    we      11   they      47
+  camp gold by r150 /game                                        we      60   they     159
+  item shards at r150 /team                                      we    2.00   they    4.00
+  first target: BFS steps from spawn                             we      25   they      19
+  first target: rank by distance (1 = nearest valued)            we    2.40   they    1.00
+  share of bodies whose first target is the nearest valued group we    0.20   they    1.00
+  distinct first targets / bodies (1 = all split, low = stacked) we    0.60   they    0.20
+  group visits started per body                                  we    2.40   they    3.00
+  own bodies hitting the same group in a visit                   we    1.50   they    1.93
+  hits per visit                                                 we       5   they       8
+  visits that killed the group                                   we    0.17   they    0.33
+  visits whose group we (this team) captured                     we    0.17   they    0.33
+  visits whose group the OTHER team captured                     we    0.00   they    0.00
+  visits with an enemy hitting the same group                    we    0.25   they    0.13
+  rounds from arrival (within 2) to first hit                    we    1.75   they    1.67
+  abandoned approaches per body                                  we       7   they       6
+  held recalls per body                                          we    1.80   they    1.60
+  shop visits per body                                           we    0.20   they    0.60
+  deaths by r150 /game                                           we    1.00   they    0.00
+  time split % (we | they):
+     walk-to      36.4 |  39.2
+     walk-home     9.2 |   8.3
+     walk-other   11.7 |  11.9
+     flee         13.3 |  11.9
+     hit           6.1 |  12.5
+     capture       0.3 |   2.8
+     fight         5.2 |   5.2
+     wait-ready    0.0 |   0.1
+     wait-alive    0.0 |   0.0
+     idle          0.4 |   0.8
+     recall        7.3 |   5.6
+     spawn         2.0 |   1.7
+     dead          8.0 |   0.0
+  first targets we: G2 Eggg 36g/90$ d24 #2 x3; G4 Wgg 18g/40$ d19 #1 x1; G0 Wg$ 11g/60$ d32 #5 x1
+  first targets they: G5 Wgg 18g/40$ d19 #1 x5
+
+===== 00gem_fields L (4 games)
+  team first camp hit r                                          we       5   they       8
+  body first camp hit r (mean)                                   we      21   they      24
+  bodies with no camp hit by r150 (total)                        we       0   they       1
+  first capture r                                                we      54   they      40
+  captures by r150 /game                                         we    4.00   they    4.75
+  gems captured by r150 /game                                    we      57   they     155
+  camp gold by r150 /game                                        we      68   they     234
+  item shards at r150 /team                                      we    4.25   they    6.75
+  first target: BFS steps from spawn                             we      12   they      15
+  first target: rank by distance (1 = nearest valued)            we    2.95   they    4.05
+  share of bodies whose first target is the nearest valued group we    0.35   they    0.05
+  distinct first targets / bodies (1 = all split, low = stacked) we    0.50   they    0.42
+  group visits started per body                                  we    3.15   they    2.90
+  own bodies hitting the same group in a visit                   we    2.03   they    2.48
+  hits per visit                                                 we       6   they      11
+  visits that killed the group                                   we    0.51   they    0.54
+  visits whose group we (this team) captured                     we    0.33   they    0.49
+  visits whose group the OTHER team captured                     we    0.00   they    0.02
+  visits with an enemy hitting the same group                    we    0.14   they    0.15
+  rounds from arrival (within 2) to first hit                    we    2.35   they    1.64
+  abandoned approaches per body                                  we      12   they       8
+  held recalls per body                                          we    1.70   they    1.43
+  shop visits per body                                           we    0.30   they    0.57
+  deaths by r150 /game                                           we    1.75   they    1.75
+  time split % (we | they):
+     walk-to      28.1 |  28.9
+     walk-home     9.1 |   8.4
+     walk-other    6.9 |   5.8
+     flee         12.3 |   8.8
+     hit          10.8 |  15.1
+     capture       3.9 |   4.9
+     fight         8.1 |   7.7
+     wait-ready    1.2 |   1.9
+     wait-alive    0.3 |   1.8
+     idle          0.1 |   0.2
+     recall        6.5 |   4.9
+     spawn         1.9 |   2.5
+     dead         10.8 |   9.0
+  first targets we: G5 Egggggggg 71g/90$ d15 #4 x8; G15 g 7g/0$ d5 #1 x5; G4 Egggggggg 71g/90$ d15 #4 x3; G14 g 7g/0$ d5 #1 x2; G4 Egggggggg 71g/90$ d22 #6 x1; G1 g 7g/0$ d9 #2 x1
+  first targets they: G4 Egggggggg 71g/90$ d15 #4 x12; G5 Egggggggg 71g/90$ d15 #4 x3; G4 Egggggggg 71g/90$ d22 #6 x2; G14 g 7g/0$ d5 #1 x1; G0 g 7g/0$ d9 #2 x1; G5 Egggggggg 71g/90$ d22 #6 x1
+
+===== 00gemfight L (5 games)
+  team first camp hit r                                          we    2.00   they    4.80
+  body first camp hit r (mean)                                   we      15   they      22
+  bodies with no camp hit by r150 (total)                        we       1   they       0
+  first capture r                                                we      57   they      27
+  captures by r150 /game                                         we    4.20   they    6.00
+  gems captured by r150 /game                                    we      26   they     103
+  camp gold by r150 /game                                        we     178   they     247
+  item shards at r150 /team                                      we    3.80   they    9.00
+  first target: BFS steps from spawn                             we       6   they      11
+  first target: rank by distance (1 = nearest valued)            we    2.53   they    4.77
+  share of bodies whose first target is the nearest valued group we    0.79   they    0.64
+  distinct first targets / bodies (1 = all split, low = stacked) we    0.47   they    0.36
+  group visits started per body                                  we    4.15   they    3.55
+  own bodies hitting the same group in a visit                   we    1.96   they    2.91
+  hits per visit                                                 we       6   they      10
+  visits that killed the group                                   we    0.58   they    0.68
+  visits whose group we (this team) captured                     we    0.31   they    0.65
+  visits whose group the OTHER team captured                     we    0.00   they    0.00
+  visits with an enemy hitting the same group                    we    0.07   they    0.08
+  rounds from arrival (within 2) to first hit                    we    1.12   they    1.36
+  abandoned approaches per body                                  we      26   they      28
+  held recalls per body                                          we    1.95   they    1.55
+  shop visits per body                                           we    0.45   they    0.50
+  deaths by r150 /game                                           we    1.00   they    0.60
+  time split % (we | they):
+     walk-to      31.9 |  37.5
+     walk-home     6.6 |   7.2
+     walk-other    9.8 |   5.8
+     flee          8.9 |   5.9
+     hit          12.7 |  18.2
+     capture       4.4 |   5.5
+     fight         4.9 |   5.7
+     wait-ready    0.6 |   1.1
+     wait-alive    0.2 |   3.7
+     idle          0.0 |   0.0
+     recall        7.9 |   5.8
+     spawn         2.1 |   1.9
+     dead         10.1 |   1.8
+  first targets we: G11 W$ 4g/60$ d2 #1 x9; G12 W$ 4g/60$ d2 #1 x6; G14 E$g 22g/110$ d19 #7 x2; G13 E$g 22g/110$ d19 #7 x1; G0 gWgggggWgggg 78g/80$ d29 #12 x1
+  first targets they: G12 W$ 4g/60$ d2 #1 x8; G0 gWgggggWgggg 78g/80$ d29 #12 x7; G11 W$ 4g/60$ d2 #1 x6; G13 E$g 22g/110$ d19 #7 x1
+
+===== 00quarry L (9 games)
+  team first camp hit r                                          we    2.22   they    2.33
+  body first camp hit r (mean)                                   we       8   they      12
+  bodies with no camp hit by r150 (total)                        we       0   they       0
+  first capture r                                                we      14   they      12
+  captures by r150 /game                                         we       8   they      11
+  gems captured by r150 /game                                    we      25   they     105
+  camp gold by r150 /game                                        we     386   they     439
+  item shards at r150 /team                                      we      11   they      14
+  first target: BFS steps from spawn                             we       7   they       8
+  first target: rank by distance (1 = nearest valued)            we    2.75   they    2.95
+  share of bodies whose first target is the nearest valued group we    0.25   they    0.35
+  distinct first targets / bodies (1 = all split, low = stacked) we    1.00   they    0.71
+  group visits started per body                                  we    4.19   they    4.57
+  own bodies hitting the same group in a visit                   we    1.25   they    1.84
+  hits per visit                                                 we       6   they       7
+  visits that killed the group                                   we    0.61   they    0.78
+  visits whose group we (this team) captured                     we    0.54   they    0.76
+  visits whose group the OTHER team captured                     we    0.02   they    0.01
+  visits with an enemy hitting the same group                    we    0.07   they    0.10
+  rounds from arrival (within 2) to first hit                    we    2.30   they    1.80
+  abandoned approaches per body                                  we      14   they       9
+  held recalls per body                                          we    1.69   they    1.27
+  shop visits per body                                           we    1.31   they    1.22
+  deaths by r150 /game                                           we    1.00   they    1.22
+  time split % (we | they):
+     walk-to      31.2 |  29.7
+     walk-home     6.2 |   5.8
+     walk-other    9.2 |   3.9
+     flee          5.5 |   3.8
+     hit          13.1 |  15.8
+     capture       7.9 |  10.8
+     fight         4.7 |   7.1
+     wait-ready    1.9 |   3.2
+     wait-alive    2.6 |   3.6
+     idle          0.0 |   0.1
+     recall        7.1 |   5.0
+     spawn         1.6 |   1.7
+     dead          8.9 |   9.5
+  first targets we: G8 gWggggg 46g/40$ d17 #5 x9; G5 $$$ 0g/60$ d5 #3 x6; G7 $$ 0g/40$ d2 #1 x6; G3 $$ 0g/40$ d3 #2 x6; G4 $$$ 0g/60$ d5 #3 x3; G6 $$ 0g/40$ d2 #1 x3; G2 $$ 0g/40$ d3 #2 x3
+  first targets they: G8 gWggggg 46g/40$ d17 #5 x10; G7 $$ 0g/40$ d2 #1 x7; G6 $$ 0g/40$ d2 #1 x6; G2 $$ 0g/40$ d3 #2 x4; G4 $$$ 0g/60$ d5 #3 x3; G5 $$$ 0g/60$ d5 #3 x3; G9 ggWgg 32g/40$ d22 #7 x2; G3 $$ 0g/40$ d3 #2 x1
+
+===== 00quarry W (2 games)
+  team first camp hit r                                          we    2.00   they    2.00
+  body first camp hit r (mean)                                   we       9   they      19
+  bodies with no camp hit by r150 (total)                        we       1   they       0
+  first capture r                                                we      16   they      14
+  captures by r150 /game                                         we       8   they       8
+  gems captured by r150 /game                                    we      27   they      83
+  camp gold by r150 /game                                        we     439   they     286
+  item shards at r150 /team                                      we      18   they      10
+  first target: BFS steps from spawn                             we       5   they       9
+  first target: rank by distance (1 = nearest valued)            we    2.43   they    3.11
+  share of bodies whose first target is the nearest valued group we    0.29   they    0.33
+  distinct first targets / bodies (1 = all split, low = stacked) we    1.00   they    0.70
+  group visits started per body                                  we    3.62   they    4.22
+  own bodies hitting the same group in a visit                   we    1.14   they    2.05
+  hits per visit                                                 we       6   they       6
+  visits that killed the group                                   we    0.59   they    0.68
+  visits whose group we (this team) captured                     we    0.59   they    0.68
+  visits whose group the OTHER team captured                     we    0.00   they    0.00
+  visits with an enemy hitting the same group                    we    0.10   they    0.11
+  rounds from arrival (within 2) to first hit                    we    2.72   they    3.34
+  abandoned approaches per body                                  we      15   they      13
+  held recalls per body                                          we    2.00   they    1.11
+  shop visits per body                                           we    1.62   they    0.89
+  deaths by r150 /game                                           we    2.00   they    1.50
+  time split % (we | they):
+     walk-to      21.3 |  32.9
+     walk-home     5.2 |   4.4
+     walk-other   14.3 |   6.4
+     flee          4.1 |   5.3
+     hit          10.7 |  10.7
+     capture       6.8 |   6.3
+     fight         7.6 |  11.6
+     wait-ready    0.7 |   2.0
+     wait-alive    3.7 |   1.9
+     idle          0.1 |   0.0
+     recall        8.1 |   3.9
+     spawn         2.0 |   1.4
+     dead         15.5 |  13.4
+  first targets we: G5 $$$ 0g/60$ d5 #3 x1; G7 $$ 0g/40$ d2 #1 x1; G3 $$ 0g/40$ d3 #2 x1; G4 $$$ 0g/60$ d5 #3 x1; G6 $$ 0g/40$ d2 #1 x1; G2 $$ 0g/40$ d3 #2 x1; G8 gWggggg 46g/40$ d17 #5 x1
+  first targets they: G8 gWggggg 46g/40$ d17 #5 x4; G6 $$ 0g/40$ d2 #1 x2; G5 $$$ 0g/60$ d5 #3 x1; G7 $$ 0g/40$ d2 #1 x1; G3 $$ 0g/40$ d3 #2 x1
+
+===== 01elk_arena L (7 games)
+  team first camp hit r                                          we    3.00   they    3.71
+  body first camp hit r (mean)                                   we      16   they      11
+  bodies with no camp hit by r150 (total)                        we       1   they       0
+  first capture r                                                we      37   they      18
+  captures by r150 /game                                         we       9   they      16
+  gems captured by r150 /game                                    we      10   they      63
+  camp gold by r150 /game                                        we     408   they     763
+  item shards at r150 /team                                      we      12   they      23
+  first target: BFS steps from spawn                             we       6   they       6
+  first target: rank by distance (1 = nearest valued)            we    3.97   they    2.97
+  share of bodies whose first target is the nearest valued group we    0.32   they    0.33
+  distinct first targets / bodies (1 = all split, low = stacked) we    0.76   they    0.74
+  group visits started per body                                  we    3.83   they    5.03
+  own bodies hitting the same group in a visit                   we    1.72   they    1.86
+  hits per visit                                                 we    4.39   they    4.92
+  visits that killed the group                                   we    0.53   they    0.75
+  visits whose group we (this team) captured                     we    0.46   they    0.67
+  visits whose group the OTHER team captured                     we    0.01   they    0.04
+  visits with an enemy hitting the same group                    we    0.04   they    0.04
+  rounds from arrival (within 2) to first hit                    we    2.42   they    2.22
+  abandoned approaches per body                                  we      17   they      11
+  held recalls per body                                          we    1.77   they    3.67
+  shop visits per body                                           we    1.31   they    1.69
+  deaths by r150 /game                                           we    2.00   they    2.00
+  time split % (we | they):
+     walk-to      25.7 |  26.8
+     walk-home    12.7 |   9.1
+     walk-other    5.2 |   1.4
+     flee          8.7 |   4.7
+     hit           8.6 |  12.3
+     capture       6.4 |   8.4
+     fight         6.2 |   4.7
+     wait-ready    1.6 |   1.9
+     wait-alive    0.1 |   0.6
+     idle          0.0 |   0.0
+     recall        7.4 |  16.9
+     spawn         3.1 |   3.6
+     dead         14.4 |   9.6
+  first targets we: G0 EgggEggg 72g/180$ d7 #5 x11; G3 $$ 0g/40$ d4 #1 x7; G4 $$ 0g/40$ d4 #1 x4; G5 $$ 0g/40$ d5 #2 x3; G4 $$ 0g/40$ d12 #10 x2; G1 $$ 0g/40$ d6 #3 x2; G3 $$ 0g/40$ d12 #10 x1; G6 $$ 0g/40$ d5 #2 x1
+  first targets they: G0 EgggEggg 72g/180$ d7 #5 x7; G4 $$ 0g/40$ d4 #1 x7; G3 $$ 0g/40$ d4 #1 x5; G6 $$ 0g/40$ d5 #2 x4; G17 $$ 0g/40$ d6 #3 x3; G24 $$ 0g/40$ d9 #7 x3; G5 $$ 0g/40$ d5 #2 x2; G18 $$ 0g/40$ d6 #3 x2
+
+===== 01elk_arena W (1 games)
+  team first camp hit r                                          we    3.00   they    2.00
+  body first camp hit r (mean)                                   we      17   they       7
+  bodies with no camp hit by r150 (total)                        we       0   they       0
+  first capture r                                                we      16   they      19
+  captures by r150 /game                                         we      13   they       2
+  gems captured by r150 /game                                    we      72   they       0
+  camp gold by r150 /game                                        we     675   they      80
+  item shards at r150 /team                                      we      39   they       5
+  first target: BFS steps from spawn                             we       5   they       6
+  first target: rank by distance (1 = nearest valued)            we    2.40   they    3.00
+  share of bodies whose first target is the nearest valued group we    0.40   they    0.50
+  distinct first targets / bodies (1 = all split, low = stacked) we    0.80   they    0.33
+  group visits started per body                                  we       5   they       4
+  own bodies hitting the same group in a visit                   we    1.96   they    3.28
+  hits per visit                                                 we    2.76   they    6.20
+  visits that killed the group                                   we    0.48   they    0.40
+  visits whose group we (this team) captured                     we    0.48   they    0.20
+  visits whose group the OTHER team captured                     we    0.00   they    0.20
+  visits with an enemy hitting the same group                    we    0.12   they    0.36
+  rounds from arrival (within 2) to first hit                    we       5   they       5
+  abandoned approaches per body                                  we      12   they       4
+  held recalls per body                                          we    2.20   they    0.17
+  shop visits per body                                           we    2.20   they    0.50
+  deaths by r150 /game                                           we    1.00   they    8.00
+  time split % (we | they):
+     walk-to      30.4 |  10.7
+     walk-home    15.2 |   5.1
+     walk-other    0.0 |   0.7
+     flee          6.5 |   4.3
+     hit           6.5 |  14.2
+     capture       8.1 |   2.3
+     fight        12.0 |  12.2
+     wait-ready    5.2 |   0.1
+     wait-alive    0.3 |   0.1
+     idle          0.0 |   0.0
+     recall        9.2 |   0.6
+     spawn         2.5 |   2.6
+     dead          4.0 |  47.1
+  first targets we: G3 $$ 0g/40$ d4 #1 x2; G0 EgggEggg 72g/180$ d7 #5 x1; G5 $$ 0g/40$ d5 #2 x1; G18 $$ 0g/40$ d6 #3 x1
+  first targets they: G0 EgggEggg 72g/180$ d7 #5 x3; G4 $$ 0g/40$ d4 #1 x3

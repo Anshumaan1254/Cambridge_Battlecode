@@ -7,6 +7,19 @@ ladder loop (earlier sessions were forbidden to). Still: commit/push only when t
 
 ## STATUS (newest first)
 
+**Nov 3, 02:30 UTC.** v87 (`g23r`) paired on 50 groups: **131/250 vs v84 121/250 (net +10, p 0.25)**, level with v85 (+2 of 150) and
+v86 (+4; only 12 of 250 games differ between g23r and g23rc) → WAIT; the other 51 groups go in at 03:02Z. Ranked 9/20 so far.
+Rescue checks: vs gpta75 +161 (v84 +79: +82), radius 6 = same games, + one-step +34, + dive filter +8, + bank +24, + disengage (bit 256)
+−22 → rescue alone stays. **Helper-agent replay study of the worst maps** (`experiments/ladder_nov2/map_fail/REPORT.md` and
+`out/opening_findings.txt`): S1 opening economy gap (first capture r92 vs r43 on crater; we wander 33% vs 14%), S2 contested big groups
+lost, B1 passive camp damage (2x theirs), B2 travel-dash loops the watchdog misses, B3 the respawn deadlock in the BASE code (timer 0 →
+farm_group onto the tiles), and **kill-and-leave**: on gemfight 36 of our 61 kills were not stepped on within 8 rounds (theirs 6 of
+42; 25 waited 30+ rounds, 11 taken by them) — the mi_capture hand-off yields to a higher-gold-multiplier ally within 5 even when that ally
+walks elsewhere, small rewards score below far groups, and en-route spells kill lone last camps. Fixes behind switches (inert verified):
+`g23_watchfix` (B2 + B3; alone −2 locally, expected: rare events), `g23_capfix` bits 1/2/4 (hand-off only to a claimer, near reward
+time / 2.5, no en-route kill of a last camp). On the panel now: `_cf7` (capfix 7) and `_rcf` (rescue + capfix 7 + watchfix) —
+`g85_run19.log`. If `_rcf` passes, it is candidate 3 (deploy after v87's verdict).
+
 **Nov 3, 01:25 UTC — LIVE: website v87 = `bots/g23r`** ("GOD v23 rc2: v84 + caught-ally rescue (g23 mode 2 bits 64)"), activated
 01:21:19Z (rank 69 / 2000); state `previous` = v86 (to fall back to the user's version use `rollback --to 85`). Why: v86 (`g23rc`,
 rescue + commit) paired on 50 groups = net +6 of 250 vs v84 (p 0.53), +3 of 150 vs v85 → WAIT; locally the commit was worse on both

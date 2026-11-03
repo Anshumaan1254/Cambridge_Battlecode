@@ -7,6 +7,19 @@ ladder loop (earlier sessions were forbidden to). Still: commit/push only when t
 
 ## STATUS (newest first)
 
+**Nov 3, 01:25 UTC — LIVE: website v87 = `bots/g23r`** ("GOD v23 rc2: v84 + caught-ally rescue (g23 mode 2 bits 64)"), activated
+01:21:19Z (rank 69 / 2000); state `previous` = v86 (to fall back to the user's version use `rollback --to 85`). Why: v86 (`g23rc`,
+rescue + commit) paired on 50 groups = net +6 of 250 vs v84 (p 0.53), +3 of 150 vs v85 → WAIT; locally the commit was worse on both
+pools (g23r s4 +112 / held-out +31, deaths 7.8 vs 9.2 / 8.3; g23rc +42 / −2): the commit skips the strike-first holds, so rescuers hit
+second (hitting first is the z +11.6 factor of the fight study) — the stale-d theory of 00:45 was wrong (g23r has the refreshed d and the
+fewest deaths). **Next at 02:02Z (quota reset):** `ladder_loop.py paired-run --plan experiments/ladder_nov2/paired_c2.json --max 50
+--execute` (its first 50 groups carry v84 `old`, v85 on 30, and v86 as columns, so `three_way.py experiments/ladder_nov2/paired_c2.json`
+gives g23r vs v84 / v85 / v86 on the same games). **TOL:** the deadlock (a seen respawning P0 with timer 0 = blocked by our own bodies on
+its spawn tiles, counted alive) is fixed; still −135 on 108 games (`_85tolc`): on 01hooks P0 (22 gems) is held by the enemy 68% of turns
+and the roster sends 2-4 bodies into it (25 deaths vs 17). Conservative variant `_85tolk` (no contesting: `g23_hold_extra −10`, primes
+only ≥ 36 gems and dA ≤ dB, `g23_prime_sticky 6`) on the panel now (`g85_run14.log`). Helpers: `next_plan.py` (results of a replayed
+candidate become a column), `three_way.py` (compares with every column).
+
 **Nov 3, 01:05 UTC — LIVE: website v86 = `bots/g23rc`** ("GOD v23 rc1: v84 + caught-ally rescue that commits (g23 bits 192)"),
 activated 01:00:56Z by this agent (rank 72 / 1990 at activation); `previous` = v85 (rollback: `ladder_loop.py rollback --execute`).
 Local: panel +42 (deaths 8.4 vs 8.7), held-out 103 maps 95/206 −2 (deaths 8.0 vs 8.4), 0 faults. Paired groups queued 01:02-01:05:

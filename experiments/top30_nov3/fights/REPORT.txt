@@ -1,0 +1,169 @@
+FIGHTS STREAM: top-30 vs our v84-v88 fights and deaths (Nov 3 2026, second-round helper, 08:05-08:40Z)
+
+DATA AND COMPARISONS
+  tables_full.txt (re-run 07:58Z): top-30 vs top-30 159 games (318 sides: TOP, TOPw, TOPl), our 205 games on v84/v88 (US, OPP = the
+  opponents in the same games; US88 / OPP88 = the 91 v88 games). Extra queries on the existing jsonl (no re-extraction), outputs:
+    q/q_eqR.py  -> q/eqR.txt         exchanges at equal R split by item gap, hits, spells, stuns, focus
+    q/q_more.py -> q/more_*.txt      retreat dash use by champion, answer latency by context, stuns by killer, walk-ins, camps, respawn,
+                                     map size
+    q/q_ver.py  -> q/ver.txt         v84 vs v88 split (US84/OPP84, US88/OPP88), example rows
+  Our games are loss-heavy (US win 0.09, US88 0.00), so the like-with-like comparison is US vs OPP (same games) and US88 vs OPP88; TOPl
+  (losing top-30 side) is the loss-conditioned benchmark. Each number below says which one it uses.
+  A death costs about 13 gems: 5.9 gems carried (US mean, they change hands) + 60 respawn rounds x 0.113 gems per body-round (US banked
+  rate; OPP 0.207). Gains below are deaths/game x 13, before overlap; S2-S4 overlap (shared walk-in deaths), S1 does not.
+
+WHAT THE SIX LEADS TURNED OUT TO BE
+  L1 equal-R exchanges: an item gap, not a fight rule. Opener at R 0.67-1.5: win US 51% vs OPP 61% (n 418 / 369), but the mean shard
+     gap per participant is -6.0 (US) vs +5.6 (OPP). With the gap held within +-3 shards: US 58% (146), OPP 57% (118), TOP 65% (130).
+     Receiver at R 0.67-1.5, gap within +-3: US 35% (122), OPP 41% (160), TOP 36% (151). In the same band our hits deal 83 damage
+     each vs 105 for the hits we take (TOP 118/119). We land more hits (15.1 vs 12.2 a side) for the same total damage. Our side
+     lands 0.57 damage-spell hits an exchange vs OPP 1.31 / TOP 1.21. Marcella is our only damage-spell body, and she casts as often as
+     the top-30 Marcellas (14.6 vs 14.4 spell hits per 1000 rounds alive), so that is the draft, not combat(). Target choice is the same:
+     share of hits on the most-hit target 0.85 (US) vs 0.80 (OPP) vs 0.83 (TOP); distinct targets 1.64 / 1.91 / 1.78. combat() already
+     reads item-adjusted strength and health (world.cpp:539 e.str = info.strength). The economy stream owns the gap (counterfactual,
+     tables Q6: gap to 0 = +4.0 pts exchange win share). The fight-code findings are the escape bug S1 and the entry rules S2-S4.
+  L2 answer latency is real but worth little: received exchanges answered within 1 round US 48% vs OPP 59% (2117 / 2274). The gap is
+     in spells cast from 4+ tiles (answered 31% vs 48%) and on our Vesper (39% vs 52%). Answering fast moves the receiver's win share by
+     only +5 pts (US 37% vs 32%; OPP 45% vs 41%): about 0.06 exchanges a game. See S6.
+  L3 stuns: no like-with-like gap. Stunned in the last 3 rounds before death: US 41% vs OPP 40%; US88 39% vs OPP88 35%. TOP's 28%
+     reflects which champions do the killing: killer Marcella 36% (US) vs 24% (TOP), but killer HoR, Ryth and Ren stun 60-84% of their
+     victims in every group, and our deaths come more from those kits. What differs is how a stunned victim got there: walked in (2+ steps in the last 8 rounds) 59% (US) vs 40% (OPP), 47% (TOP);
+     chased the killer 35% vs 21%. Part of S2.
+  L4 walk-ins confirmed: S2. L5 camps the enemy woke confirmed: S4. Deaths soon after respawn are worse on v88: S3.
+  L6 map size: the death gap is on small and mid maps (same games): small (< 1600 passable) US 11.7 vs OPP 8.8 deaths/game, mid 9.3 vs
+     7.2, big 4.0 vs 6.9 (n 87 / 85 / 33 team-games). US88 small 13.4/g. Every fix below acts where contact is frequent; test it on the
+     small-map pool first.
+
+S1 Dashers do not dash out of a fight they leave; Heart of Ruin never does [BUG] est. gain 0.45 deaths/g = ~6 gems/game
+   number: retreats with our own dash ready, dash used within 0..+2 rounds: US 38% (n 2607) vs OPP 71% (2434), TOP 74% (2790), TOPl
+     75%. By champion: Heart of Ruin 12% (1343) vs OPP 68% (625), TOP 70% (967); Vesper 64% vs 75/81%; Vendetta 68% vs 70/74%.
+     Caught (dead within 8 rounds), same rows: ours with the dash 10%, without 25%; at hp < 50%: dash used 33% vs OPP 77%, caught
+     with the dash 15% vs without 41% (OPP 16% / 27%). Caught after a retreat without the dash: about 1.9 deaths a game (HoR 1.2,
+     Vesper/Vendetta 0.7; retreats within 10 rounds of each other counted once). US88 the same (37% used, HoR 12%).
+   examples (v88, story.py):
+     5b7f0c2e-728a-462b-bd48-786e8e3d0049 r371-377 body 1 (HoR, 230/1100 hp, 21 gems): walks one tile per round with Marcella 2 tiles
+       behind it for 6 rounds, dash ready the whole time, never casts it, dies r377 to Marcella's spell.
+     f39bc1ca-e3c4-4cff-bda0-314270b30060 r746 body 3 (HoR, 57% hp, retreat from Marcella, dash ready, dead within 8).
+     2ef5ac90-968a-4b05-861e-97644ecf254e r848 body 2 (Vendetta, 19% hp, chaser 1 tile away, dash ready, not used, dead within 8).
+   cause:
+     (a) brain.cpp Brain::mob_dash() (l.2495): "if (kit.dash_mod > 0.f && !strike_dash && enemy_near_d <= P.strike_dash_hold) return
+         -1;" with strike_dash_hold = 9. Every flee step goes through go_home_step() (l.2650 "Nav::step_field(pos, W.home, 0, avoid ?
+         &av : nullptr, mob_dash(), can_move, W.ally_spawn)"), so a HoR fleeing within 9 tiles of an enemy can never dash.
+     (b) Yet combat()'s escape test counts that dash. brain.cpp combat() l.4239: "const bool can_escape = on_spawn || !chaser ||
+         (ready(kit.dash) && !chaser_dash) || ...". A HoR caught by a same-speed chaser therefore gets can_escape = true. That skips
+         the cornered trade ("else if (in_reach && !can_escape && adv >= P.cornered_margin) fight = true", l.4305) and lets
+         ml2_leave / low_hp drop the fight. HoR then walks home one tile per round and is hit every round: the bot's model and its
+         execution disagree.
+     (c) Vesper / Vendetta: nav.cpp try_dash() (l.285) refuses every landing tile in `avoid` (= danger | camp_danger | alert_zone,
+         brain.cpp l.2648) and every dash that gains fewer than 2 home-field steps (l.301). In flight, every tile within 2 is usually
+         still in some enemy's danger zone, so the dash is skipped and the body walks.
+   fix g24_flee_dash (params.h, default 0). The hook is combat()'s two flee branches (in-reach flee before "if (toward_help() ||
+     go_home_step(true))" at ~l.4764, and the outmatched flee at ~l.4815) plus g23_leave(). Rule: when the dash is ready and a chaser
+     could hit us after a walk step (a melee enemy within 3, +2 if its dash is ready, or a ranged enemy within its range + 1), cast the
+     dash, HoR included (ignore strike_dash_hold while task == T_FLEE). Landing tile within 2: fewest enemies whose next-turn hit
+     reach (attack range + 1 for melee, + 2 with dash ready, 4 with a damage/stun spell ready) covers it, then the shortest
+     W.dist_home. A tile in `danger` is allowed when it is the best one, but never a sleeping-camp tile (wakes_sleeper) or an awake
+     camp's range. Bit 2: can_escape counts our dash only when g24_flee_dash is on or the kit has no strike dash (dash_mod == 0), so
+     the escape model matches what the flee step can do.
+     Not on the ledger: the failed "disengage" / "leave step" changed WHEN we leave. This changes HOW we leave once combat() has
+     already chosen to.
+   test (local games, mechanism): retreats with own dash ready that dash within 2 rounds: HoR 12% -> >= 60%, Vesper / Vendetta
+     64-68% -> >= 80%. Dead within 8 rounds after a retreat started under 50% hp: 41% -> <= 30%. HoR deaths/game -0.3 (now 2.68 on
+     US88). extract2.py retreats.jsonl fields dash / own_dash / died8 measure all three on local replays.
+
+S2 Bodies walk into stronger groups: the contest rule gives a group up only at R < 0.3, and rescue counts bodies [STRATEGY]
+   est. gain 0.4-0.6 deaths/g = ~6 gems/game
+   number: champion deaths after 2+ steps toward the nearest enemy in the last 8 rounds: US 5.45/g (60% of champion deaths) vs OPP
+     2.72/g (38%), same games; US88 5.98/g vs OPP88 1.92/g; TOPl 6.17/g (51%). Steps toward the nearest enemy within 6 at local power
+     "weak" (R < 0.67): US88 52.9/g (die within 6 rounds 13%) vs OPP88 30.1/g (5%). Same, while having more bodies there
+     ("weak+nmore"): US88 8.0/g (die6 17%) vs OPP88 0.8/g; with equal bodies ("weak+neq"): 24.6/g (12%) vs 12.7/g (4%). Both rose from
+     v84 to v88: weak+nmore 4.1 -> 8.0/g, weak+neq 21.0 -> 24.6/g, die6 8% -> 12%. Dives (2+ steps in within 4 rounds at R < 0.67):
+     US 11.6/g, deaths 1.58/g vs OPP 6.9/g, 0.53/g.
+   examples:
+     6fa9287c-7482-447e-813c-e8aefb376e90 r703-709 body 1 (Vesper 1000 hp, allies HoR / Ryth 1500): 5 steps toward an enemy Vendetta
+       (3000 hp) and HoR (3313 hp) farming at (17,14). Local R 0.39 with 2 bodies vs 2, dead r709. This is a farm walk into their
+       group, not a fight decision.
+     fd46f2d5-190f-4ca9-960f-dd49fe076a2e r1072 body 5 (HoR, full hp, allies 1.2 vs enemies 0.8 within 6, R 0.24, killed by
+       Marcella).
+     2bbe045f-7bc7-403d-87a3-69d06a3f92c2 r769 body 7 (Marcella, full hp, 2 vs 2, R 0.11, killed by Vesper).
+   cause:
+     (a) brain.cpp group_score() l.7240: "if (tadv < (P.v23_contact ? P.v23_abandon_r : P.target_threat_adv) * (big ? 0.5f : 1.f))
+         return -1;" with v23_contact 1 and v23_abandon_r 0.3: a group with stronger enemies near it is dropped only at odds below
+         0.3 (0.15 for a big group). Before v23 the bar was target_threat_adv 1.49. Between 0.3 and 0.67 the body keeps walking to the
+         group, and the only cost is +12 rounds (l.7245).
+     (b) g23.cpp g23_veto() rescue (bit 64, live): "if (n_en > n_us) continue;". The rescue fights whenever our bodies within 4 of the
+         caught ally (it, us, allies at >= 30% hp, the ally itself down to 15%) are not fewer than theirs. No power test. That is
+         the weak+neq / weak+nmore step-in, and it doubled from v84 to v88.
+   fix: two switches, default 0:
+     g24_abandon_r = 0.67: group_score drops a group whose tadv < g24_abandon_r (x0.5 for big groups, unchanged), unless the group is
+       our task group and nobody can hit us next turn (g23_keep_farm).
+     g24_rescue_pw = 1: in g23_veto's rescue, also require the power ratio at the ally, g23_ratio(a.pos, E, ...) >= g23_r_join (0.85),
+       besides n_en <= n_us.
+     Not the failed dive filter: that one blocked every step closer at R < 0.67, fights and retreat corridors included (-22). This
+     only removes (a) a farm target and (b) a rescue that loses on power. combat()'s own engagement bars are untouched.
+   test: local small-map pool: steps toward at R < 0.67 with >= equal bodies (extract2 step_stats weak+neq + weak+nmore) 32.6/g ->
+     <= 20/g; walk-in champion deaths -0.5/g. Rescue fights started (G23_TRACE) keep >= 70% of today's count (rescue was +31 held-out:
+     do not lose it).
+
+S3 Deaths soon after respawning doubled on v88 [STRATEGY] est. gain 0.4 deaths/g = ~5 gems/game (overlaps S2)
+   number: deaths within 40 rounds of the body's respawn: US88 1.49/g vs OPP88 0.31/g (same games); US84 0.74/g vs OPP84 0.57/g; TOP
+     1.12/g, TOPl 1.88/g. US88's vs OPP's (v84+v88): 2+ steps toward the enemy 69% vs 57%, R < 0.67 five rounds before 59% vs 53%,
+     within 8 tiles of our spawn 38% vs 26%.
+   examples: 0929d08d-5904-4c25-8dc5-205e82ed0b87 r1122 body 0 (HoR, 23 rounds after respawn, 4 steps in, 11 tiles from spawn);
+     f39bc1ca-e3c4-4cff-bda0-314270b30060 r717 body 5 (Vendetta, 28 rounds, R 0.15); bfe31ac3-182c-494a-b56d-43517b119789 r1211
+     body 1 (Vesper, 5 rounds after respawn, 1 tile from spawn, R 0.36).
+   cause: a respawned body is at full health, so it passes every hp gate. It passes g23_veto's rescue ("hp >= P.g23_rescue_hp *
+     max_hp", 0.5) and combat()'s ally_defend ("hp >= P.ally_defend_hp * max_hp && ally_engaged(*tgt)", l.4307), and both count
+     bodies or the hit-back bar (fight_back_margin 0.873) at the fight. Nothing in combat() asks whether the team has just lost a
+     fight here. The v84 -> v88 doubling matches the rescue switch (bit 64) going live. The rescue / watchdog fixes in v88 touch camp
+     groups, not champion respawn.
+   fix g24_fresh = 40 (rounds, default 0): for g24_fresh rounds after our respawn, a fight that is not killable and not in reach
+     (rescue, ally_defend, second wave, proactive) needs adv >= 1.5 (g24_fresh_adv). The hook is combat() just after g23_veto
+     (l.4576), next to the fz_engage hold. This is the "just respawned -> R >= 1.5" part of the Nov 2 P1 fix, which g23_divefilter
+     never implemented.
+   test: deaths within 40 rounds of respawn per game, local US: -50% (v88 1.49 -> ~0.75, v84's level); farm rounds unchanged.
+
+S4 We die to camps the enemy woke: entering a contest inside their awake camp's range [STRATEGY] est. gain 0.3 deaths/g = ~4 gems
+   number: deaths with hits from a camp the enemy woke in the last 5 rounds: US 0.96/g (10% of deaths) vs OPP 0.20/g (3%), same
+     games; US88 0.73/g vs OPP88 0.14/g; TOP 0.40/g, TOPl 0.50/g. Of ours 73% walked in (2+ steps in the last 8 rounds); farming when
+     first hit 10%.
+   examples: 4f472198-2b93-4c46-a3df-0c6749e1ee9a r1479 body 7 (Ryth, 3 steps in, killed by the camp);
+     010b54dd-ca8f-4c8f-8357-d0bb9d52ed06 r997 body 1 (HoR, killed by HoR under an enemy-woken camp);
+     372c305c-e55f-4d02-985f-2dfb159a5d9c r903 body 2 (HoR, same pattern).
+   cause: g23.cpp g23_veto() l.471-475: the lure test exists ("lure = !killable && !rescued && td > my_reach &&
+     !in_awake_camp_range() && camp_danger.is_set(tgt->pos)") but acts only with "(P.g23_veto_bits & 1)", and the live value is 64.
+     Even with the bit on, it skips rescues (!rescued), the S2 path that walks into an enemy's camp fight. combat()'s camp_in_fight
+     adds the camp's damage to their side (l.4120) only once we are its nearest champion, i.e. after the step in.
+   fix g24_lure = 1 (default 0): apply the lure veto in g23_veto for every non-killable fight, rescues included. Hold it for 3 rounds
+     on that target (as g23_chase_off does), so the hysteresis of fight_hold does not re-enter. Unlike g23_campzone (-57, blocked all
+     walks/dashes near awake camps whenever an enemy was within 6) this only stops starting or keeping a fight whose target stands in
+     their camp's range while we are outside it. Farming and retreat paths are unchanged.
+   test: local: deaths with damage from a camp the enemy woke (extract2 camp_waker == "enemy") -0.3/g; fights started on a target
+     inside an awake camp's range (G23_TRACE, lure flag) -> 0 except kills.
+
+S5 Exchanges at equal power are lost to the item gap, and our kits land fewer spells [STRATEGY, pointer to economy / draft]
+   est. gain +4 pts exchange win share ~ 0.35 deaths/g (counterfactual, not fight code)
+   number: see L1. Opener R 0.67-1.5: US 51% vs OPP 61%, which becomes 58% vs 57% with the shard gap within +-3. Shard gap per
+     participant by phase (US): r400-700 -4.1, r700-1000 -7.9, r1000+ -13.6; US88 -8.7 / -18.3 / -22.7. Attackers' shards per body
+     minus the victim's at our champion deaths: 32.9 (US) vs 12.9 (OPP).
+   examples: 6fa9287c-7482-447e-813c-e8aefb376e90 r707 (their Vendetta 3000 hp / HoR 3313 vs our Vesper 1000 / HoR 1500, round 707).
+   cause: not in combat(), which uses the engine's item-adjusted strength / health for adv. The shop / build streams (home_trip,
+     v24_build) own it. Damage-spell hits per exchange 0.57 vs 1.31 come from the draft (no Cassi / Tavi / Ren / Prism / Stellar).
+   fix: none here (economy and draft streams). In fights, S1-S4 keep the under-itemed body out of the exchanges it cannot win.
+   test: the economy stream's shard gap per participant at r700 (US88 -18.3 -> > -5).
+
+S6 Slow answers to a ranged opener [STRATEGY] est. gain < 1 gem/game (do last)
+   number: received exchanges answered within 1 round US 48% vs OPP 59% (same games), TOP 54%. Opener's first hit a damage spell:
+     31% vs 48%. Opener 4+ tiles away a round before: 37% vs 48%. Our Vesper as target: 39% vs 52%. Value: receiver win share +5 pts
+     when answered fast (37% vs 32%).
+   examples: a spell opener at range 4 on Vesper / Ryth (q/more_fights.txt, target rows); tables Q2 receiver bands.
+   cause: combat() l.4583: "if (fz_engage_eff > 0 && fight && !rescue_commit && !in_reach && !killable && last_fight_round <
+     round - 1 && d > fz_engage_eff ...) fight = false;". last_fight_round is set only when we fought (l.4393 / 4687), not when we
+     were hit, so a body just hit from 5+ tiles is "not in a fight" and holds; ml2_leave (P(die8) >= 0.2) can drop the rest (not traced).
+   fix g24_hit_is_fight = 1 (default 0): last_hit_round >= round - 1 counts as being in a fight for fz_engage. Only when adv >=
+     fight_back_margin and the attacker is within my_reach + 1.
+   test: received exchanges answered within 1 round 48% -> 55%, receiver win share unchanged or better; deaths/game must not rise.
+
+RANKING (deaths/game, local small-map pool first): S1 (bug, about 0.45/g, no overlap) > S2 (0.4-0.6/g) > S3 (0.4/g, overlaps S2) >
+  S4 (0.3/g) > S5 (economy) > S6 (small). Test S1 alone first: it is a correction of an inconsistency, not a tuning. Test S2b + S3
+  (both gate rescue) together against rescue alone, because rescue is the one v88 gain the ladder confirmed.

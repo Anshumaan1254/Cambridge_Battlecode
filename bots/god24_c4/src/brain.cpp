@@ -1374,7 +1374,7 @@ void Brain::turn()
 	update_priority();
 	if (P.unstick_rounds > 0)
 		unstick();
-	if (P.fz_osc > 0)
+	if (P.fz_osc > 0 || (P.g24_pace & 2))
 		osc_guard();
 	if (P.stall_guard > 0 && W.dash_off_until == round) // hole crossings are back: the plain-walls fields are stale
 		nav().reset_fields();
@@ -1955,15 +1955,18 @@ void Brain::osc_guard()
 	// v14 fz_osc: a body walking back and forth with nothing to show for it (target flips, a detour that keeps turning, an approach that
 	// gives way and comes back) re-plans with that target out of the way.
 	auto& W = world();
-	const bool walking = task == T_FARM || task == T_CAPTURE || task == T_WAIT || task == T_TRIBUTE || task == T_HOME;
-	const bool quiet = walking && last_act_round < round && !cast_done && enemy_near_d > 5 && !W.ally_spawn.is_set(pos) &&
+	// g24_pace 2 (confusion S1): the flee / farm pacing near enemies is a T_FLEE turn then walking turns back in; a flee turn with no hit
+	// taken for 3 rounds and no attack / cast is quiet, and an enemy within 5 no longer breaks the window (a hit does)
+	const bool pace = (P.g24_pace & 2) != 0;
+	const bool walking = task == T_FARM || task == T_CAPTURE || task == T_WAIT || task == T_TRIBUTE || task == T_HOME || (pace && task == T_FLEE);
+	const bool quiet = walking && last_act_round < round && !cast_done && (pace ? round - last_hit_round > 3 : enemy_near_d > 5) && !W.ally_spawn.is_set(pos) &&
 		!flag(state, bc::champion_state::recalling) && !flag(state, bc::champion_state::submitting_gems) && !flag(state, bc::champion_state::teleporting);
 	const std::size_t i = static_cast<std::size_t>(round & 15);
 	osc_pos[i] = pos;
 	osc_quiet[i] = quiet ? round : -100;
 	if (!quiet)
 		return;
-	const int n = std::min(15, P.fz_osc);
+	const int n = std::min(15, pace ? P.g24_pace_win : P.fz_osc);
 	int moves = 0;
 	for (int k = 1; k < n; ++k)
 	{
@@ -1980,13 +1983,33 @@ void Brain::osc_guard()
 #ifdef Q_TRACE
 	debug_block({ std::printf("QBL r=%d i=%d why=osc task=%d g=%d\n", round, W.my_index, task, task_group); });
 #endif
-	if ((task == T_FARM || task == T_CAPTURE || task == T_WAIT) && task_group >= 0 && task_group < static_cast<int>(W.groups.size()))
+	if (pace)
+	{
+		int ne = 0;
+		for (const auto& e : W.enemies)
+			ne += e.alive && e.visible && cheb(e.pos, pos) <= 12;
+		G24T("g24_pace", "osc task=%d g=%d moves=%d n=%d pos=(%d,%d) ne12=%d", task, task_group, moves, n, pos.x, pos.y, ne);
+	}
+	if ((task == T_FARM || task == T_CAPTURE || task == T_WAIT || (pace && task == T_FLEE)) && task_group >= 0 && task_group < static_cast<int>(W.groups.size()))
 	{
 		blacklist[static_cast<std::size_t>(task_group)] = round + P.fz_osc_bl;
 		task_group = -1;
 	}
 	else if (task == T_TRIBUTE)
 		tribute_cancel_round = round; // no new bank trip for two rounds: farm() re-plans first
+	if (pace && P.v27_avoid > 0)
+	{
+		// g24_pace 2: hold the avoid memory (v27_avoid, and the side ban with bit 1) for fz_osc_bl rounds: the enemies in sight now, else
+		// the ones still remembered (a stale list is not revived)
+		std::vector<Enemy*> E;
+		for (auto& e : W.enemies)
+			if (e.alive && e.visible && cheb(e.pos, pos) <= 8)
+				E.push_back(&e);
+		if (!E.empty())
+			avoid_note(E);
+		if (av_n > 0 && (!E.empty() || round < av_until))
+			av_until = std::max(av_until, round + P.fz_osc_bl);
+	}
 	task = T_NONE;
 	osc_quiet.fill(-100);
 }
@@ -2007,8 +2030,32 @@ void Brain::progress_watch(bool acted_now)
 			!(P.g23_watchfix && g.zero_since >= 0 && round - g.zero_since > 12); // g23_watchfix: a timer stuck at 0 (a blocked spawn) is no wait
 		legit_wait |= P.g23_tol && g23_role == G23_PRIME && g23_nprime > 0 && task_group == g23_prime[0].g && cheb(pos, g23_prime[0].rally) <= 2;
 	}
-	const bool progress = acted_now || gems != pw_gems || gold != pw_gold || hp > pw_hp + 0.02f * max_hp || W.ally_spawn.is_set(pos) ||
-		legit_wait || pw_since < 0 || cheb(pos, pw_anchor) > 3;
+	bool healed = hp > pw_hp + 0.02f * max_hp, moved_off = cheb(pos, pw_anchor) > 3;
+	if (P.g24_pace & 4)
+	{
+		// g24_pace 4 (confusion S1c): out-of-combat regen next to enemies and a there-and-back walk restarted the clock (40-50-round pacing)
+		for (const auto& e : W.enemies)
+			if (e.alive && e.visible && cheb(e.pos, pos) <= 12)
+				g24_pw_er = round;
+		const bool other = acted_now || gems != pw_gems || gold != pw_gold || W.ally_spawn.is_set(pos) || legit_wait || pw_since < 0;
+		const bool heal0 = healed, move0 = moved_off;
+		if (healed && round - g24_pw_er < 3)
+			healed = false;
+		if (moved_off)
+			for (int k = 2; k <= 12 && moved_off; ++k)
+			{
+				const std::size_t j = static_cast<std::size_t>((round - k) & 15);
+				if (g24_pw_posr[j] == round - k && cheb(pos, g24_pw_pos[j]) <= 1)
+					moved_off = false; // back within 1 tile of where we stood k rounds ago
+			}
+		if (!other && (heal0 || move0) && !healed && !moved_off)
+			G24T("g24_pace", "watch no_progress heal=%d move=%d enemy_ago=%d stall=%d task=%d g=%d", static_cast<int>(heal0), static_cast<int>(move0), round - g24_pw_er,
+				round - pw_since, task, task_group);
+		g24_pw_pos[static_cast<std::size_t>(round & 15)] = pos;
+		g24_pw_posr[static_cast<std::size_t>(round & 15)] = round;
+	}
+	const bool progress = acted_now || gems != pw_gems || gold != pw_gold || healed || W.ally_spawn.is_set(pos) ||
+		legit_wait || pw_since < 0 || moved_off;
 	pw_gems = gems, pw_gold = gold, pw_hp = hp;
 	if (progress)
 	{
@@ -2077,7 +2124,7 @@ void Brain::avoid_note(const std::vector<Enemy*>& E)
 		++av_n;
 	}
 	if (av_n > 0)
-		av_until = round + P.v27_avoid;
+		av_until = round + P.v27_avoid, g24_av_me = pos; // g24_pace 1: where we stood when we fled
 }
 
 bool Brain::in_avoid(const Group& g) const
@@ -2086,6 +2133,55 @@ bool Brain::in_avoid(const Group& g) const
 		if (cheb(g.center, av_pos[static_cast<std::size_t>(k)]) <= av_rad[static_cast<std::size_t>(k)] + g.radius)
 			return true;
 	return false;
+}
+
+// g24_pace 1 (confusion S1b): v27_avoid bans only groups next to the enemy; the usual target lies 6-10 tiles behind it (the enemy stands
+// between us and our group) and the walk to it re-enters the flee radius. Banned while the avoid memory runs: a group within g24_pace_r of
+// an enemy we fled from that is nearer to it than our tile at the flee was, minus 1. Not our task group under g23_keep_farm (E1 hold), not a
+// group on our half where our side is not weaker (tadv >= 1, group_score's local force ratio).
+bool Brain::g24_side_ban(const Group& g) const
+{
+	if (!(P.g24_pace & 1) || P.v27_avoid <= 0 || round >= av_until || av_n <= 0 || g24_av_me.x < 0)
+		return false;
+	if (g.id == task_group && g23_keep_farm)
+		return false;
+	const int dme = cheb(g.center, g24_av_me);
+	int kb = -1;
+	for (int k = 0; k < av_n && kb < 0; ++k)
+	{
+		const int de = cheb(g.center, av_pos[static_cast<std::size_t>(k)]);
+		if (de <= P.g24_pace_r && de < dme - 1)
+			kb = k;
+	}
+	if (kb < 0)
+		return false;
+	float tadv = -1.f;
+	if (g.ours)
+	{
+		auto& W = world();
+		float ehp = 0, edps = 0;
+		for (int k = 0; k < sc_recent_n; ++k)
+			if (cheb(sc_recent[static_cast<std::size_t>(k)].pos, g.center) <= 8)
+			{
+				ehp += sc_recent[static_cast<std::size_t>(k)].hp;
+				edps += sc_recent[static_cast<std::size_t>(k)].dps;
+			}
+		if (edps <= 0.f)
+			tadv = 99.f; // nobody seen there lately
+		else
+		{
+			float ohp = hp, odps = str + focus * best_mod(kit) / 8.f;
+			for (const auto& a : W.allies)
+				if (a.handle != self && a.alive && a.visible && cheb(a.pos, g.center) <= 8)
+					ohp += a.hp, odps += a.str + a.focus * best_mod(a.kit) / 8.f;
+			tadv = (ohp / edps) / std::max(0.1f, ehp / std::max(1.f, odps));
+		}
+		if (tadv >= 1.f)
+			return false;
+	}
+	G24T("g24_pace", "ban g=%d de=%d dme=%d ours=%d tadv=%.2f enemy=(%d,%d) me=(%d,%d) left=%d", g.id, cheb(g.center, av_pos[static_cast<std::size_t>(kb)]), dme,
+		static_cast<int>(g.ours), tadv, av_pos[static_cast<std::size_t>(kb)].x, av_pos[static_cast<std::size_t>(kb)].y, g24_av_me.x, g24_av_me.y, av_until - round);
+	return true;
 }
 
 void Brain::handle_channel()
@@ -6249,7 +6345,10 @@ bool Brain::tribute(bool force)
 								 : (force || endgame || winning || risky || committed || capped || static_cast<int>(gems) >= need || dist <= P.tribute_near ||
 									  (static_cast<int>(gems) >= 10 && on_the_way(a))));
 	if (!want)
+	{
+		g24_bh_open = false; // g24_bank_hold: no bank wanted, the hold episode (if any) is over
 		return false;
+	}
 	if (mf_bank && task != T_TRIBUTE)
 		G24MF("bank gems=%d need=%d was=%d dist=%d altar=%d", static_cast<int>(gems), need, need0, dist, a);
 #ifdef LEGEND_TRACE
@@ -7044,6 +7143,8 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 	// 3,305 turns of combat-flee steps inside a 3x3 box)
 	if (P.v27_avoid > 0 && round < av_until && in_avoid(g))
 		{ WHY(10); return -1; }
+	if ((P.g24_pace & 1) && g24_side_ban(g)) // g24_pace 1: the enemy we fled from stands between us and the group
+		{ WHY(10); return -1; }
 	// Rounds until we can hit the group. Ranged champions stop at their attack range; a dash kit covers 10 tiles
 	// per 8-round cooldown (walk + 2-tile dash). Fitted on 1,659 engaged episodes: d-1 was exact for Ryth and Varg
 	// and 2.2-2.3 rounds long for Cassi, Stellar (actual = -2.1 + 1.0 x predicted), Issac and Ren (0.85 x).
@@ -7562,7 +7663,19 @@ float Brain::group_score(const Group& g, int& eta, bool* need_pair, int d_overri
 		}
 	}
 	if (round - g.enemy_round < 12 && !(P.g23_farm && P.g23_fight && g.id == task_group && g23_keep_farm))
-		time += 12.f;
+	{
+		if (P.g24_flip_mem)
+		{
+			// g24_flip_mem (confusion S4): the surcharge fades over the 12 rounds instead of dropping from 12 to 0 the round the flip window
+			// ends (a target dropped for a transient came back at full score while we were half-way to its replacement)
+			const int age = round - g.enemy_round;
+			time += 12.f - static_cast<float>(std::max(0, age));
+			if (age > 0 && (g.id == task_group || g.id == g24_left_g[0] || g.id == g24_left_g[1] || g.id == g24_left_g[2]))
+				G24T("g24_flip_mem", "fade g=%d age=%d add=%d task=%d", g.id, age, 12 - age, static_cast<int>(g.id == task_group));
+		}
+		else
+			time += 12.f;
+	}
 	if (P.v24_ci_escort && (type == CT::cassi || type == CT::issac))
 	{
 		// v24_ci_escort: the pair dies together (one kill = two bodies) and 91% of its deaths are to enemy champions; the top three
@@ -8023,8 +8136,21 @@ void Brain::farm()
 				if (P.commit_hit > 0.f && g.st == ST_ALIVE && round - target_hit_round <= 2)
 					s *= P.commit_hit;
 			}
-			else if (P.flip_window > 0 && g.id == left_group && round - left_round <= P.flip_window)
+			else if (P.flip_window > 0 && !P.g24_flip_mem && g.id == left_group && round - left_round <= P.flip_window)
 				s /= P.flip_margin; // going back to a target we just left: A-B-A-B flips walk in place
+			else if (P.flip_window > 0 && P.g24_flip_mem)
+			{
+				// g24_flip_mem (confusion S4): the last 3 targets left, each for g24_flip_mem_win rounds (an A-B-C-A cycle is damped too)
+				for (std::size_t k = 0; k < g24_left_g.size(); ++k)
+					if (g.id == g24_left_g[k] && round - g24_left_r[k] <= P.g24_flip_mem_win)
+					{
+						const bool old_rule = g.id == left_group && round - left_round <= P.flip_window;
+						if (!old_rule && s > best_s && s / P.flip_margin <= best_s)
+							G24T("g24_flip_mem", "damp g=%d left_ago=%d s=%.3f best=%d best_s=%.3f", g.id, round - g24_left_r[k], s, best, best_s);
+						s /= P.flip_margin;
+						break;
+					}
+			}
 			if (s > best_s)
 				best_s = s, best = g.id, best_eta = eta, best_pair = np, best_team = tm, best_ring = rg, best_kite = kt;
 		};
@@ -8297,6 +8423,22 @@ void Brain::farm()
 #endif
 		if (task_group >= 0)
 			left_group = task_group, left_round = round;
+		if (P.g24_flip_mem && task_group >= 0)
+		{
+			// g24_flip_mem: remember the last 3 targets left (a target already listed takes the new round; else the oldest slot)
+			std::size_t slot = 0;
+			for (std::size_t k = 0; k < g24_left_g.size(); ++k)
+			{
+				if (g24_left_g[k] == task_group)
+				{
+					slot = k;
+					break;
+				}
+				if (g24_left_r[k] < g24_left_r[slot])
+					slot = k;
+			}
+			g24_left_g[slot] = task_group, g24_left_r[slot] = round;
+		}
 		if (P.mi_flip_guard)
 		{
 			// Flip-flop guard (default branch): many target switches in a short window -> commit to the new target for a while.

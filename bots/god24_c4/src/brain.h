@@ -520,6 +520,18 @@ private:
 	// GOD v24 C1 (fights)
 	std::array<int, 8> g24_lure_off{ -100, -100, -100, -100, -100, -100, -100, -100 }; // g24_lure: the lure veto holds on this enemy until then
 	bool g24_flee_dash_cast(const std::vector<Enemy*>& E, const char* where); // g24_flee_dash bit 1: dash out of a fight we leave
+	// GOD v24 C4 (wave 2: g24_pace, g24_bank_hold, g24_flip_mem, g24_bush_flee)
+	vec2 g24_av_me{ -1, -1 };			// g24_pace 1: our tile when avoid_note() last stored enemies
+	bool g24_side_ban(const Group& g) const; // g24_pace 1: the enemy we fled from stands between us and g
+	int g24_pw_er = -1000;				// g24_pace 4: last round a visible enemy was within 12
+	std::array<vec2, 16> g24_pw_pos{};	// g24_pace 4: our tile at the end of each recent round, and that round
+	std::array<int, 16> g24_pw_posr{ -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100 };
+	int g24_bh_last = -1000, g24_bh_wait_until = -1000; // g24_bank_hold: start of the last hold episode, end of the wait
+	bool g24_bh_open = false;			// ... the hold fired on the last tribute() that got that far
+	bool g24_bank_hold_fire(int altar, const char* why); // true: the turn is used (recall or wait)
+	std::array<int, 3> g24_left_g{ -1, -1, -1 };		  // g24_flip_mem: the last 3 targets left and the round each was left
+	std::array<int, 3> g24_left_r{ -1000, -1000, -1000 };
+	bool g24_bush_step(); // g24_bush_flee: a retreat step into a bush cluster no visible enemy stands in
 	bool g23_go_rally();
 	struct AllyMsg
 	{

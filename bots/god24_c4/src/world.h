@@ -168,6 +168,14 @@ struct World
 	// P.g24_scarce: gem-scarce map (gems of all camp groups / champions per team <= P.g24_scarce_gpc); set in init_units (needs team_champs)
 	bool scarce_mode = false;
 	int scarce_gems = 0; // gems of all camp groups (init_static, only with P.g24_scarce)
+	// P.g24_bush_flee: 8-connected bush cluster id per tile (row-major, -1 = no bush; init_static, only with the switch on)
+	std::vector<short> bush_cl;
+	int bush_cluster(vec2 p) const
+	{
+		if (bush_cl.empty() || p.x < 0 || p.y < 0 || p.x >= W || p.y >= H)
+			return -1;
+		return bush_cl[static_cast<std::size_t>(p.y * W + p.x)];
+	}
 	void detect_objective();
 	Field home; // steps from our spawn
 	int spawn_altar_d = BIG; // walking steps from our spawn to the nearest altar's approach tile

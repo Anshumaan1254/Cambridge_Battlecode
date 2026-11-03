@@ -112,6 +112,7 @@ COLS = [('v95 we', lambda s: s['pop'] == 'v95' and s['who'] == 'we'),
         ('v95 we L', lambda s: s['pop'] == 'v95' and s['who'] == 'we' and s['res'] == 'L'),
         ('v95 we W', lambda s: s['pop'] == 'v95' and s['who'] == 'we' and s['res'] == 'W'),
         ('v95 opp', lambda s: s['pop'] == 'v95' and s['who'] == 'opp'),
+        ('v95 opp in our L', lambda s: s['pop'] == 'v95' and s['who'] == 'opp' and s['res'] == 'W'),
         ('v88 we(L-heavy)', lambda s: s['pop'] == 'v88' and s['who'] == 'we'),
         ('v88 we L', lambda s: s['pop'] == 'v88' and s['who'] == 'we' and s['res'] == 'L'),
         ('v88 opp', lambda s: s['pop'] == 'v88' and s['who'] == 'opp')]
@@ -211,6 +212,12 @@ for ty in ('Marcella', 'HeartOfRuin'):
               lambda s, ty=ty: s['fl']['bank'].get('_team', {}).get('gems', 0) if s['fl']['types'].get(ty) else 0, 1, need='fl')
 row('Marcella captured gems / game', lambda s: s['fl']['cap'].get('Marcella', {}).get('gems', 0) if s['fl']['types'].get('Marcella') else None, 0, need='fl')
 row('Marcella banked gems / game', lambda s: s['fl']['bank'].get('Marcella', {}).get('gems', 0) if s['fl']['types'].get('Marcella') else None, 0, need='fl')
+
+print('\n== PER-CHAMPION TIME (confusion stream act: share of all body-rounds, pooled) ==')
+for ty in ('VesperVale', 'Marcella', 'HeartOfRuin', 'Vendetta', 'Ryth'):
+    for st in ('walk', 'camp', 'capture', 'fight', 'dead'):
+        ratio_row(f'{ty} {st} %', lambda s, ty=ty, st=st: s['fl']['act'].get(ty, {}).get(st, 0),
+                  lambda s, ty=ty: sum(s['fl']['act'].get(ty, {}).values()), 1, need='fl')
 
 print('\n== EXECUTION (execution stream metrics; per game) ==')
 for k in ('passive_dmg', 'passive_wolf', 'passive_deaths', 'wake_leave_solo', 'aba_pure', 'dash_wasted', 'idle', 'deadtile', 'bagloss',

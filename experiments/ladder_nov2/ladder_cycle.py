@@ -41,14 +41,19 @@ def submissions():
     return d.get('submissions') or d.get('items') or []
 
 
-def activate(v, tries=6):
-    for i in range(tries):
+def activate(v, tries=6, until=None):
+    """Retry until it succeeds: `tries` attempts, or (with `until`, a UTC datetime) until that time. The platform answers 503 at
+    times (12:50Z Nov 3: six 503s in a row left a test version live over a ranked slot)."""
+    i = 0
+    while True:
         r = subprocess.run(['cambc', 'submissions', 'activate', str(v), '--json'], capture_output=True, text=True, cwd=ROOT)
         if r.returncode == 0:
             return True
-        print(f'  activate {v} failed (try {i + 1}): {(r.stdout + r.stderr).strip()[:160]}', flush=True)
-        time.sleep(8)
-    return False
+        i += 1
+        print(f'  activate {v} failed (try {i}): {(r.stdout + r.stderr).strip()[:160]}', flush=True)
+        if (until is None and i >= tries) or (until is not None and now() > until):
+            return False
+        time.sleep(5)
 
 
 def wait_live(v, timeout=300):
@@ -91,7 +96,7 @@ def main():
     t = now()
     last_slot = t.replace(second=0, microsecond=0, minute=(t.minute // 10) * 10)
     start = last_slot + dt.timedelta(seconds=30)
-    if t > last_slot + dt.timedelta(minutes=3):
+    if t > last_slot + dt.timedelta(minutes=1 if a.submit else 3):
         # too late in this window for activate + queue + switch back with margin: use the next window
         start = next_slot(t) + dt.timedelta(seconds=30)
     print(f'now {t:%H:%M:%S}; cycle starts {start:%H:%M:%S}; ranked slot after it {next_slot(start):%H:%M:%S}', flush=True)
@@ -121,6 +126,13 @@ def main():
             wait_live(a.best)
             return
         print(f'  built: v{a.test} at {now():%H:%M:%S}', flush=True)
+        if (next_slot(start) - now()).total_seconds() < 420:
+            # too late to make it live, queue and switch back with margin: the upload is live by itself (follow-newest): revert now
+            log(f'{now():%Y-%m-%dT%H:%MZ} CYCLE v{a.test} built too late for this window ({(next_slot(start) - now()).total_seconds():.0f} s to the slot): '
+                f'back to v{a.best}; run again with --test {a.test}')
+            activate(a.best, until=next_slot(start) + dt.timedelta(minutes=3))
+            wait_live(a.best)
+            return
     if not activate(a.test):
         log(f'{now():%Y-%m-%dT%H:%MZ} CYCLE abort: could not activate v{a.test}')
         return
@@ -151,7 +163,7 @@ def main():
         print(f'  queued {queued} groups at {now():%H:%M:%S}', *tail, sep='\n  ', flush=True)
     else:
         print(f'  only {left:.0f} s to the slot: nothing queued', flush=True)
-    activate(a.best)
+    activate(a.best, until=slot + dt.timedelta(minutes=3))
     w2 = wait_live(a.best)
     margin = (slot - now()).total_seconds()
     log(f'{now():%Y-%m-%dT%H:%MZ} CYCLE test v{a.test} (live {w:.0f} s after activation) queued {queued} groups of {os.path.basename(a.plan)}; '

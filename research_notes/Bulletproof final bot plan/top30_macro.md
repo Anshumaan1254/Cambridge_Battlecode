@@ -6,7 +6,7 @@
 All 30 teams fit one fingerprint table built from 854 decoded top-30-vs-top-30 games. The teams split into a few families: Cassi&Issac economy teams (Mite, Intercontinental Fish, test4, MFF1, Olympus), a Durability/Ryth/Varg banker (Univardisty of Shingtonwash), and a large group of 13 teams that run the "standard" Ry-VV-Vd-Ma-HR roster. That standard roster is also ours. On almost every macro column our side looks like a top-30 losing side rather than like the teams we lose to.
 
 ### Cited Findings
-- Coverage: per-side features come from 854 top-30-vs-top-30 games (1,708 sides) for economy and opening, from about 837 games (1,674 sides) for territory and big-group contests, and from 305 games (610 sides) for banking and capture routing. Per team that is 25-72 economy sides (column n) and 10-25 banking sides. Our side has 305 decoded v84-v88 games (economy), 551 (objectives) and 232 (banking); 80% of them are losses — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
+- Coverage: per-side features come from 854 top-30-vs-top-30 games (1,708 sides) for economy and opening, from about 837 games (1,674 sides) for territory and big-group contests, and from 305 games (610 sides) for banking and capture routing. Per team that is 25-72 economy sides (column n) and 10-25 banking sides. Our side has 305 decoded v84-v88 games (economy), 551 (objectives) and 232 (banking); 80% of them are losses — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
 - Column definitions:
   - Roster, first pick, det and CI% come from each team's last 400 ranked games, as do our own (n=400 each). det is the share of games whose ordered draft equals the team's most common draft on that map.
   - g300± is gems captured by r300 minus the mean of all top-30 sides on the same map. p2± is gems captured per 100 rounds in r151-400, against the same map mean.
@@ -16,7 +16,7 @@ All 30 teams fit one fingerprint table built from 854 decoded top-30-vs-top-30 g
   - trib/g is tributes per game. bag is the mean bag size at tribute.
   - Ma cap% and CI cap% are each champion's share of the team's captured gems. mid% is the share of captured gems taken in the middle band.
   - raids, locks and deaths are per game. gold@600 is unspent gold at r600. emb1 r is the round of the first emblem.
-  - Sources: [table.md](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/table.md), [draft_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/draft_out.txt), definitions in [econ.py](/home/claude/cambridge_battlecode/experiments/top30_nov3/economy/econ.py), [extract_obj.py](/home/claude/cambridge_battlecode/experiments/top30_nov3/objectives/extract_obj.py), [extract_all.py](/home/claude/cambridge_battlecode/experiments/top30_nov3/draft_bank/extract_all.py)
+  - Sources: [table_run854.md](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/table_run854.md), [draft_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/draft_out.txt), definitions in [econ.py](/home/claude/cambridge_battlecode/experiments/top30_nov3/economy/econ.py), [extract_obj.py](/home/claude/cambridge_battlecode/experiments/top30_nov3/objectives/extract_obj.py), [extract_all.py](/home/claude/cambridge_battlecode/experiments/top30_nov3/draft_bank/extract_all.py)
 
 | rk | team | rating | n | core roster, 5-champ maps (games) | 1st pick | det | CI% | g300± | p2± | walk% | fight%c | recall%c | heldRec | bigArrN | trib/g | bag | Ma cap% | CI cap% | mid% | raids | locks | deaths | gold@600 | emb1 r |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -55,8 +55,8 @@ All 30 teams fit one fingerprint table built from 854 decoded top-30-vs-top-30 g
 | - | TOP-30 losing sides (pooled) | - | 854 | - | - | - | - | -30 | -15.0 | 56 | 19 | 13 | 66 | 1.26 | 16.0 | 39 | 31 | 4 | 46 | 6.2 | 2.0 | 13.9 | 174 | 132 |
 | - | TOP-30 winning sides (pooled) | - | 854 | - | - | - | - | +30 | +15.0 | 52 | 19 | 14 | 80 | 1.44 | 29.6 | 70 | 32 | 4 | 59 | 13.6 | 1.8 | 5.8 | 305 | 104 |
 
-- Olympus's bag of 248 comes from one artifact game with a recorded bag of 2,769. Its other 12 games range from 18 to 61. Treat that cell, and the bag-size correlation below, as fragile — [fp_sides.jsonl](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_sides.jsonl)
-- Win rates inside these replays: Mite 0.656 (n=61 sides), IC 0.627 (59), UW 0.603 (68), Ad Astra 0.623 (61), newer team 0.441 (68), NEETCoders 0.508 (61), BattleCats 0.455 (55), test4 0.356 (59), print dont int 0.485 (66), Sponge 0.426 (61) — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
+- Olympus's bag of 248 comes from one artifact game with a recorded bag of 2,769. Its other 12 games range from 18 to 61. Treat that cell, and the bag-size correlation below, as fragile — [fp_sides_run854.jsonl](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_sides_run854.jsonl)
+- Win rates inside these replays: Mite 0.656 (n=61 sides), IC 0.627 (59), UW 0.603 (68), Ad Astra 0.623 (61), newer team 0.441 (68), NEETCoders 0.508 (61), BattleCats 0.455 (55), test4 0.356 (59), print dont int 0.485 (66), Sponge 0.426 (61) — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
 
 ### Inferences
 - The table's "our" row mixes wins and losses (80% losses), so read it against the two rows below it: OPP (the same games) and the top-30 losing sides. On walk% (61 vs 53/56), r300 economy (−52 vs −6/−30), tributes (20.7 vs 30.2/16.0) and gold@600 (96 vs 230/174), we sit at or below the top-30 losers.
@@ -77,7 +77,7 @@ The top 5 do not share one roster. They share four habits: a fast economy after 
   - Contact: 17% fighting and 17% recalling.
   - Banking: 32.7 tributes a game with 62-gem bags. Captures are spread across VV 30%, Ma 26%, HR 14% and CI 12%. It places zero altar locks.
   - Items: Jungle emblems first on HR (Jungle-foc 44 games), Vendetta (Jungle-str 39), Marcella (Jungle-foc 37) and Issac (Jungle-str 31); VV takes Monster-str (37). It holds the most unspent gold at r600 (311). Its games end at r951 on average.
-  - Sources: [table.md](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/table.md); [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt); [draft_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/draft_out.txt)
+  - Sources: [table_run854.md](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/table_run854.md); [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt); [draft_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/draft_out.txt)
 - **2 Intercontinental Fish (2562).**
   - Draft: Cassi&Issac in 98% of games. On 5-champion maps it plays Vd-CI-Ma-Wi-HR (117/238), or VV-Vd-CI-Vg-HR on large maps (45/72). On 3-champion maps it plays VV-CI-Ma (43/80). First pick is split VV 50% / Ma 50%, and the draft is map-deterministic (1.00).
   - Opening: earliest first capture of the top 5 (r40), stack 4.15, +32 at r300.
@@ -143,13 +143,13 @@ Every top-30 team, and us, drafts a fixed ordered roster per map. There is no me
   - Ranks 20-30: below 15% for 8 of 11 teams; the exceptions are MFF1 61%, Olympus 72% and new team(4) 23%.
   - Us: below 15% (HR 100, Ry 84, VV 84, Vd 82, Ma 75, Varg 16).
   - Team-level share of gems captured by Cassi/Issac correlates with rating (Spearman ρ=+0.36 over 30 teams); T5 12.6% vs T20 2.7%, ours 0%.
-  - Sources: [draft_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/draft_out.txt); [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
+  - Sources: [draft_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/draft_out.txt); [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
 - Ryth pick rate:
   - Top 5: Mite 0%, IC 0%, UW 71%, Ad Astra 15%, newer team 7%.
   - Ranks 20-30: conqueror 57, EE 56, procless 69, prism best girl 75, jazz 35, :3 27.
   - Us: 84%. Ryth takes 13% of our captured gems vs 3% (T5) and 4% (T20).
-  - Sources: [draft_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/draft_out.txt); [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
-- Standard roster: Ry-VV-Vd-Ma-HR is the modal 5-champion roster for NEETCoders (120/238), BattleCats (64/245), Sponge (145/234), Trzy Kwaterki (138/229), T1 (182/237), subscribe (254/254), Nyx (235/235), JukeFall (241/253), conqueror (233/233), EE (223/223), procless (256/256) and HouseOfCoders (172/235). None of the top 5 uses it as a modal roster — [table.md](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/table.md)
+  - Sources: [draft_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/draft_out.txt); [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
+- Standard roster: Ry-VV-Vd-Ma-HR is the modal 5-champion roster for NEETCoders (120/238), BattleCats (64/245), Sponge (145/234), Trzy Kwaterki (138/229), T1 (182/237), subscribe (254/254), Nyx (235/235), JukeFall (241/253), conqueror (233/233), EE (223/223), procless (256/256) and HouseOfCoders (172/235). None of the top 5 uses it as a modal roster — [table_run854.md](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/table_run854.md)
 - Map-class adaptation by the top 5:
   - UW switches between scarce maps (gems per champion ≤92: Ry-CI-Wi-Vg-HR, 63/233) and rich maps (Ry-Vd-Ma-Vg-HR, 39/167).
   - Ad Astra switches the same way (scarce VV-Ma-Wi-Re-HR 44/217; rich VV-Vd-CI-Re-HR 42/183).
@@ -158,7 +158,7 @@ Every top-30 team, and us, drafts a fixed ordered roster per map. There is no me
   - Most rank 20-30 teams use the same roster on scarce and rich maps (EE 119/104, procless 127/129, conqueror 115/118 games of the modal roster).
   - Breakdowns by monolith, islands, bush (≥15% bush tiles) and altar count are in the source file.
   - Source: [draft_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/draft_out.txt)
-- Number of bodies: team mean bodies per game is 5.06 for T5 vs 4.63 for T20 (ρ=+0.21) and 4.39 for us. CI is one pick but two bodies — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt); [GameRules.md](/mnt/user-data/attachments/d0c2bc72-a5f9-5bbd-beb3-d573bc0416a1/d3e01b7b-GameRules.md)
+- Number of bodies: team mean bodies per game is 5.06 for T5 vs 4.63 for T20 (ρ=+0.21) and 4.39 for us. CI is one pick but two bodies — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt); [GameRules.md](/mnt/user-data/attachments/d0c2bc72-a5f9-5bbd-beb3-d573bc0416a1/d3e01b7b-GameRules.md)
 
 ### Inferences
 - Adapting to the opponent's picks is not where the top gets its edge. Nobody does it measurably, so a counter-pick module is low priority.
@@ -178,14 +178,14 @@ The strongest teams are ahead by r150 and further ahead by r300: +7 / +17 gems v
 - Gems captured by r150, map-adjusted: T5 +7.4 vs T20 −3.0 (ρ=+0.35, n=30 teams). By r300: T5 +16.9 vs T20 −8.2 (ρ=+0.40).
 - Raw means: T5 88 and 198, T20 77 and 172. Our 305 games: 57 and 128 (map-adjusted −23 and −52), against 81 and 174 for our opponents in the same games.
 - Losses only, map-adjusted at r300: our losing sides −57.7 (n=243), top-30 losing sides −26.5 for ranks 1-5 (n=131) and −36.7 for ranks 20-30 (n=292).
-- Source for the above: [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
-- First capture round: raw T5 59.7 vs T20 76.1 (ρ=−0.28), but map-adjusted T5 −0.5 vs T20 +0.6 (ρ=−0.10), so the raw gap comes from the map mix. Ours is 68.6 vs OPP 64.9, about +12.6 rounds vs map — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
-- Stacking (most bodies whose first visited group is the same): T5 3.55 vs T20 3.39 (ρ=+0.03). Us 2.66 vs OPP 3.19. Distinct first groups: T5 2.15, T20 1.95, us 2.48, OPP 2.13 — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
+- Source for the above: [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
+- First capture round: raw T5 59.7 vs T20 76.1 (ρ=−0.28), but map-adjusted T5 −0.5 vs T20 +0.6 (ρ=−0.10), so the raw gap comes from the map mix. Ours is 68.6 vs OPP 64.9, about +12.6 rounds vs map — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
+- Stacking (most bodies whose first visited group is the same): T5 3.55 vs T20 3.39 (ρ=+0.03). Us 2.66 vs OPP 3.19. Distinct first groups: T5 2.15, T20 1.95, us 2.48, OPP 2.13 — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
 - First group touched:
   - It is on the team's own side (closer to own spawn) for 87-90% of sides in every group (T5 0.88, T20 0.90, us 0.90).
   - It holds 17.7 gems for T5 vs 21.7 for T20 (ρ=−0.28) and 13.6 for us.
   - The most common first-group types in the top 10 are gold-only ('$') or gold+wolf/elk, for example Mite '$' 13 / '$E' 12 / '$W' 12 of 61 sides.
-  - Sources: [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt); opening visit definitions in [econ.py](/home/claude/cambridge_battlecode/experiments/top30_nov3/economy/econ.py)
+  - Sources: [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt); opening visit definitions in [econ.py](/home/claude/cambridge_battlecode/experiments/top30_nov3/economy/econ.py)
 
 ### Inferences
 - The top-team edge at r300 grows out of the r151-400 phase (next section) more than out of the first target. Our opening deficit (−23 at r150) is already larger than the whole T5-T20 gap at r300 (25 gems). For us the opening is a first-order problem in a way it is not among the top 30.
@@ -209,9 +209,9 @@ Among the top 30, rating tracks sustained pace in r151-400 (ρ=+0.46) and what b
   | r401-800 | +11.9 | −5.4 | +0.34 | −32.4 | +0.9 |
   | r801+ | +14.9 | −6.8 | +0.29 | | |
 
-  In losses only, r151-400: our losing sides −23.1, top-30 losing sides ranks 1-5 −12.2, ranks 20-30 −16.9 — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
-- Walking: T5 53.4% vs T20 54.5% of alive body-rounds (ρ=−0.15). Us 60.6% vs OPP 53.5% (map-adjusted us +7.1 points, top-30 losers +2.1) — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
-- Contact frequency: an enemy is within 6 for 26.1% (T5) vs 25.4% (T20) of alive body-rounds, and 27.3% for us vs 24.9% for OPP — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
+  In losses only, r151-400: our losing sides −23.1, top-30 losing sides ranks 1-5 −12.2, ranks 20-30 −16.9 — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
+- Walking: T5 53.4% vs T20 54.5% of alive body-rounds (ρ=−0.15). Us 60.6% vs OPP 53.5% (map-adjusted us +7.1 points, top-30 losers +2.1) — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
+- Contact frequency: an enemy is within 6 for 26.1% (T5) vs 25.4% (T20) of alive body-rounds, and 27.3% for us vs 24.9% for OPP — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
 - What bodies do in contact (shares of contact body-rounds):
 
   | Activity | T5 | T20 | ρ | Us | OPP |
@@ -222,14 +222,14 @@ Among the top 30, rating tracks sustained pace in r151-400 (ρ=+0.46) and what b
   | Standing on a reward | 2.3% | 3.7% | −0.49 | 1.6% | 2.8% |
   | Walking | 48.3% | 49.3% | | 59.0% | 49.3% |
 
-  Source: [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
-- The style holds in losses. Top-30 losing sides from ranks 1-5 (n=129) recall in 18.8% and fight in 14.6% of contact time, against 9.8% and 19.7% for losing sides from ranks 20-30 (n=290) — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
+  Source: [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
+- The style holds in losses. Top-30 losing sides from ranks 1-5 (n=129) recall in 18.8% and fight in 14.6% of contact time, against 9.8% and 19.7% for losing sides from ranks 20-30 (n=290) — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
 - Recalls:
   - Held recalls per game: T5 101 vs T20 57 (ρ=+0.43). Us 78, OPP 70.
   - Recalls classified "reposition": T5 47% vs T20 30% (ρ=+0.45). Us 47%, OPP 26%.
   - Recalls classified "heal": T5 28% vs T20 40% (ρ=−0.40).
-  - Sources: [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt); recall classes per [extract_obj.py](/home/claude/cambridge_battlecode/experiments/top30_nov3/objectives/extract_obj.py)
-- Farming through contact: the share of camp hits made with an enemy within 6 is 12.9% (T5) vs 12.2% (T20), ρ=−0.07. Ours is 7.4% vs OPP 12.3% (map-adjusted −6.5 points) — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
+  - Sources: [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt); recall classes per [extract_obj.py](/home/claude/cambridge_battlecode/experiments/top30_nov3/objectives/extract_obj.py)
+- Farming through contact: the share of camp hits made with an enemy within 6 is 12.9% (T5) vs 12.2% (T20), ρ=−0.07. Ours is 7.4% vs OPP 12.3% (map-adjusted −6.5 points) — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
 - Big groups (≥30 gems), per respawn cycle:
 
   | Measure | T5 | T20 | ρ | Us | OPP |
@@ -240,7 +240,7 @@ Among the top 30, rating tracks sustained pace in r151-400 (ρ=+0.46) and what b
   | Arrival vs respawn (rounds) | −59 | −74 | | −60 | |
   | Share of all big-group rewards taken | 55.1% | 47.9% | +0.19 | 36.6% | 63.4% |
 
-  The arrival row is the mean offset from the respawn round; negative means arriving after it. Top-30 losing sides take 29.7% of big-group rewards. In losses, bodies on arrival are equal (ranks 1-5 1.26 vs ranks 20-30 1.27) — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
+  The arrival row is the mean offset from the respawn round; negative means arriving after it. Top-30 losing sides take 29.7% of big-group rewards. In losses, bodies on arrival are equal (ranks 1-5 1.26 vs ranks 20-30 1.27) — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
 
 ### Inferences
 - The clearest style marker of the top 5 is disengaging when contacted: holding a recall instead of fighting, recalling to reposition rather than to heal, and doing it in losses too. That points to a rule, not an outcome.
@@ -257,8 +257,8 @@ Among the top 30, rating tracks sustained pace in r151-400 (ρ=+0.46) and what b
 Stronger teams bank much more often: 30.9 tributes a game for the top 5 vs 19.2 for ranks 20-30 (ρ=+0.49). They also spread captures across more carriers, including Cassi&Issac. Altar choice (spawn altar about 73% for everyone), deaths while carrying, and Marcella's capture share do not separate them. We tribute as rarely as ranks 20-30 (20.7 a game vs our opponents' 30.2), with small bags (33). Our captures run through HR, Vendetta and Ryth rather than Marcella and CI.
 
 ### Cited Findings
-- Tributes per game: T5 30.9 vs T20 19.2 (ρ=+0.49, banking rows n=610 top-30 sides). Losing sides only: ranks 1-5 19.2 vs ranks 20-30 14.2. Us 20.7 (n=232) vs OPP 30.2 (n=318) — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
-- Bag size at tribute: T5 41 vs T20 74 (ρ=−0.35). Without Olympus's artifact game the T20 mean is about 57. UW banks 20-gem bags 49.8 times a game, print dont int 31-gem bags 32.2 times; Mite uses 62-gem bags 32.7 times. Us 32.6, OPP 41.6 — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt); [table.md](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/table.md)
+- Tributes per game: T5 30.9 vs T20 19.2 (ρ=+0.49, banking rows n=610 top-30 sides). Losing sides only: ranks 1-5 19.2 vs ranks 20-30 14.2. Us 20.7 (n=232) vs OPP 30.2 (n=318) — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
+- Bag size at tribute: T5 41 vs T20 74 (ρ=−0.35). Without Olympus's artifact game the T20 mean is about 57. UW banks 20-gem bags 49.8 times a game, print dont int 31-gem bags 32.2 times; Mite uses 62-gem bags 32.7 times. Us 32.6, OPP 41.6 — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt); [table_run854.md](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/table_run854.md)
 - Who captures (share of the team's captured gems):
 
   | Carrier | T5 | T20 | ρ | Us | OPP |
@@ -271,10 +271,10 @@ Stronger teams bank much more often: 30.9 tributes a game for the top 5 vs 19.2 
   | Ryth | 3% | 4% | | 13% | 9% |
   | Largest single carrier | 44% | 46% | | 41% | |
 
-  Source: [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
-- Altars: spawn-altar share of tributes T5 73% vs T20 74% (ρ=−0.24); us 78%, OPP 69%. Tributes made with an enemy within 6: T5 27% vs T20 22%; us 15%, OPP 18% — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
-- Gems lost on death per game: T5 85 vs T20 107 (draft_bank rows, ρ=−0.12). Economy rows: T5 115 vs T20 181. Top-30 losing sides lose 30.8% of captured gems on death vs 6.9% for winners; ours 14.4%, OPP 7.8%. Deaths while carrying ≥20 gems: T5 1.37 vs T20 1.36 a game — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
-- Rounds carried per tribute: T5 75.5 vs T20 105.8 (ρ=−0.28); us 80.2, OPP 62.9 — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
+  Source: [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
+- Altars: spawn-altar share of tributes T5 73% vs T20 74% (ρ=−0.24); us 78%, OPP 69%. Tributes made with an enemy within 6: T5 27% vs T20 22%; us 15%, OPP 18% — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
+- Gems lost on death per game: T5 85 vs T20 107 (draft_bank rows, ρ=−0.12). Economy rows: T5 115 vs T20 181. Top-30 losing sides lose 30.8% of captured gems on death vs 6.9% for winners; ours 14.4%, OPP 7.8%. Deaths while carrying ≥20 gems: T5 1.37 vs T20 1.36 a game — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
+- Rounds carried per tribute: T5 75.5 vs T20 105.8 (ρ=−0.28); us 80.2, OPP 62.9 — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
 
 ### Inferences
 - With bag sizes similar to our opponents' (33 vs 42), our banking gap comes from too few tributes. That in turn follows from capturing too little: 618 vs 931 gems captured a game, us vs OPP.
@@ -297,20 +297,20 @@ Each strong team commits to one emblem family across its roster: Jungle (Mite), 
   - Ad Astra: VV Prospector-str 43, HR Jungle-foc 42, Ren Jungle-foc 25.
   - newer team: Prospector on every champion (Marcella -foc 35, Vendetta -str 28, HR -foc/-hp 25/25).
   - Us: HR Jungle-hp 268, VV Prospector-str 231, Vendetta Prospector-str 225, Ryth Jungle-hp 206, Marcella Jungle-hp 199 (of about 305 games).
-  - Source: [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
-- Marcella's first-emblem stat is focus for Mite, IC, UW, newer team, NEETCoders, BattleCats, test4, print dont int and Sponge, and hp for Ad Astra (Prospector-hp 24) and for us (Jungle-hp 199) — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
+  - Source: [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
+- Marcella's first-emblem stat is focus for Mite, IC, UW, newer team, NEETCoders, BattleCats, test4, print dont int and Sponge, and hp for Ad Astra (Prospector-hp 24) and for us (Jungle-hp 199) — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
 - Timing:
   - First emblem round: T5 126 vs T20 117 (ρ=+0.12); us 144, OPP 136.
   - Shards at r300: raw T5 39.4 vs T20 37.7; map-adjusted ρ=+0.40 (T5 +1.4 vs T20 −1.6); us 29.8, OPP 31.5.
   - Emblems at r300 map-adjusted: ρ=+0.35.
   - First shop round is about 62 for all groups; ours is 56.
   - Share of shop trips made on foot rather than by recall: T5 12% vs T20 18% (ρ=−0.19).
-  - Source: [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
+  - Source: [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
 - Gold:
   - Unspent at r600: T5 284 vs T20 232 (ρ=+0.25); us 96, OPP 230, top-30 losers 175.
   - Unspent at r150: T5 160, us 68, OPP 147.
   - Gold earned per 100 rounds in r1-150: T5 347, T20 358, us 216, OPP 325.
-  - Source: [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
+  - Source: [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
 
 ### Inferences
 - Our item shortfall (−7.5 shards at r300 map-adjusted) mostly follows from earning less gold, not from a wrong build. Top teams carry 150-300 unspent gold through r600, which suggests they save for emblem purchases rather than spending as soon as they can; we spend down to about 70-100.
@@ -325,11 +325,11 @@ Each strong team commits to one emblem family across its roster: Jungle (Mite), 
 Territory and denial counts barely separate the top 30. Mid-band capture share, enemy-half captures, wards, locks and steals all have |ρ| ≤ 0.27. The exception is raids: stronger teams raid for kills (ρ=+0.43), while weaker teams' raids take more gems (raid gems ρ=−0.38). In our games, opponents raid us for 30 gems a game while our raids take 6.
 
 ### Cited Findings
-- Share of captured gems taken in the middle band: T5 54.7% vs T20 49.6% (ρ=+0.16); us 49.0%, OPP 59.2%. Enemy band: about 2.9% for both groups; us 2.1%, OPP 4.5% — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
-- Raids per game: T5 9.7 vs T20 9.2 (ρ=+0.22). Kills on raids: T5 3.2 vs T20 2.1 (ρ=+0.43). Gems captured on raids: T5 16.6 vs T20 24.4 (ρ=−0.38). Us: 13.2 raids, 1.9 kills, 5.6 gems; OPP: 14.0 raids, 2.3 kills, 29.5 gems. UW 14.3 raids and Ad Astra 14.0 vs newer team 4.6 — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt); [table.md](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/table.md)
-- Steals (capturing a group the other side did most of the damage on): 0.40 (T5) vs 0.43 (T20) a game; steal gems 28.6 vs 35.4 (ρ=−0.27). Us 0.55 a game and 36 gems, OPP 0.79 and 56 gems — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
-- Altar locks: T5 2.1 vs T20 1.9 a game (ρ=+0.11). Mite, UW and Ad Astra place none; IC 4.6, newer team 5.9; us 1.1, OPP 3.0 — [table.md](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/table.md)
-- Wards per game: T5 132 vs T20 128 (ρ=+0.06); by r300 43 vs 38; coverage at r600 24% in both groups. Us 232 and OPP 261 in our own games — a different map/opponent mix, so not like-with-like — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
+- Share of captured gems taken in the middle band: T5 54.7% vs T20 49.6% (ρ=+0.16); us 49.0%, OPP 59.2%. Enemy band: about 2.9% for both groups; us 2.1%, OPP 4.5% — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
+- Raids per game: T5 9.7 vs T20 9.2 (ρ=+0.22). Kills on raids: T5 3.2 vs T20 2.1 (ρ=+0.43). Gems captured on raids: T5 16.6 vs T20 24.4 (ρ=−0.38). Us: 13.2 raids, 1.9 kills, 5.6 gems; OPP: 14.0 raids, 2.3 kills, 29.5 gems. UW 14.3 raids and Ad Astra 14.0 vs newer team 4.6 — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt); [table_run854.md](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/table_run854.md)
+- Steals (capturing a group the other side did most of the damage on): 0.40 (T5) vs 0.43 (T20) a game; steal gems 28.6 vs 35.4 (ρ=−0.27). Us 0.55 a game and 36 gems, OPP 0.79 and 56 gems — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
+- Altar locks: T5 2.1 vs T20 1.9 a game (ρ=+0.11). Mite, UW and Ad Astra place none; IC 4.6, newer team 5.9; us 1.1, OPP 3.0 — [table_run854.md](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/table_run854.md)
+- Wards per game: T5 132 vs T20 128 (ρ=+0.06); by r300 43 vs 38; coverage at r600 24% in both groups. Us 232 and OPP 261 in our own games — a different map/opponent mix, so not like-with-like — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
 
 ### Inferences
 - Denial is not what the top 5 do differently. They raid to kill and reset enemy farmers, not to take gems. We lose about 24 gems a game net on raids against our opponents (5.6 taken vs 29.5 conceded), which fits the walking and leaving-camps-on-contact pattern above.
@@ -344,9 +344,9 @@ Top-30 wins come from reaching 1000 banked gems. Tiebreak (round 2000) wins are 
 
 ### Cited Findings
 - Ranked results from the lists (400 games per team): 259 of 6,112 top-30 wins (4.2%) were tiebreak_gems or tiebreak_gold at round 2000. Ranks 1-5: 53 of 1,167 (4.5%); ranks 20-30: 94 of 2,238 (4.2%). HouseOfCoders: 21 of 200 wins (10.5%). Tiebreak endings are 291 of the 6,795 matches in the ranked union — [draft_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/draft_out.txt); [matches_current.jsonl](/home/claude/cambridge_battlecode/experiments/top30_nov3/matches_current.jsonl)
-- In decoded games, the winner had banked ≥1000 in 97.5% of top-30 wins (T5 98.3%, T20 97.7%), 88.7% of our wins (n=62) and 93.4% of our opponents' wins (n=243) — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
-- Game length: T5 games end at r989 vs r1084 for T20 (ρ=−0.52); ours at r1217. Round of reaching 1000 in wins: T5 931 vs T20 1022 (ρ=−0.29); our wins 1183 (n=34), our opponents' wins 1139 — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
-- Final margins: top-30 winners lead by +577 banked gems on average; T5 team mean margin +112 vs T20 −44 — [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
+- In decoded games, the winner had banked ≥1000 in 97.5% of top-30 wins (T5 98.3%, T20 97.7%), 88.7% of our wins (n=62) and 93.4% of our opponents' wins (n=243) — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
+- Game length: T5 games end at r989 vs r1084 for T20 (ρ=−0.52); ours at r1217. Round of reaching 1000 in wins: T5 931 vs T20 1022 (ρ=−0.29); our wins 1183 (n=34), our opponents' wins 1139 — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
+- Final margins: top-30 winners lead by +577 banked gems on average; T5 team mean margin +112 vs T20 −44 — [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
 
 ### Inferences
 - Top teams close games by banking steadily: about 30 tributes a game in wins (top-30 winners 29.6) until they cross 1000, not by a late sprint or stalling to round 2000. Our higher tiebreak share is consistent with a slower bank rate rather than a deliberate endgame plan.
@@ -400,7 +400,7 @@ Opening shape, walking share, contested camp-hit share, deaths, wards, locks, st
   | CI capture share | +0.36 | 12.6% | 2.7% |
   | r150 gems vs map | +0.35 | +7.4 | −3.0 |
 
-  Source: [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
+  Source: [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
 - Non-separating features (ρ):
   - deaths per game +0.06 (T5 10.6 vs T20 10.4);
   - walk share −0.15;
@@ -415,7 +415,7 @@ Opening shape, walking share, contested camp-hit share, deaths, wards, locks, st
   - first-emblem round +0.12;
   - share of wins by reaching 1000 +0.03.
 
-  Source: [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
+  Source: [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
 - Like-with-like for us: same games vs OPP (305 economy games, 551 objectives games, 232/318 banking sides), and our losses vs top-30 losing sides (ours n=243, ranks 1-5 n=131, ranks 20-30 n=292).
   - r300 gems vs map: ours −57.7 in losses vs −26.5 (ranks 1-5) and −36.7 (ranks 20-30).
   - r151-400 pace: −23.1 vs −12.2 and −16.9.
@@ -423,7 +423,7 @@ Opening shape, walking share, contested camp-hit share, deaths, wards, locks, st
   - Fight share of contact time: 17.0% vs 14.6% and 19.7%.
   - Walk share: 61.1% vs 55.9% and 56.1%.
   - Contact time hitting camps: 3.6% (ours) vs 5.7% (ranks 1-5 losing) and 6.5% (ranks 20-30 losing).
-  - Source: [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
+  - Source: [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
 - In the same games vs OPP:
   - gems captured per game 618 vs 931;
   - tributes 20.7 vs 30.2;
@@ -431,7 +431,7 @@ Opening shape, walking share, contested camp-hit share, deaths, wards, locks, st
   - raid gems 5.6 vs 29.5;
   - gold earned r1-150 216 vs 325 per 100 rounds;
   - unspent gold at r600 96 vs 230.
-  - Source: [fp_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out.txt)
+  - Source: [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
 
 ### Inferences
 - Two rules separate the top 5 from ranks 20-30 and hold in their losses too, so they look like strategy rather than outcome:

@@ -79,3 +79,4 @@
 2026-11-03T18:25Z CYCLE v98 not live after 5 min: back to v94
 2026-11-03T18:45Z CYCLE v98 not live after 5 min: back to v94
 2026-11-03T18:51Z v98 window tests failed (activation recompile > 5 min, v98 never live inside 18:20Z / 18:40Z windows; v94 selected at the slots). Free-hand rule: v98 activated + selected 18:50:56Z for a full live test; 47 paired groups of paired_c14.json queued 18:53Z. Keep v98 only if net >= +8 vs v94, else re-select v94.
+2026-11-03T19:01Z PAIRED v98 (v97 + economy: hold + g23_farm, join, scarce, commit_keep) live + selected, 46 groups of paired_c14.json (230 games): vs v94 86/195 vs 106/195 (flips +13/-33, net -20, p 0.00); vs v97 -22. The economy half is what made v96 lose. USER: 'Stop now' (00:31 IST): all my scripts stopped; the site shows v100 active + selected (the user's own upload); nothing changed by this session after the stop.

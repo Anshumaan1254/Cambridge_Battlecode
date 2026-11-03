@@ -53,3 +53,4 @@ inline const bc::bitboard* g_soft_avoid = nullptr;
 // P.v26_nowake: dash landings that would hit a sleeping camp we do not farm (a damaging dash wakes its group); null when off.
 inline const bc::bitboard* g_dash_avoid = nullptr;
 inline bool g_exit_first = false; // P.flee_exit: go_home_step while fleeing (step_field may take a sideways exit step)
+inline const bc::bitboard* g_hard_block = nullptr; // P.g23_divefilter: tiles no walk / dash may enter this turn (set and cleared by Brain)

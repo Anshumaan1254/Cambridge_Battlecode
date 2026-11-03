@@ -548,6 +548,8 @@ private:
 	bool g23_sees_group(const Group& g) const;
 	bool g23_spawn_reach(const Group& g) const;
 	bool g23_spawn_farm(Group& g);
+	bc::bitboard g23_block;	// P.g23_divefilter: this turn's blocked approach tiles
+	void g23_dive_prepare();
 };
 
 Brain& brain();

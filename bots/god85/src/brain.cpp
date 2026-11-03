@@ -971,6 +971,8 @@ void Brain::read_self()
 
 void Brain::turn()
 {
+	if (P.g23_divefilter)
+		g_hard_block = nullptr;
 	if (inited && P.no_split)
 		remember_positions();
 	round = static_cast<int>(bc::round_number());
@@ -1172,6 +1174,8 @@ void Brain::turn()
 		g23_read_allies();
 	if (P.g23_tol)
 		g23_tol_tick();
+	if (P.g23_divefilter)
+		g23_dive_prepare();
 	nowake_prepare();
 	if (P.v23_bank || P.v23_locks)
 		v23_perceive();
@@ -4386,6 +4390,8 @@ bool Brain::combat()
 				comms().post(AL_RALLY, tgt->pos, round);
 			learner().on_fight(round);
 			task = T_FIGHT;
+			if (P.g23_divefilter)
+				g_hard_block = nullptr; // g23_divefilter: a fight we chose may step in
 			return engage(*tgt);
 		}
 		if (st == G23_LEAVE)
@@ -4675,6 +4681,8 @@ bool Brain::combat()
 			comms().post(AL_RALLY, tgt->pos, round);
 		learner().on_fight(round);
 		task = T_FIGHT;
+		if (P.g23_divefilter)
+			g_hard_block = nullptr; // g23_divefilter: a fight we chose may step in
 		if (P.v23_hy & 4)
 		{
 			fe_no_cc = tgt->stunned; // keep our stun for the round after theirs ends

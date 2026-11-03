@@ -1233,3 +1233,50 @@ bool Brain::g23_spawn_farm(Group& g)
 	attack_chain_camp(g, t);
 	return true;
 }
+
+// ---------------------------------------------------------------------------------------------- dive filter (ladder analysis P1)
+
+// Outnumbered here (R < g23_dive_r at our tile, or the burst the visible enemies can land on our tile next turn is at least our health):
+// every tile within 2 that is nearer to the nearest visible enemy than our tile is blocked for this turn's walks and dashes (Nav::
+// blocked_now reads g_hard_block). combat() clears it when it decides to fight.
+void Brain::g23_dive_prepare()
+{
+	auto& W = world();
+	std::vector<Enemy*> E;
+	int d0 = BIG;
+	for (auto& e : W.enemies)
+		if (e.alive && e.visible && cheb(e.pos, pos) <= 9 && !W.enemy_spawn.is_set(e.pos))
+		{
+			E.push_back(&e);
+			d0 = std::min(d0, cheb(e.pos, pos));
+		}
+	if (E.empty() || W.ally_spawn.is_set(pos))
+		return;
+	float burst = 0;
+	for (auto* e : E)
+	{
+		int reach = e->kit.attack_range + (e->kit.ranged ? 0 : 1) + (e->ready(e->kit.dash) ? 2 : 0);
+		if (e->ready(e->kit.dmg) || e->ready(e->kit.cc) || e->ready(e->kit.aoe))
+			reach = std::max(reach, 4);
+		if (cheb(e->pos, pos) <= reach)
+			burst += e->str * (e->ready(e->kit.reset) ? 2.f : 1.f) + e->burst();
+	}
+	const float R = g23_ratio(pos, E, nullptr, nullptr, nullptr);
+	if (!(R < P.g23_dive_r || burst >= hp))
+		return;
+	g23_block.clear();
+	for (int dy = -2; dy <= 2; ++dy)
+		for (int dx = -2; dx <= 2; ++dx)
+		{
+			const vec2 t{ pos.x + dx, pos.y + dy };
+			if ((dx == 0 && dy == 0) || !bc::map::is_in_bounds(t))
+				continue;
+			int dt = BIG;
+			for (auto* e : E)
+				dt = std::min(dt, cheb(e->pos, t));
+			if (dt < d0)
+				g23_block.set(t);
+		}
+	if (!g23_block.is_empty())
+		g_hard_block = &g23_block;
+}

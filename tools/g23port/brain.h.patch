@@ -1,6 +1,6 @@
 --- god84/src/brain.h	2026-11-02 17:31:12.755998657 +0000
-+++ god85/src/brain.h	2026-11-02 23:39:52.527855695 +0000
-@@ -486,6 +486,68 @@
++++ god85/src/brain.h	2026-11-02 23:56:34.796152679 +0000
+@@ -486,6 +486,70 @@
  	std::vector<int> v23_P, v23_F;						 // prime group ids (P0 first) and the force each needs
  	std::vector<vec2> v23_rally, v23_wtile;				 // per prime group: the rally tile and the ward tile
  	int v23_role = 0, v23_role_k = -1, v23_ready = BIG, v23_deadline = -1, v23_last_eta = 0, v23_clock_w = -1;
@@ -66,6 +66,8 @@
 +	bool g23_sees_group(const Group& g) const;
 +	bool g23_spawn_reach(const Group& g) const;
 +	bool g23_spawn_farm(Group& g);
++	bc::bitboard g23_block;	// P.g23_divefilter: this turn's blocked approach tiles
++	void g23_dive_prepare();
  };
  
  Brain& brain();

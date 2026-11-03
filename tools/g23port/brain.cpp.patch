@@ -1,6 +1,15 @@
 --- god84/src/brain.cpp	2026-11-02 17:31:12.756024356 +0000
-+++ god85/src/brain.cpp	2026-11-02 23:39:52.530947883 +0000
-@@ -1025,7 +1025,7 @@
++++ god85/src/brain.cpp	2026-11-02 23:59:59.971422216 +0000
+@@ -971,6 +971,8 @@
+ 
+ void Brain::turn()
+ {
++	if (P.g23_divefilter)
++		g_hard_block = nullptr;
+ 	if (inited && P.no_split)
+ 		remember_positions();
+ 	round = static_cast<int>(bc::round_number());
+@@ -1025,7 +1027,7 @@
  		{
  			if (P.opp_model)
  				C.write_plan(P.om_force > 0 && round >= P.om_start ? P.om_force : P.om_act ? opp_model().plan_id(learner().stance) : learner().stance);
@@ -9,7 +18,7 @@
  				C.write_stance(learner().stance);
  		}
  		if (P.opp_plan && !P.opp_model && W.my_index == 0)
-@@ -1112,7 +1112,7 @@
+@@ -1112,7 +1114,7 @@
  		{
  			if (P.opp_model)
  				C.write_plan(P.om_force > 0 && round >= P.om_start ? P.om_force : P.om_act ? opp_model().plan_id(L.stance) : L.stance);
@@ -18,7 +27,7 @@
  				C.write_stance(L.stance);
  		}
  		if (hp < last_hp - 0.5f)
-@@ -1168,6 +1168,10 @@
+@@ -1168,6 +1170,12 @@
  		}
  	}
  	build_danger();
@@ -26,10 +35,12 @@
 +		g23_read_allies();
 +	if (P.g23_tol)
 +		g23_tol_tick();
++	if (P.g23_divefilter)
++		g23_dive_prepare();
  	nowake_prepare();
  	if (P.v23_bank || P.v23_locks)
  		v23_perceive();
-@@ -1981,6 +1985,7 @@
+@@ -1981,6 +1989,7 @@
  	{
  		const auto& g = W.groups[static_cast<std::size_t>(task_group)];
  		legit_wait = g.st == ST_RESPAWN && g.ready_round + 3 >= round && cheb(pos, g.center) <= g.radius + 3;
@@ -37,7 +48,7 @@
  	}
  	const bool progress = acted_now || gems != pw_gems || gold != pw_gold || hp > pw_hp + 0.02f * max_hp || W.ally_spawn.is_set(pos) ||
  		legit_wait || pw_since < 0 || cheb(pos, pw_anchor) > 3;
-@@ -3136,6 +3141,8 @@
+@@ -3136,6 +3145,8 @@
  
  void Brain::place_ward(bool force)
  {
@@ -46,7 +57,7 @@
  	// v23 4.3.3 / 4.8: the warden's ward on the prime group's ward tile is the team's respawn clock: it never moves
  	if (P.v23_tol && v23_warden && v23_role_k >= 0 && static_cast<std::size_t>(v23_role_k) < v23_wtile.size() && ward_pos == v23_wtile[static_cast<std::size_t>(v23_role_k)])
  		return;
-@@ -3936,7 +3943,11 @@
+@@ -3936,7 +3947,11 @@
  			E.push_back(&e);
  		}
  	if (E.empty())
@@ -58,7 +69,7 @@
  
  	// Enemy reach next turn: attack range (+1 step for melee), +2 with a dash ready, 4 with a spell ready.
  	auto reach_of = [](const Enemy& e) {
-@@ -4358,6 +4369,31 @@
+@@ -4358,6 +4373,33 @@
  	if (W.enemy_spawn.is_set(tgt->pos) || cheb(tgt->pos, W.enemy_spawn_c) <= 3)
  		fight = fight && killable;
  	bool ml2_kill = killable; // a kill this turn (ours or the team's): the model never vetoes it
@@ -79,6 +90,8 @@
 +				comms().post(AL_RALLY, tgt->pos, round);
 +			learner().on_fight(round);
 +			task = T_FIGHT;
++			if (P.g23_divefilter)
++				g_hard_block = nullptr; // g23_divefilter: a fight we chose may step in
 +			return engage(*tgt);
 +		}
 +		if (st == G23_LEAVE)
@@ -90,7 +103,7 @@
  	if (P.px_mode)
  	{
  		// Proxy of the top teams' fights: the team target is the lowest-health body we can hit this turn (a body the
-@@ -4520,6 +4556,14 @@
+@@ -4520,6 +4562,14 @@
  	engaged = fight || in_reach || nearest_enemy <= 5;
  	(void)stunners;
  
@@ -105,7 +118,7 @@
  	if (fz_engage_eff > 0 && fight && !in_reach && !killable && last_fight_round < round - 1 && d > fz_engage_eff && !tgt->channeling && !tgt->tributing)
  		fight = false; // v14 fz_engage: not yet in a fight and the target is still far: keep doing what we do
  	if (P.fz_chase > 0 && !in_reach)
-@@ -4621,6 +4665,8 @@
+@@ -4621,6 +4671,8 @@
  			return true; // hold this turn (not in reach: nothing to hit)
  		}
  	}
@@ -114,7 +127,16 @@
  	if (fight)
  	{
  		last_fight_round = round;
-@@ -4638,6 +4684,8 @@
+@@ -4629,6 +4681,8 @@
+ 			comms().post(AL_RALLY, tgt->pos, round);
+ 		learner().on_fight(round);
+ 		task = T_FIGHT;
++		if (P.g23_divefilter)
++			g_hard_block = nullptr; // g23_divefilter: a fight we chose may step in
+ 		if (P.v23_hy & 4)
+ 		{
+ 			fe_no_cc = tgt->stunned; // keep our stun for the round after theirs ends
+@@ -4638,6 +4692,8 @@
  		}
  		return engage(*tgt);
  	}
@@ -123,7 +145,7 @@
  	if (in_reach && !(round < pw_calm_until && hp >= pw_calm_hp - 1.f && round - last_hit_round > 1))
  	{
  		post_danger(tgt->pos);
-@@ -5110,6 +5158,11 @@
+@@ -5110,6 +5166,11 @@
  
  void Brain::update_priority()
  {
@@ -135,7 +157,7 @@
  	// Turn order (verified on 14,069 ladder rounds): team A leads odd rounds, team B even rounds; teams
  	// alternate turns; within a team higher priority acts first; set_priority applies from the next round.
  	// A fighter that acts last in a round we trail and first in the next round we lead gets two actions in
-@@ -5393,6 +5446,8 @@
+@@ -5393,6 +5454,8 @@
  		else if (enemy_near_d > P.finish_enemy_d)
  			return go_home();
  	}
@@ -144,7 +166,7 @@
  	if (hp >= threshold)
  	{
  		// On spawn, health is restored only after a turn ends there: after a recall or a walk home, rest one
-@@ -6127,6 +6182,8 @@
+@@ -6127,6 +6190,8 @@
  	// An enemy channelling a tribute (posted as an opportunity) is the cheapest kill in the game, and the
  	// only way to stop a winning tribute: answer it from farther and at lower health than a rally.
  	const bool opp = C.alert_kind == AL_OPPORTUNITY;
@@ -153,7 +175,7 @@
  	const int theirs = static_cast<int>(bc::global_submitted_gems(team::enemy));
  	const bool their_endgame = theirs >= P.endgame_alarm;
  	float hp_gate = opp ? (their_endgame ? 0.25f : 0.4f) : P.rally_hp;
-@@ -6144,6 +6201,8 @@
+@@ -6144,6 +6209,8 @@
  	if (hp < hp_gate * max_hp || ((task == T_CAPTURE || reward_here()) && !their_endgame))
  		return false;
  	const int d = cheb(C.alert_pos, pos);
@@ -162,7 +184,7 @@
  	if (d > max_d || d < 2)
  		return false;
  	// v15 g15_calm & 8: a body working a group (a camp hit in the last 3 rounds, waiting on its respawn) keeps at it unless the rally is
-@@ -6567,7 +6626,7 @@
+@@ -6567,7 +6634,7 @@
  	ust_anchor = pos; // waiting out a cooldown on the ring is not being stuck
  	ust_since = round;
  	const bool save_cc = enemy_near_d <= P.hold_cc_dist;
@@ -171,7 +193,7 @@
  	bool did = false;
  	if (!hold_spells && !cast_done)
  	{
-@@ -6939,7 +6998,8 @@
+@@ -6939,7 +7006,8 @@
  			if (g.harmless)
  				return true;
  			// Camps hit the nearest champion: a ranged champion next to a melee ally takes almost nothing.
@@ -181,7 +203,7 @@
  #ifdef XM_TRACE
  			// The uncorrected model, logged next to the new one so both are scored on the same episodes.
  			const bool xm_tank0 = !(kit.ranged && helper_melee);
-@@ -7141,7 +7201,8 @@
+@@ -7141,7 +7209,8 @@
  				edps += sc_recent[static_cast<std::size_t>(k)].dps;
  			}
  		const bool dive = P.big_reward_dive > 0 && g.st == ST_REWARD && g.enemy_on_tile && g.gems >= P.big_reward_dive && hp >= 0.25f * max_hp;
@@ -191,7 +213,7 @@
  		{
  			// big_reward: a group worth a death or two is fought for with the whole team close by
  			const bool big = P.big_reward > 0 && g.gems >= P.big_reward;
-@@ -7157,7 +7218,7 @@
+@@ -7157,7 +7226,7 @@
  				{ WHY(10); return -1; }
  		}
  	}
@@ -200,7 +222,7 @@
  		time += 12.f;
  	if (P.v24_ci_escort && (type == CT::cassi || type == CT::issac))
  	{
-@@ -7267,6 +7328,13 @@
+@@ -7267,6 +7336,13 @@
  			return 1e4f / std::max(1.f, finish);
  		}
  	}
@@ -214,7 +236,7 @@
  	if (P.tp_own && tp_own_.ok && g.id >= 0 && g.id < static_cast<int>(tp_own_.owner.size()) &&
  		tp_own_.owner[static_cast<std::size_t>(g.id)] == tp_own_.slot)
  		return value / std::max(1.f, time) * (1.f + P.tp_own_bonus);
-@@ -7463,6 +7531,8 @@
+@@ -7463,6 +7539,8 @@
  	auto& W = world();
  	if (task != T_CAPTURE && cast_en_route())
  		return;
@@ -223,7 +245,7 @@
  	if (P.style == 1 || round < P.deathball_until || (P.pxs_style && style_now() == 3) || (P.spar_db && sparring_window()))
  	{
  		int leader = -1;
-@@ -7735,6 +7805,8 @@
+@@ -7735,6 +7813,8 @@
  			}
  		}
  	}
@@ -232,7 +254,7 @@
  	if (best < 0)
  	{
  		IDL();
-@@ -7943,10 +8015,14 @@
+@@ -7943,10 +8023,14 @@
  			else
  				task = T_WAIT;
  		}
@@ -249,7 +271,7 @@
  	}
  }
  
-@@ -8775,7 +8851,7 @@
+@@ -8775,7 +8859,7 @@
  	// Keep burst for a fight only when one is likely within the cooldown: an unused ready spell is lost value
  	// (8-round cooldowns), and an enemy 7-9 tiles away led to a fight within 8 rounds only 13% of the time.
  	const bool save_cc = enemy_near_d <= P.hold_cc_dist;
@@ -258,7 +280,7 @@
  	if (P.varg_splash_pos && type == CT::varg && can_move)
  	{
  		// Varg's splash hits every camp next to the target: stand next to the camp with the most live neighbours. From
-@@ -8813,6 +8889,8 @@
+@@ -8813,6 +8897,8 @@
  				step(goal, false, false);
  		}
  	}

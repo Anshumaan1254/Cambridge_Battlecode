@@ -1237,6 +1237,10 @@ struct Params
 	int g23_bank_cap = 60;
 	int g23_no_opp = 0;			// 1: no OPPORTUNITY posts (a tributing / recalling carrier is a KILL for whoever sees it; the alert slot is DANGER / RALLY)
 	int g23_rally_r = 10;		// respond_to_alert: a RALLY farther than this is not answered (second wave handles the near ones)
+	int g23_divefilter = 0;		// 1: outnumbered here (local ratio R < g23_dive_r, or the burst enemies can land on our tile next turn >= our health): no walk or
+								// dash may end nearer to the nearest visible enemy than we stand now, except a fight combat() starts (ladder: 12.4 such
+								// dives a game in our losses vs 6.3 for the opponents; after a step in at R < 0.67, 9.7% die within 6 rounds)
+	float g23_dive_r = 0.67f;
 	int g23_spawnfarm = 0;		// 1: a camp within attack range of one of our spawn tiles (homonoliths: 3 monoliths at the spawn corner) is farmed from the
 								// spawn tile: the spawn heals us fully every round, so the group costs no health (group_score: incoming 0; safety: no retreat)
 	int g23_draft = 0;			// 1: the roster rule in the draft (4.1): 5: Vesper Vale, Vendetta, Heart of Ruin, Tavi, Marcella; 4: ... Cassi & Issac

@@ -1,0 +1,11 @@
+--- god84/src/nav.cpp	2026-11-02 17:31:12.755331725 +0000
++++ god85/src/nav.cpp	2026-11-02 23:59:59.967398141 +0000
+@@ -256,6 +256,8 @@
+ 	b |= w.tele_occ;
+ 	if (P.fz_wardblock)
+ 		b |= w.ward_occ;
++	if (P.g23_divefilter && g_hard_block)
++		b |= *g_hard_block;
+ 	b.set(me, false);
+ 	return b;
+ }

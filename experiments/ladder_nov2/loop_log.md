@@ -72,3 +72,4 @@
 2026-11-03T15:14Z USER approved: ladder test of v94em (= v94 + only: a winning / endgame bag is never held back by a hot altar (endgame_margin 40) + enemy Marcella stun in g23_dps_of / g23_ratio) in the 16:00Z window (and 17:00Z if needed) on paired_c12.json; promote only if net >= +10 vs v94 over 250+ games, else v94 stays. Also built: v94e (endgame fix only), v94m (Marcella stun only).
 2026-11-03T16:05Z CYCLE submit of v94em: not built after 5 min; re-pinning v94
 2026-11-03T16:16Z CYCLE submit of v94em: not built after 5 min; re-pinning v94
+2026-11-03T16:18Z USER (21:47 IST): v97 (= v94em) made live by the user; it is the Qualifiers entry. All my cycle / guard scripts stopped at 16:18:08Z before any of them could re-activate v94. v97 building (active 94 until built).

@@ -254,7 +254,7 @@ rates. Chases almost never get the chaser killed (1-2%).
 - Retreat with the own dash ready, dash used within 2 rounds: ranks 1-10 71% (n 3,298), 20-30 80% (n 2,210), TOPl 77%, OPP84 72%
   (n 3,283), OPP88 73%; **US84 39% (n 3,110), US88 38% (n 1,407); our HoR 13% (n 1,579) and 12% (n 722) vs OPP HoR 72% / 71%** —
   Table B.
-- Caught (dead within 8 rounds) on a retreat without the dash: ranks 1-10 9% (n 971) vs 20-30 16% (n 451); rho -0.35, p 0.06.
+- Caught (dead within 8 rounds) on a retreat without the dash: ranks 1-10 9% (n 971) vs 20-30 16% (n 451); rho -0.35, p 0.06, n 29 teams.
   US84 23% (n 1,897), US88 28% (n 877) vs OPP 16% / 14%. With the dash: US 8% / 13% vs OPP 14% / 8% — feats.json.
 - Exceptions in the top 10: Intercontinental Fish 39% (n 426) and UW 49% (n 338) rarely dash out. They compensate with low catch
   rates (14% and 11% of retreats) — Table B.
@@ -375,7 +375,7 @@ with a small bag (-0.39). Like with like, our out-of-distribution traits are: th
 - Spearman with rating, n = 30 teams (tables_micro.txt): chases that end among more enemies +0.67 (p 0.001); kills a game +0.65
   (p 0.002); Marcella's enhanced attacks on champions +0.59 (p 0.002); focus +0.58 (p 0.003); deaths within 40 rounds of respawn
   +0.55 (p 0.002); exchanges a game +0.48 (p 0.014); lone participations -0.48 (p 0.011); stun follow-up +0.44 (p 0.015); static
-  openings -0.42 (p 0.018); lone openings -0.39 (p 0.043); bag lost a game -0.39 (p 0.034); no-dash retreats caught -0.35 (p 0.06).
+  openings -0.42 (p 0.018); lone openings -0.39 (p 0.043); bag lost a game -0.39 (p 0.034); no-dash retreats caught -0.35 (p 0.06, n 29).
   Not related to rating (|rho| < 0.3): retreat dash use, contact fight rates by band, spells from range 4, bush retreats, fights near
   objectives, low-hp targeting.
 - Like-with-like gaps (US vs OPP, same games; numbers in Q1-Q5): the HoR retreat dash 13% / 12% vs 72% / 71%; deaths to enemy-woken

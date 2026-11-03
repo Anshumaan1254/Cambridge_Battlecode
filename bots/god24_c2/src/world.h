@@ -165,6 +165,9 @@ struct World
 	float mono_share = 0;		 // share of the map's gem rate (gems / respawn) held by lone monoliths
 	float mono_rate_total = 0, mono_rate_lone = 0;
 	std::vector<int> mono_groups; // the lone monoliths we can reach
+	// P.g24_scarce: gem-scarce map (gems of all camp groups / champions per team <= P.g24_scarce_gpc); set in init_units (needs team_champs)
+	bool scarce_mode = false;
+	int scarce_gems = 0; // gems of all camp groups (init_static, only with P.g24_scarce)
 	void detect_objective();
 	Field home; // steps from our spawn
 	int spawn_altar_d = BIG; // walking steps from our spawn to the nearest altar's approach tile

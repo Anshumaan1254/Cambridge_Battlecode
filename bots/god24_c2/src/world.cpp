@@ -260,6 +260,13 @@ void World::init_static()
 	// generated monolith-only maps where the plan lost have them on each half, 0.39-0.42)
 	mono_mode = P.mono_plan && mono_rate_total > 0 && mono_share >= P.mono_share
 		&& (!P.mono_size50 || (P.mono_size50 == 1 ? (W == 50 && H == 50) : mono_mid >= P.mono_center));
+	if (P.g24_scarce)
+	{
+		// g24_scarce: the map's gem supply (every camp group); scarce_mode itself is set in init_units, once team_champs is known
+		scarce_gems = 0;
+		for (const auto& g : groups)
+			scarce_gems += g.gems;
+	}
 	detect_objective();
 	if (P.v23_prize)
 	{
@@ -401,6 +408,14 @@ void World::init_units()
 		team_champs += a.type != bc::champion_type::issac;
 		allies.push_back(a);
 		++i;
+	}
+	if (P.g24_scarce)
+	{
+		// g24_scarce (draft_bank S1): gems per champion <= g24_scarce_gpc (the median map): we win 43% there vs 58% on the rest
+		scarce_mode = team_champs > 0 && scarce_gems <= P.g24_scarce_gpc * team_champs;
+#if defined(LEGEND_TRACE) || defined(G23_TRACE)
+		std::printf("G24 g24_scarce 0 %d -1 mode=%d gems=%d champs=%d\n", my_index, static_cast<int>(scarce_mode), scarce_gems, team_champs);
+#endif
 	}
 	std::uint32_t count = 0;
 	bc::detail::check(bc::detail::sdk_num_enemies(&count));

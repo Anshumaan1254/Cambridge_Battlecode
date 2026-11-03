@@ -1327,6 +1327,9 @@ struct Params
 	int g24_marc_focus = 0;		// 1 (N1): g23_pick_target() divides an enemy Marcella's key by 1 + bag / 40, and by 1.3 more when her strength >= 1.5 x design
 	int g24_marc_threat = 0;	// 1 (N2): g23_dps_of() counts an enemy Marcella's ready reset x1.5 (its stun), g23_ratio() our damage x0.85 while one with the
 								// reset ready is within 2 of the contact
+	// ---- g24 C4 capture rank (confusion study S2) ----
+	int g24_cap_rank = 0;		// 1: on a gold tie in group_score's capture order, Marcella > Vesper Vale > the rest > Heart of Ruin take the reward
+	int g24_cap_rank_d = 2;		// ... when the higher-ranked ally claiming it is at most this many steps farther than we are
 	// ---- g24 C5 execution (X1-X3) ----
 	// ===== end of GOD v24 switches =====
 };

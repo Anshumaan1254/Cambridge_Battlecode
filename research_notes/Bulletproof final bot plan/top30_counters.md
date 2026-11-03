@@ -3,7 +3,7 @@
 Data used (all local, nothing run on the engine):
 - 6,795 ranked matches of 45 teams on the 86-map pool, engine 2.0.0, played 2026-11-02 17:20 to 2026-11-03 06:30 UTC (each top-30 team's last 400). Source: `experiments/top30_nov3/matches_current.jsonl`.
 - 999 of the 1,201 decoded top-30 vs top-30 replays. All 83-91 decoded games of every top-10 team are included. Ranks 11-30 are partial: 293 games for ranks 11-20 and 106 for ranks 21-30 against teams outside their own cluster.
-- Scripts and outputs are in `experiments/deep_research_nov3/counters/`: `h2h.py`, `dec_extract.py`, `losses.py`, `draft_fam.py` and `out/`.
+- Scripts and outputs are in `experiments/deep_research_nov3/counters/`: `h2h.py`, `dec_extract.py`, `losses.py`, `draft_fam.py`, `fingerprint.py` and `out/`.
 
 Definitions:
 - **BT** is a Bradley-Terry rating fitted on the 6,795 games and put on the ladder scale. **E** is the BT-expected number of wins; resid = W - E.
@@ -154,18 +154,35 @@ Definitions:
   - :3: near spawns.
   - JukeFall: 9-14 groups.
 - The bot cannot choose maps or sides. Map-class knowledge is used by switching behaviour once the map and the opponent are known.
-- Several top teams have a distinctive roster and can be fingerprinted from the enemy draft:
-  - UoS: Ryth+C&I+Willow+Varg+HoR.
-  - IC: Vendetta+C&I+Marcella+Willow+HoR (Olympus uses the same roster).
-  - Mite: Vesper+Vendetta+C&I+Marcella+HoR.
-  - test4: Vesper+C&I+Marcella+Willow+HoR.
-  - newer team: Vendetta+C&I+Prism+Varg+HoR.
-  - AdA: Vesper+Vendetta+C&I+Ren+HoR or Vesper+Marcella+Willow+Ren+HoR.
-  - policy wonk: Marcella+Willow+Ren+Tavi+HoR.
-  - German Empire: Vesper+Vendetta+Marcella+Ren+Tavi.
-  - Rogue Lock Pickers: Vesper+Vendetta+Marcella+Willow+Tavi.
+- Several top teams have a distinctive roster and can be fingerprinted from the enemy draft. Below, "of all uses" is P(team | roster): the team's share of every team-game, across all 45 teams, that used that exact roster ([fingerprint.txt](file:///home/claude/cambridge_battlecode/experiments/deep_research_nov3/counters/out/fingerprint.txt)).
+  - Unique or nearly unique (P ≥ 0.96):
 
-  NEET, BattleCats, Sponge, Trzy Kwaterki, T1 and most of ranks 13-29 share the Std roster, so they need generic counters.
+    | Team | Roster | Team-games of all uses (P) | Team's own games |
+    |---|---|---|---|
+    | UoS | Ryth+C&I+Willow+Varg+HoR | 81 of 81 (1.00) | 81 of 400 |
+    | AdA | Vesper+C&I+Marcella+HoR | 61 of 61 (1.00) | — |
+    | newer team | Vendetta+C&I+Prism+Varg+HoR | 38 of 38 (1.00) | — |
+    | test4 | Vesper+C&I+Marcella+Willow+HoR | 240 of 251 (0.96) | 240 of 400 |
+    | test4 | C&I+Marcella+Willow+HoR | 93 of 93 (1.00) | — |
+    | BattleCats | Ryth+Vendetta+Prism+Marcella+HoR | 59 of 61 (0.97) | — |
+    | policy wonk | Marcella+Willow+Ren+Tavi+HoR | 81 of 81 (1.00) | — |
+    | Noobot | Ryth+Vesper+Marcella+Willow+HoR | 266 of 273 (0.97) | 266 of 400 |
+    | German Empire | Vesper+Vendetta+Marcella+Ren+Tavi | 182 of 182 (1.00) | — |
+    | new team(4) | Vendetta+Marcella+Varg+Tavi+HoR | 83 of 84 (0.99) | — |
+    | Rogue Lock Pickers | Vesper+Vendetta+Marcella+Willow+Tavi | 244 of 244 (1.00) | — |
+    | MFF1 | Vesper+Vendetta+C&I+Marcella+Willow | 245 of 245 (1.00) | — |
+
+  - Ambiguous:
+
+    | Team | Roster | Team-games of all uses (P) | Note |
+    |---|---|---|---|
+    | Mite | Vesper+Vendetta+C&I+Marcella+HoR | 216 of 389 (0.56) | — |
+    | IC | Vendetta+C&I+Marcella+Willow+HoR | 117 of 426 (0.27) | Olympus 217 of the 426 |
+    | IC | Vesper+Vendetta+C&I+Varg+HoR | 54 of 84 (0.64) | — |
+    | pdi | Ryth+Vendetta+Marcella+Willow+HoR | 250 of 416 (0.60) | — |
+    | Sponge | Ryth+Vesper+C&I+Marcella+HoR | 77 of 93 (0.83) | — |
+
+  - The Std 5v5 roster Ryth+Vesper+Vendetta+Marcella+HoR covers 2,443 team-games. For each of its users (NEET, BattleCats, Sponge, Trzy Kwaterki, T1, caterpillow, Nyx, JukeFall, conqueror_of_openai, EE, procless) P ≤ 0.10, so these teams need generic counters.
 - Draft families are BT-adjusted but map-confounded: teams pick rosters per map. The Willow-over-Std effect (+39.5 over 760 games, about +5 points of win rate) is the most robust draft signal. It is consistent with Willow hurting Mite, NEET and newer team.
 
 ### Gaps

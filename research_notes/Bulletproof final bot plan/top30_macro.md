@@ -62,7 +62,7 @@ All 30 teams fit one fingerprint table built from 854 decoded top-30-vs-top-30 g
 - The table's "our" row mixes wins and losses (80% losses), so read it against the two rows below it: OPP (the same games) and the top-30 losing sides. On walk% (61 vs 53/56), r300 economy (−52 vs −6/−30), tributes (20.7 vs 30.2/16.0) and gold@600 (96 vs 230/174), we sit at or below the top-30 losers.
 
 ### Gaps
-- Extraction was stopped at 854 of 1,201 decoded games for economy, about 837 for objectives, and the existing 305 for banking, because of the time budget. To extend it, re-run `experiments/deep_research_nov3/macro/run_extract.py econ_db|obj`, then `fp.py` and `mk_table.py`.
+- The tables and text above use the 854-game snapshot (`*_run854` files). The extraction then finished on all 1,201 games. The last section compares the two and gives the full-data table; its banking columns rest on 32-96 sides per team instead of 10-25.
 - Banking columns (trib/g, bag, Ma cap%, CI cap%, locks) rest on only 10-25 sides per team.
 
 ## Top-10 macro styles (one paragraph each)
@@ -78,7 +78,7 @@ The top 5 do not share one roster. They share four habits: a fast economy after 
   - Banking: 32.7 tributes a game with 62-gem bags. Captures are spread across VV 30%, Ma 26%, HR 14% and CI 12%. It places zero altar locks.
   - Items: Jungle emblems first on HR (Jungle-foc 44 games), Vendetta (Jungle-str 39), Marcella (Jungle-foc 37) and Issac (Jungle-str 31); VV takes Monster-str (37). It holds the most unspent gold at r600 (311). Its games end at r951 on average.
   - Sources: [table_run854.md](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/table_run854.md); [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt); [draft_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/draft_out.txt)
-- **2 Intercontinental Fish (2562).**
+- **2 Intercontinental Fish (2562).** (Its full-data banking is 22.0 tributes with 43-gem bags, n=85; see the last section.)
   - Draft: Cassi&Issac in 98% of games. On 5-champion maps it plays Vd-CI-Ma-Wi-HR (117/238), or VV-Vd-CI-Vg-HR on large maps (45/72). On 3-champion maps it plays VV-CI-Ma (43/80). First pick is split VV 50% / Ma 50%, and the draft is map-deterministic (1.00).
   - Opening: earliest first capture of the top 5 (r40), stack 4.15, +32 at r300.
   - Contact: the least fighting of the top 5 (13%) and 19% recalling.
@@ -110,7 +110,7 @@ The top 5 do not share one roster. They share four habits: a fast economy after 
 - **6 NEETCoders (2443).** Plays the standard Ry-VV-Vd-Ma-HR (120/238) with HR first (76%) and CI in 26% of games. Its defining trait is that it almost never recalls in contact (4% of contact time) and fights 21% of it, with only 38 held recalls a game. Economy +10 at r300; 23 tributes a game with 51-gem bags. Prospector emblems first (VV Prospector-str 32, Marcella Prospector-foc 30) — same three files
 - **7 BattleCats (2381).** Ry-VV-Vd-Ma-HR (64/245), but Prism is first pick 36% of the time and it plays 25 distinct sets; no CI. Slow banking cadence (16.3 tributes a game, 69-gem bags) and the fewest bodies at big-group respawns in the top 10 (1.23). About level economy (+2 at r300). Prospector/Treasure emblems; 2.7 locks a game — same three files
 - **8 test4 (2366).** One roster, VV-CI-Ma-Wi-HR, on all 240 five-champion maps, HR first 83%, CI in 100%. It stacks the most bodies on its first group of all 30 (4.56). Marcella takes 46% of captures, the top-10 high; 71-gem bags; 12.8 deaths a game. Items: Marcella Capture-foc (49), HR Jungle-foc (42), Issac Prospector-hp (39), VV Treasure-str (41), Cassi Power-foc (35) — same three files
-- **9 print dont int (2366).** Ry-Vd-Ma-Wi-HR on all 250 five-champion maps, with Willow first pick 84% (unique); no CI. It banks like UW: 32.2 tributes a game with 31-gem bags. It dies the least of the top 10 (6.8 a game) and is +13 at r300. Treasure emblems on every champion (HR Treasure-foc 54, Vendetta Treasure-str 45, Marcella Treasure-foc 45) — same three files
+- **9 print dont int (2366).** Ry-Vd-Ma-Wi-HR on all 250 five-champion maps, with Willow first pick 84% (unique); no CI. In the 854-game snapshot it looked like UW's banking (32.2 tributes, 31-gem bags, n=23), but on all 1,201 games it is 25.6 tributes with 49-gem bags (n=90). It dies the least of the top 10 (6.8 a game) and is +13 at r300. Treasure emblems on every champion (HR Treasure-foc 54, Vendetta Treasure-str 45, Marcella Treasure-foc 45) — same three files
 - **10 Sponge (Albert and Bob) (2362).** Ry-VV-Vd-Ma-HR (145/234) with HR first in 100% of games; det 0.82. Slow economy: −21 at r300 and −9.3 per 100 rounds in r151-400. VV takes 34% of captures; 26.6 tributes a game with 45-gem bags; 3.1 locks a game. Capture emblems (HR Capture-hp 53, VV Capture-str 31, Marcella Capture-foc 33) and Treasure on Ryth/Issac — same three files
 
 ### Inferences
@@ -278,7 +278,7 @@ Stronger teams bank much more often: 30.9 tributes a game for the top 5 vs 19.2 
 
 ### Inferences
 - With bag sizes similar to our opponents' (33 vs 42), our banking gap comes from too few tributes. That in turn follows from capturing too little: 618 vs 931 gems captured a game, us vs OPP.
-- Concentrating captures on HR, Vendetta and Ryth is unusual. No top-10 team routes 26% of captures through HR or 13% through Ryth.
+- Concentrating captures on HR, Vendetta and Ryth is unusual. On all 1,201 games only print dont int comes close on HR (25%). Ryth's share is 3-4% for both the top 5 and ranks 20-30.
 
 ### Gaps
 - Banking rows exist for only 305 top-30 games (10-25 sides per team), because the extended extraction did not reach the banking stage. Per-team banking columns are noisy.
@@ -451,4 +451,151 @@ Opening shape, walking share, contested camp-hit share, deaths, wards, locks, st
 ### Gaps
 - Correlations are across 30 team means with 25-72 sides each. Many features co-vary with winning, and the T5 losing vs T20 losing comparison is the only outcome control used.
 - No v95 games were analysed. Our numbers are v84-v88 (305 economy games, 80% losses; v88 alone n=119, all losses).
-- 347 of the 1,201 decoded top-30 games were not processed for economy, about 364 for objectives, and 896 for banking, because of the time budget. The extraction drivers in `experiments/deep_research_nov3/macro/` can resume.
+- Most numbers in this section come from the 854-game snapshot. The full-data check in the next section confirms the contact-behaviour markers and weakens the economy and banking ones (tributes +0.49 → +0.34, r300 +0.40 → +0.32).
+
+## Robustness on all 1,201 games, macro by map class, and implications for our bot
+
+### Takeaway
+On the full set (1,201 games; 2,402 top-30 sides in every stream; banking 32-96 sides per team), the contact-behaviour markers are stable:
+- holding a recall in contact: ρ +0.53;
+- fighting in contact: −0.49;
+- held recalls: +0.45;
+- heal-recall share: −0.44;
+- raid kills: +0.47;
+- bodies at big respawns: +0.48;
+- game length: −0.52.
+
+The economy and banking markers weaken but keep their sign: r151-400 pace +0.38, r300 gems +0.32, tributes +0.34, r150 gems +0.21. Capture routing gets stronger: CI share +0.40, HR share +0.36, Marcella share −0.24.
+
+The top-5 economic edge is largest on gem-scarce, island and small/medium maps and smallest on monolith maps. Our r300 deficit (−40 to −58 gems vs map mean) appears in every map class.
+
+### Cited Findings
+- 854-game snapshot vs full data. T5/T20 are team-level means for ranks 1-5 and 20-30 on full data. ME and OPP are our v84-v88 games and our opponents in those same games (305 economy / 551 objectives / 232 and 318 banking sides):
+
+| feature | ρ 854 | ρ full | T5 | T20 | ME | OPP |
+|---|---|---|---|---|---|---|
+| game length (final round) | −0.52 | −0.52 | 978 | 1060 | 1217 | 1217 |
+| share of contact time holding a recall | +0.52 | +0.53 | 19.3% | 10.2% | 14.8% | 10.8% |
+| share of contact time fighting | −0.50 | −0.49 | 15.0% | 20.1% | 17.2% | 21.5% |
+| kills per game | +0.50 | +0.45 | 10.0 | 7.8 | 7.9 | 8.1 |
+| share of contact time on reward tiles | −0.49 | −0.35 | 2.5% | 3.4% | 1.6% | 2.8% |
+| tributes per game | +0.49 | +0.34 | 29.1 | 19.6 | 20.7 | 30.2 |
+| bodies on arrival at big-group respawns | +0.48 | +0.48 | 1.4 | 1.3 | 1.4 | 1.4 |
+| r151-400 gems /100r vs map | +0.46 | +0.38 | +7.4 | −3.9 | −20.1 | −2.2 |
+| reposition share of recalls | +0.45 | +0.43 | 48% | 30% | 47% | 26% |
+| held recalls per game | +0.43 | +0.45 | 97 | 55 | 78 | 70 |
+| raid kills per game | +0.43 | +0.47 | 3.1 | 1.8 | 1.9 | 2.3 |
+| gems by r300 vs map | +0.40 | +0.32 | +18.1 | −6.5 | −49.5 | −4.0 |
+| heal share of recalls | −0.40 | −0.44 | 27% | 40% | 34% | 40% |
+| shards at r300 vs map | +0.40 | +0.38 | +0.2 | −1.6 | −7.5 | −5.8 |
+| gems captured on raids | −0.38 | −0.28 | 19.8 | 23.5 | 5.6 | 29.5 |
+| CI share of captured gems | +0.36 | +0.40 | 11.8% | 2.6% | 0% | 3.2% |
+| gems by r150 vs map | +0.35 | +0.21 | +6.8 | −1.3 | −22.7 | +0.7 |
+| bag at tribute | −0.35 | −0.35 | 41 | 58 | 33 | 42 |
+| Marcella share of captured gems | −0.15 | −0.24 | 23% | 31% | 14% | 28% |
+| HR share of captured gems | +0.31 | +0.36 | 16% | 12% | 26% | 14% |
+| walk share of alive time | −0.15 | −0.16 | 53.2% | 54.2% | 60.6% | 53.5% |
+| camp hits made under contact | −0.07 | −0.13 | 11.4% | 10.8% | 7.4% | 12.3% |
+| share of contact time hitting camps | −0.02 | −0.10 | 6.6% | 6.9% | 3.8% | 7.5% |
+| deaths per game | +0.06 | +0.10 | 10.2 | 9.6 | 9.3 | 9.2 |
+| opening stack (bodies on first group) | +0.03 | +0.06 | 3.6 | 3.4 | 2.7 | 3.2 |
+| mid-band share of captured gems | +0.16 | +0.23 | 51.8% | 46.7% | 49.0% | 59.2% |
+| altar locks per game | +0.11 | +0.07 | 1.8 | 2.1 | 1.1 | 3.0 |
+| spawn-altar share of tributes | −0.24 | −0.01 | 73.6% | 71.3% | 77.6% | 69.3% |
+| unspent gold at r600 | +0.25 | +0.22 | 268 | 228 | 96 | 230 |
+| wins reached by banking 1000 | +0.03 | −0.19 | 96.8% | 97.4% | 88.7% | 93.4% |
+
+  Sources: [cmp_runs.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/cmp_runs.txt); [fp_out_full.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_full.txt); [fp_out_run854.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_out_run854.txt)
+- Top-10 banking on full data (n = 83-91 sides each; the snapshot had 17-24):
+
+  | Team | Tributes/game | Bag | Ma | VV | HR | CI | Locks | Kills |
+  |---|---|---|---|---|---|---|---|---|
+  | Mite | 31.3 | 53 | 28% | 22% | 17% | 13% | 0.0 | 9.8 |
+  | IC | 22.0 | 43 | 22% | 15% | 19% | 18% | 3.5 | 9.4 |
+  | UW | 48.0 | 19 | 15% | 6% | 16% | 12% | 0.0 | 14.7 |
+  | Ad Astra | 18.0 | 59 | 24% | 37% | 14% | 6% | 0.0 | 10.2 |
+  | newer team | 26.1 | 33 | 28% | 10% | 16% | 10% | 5.3 | 6.0 |
+  | NEETCoders | 20.2 | 49 | 28% | 26% | 15% | 5% | 0.5 | 7.8 |
+  | BattleCats | 15.1 | 72 | 29% | 5% | 14% | 0% | 2.7 | 9.5 |
+  | test4 | 22.8 | 50 | 42% | 20% | 15% | 17% | 0.6 | 8.2 |
+  | print dont int | 25.6 | 49 | 37% | 5% | 25% | 0% | 0.5 | 9.3 |
+  | Sponge | 23.9 | 43 | 27% | 31% | 18% | 10% | 3.1 | 9.8 |
+
+  Source: [fp_team_full.json](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/fp_team_full.json)
+- Gems by r300 vs map mean, by map class (n sides in brackets):
+
+  | Map class | T5 | T20 | ME | OPP |
+  |---|---|---|---|---|
+  | gem-scarce (≤92 group gems per champion) | +24.7 (252) | −6.7 (414) | −45.8 (213) | +6.6 (213) |
+  | rich | +8.6 (176) | −5.8 (320) | −58.0 (92) | −28.4 (92) |
+  | small | +19.5 (152) | −9.5 (276) | −55.0 (120) | +4.3 (120) |
+  | medium | +18.5 (202) | −0.3 (305) | −53.4 (141) | −12.2 (141) |
+  | large | +14.2 (74) | −12.5 (153) | −22.1 (44) | 0.0 (44) |
+  | monolith | +9.0 (129) | −1.1 (237) | −39.7 (70) | −31.9 (70) |
+  | no monolith | +22.0 (299) | −8.8 (497) | −52.4 (235) | +4.4 (235) |
+  | islands | +26.2 (59) | −12.5 (86) | −45.2 (36) | −21.0 (36) |
+  | bushy (≥15% bush tiles) | +22.2 (35) | −5.8 (81) | −57.9 (34) | −11.2 (34) |
+  | 1 altar | +21.1 (106) | +5.1 (165) | −51.3 (49) | +10.9 (49) |
+  | 2+ altars | +17.1 (322) | −9.6 (569) | −49.2 (256) | −6.8 (256) |
+
+  Source: [mclass_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/mclass_out.txt)
+- The top-5 style holds in every class. Recall share of contact time is 0.18-0.20 for T5 vs 0.09-0.11 for T20; fight share is 0.14-0.16 vs 0.19-0.21.
+- T5 tributes are highest on scarce maps (32.8 vs 24.6 on rich) and bushy maps (35.6).
+- Our walk-share excess over OPP is largest on small maps (58.2% vs 48.7%) and smallest on large maps (67.3% vs 63.8%).
+- We take 29-39% of big-group rewards when both teams arrive, against OPP's 61-71%, in every class.
+- Source: [mclass_out.txt](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/mclass_out.txt)
+- Full-data 30-team fingerprint table (same columns as the first section; n = econ sides; banking columns now rest on 32-96 sides per team) — [table_full.md](/home/claude/cambridge_battlecode/experiments/deep_research_nov3/macro/table_full.md)
+
+| rk | team | rating | n | core roster, 5-champ maps (games) | 1st pick | det | CI% | g300± | p2± | walk% | fight%c | recall%c | heldRec | bigArrN | trib/g | bag | Ma cap% | CI cap% | mid% | raids | locks | deaths | gold@600 | emb1 r |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | Mite | 2583 | 85 | VV-Vd-CI-Ma-HR (216/226) | VV 74% | 1.00 | 74 | +35 | +13.2 | 52 | 17 | 16 | 72 | 1.38 | 31.3 | 53 | 28 | 13 | 52 | 7.6 | 0.0 | 10.4 | 273 | 121 |
+| 2 | Intercontinental Fish | 2562 | 85 | Vd-CI-Ma-Wi-HR (117/238) | VV 50% | 1.00 | 98 | +22 | +9.5 | 56 | 13 | 18 | 62 | 1.47 | 22.0 | 43 | 22 | 18 | 50 | 7.5 | 3.5 | 11.8 | 222 | 129 |
+| 3 | Univardisty of Shingtonwash | 2524 | 91 | Ry-CI-Wi-Vg-HR (81/245) | Ry 71% | 0.86 | 43 | +19 | +0.9 | 52 | 13 | 25 | 175 | 1.65 | 48.0 | 19 | 15 | 12 | 53 | 15.3 | 0.0 | 8.5 | 318 | 184 |
+| 4 | Ad Astra | 2516 | 84 | VV-Vd-CI-Re-HR (56/225) | HR 56% | 1.00 | 58 | -22 | -6.1 | 53 | 18 | 20 | 96 | 1.33 | 18.0 | 59 | 24 | 6 | 51 | 12.9 | 0.0 | 10.2 | 309 | 132 |
+| 5 | newer team | 2481 | 83 | Vd-CI-Pr-Vg-HR (38/240) | Vd 43% | 1.00 | 39 | +37 | +19.8 | 52 | 14 | 17 | 80 | 1.33 | 26.1 | 33 | 28 | 10 | 53 | 4.5 | 5.3 | 10.1 | 218 | 91 |
+| 6 | NEETCoders | 2443 | 85 | Ry-VV-Vd-Ma-HR (120/238) | HR 76% | 1.00 | 26 | +25 | +7.6 | 55 | 22 | 4 | 37 | 1.39 | 20.2 | 49 | 28 | 5 | 52 | 8.5 | 0.5 | 8.6 | 232 | 100 |
+| 7 | BattleCats | 2381 | 84 | Ry-VV-Vd-Ma-HR (64/245) | Pr 36% | 0.98 | 3 | +8 | +0.5 | 55 | 17 | 17 | 62 | 1.24 | 15.1 | 72 | 29 | 0 | 48 | 9.6 | 2.7 | 8.3 | 182 | 119 |
+| 8 | test4 | 2366 | 83 | VV-CI-Ma-Wi-HR (240/240) | HR 83% | 1.00 | 100 | +6 | +1.7 | 56 | 16 | 18 | 75 | 1.33 | 22.8 | 50 | 42 | 17 | 48 | 7.9 | 0.6 | 11.9 | 261 | 118 |
+| 9 | print dont int | 2366 | 90 | Ry-Vd-Ma-Wi-HR (250/250) | Wi 84% | 1.00 | 0 | +6 | +3.8 | 51 | 18 | 19 | 69 | 1.20 | 25.6 | 49 | 37 | 0 | 42 | 11.7 | 0.5 | 6.6 | 195 | 115 |
+| 10 | Sponge(Albert and Bob) | 2362 | 91 | Ry-VV-Vd-Ma-HR (145/234) | HR 100% | 0.82 | 20 | -21 | -10.9 | 55 | 16 | 15 | 72 | 1.33 | 23.9 | 43 | 27 | 10 | 46 | 11.6 | 3.1 | 10.3 | 218 | 104 |
+| 11 | Trzy Kwaterki | 2346 | 91 | Ry-VV-Vd-Ma-HR (138/229) | Ma 98% | 0.93 | 0 | -28 | -6.4 | 53 | 17 | 23 | 81 | 1.33 | 18.0 | 56 | 36 | 0 | 51 | 11.7 | 3.7 | 8.8 | 194 | 113 |
+| 12 | T1 | 2344 | 88 | Ry-VV-Vd-Ma-HR (182/237) | VV 83% | 0.87 | 0 | -12 | -3.3 | 50 | 22 | 7 | 55 | 1.28 | 28.1 | 38 | 36 | 0 | 48 | 15.6 | 6.4 | 8.0 | 227 | 132 |
+| 13 | policy wonk | 2335 | 88 | Ma-Wi-Re-Ta-HR (81/239) | HR 75% | 0.74 | 0 | -7 | -6.2 | 53 | 19 | 16 | 63 | 1.43 | 17.8 | 47 | 35 | 0 | 55 | 13.8 | 1.3 | 9.5 | 206 | 121 |
+| 14 | subscribe to caterpillow | 2307 | 96 | Ry-VV-Vd-Ma-HR (254/254) | HR 100% | 0.99 | 0 | -11 | -1.1 | 48 | 16 | 36 | 206 | 1.17 | 22.5 | 45 | 19 | 0 | 54 | 8.5 | 1.7 | 8.8 | 187 | 128 |
+| 15 | Noobot | 2304 | 89 | Ry-VV-Ma-Wi-HR (266/266) | Ma 100% | 1.00 | 0 | +6 | +1.9 | 55 | 25 | 3 | 48 | 1.56 | 22.6 | 45 | 47 | 0 | 56 | 10.4 | 1.2 | 9.0 | 216 | 113 |
+| 16 | German Empire | 2289 | 86 | VV-Vd-Ma-Re-Ta (182/238) | Re 46% | 0.86 | 11 | +8 | +4.7 | 51 | 22 | 6 | 58 | 1.18 | 21.0 | 54 | 30 | 6 | 50 | 3.7 | 4.3 | 7.5 | 268 | 161 |
+| 17 | Supaswag | 2282 | 86 | VV-Vd-Ma-Wi-HR (182/254) | Ma 76% | 0.94 | 0 | +16 | +10.9 | 50 | 22 | 5 | 46 | 1.26 | 19.3 | 64 | 38 | 0 | 51 | 5.0 | 0.0 | 7.4 | 221 | 127 |
+| 18 | Nyx | 2271 | 87 | Ry-VV-Vd-Ma-HR (235/235) | VV 100% | 1.00 | 0 | -11 | -4.4 | 50 | 24 | 10 | 96 | 1.25 | 21.3 | 47 | 27 | 0 | 51 | 10.6 | 0.2 | 8.3 | 246 | 111 |
+| 19 | JukeFall | 2250 | 96 | Ry-VV-Vd-Ma-HR (241/253) | Vd 100% | 0.97 | 3 | -14 | -4.5 | 54 | 25 | 3 | 44 | 1.32 | 22.2 | 73 | 35 | 0 | 43 | 9.3 | 0.0 | 7.5 | 244 | 110 |
+| 20 | conqueror_of_openai | 2234 | 93 | Ry-VV-Vd-Ma-HR (233/233) | VV 100% | 0.86 | 0 | -38 | -13.2 | 51 | 15 | 15 | 70 | 1.37 | 23.3 | 40 | 36 | 0 | 50 | 9.5 | 1.5 | 8.5 | 234 | 120 |
+| 21 | SSSA | 2233 | 82 | VV-Vd-Ma-Wi-HR (155/241) | HR 84% | 0.96 | 13 | +15 | +4.8 | 54 | 19 | 10 | 48 | 1.38 | 16.1 | 54 | 38 | 2 | 51 | 7.0 | 3.6 | 10.1 | 208 | 118 |
+| 22 | :3 | 2231 | 76 | VV-Vd-Pr-Ma-HR (153/238) | HR 86% | 1.00 | 12 | +6 | +4.5 | 53 | 17 | 12 | 57 | 1.28 | 14.6 | 56 | 11 | 3 | 45 | 7.6 | 4.3 | 7.5 | 258 | 143 |
+| 23 | new team(4) | 2231 | 89 | Vd-Ma-Vg-Ta-HR (83/236) | HR 87% | 0.94 | 23 | -6 | -4.8 | 55 | 22 | 4 | 42 | 1.19 | 18.7 | 47 | 32 | 6 | 40 | 12.2 | 6.3 | 10.9 | 172 | 155 |
+| 24 | Rogue Lock Pickers | 2215 | 73 | VV-Vd-Ma-Wi-Ta (244/249) | VV 96% | 0.89 | 0 | +8 | +1.2 | 55 | 17 | 11 | 47 | 1.37 | 21.6 | 56 | 34 | 0 | 50 | 8.6 | 0.0 | 8.4 | 248 | 124 |
+| 25 | prism best girl | 2207 | 81 | Ry-VV-Pr-Ma-HR (211/243) | Pr 100% | 0.83 | 0 | +20 | +6.6 | 56 | 24 | 6 | 43 | 1.28 | 20.2 | 47 | 22 | 0 | 51 | 7.7 | 0.0 | 7.7 | 221 | 107 |
+| 26 | EE | 2203 | 57 | Ry-VV-Vd-Ma-HR (223/223) | VV 100% | 1.00 | 0 | -58 | -19.4 | 56 | 17 | 17 | 66 | 1.13 | 21.1 | 48 | 34 | 0 | 57 | 11.5 | 4.2 | 9.4 | 278 | 107 |
+| 27 | procless | 2201 | 32 | Ry-VV-Vd-Ma-HR (256/256) | HR 100% | 1.00 | 0 | +6 | -2.3 | 51 | 30 | 5 | 51 | 1.10 | 22.2 | 50 | 29 | 0 | 33 | 7.8 | 0.0 | 6.8 | 170 | 115 |
+| 28 | jazz | 2200 | 54 | VV-Ma-Wi-Ta-HR (144/265) | HR 79% | 1.00 | 7 | +7 | +1.7 | 57 | 17 | 14 | 60 | 1.31 | 19.9 | 57 | 43 | 1 | 56 | 7.8 | 0.0 | 10.2 | 154 | 98 |
+| 29 | MFF1 | 2196 | 60 | VV-Vd-CI-Ma-Wi (245/253) | VV 79% | 1.00 | 61 | -25 | -13.3 | 55 | 26 | 2 | 46 | 1.30 | 14.3 | 68 | 24 | 5 | 40 | 7.5 | 0.0 | 10.3 | 436 | 102 |
+| 30 | Olympus | 2192 | 37 | Vd-CI-Ma-Wi-HR (217/251) | Ma 84% | 0.92 | 72 | -6 | -8.5 | 53 | 18 | 15 | 71 | 1.26 | 24.1 | 116 | 39 | 12 | 41 | 6.7 | 3.1 | 15.2 | 122 | 154 |
+| - | **HouseOfCoders v84-v88 (all our decoded games, 80% losses)** | 1979 | 305 | Ry-VV-Vd-Ma-HR (172/235) | HR 54% | 1.00 | 0 | -50 | -20.1 | 61 | 17 | 15 | 78 | 1.39 | 20.7 | 33 | 14 | 0 | 49 | 13.2 | 1.1 | 9.3 | 96 | 144 |
+| - | OPP (our opponents, same games) | - | 305 | - | - | - | - | -4 | -2.2 | 53 | 21 | 11 | 70 | 1.40 | 30.2 | 42 | 28 | 3 | 59 | 14.0 | 3.0 | 9.2 | 230 | 136 |
+| - | TOP-30 losing sides (pooled) | - | 1201 | - | - | - | - | -27 | -14.8 | 55 | 19 | 13 | 66 | 1.25 | 15.9 | 39 | 31 | 4 | 43 | 6.3 | 2.0 | 12.8 | 177 | 137 |
+| - | TOP-30 winning sides (pooled) | - | 1201 | - | - | - | - | +27 | +14.8 | 51 | 19 | 14 | 78 | 1.39 | 28.6 | 63 | 31 | 4 | 55 | 12.7 | 1.9 | 5.4 | 288 | 108 |
+
+### Inferences
+- Concrete changes these data support, in order of measured gap. Each maps to an item of [god24_plan.md](/home/claude/cambridge_battlecode/docs/plans/god24_plan.md); the top-30 benchmark is added here.
+  1. **Stop walking away from camps on contact (E1, X1).** Our contact time goes 59% walking and 3.8% camp hits. Our opponents in the same games spend 49% walking and 7.5% hitting camps, and the top 5 48% and 7.1%. The top 5 replace the walking with a held recall (20% of contact time vs our 15%), not with fighting (15% vs our 17%).
+     - Proposed rule: under contact, either keep hitting the camp (contact share of hits about 12% for all top-30 groups vs our 7.4%) or recall to reposition. Do not walk.
+     - Metric to move: walk share of alive body-rounds, 61% now, target about 53%.
+  2. **Stack on the opening and rich groups (E2).** We put 2.66 bodies on our first group and have 2.48 distinct first targets. Our opponents put 3.19 bodies, the top 5 3.55 (with 2.15 targets).
+     - Metrics to move: gems at r150 vs map mean (−23 now; top-30 losing sides −10) and r151-400 pace (−20.5 per 100 rounds; top-30 losing sides −15).
+  3. **Route captures to Marcella / a carrier (E3), and bank more often.** Marcella takes 14% of our captured gems vs 28% (OPP) and 25% (top 5). HR, Vendetta and Ryth take 58% of ours. We make 20.7 tributes a game vs 30.2 for OPP and 30.9 for the top 5. Bag size is not the problem (33 vs 42).
+  4. **Draft.** The only draft feature that tracks rating is Cassi&Issac (+0.36). It is two bodies for one pick and captures 12.6% of top-5 gems. AGENTS.md records that "C&I for Marcella with pair caution" was level on held-out maps on Oct 26 (v18 base), so this is a re-test on the v88/v95 base, not a new idea. Opponent-reactive drafting is not worth building: no team does it measurably.
+  5. **Do not chase locks, wards or steals.** None separates the top 30 (|ρ| ≤ 0.27), and our ward count is already level with our opponents'.
+- Why v95's local +133 may not show on the ladder: the ladder-relevant macro gaps above (walking, contact farming, opening stack, capture routing, tribute count) sit in the economy. If v95's gain is mostly fights, these numbers should be unchanged in its games. Checking that needs decoded v95 ladder games, which this note did not have.
+
+### Gaps
+- With n=30 teams, |ρ| ≥ 0.36 is significant at p<0.05. On full data the tribute (+0.34), r300 (+0.32) and r150 (+0.21) correlations fall below that line. The contact-behaviour, raid-kill, big-respawn, CI-share and game-length correlations stay above it.
+- The ME rows are v84-v88 games and 80% losses. The ME vs OPP comparison is like-with-like in map and game, but not in result.
+- No v95 replays were analysed.
